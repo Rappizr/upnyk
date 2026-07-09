@@ -38,60 +38,65 @@ export default function BandingkanBeliPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div>
-        <p className="text-sm text-slate-500">Analisis komparatif harga, kedekatan logistik desa, dan performa rating mitra.</p>
+        <p className="text-sm text-slate-500" style={{ margin: 0 }}>Analisis komparatif harga, kedekatan logistik desa, dan performa rating mitra.</p>
       </div>
 
-      {/* COMPARISON TABLE CARD */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="font-bold text-base text-[#1E293B]">Analisis Komparasi Pasokan: Beras Mentik Wangi</h3>
-          <span className="text-xs bg-blue-50 text-[#2563EB] font-semibold px-2.5 py-1 rounded-lg border border-blue-100">
+      {/* COMPARISON TABLE CARD CONTAINER */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" style={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50" style={{ padding: '1.25rem', borderBottom: '1px solid #F1F5F9', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 className="font-bold text-base text-[#1E293B]" style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Analisis Komparasi Pasokan: Beras Mentik Wangi</h3>
+          <span className="text-xs bg-blue-50 text-[#2563EB] font-semibold px-2.5 py-1 rounded-lg border border-blue-100" style={{ fontSize: '0.75rem', fontWeight: 600, backgroundColor: '#EFF6FF', color: '#2563EB', padding: '0.25rem 0.625rem', borderRadius: '0.5rem', border: '1px solid #BFDBFE' }}>
             3 Produsen Ditemukan
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table className="w-full text-left border-collapse text-sm" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
-              <tr className="bg-white border-b border-slate-200 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="p-4 pl-6">Produsen / Petani</th>
-                <th className="p-4">Bandingkan Harga</th>
-                <th className="p-4">Bandingkan Jarak</th>
-                <th className="p-4">Bandingkan Rating</th>
-                <th className="p-4">Tersedia</th>
-                <th className="p-4 pr-6 text-right">Aksi</th>
+              <tr style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #E2E8F0', color: '#94A3B8', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '1rem', paddingLeft: '1.5rem' }}>Produsen / Petani</th>
+                <th style={{ padding: '1rem' }}>Bandingkan Harga</th>
+                <th style={{ padding: '1rem' }}>Bandingkan Jarak</th>
+                <th style={{ padding: '1rem' }}>Bandingkan Rating</th>
+                <th style={{ padding: '1rem' }}>Tersedia</th>
+                <th style={{ padding: '1rem', paddingRight: '1.5rem', textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100" style={{ display: 'table-row-group' }}>
               {komparasiBahanBaku.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="p-4 pl-6">
-                    <p className="font-semibold text-[#1E293B]">{item.produsen}</p>
+                <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }} className="hover:bg-slate-50/50">
+                  <td style={{ padding: '1rem', paddingLeft: '1.5rem' }}>
+                    <p style={{ fontWeight: 600, color: '#1E293B', margin: 0 }}>{item.produsen}</p>
                     {item.rekomendasi && (
-                      <span className="text-[10px] bg-emerald-50 text-[#10B981] px-1.5 py-0.5 rounded font-bold border border-emerald-100 inline-block mt-1">
+                      <span 
+                        style={{ fontSize: '10px', fontWeight: 700, backgroundColor: '#ECFDF5', color: '#10B981', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', border: '1px solid #D1FAE5', marginTop: '0.25rem', display: 'inline-block' }}
+                      >
                         {item.rekomendasi}
                       </span>
                     )}
                   </td>
-                  <td className="p-4 font-bold text-[#1E293B]">
+                  <td style={{ padding: '1rem', fontWeight: 700, color: '#1E293B' }}>
                     Rp {item.harga.toLocaleString('id-ID')}
                   </td>
-                  <td className="p-4 text-slate-600 font-medium">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" /> {item.jarak}
+                  <td style={{ padding: '1rem', color: '#475569', fontWeight: 500 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" style={{ width: '0.875rem', height: '0.875rem', color: '#94A3B8' }} /> {item.jarak}
                     </span>
                   </td>
-                  <td className="p-4">
-                    <span className="flex items-center gap-1 font-bold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-current" /> {item.rating}
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700, color: '#F59E0B' }}>
+                      <Star className="w-3.5 h-3.5 fill-current" style={{ width: '0.875rem', height: '0.875rem' }} /> {item.rating}
                     </span>
                   </td>
-                  <td className="p-4 text-slate-500 font-medium">{item.stok}</td>
-                  <td className="p-4 pr-6 text-right">
-                    <button className="bg-[#10B981] hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-sm inline-flex items-center gap-1.5">
-                      <ShoppingCart className="w-3.5 h-3.5" /> Beli Langsung
+                  <td style={{ padding: '1rem', color: '#475569', fontWeight: 500 }}>{item.stok}</td>
+                  <td style={{ padding: '1rem', paddingRight: '1.5rem', textAlign: 'right' }}>
+                    <button 
+                      className="bg-[#10B981] hover:bg-emerald-600 text-white font-semibold transition-colors shadow-sm"
+                      style={{ backgroundColor: '#10B981', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" style={{ width: '0.875rem', height: '0.875rem' }} /> Beli Langsung
                     </button>
                   </td>
                 </tr>
@@ -102,13 +107,19 @@ export default function BandingkanBeliPage() {
       </div>
 
       {/* VALUE PROP WIDGET */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div 
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+        style={{ background: 'linear-gradient(90deg, #EFF6FF 0%, #EEF2F6 100%)', border: '1px solid #BFDBFE', padding: '1.5rem', borderRadius: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}
+      >
         <div>
-          <h4 className="font-bold text-sm text-[#2563EB]">Ingin hemat biaya pengiriman logistik?</h4>
-          <p className="text-xs text-slate-600 mt-1">Gunakan fitur <strong>Pembelian Bersama</strong> di menu Kolaborasi UMKM untuk menggabungkan kuota muatan truk dengan toko sekitar.</p>
+          <h4 className="font-bold text-sm text-[#2563EB]" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#2563EB', margin: 0 }}>Ingin hemat biaya pengiriman logistik?</h4>
+          <p className="text-xs text-slate-600 mt-1" style={{ fontSize: '0.75rem', color: '#475569', margin: 0, marginTop: '0.25rem', lineHeight: 1.5 }}>Gunakan fitur <strong>Pembelian Bersama</strong> di menu Kolaborasi UMKM untuk menggabungkan kuota muatan truk dengan toko sekitar.</p>
         </div>
-        <button className="text-xs font-bold text-[#2563EB] bg-white border border-blue-200 px-4 py-2 rounded-xl shadow-sm hover:bg-blue-50 transition-all flex items-center gap-1">
-          Buka Kolaborasi <ArrowRight className="w-3.5 h-3.5" />
+        <button 
+          className="text-xs font-bold text-[#2563EB] bg-white border border-blue-200 shadow-sm hover:bg-blue-50 transition-all"
+          style={{ backgroundColor: '#ffffff', color: '#2563EB', padding: '0.5rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #BFDBFE', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+        >
+          Buka Kolaborasi <ArrowRight className="w-3.5 h-3.5" style={{ width: '0.875rem', height: '0.875rem' }} />
         </button>
       </div>
     </div>
