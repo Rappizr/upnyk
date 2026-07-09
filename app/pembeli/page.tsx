@@ -1,30 +1,50 @@
+"use client";
+import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
-import type { Metadata } from "next";
+import { IconRenderer } from "@/components/IconRenderer";
 import { 
-  RiceIcon, CoffeeIcon, SpiceIcon, OilIcon, LeafIcon, 
-  FactoryIcon, StarIcon, HeartIcon, CartIcon, PackageIcon,
-  BellIcon, TruckIcon
+  StarIcon, HeartIcon, CartIcon, PackageIcon, LocationIcon
 } from "@/components/ProductIcons";
 
-export const metadata: Metadata = {
-  title: "Beranda Pembeli — Lural Commerce & Supply Chain",
-  description: "Dashboard pembeli Lural Commerce. Temukan produk UMKM lokal terbaik dan pantau aktivitas belanja Anda.",
-};
-
-const products = [
-  { id: 1, icon: <RiceIcon size={32} className="text-amber-600" />, name: "Beras Merah Organik", origin: "Cianjur, Jawa Barat", price: "Rp 28.000/kg", stock: "Tersedia", rating: 4.9 },
-  { id: 2, icon: <CoffeeIcon size={32} className="text-amber-800" />, name: "Kopi Arabika Gayo", origin: "Gayo, Aceh", price: "Rp 95.000/250g", stock: "Tersedia", rating: 4.8 },
-  { id: 3, icon: <SpiceIcon size={32} className="text-red-500" />, name: "Bawang Merah Brebes", origin: "Brebes, Jawa Tengah", price: "Rp 18.500/kg", stock: "Terbatas", rating: 4.7 },
-  { id: 4, icon: <OilIcon size={32} className="text-emerald-600" />, name: "Minyak Kelapa VCO", origin: "Minahasa, Sulawesi Utara", price: "Rp 62.000/500ml", stock: "Tersedia", rating: 4.9 },
-];
-
 const producers = [
-  { icon: <LeafIcon size={24} className="text-emerald-500" />, name: "Koperasi Tani Maju", location: "Karawang", products: 48, rating: 4.8 },
-  { icon: <FactoryIcon size={24} className="text-slate-600" />, name: "UMKM Rempah Nusantara", location: "Medan", products: 35, rating: 4.7 },
-  { icon: <LeafIcon size={24} className="text-blue-500" />, name: "Agro Organik Sentosa", location: "Malang", products: 62, rating: 4.9 },
+  { icon_type: "leaf", name: "Koperasi Tani Maju", location: "Karawang", products: 48, rating: 4.8 },
+  { icon_type: "factory", name: "UMKM Rempah Nusantara", location: "Medan", products: 35, rating: 4.7 },
+  { icon_type: "leaf", name: "Agro Organik Sentosa", location: "Malang", products: 62, rating: 4.9 },
 ];
 
 export default function PembeliHomePage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [prodRes, orderRes, wlRes] = await Promise.all([
+          fetch("/api/products"),
+          fetch("/api/orders"),
+          fetch("/api/wishlist")
+        ]);
+        const prodData = await prodRes.json();
+        const orderData = await orderRes.json();
+        const wlData = await wlRes.json();
+
+        setProducts(prodData.slice(0, 4)); // Show top 4
+        setOrders(orderData);
+        setWishlistCount(wlData.length);
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const activeOrdersCount = orders.filter(o => o.status !== "Selesai" && o.status !== "Dibatalkan").length;
+  const completedOrdersCount = orders.filter(o => o.status === "Selesai").length;
+
   return (
     <AppLayout>
       {/* Hero Banner */}
@@ -57,7 +77,7 @@ export default function PembeliHomePage() {
             <PackageIcon size={22} />
           </div>
           <div>
-            <div className="stat-value">8</div>
+            <div className="stat-value">{loading ? "..." : activeOrdersCount}</div>
             <div className="stat-label">Pesanan Aktif</div>
           </div>
         </div>
@@ -68,7 +88,7 @@ export default function PembeliHomePage() {
             </svg>
           </div>
           <div>
-            <div className="stat-value">24</div>
+            <div className="stat-value">{loading ? "..." : completedOrdersCount}</div>
             <div className="stat-label">Pesanan Selesai</div>
           </div>
         </div>
@@ -86,14 +106,14 @@ export default function PembeliHomePage() {
             <HeartIcon size={22} />
           </div>
           <div>
-            <div className="stat-value">18</div>
+            <div className="stat-value">{loading ? "..." : wishlistCount}</div>
             <div className="stat-label">Item di Wishlist</div>
           </div>
         </div>
       </div>
 
       {/* Rekomendasi Produk */}
-      <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <div>
           <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <StarIcon size={20} className="text-amber-500" fill="currentColor" /> Rekomendasi untuk Anda
@@ -105,44 +125,48 @@ export default function PembeliHomePage() {
         </a>
       </div>
 
-      <div className="product-grid" style={{ marginBottom: "1.75rem" }}>
-        {products.map((p) => (
-          <div key={p.id} className="product-card card-hover" id={`product-card-${p.id}`}>
-            <div className="product-img" style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {p.icon}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "2rem", color: "var(--color-text-muted)" }}>Memuat produk rekomendasi...</div>
+      ) : (
+        <div className="product-grid" style={{ marginBottom: "1.75rem" }}>
+          {products.map((p) => (
+            <div key={p.id} className="product-card card-hover" id={`product-card-${p.id}`}>
+              <div className="product-img" style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconRenderer type={p.icon_type} size={32} className="text-amber-600" />
+              </div>
+              <div className="product-body">
+                <div className="product-name">{p.name}</div>
+                <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
+                  <LocationIcon size={14} /> {p.origin}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
+                  <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
+                    {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
+                  </span>
+                  <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
+                    <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
+                  </span>
+                </div>
+                <div className="product-price">Rp {p.price.toLocaleString("id-ID")}/unit</div>
+                <div className="product-footer">
+                  <button className="btn-primary" style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-add-cart-${p.id}`}>
+                    <CartIcon size={14} /> + Keranjang
+                  </button>
+                  <button className="icon-btn" id={`btn-wishlist-${p.id}`} title="Tambah Wishlist" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <HeartIcon size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="product-body">
-              <div className="product-name">{p.name}</div>
-              <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
-                <LocationIcon size={14} /> {p.origin}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
-                <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
-                  {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
-                </span>
-                <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
-                  <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
-                </span>
-              </div>
-              <div className="product-price">{p.price}</div>
-              <div className="product-footer">
-                <button className="btn-primary" style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-add-cart-${p.id}`}>
-                  <CartIcon size={14} /> + Keranjang
-                </button>
-                <button className="icon-btn" id={`btn-wishlist-${p.id}`} title="Tambah Wishlist" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                  <HeartIcon size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Produsen Lokal */}
-      <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <div>
           <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <FactoryIcon size={20} className="text-slate-700" /> Produsen Lokal Terdekat
+            <IconRenderer type="factory" size={20} className="text-slate-700" /> Produsen Lokal Terdekat
           </div>
           <div className="text-sm text-muted">Supplier terpercaya di sekitar Anda</div>
         </div>
@@ -151,7 +175,7 @@ export default function PembeliHomePage() {
         {producers.map((p, i) => (
           <div key={i} className="card card-hover" id={`producer-card-${i}`} style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
             <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-primary-light)", borderRadius: "var(--radius-sm)" }}>
-              {p.icon}
+              <IconRenderer type={p.icon_type} size={24} className="text-emerald-500" />
             </div>
             <div>
               <div className="font-semibold text-sm">{p.name}</div>
@@ -172,3 +196,4 @@ export default function PembeliHomePage() {
     </AppLayout>
   );
 }
+

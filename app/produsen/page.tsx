@@ -1,20 +1,52 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
-import type { Metadata } from "next";
+import { IconRenderer } from "@/components/IconRenderer";
 import { 
-  RiceIcon, SpiceIcon, LeafIcon, FactoryIcon, TruckIcon, DollarIcon
+  RiceIcon, LeafIcon, FactoryIcon, TruckIcon, DollarIcon
 } from "@/components/ProductIcons";
 
-export const metadata: Metadata = {
-  title: "Produsen Dashboard — Lural Commerce & Supply Chain",
-};
-
-const items = [
-  { id: 1, icon: <RiceIcon size={24} className="text-amber-600" />, name: "Beras Merah Organik", stock: "1.200 kg", price: "Rp 24.000/kg", status: "Siap Kirim" },
-  { id: 2, icon: <LeafIcon size={24} className="text-emerald-500" />, name: "Jagung Manis Pipil", stock: "850 kg", price: "Rp 8.000/kg", status: "Dalam Proses" },
-  { id: 3, icon: <SpiceIcon size={24} className="text-red-500" />, name: "Kentang Granola", stock: "600 kg", price: "Rp 12.000/kg", status: "Menunggu Sortasi" },
-];
-
 export default function ProdusenDashboard() {
+  const [items, setItems] = useState([
+    { id: 1, icon_type: "rice", name: "Beras Merah Organik", stock: 1200, price: 24000, status: "Siap Kirim" },
+    { id: 2, icon_type: "leaf", name: "Jagung Manis Pipil", stock: 850, price: 8000, status: "Dalam Proses" },
+    { id: 3, icon_type: "spice", name: "Kentang Granola", stock: 600, price: 12000, status: "Menunggu Sortasi" },
+  ]);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newStock, setNewStock] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+  const [newIcon, setNewIcon] = useState("leaf");
+
+  const handleAddCommodity = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName || !newStock || !newPrice) return;
+    const newItem = {
+      id: items.length + 1,
+      icon_type: newIcon,
+      name: newName,
+      stock: parseInt(newStock) || 0,
+      price: parseInt(newPrice) || 0,
+      status: "Siap Kirim"
+    };
+    setItems([...items, newItem]);
+    setNewName("");
+    setNewStock("");
+    setNewPrice("");
+    setShowAddForm(false);
+  };
+
+  const handleUpdateStock = (id: number) => {
+    const amount = prompt("Masukkan jumlah stok baru (kg):");
+    if (amount === null) return;
+    const parsed = parseInt(amount);
+    if (isNaN(parsed)) return;
+    setItems(items.map(item => item.id === id ? { ...item, stock: parsed } : item));
+  };
+
+  const totalHarvest = items.reduce((sum, item) => sum + item.stock, 0);
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8FAFC" }}>
       {/* Sidebar Produsen */}
@@ -55,12 +87,49 @@ export default function ProdusenDashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <div>
             <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <LeafIcon size={28} className="text-secondary" /> Portal Produsen (Pak Budi)
+              <LeafIcon size={28} className="text-secondary" fill="currentColor" /> Portal Produsen (Pak Budi)
             </h1>
             <p className="page-subtitle">Kelola komoditas hasil tani dan distribusi ke agen/marketplace.</p>
           </div>
-          <button className="btn-secondary" style={{ background: "#10B981" }}>+ Tambah Hasil Bumi</button>
+          <button className="btn-secondary" onClick={() => setShowAddForm(!showAddForm)} style={{ background: "#10B981", color: "white" }}>
+            {showAddForm ? "Batal" : "+ Tambah Hasil Bumi"}
+          </button>
         </div>
+
+        {/* Add Form */}
+        {showAddForm && (
+          <form onSubmit={handleAddCommodity} className="card" style={{ marginBottom: "1.5rem", padding: "1.5rem" }}>
+            <h3 className="font-semibold text-base mb-3">Tambah Hasil Panen</h3>
+            <div className="grid-3" style={{ gap: "1rem", marginBottom: "1rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Nama Komoditas</label>
+                <input className="form-input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Misal: Singkong Gajah" required />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Stok (kg)</label>
+                <input className="form-input" type="number" value={newStock} onChange={e => setNewStock(e.target.value)} placeholder="1000" required />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Harga per kg (Rp)</label>
+                <input className="form-input" type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="15000" required />
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Ikon</label>
+                <select className="form-input" value={newIcon} onChange={e => setNewIcon(e.target.value)}>
+                  <option value="leaf">Daun</option>
+                  <option value="rice">Padi/Beras</option>
+                  <option value="spice">Rempah</option>
+                  <option value="grain">Biji-bijian</option>
+                </select>
+              </div>
+              <button type="submit" className="btn-primary" style={{ background: "#10B981", color: "white", marginTop: "1.2rem" }}>
+                Simpan Komoditas
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Stats */}
         <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
@@ -69,7 +138,7 @@ export default function ProdusenDashboard() {
               <LeafIcon size={20} />
             </div>
             <div>
-              <div className="stat-value">2.650 kg</div>
+              <div className="stat-value">{totalHarvest.toLocaleString("id-ID")} kg</div>
               <div className="stat-label">Total Hasil Panen Aktif</div>
             </div>
           </div>
@@ -87,8 +156,8 @@ export default function ProdusenDashboard() {
               <DollarIcon size={20} />
             </div>
             <div>
-              <div className="stat-value">Rp 12.8M</div>
-              <div className="stat-label">Estimasi Omset Bulan Ini</div>
+              <div className="stat-value">Rp {(totalHarvest * 12000).toLocaleString("id-ID")}</div>
+              <div className="stat-label">Estimasi Nilai Stok</div>
             </div>
           </div>
         </div>
@@ -98,19 +167,19 @@ export default function ProdusenDashboard() {
           <h3 className="font-semibold text-lg mb-4">📦 Daftar Komoditas di Gudang</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {items.map((i) => (
-              <div key={i.id} style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", padding: "1rem", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#FFFFFF" }}>
+              <div key={i.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#FFFFFF" }}>
                 <span style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: "#F1F5F9", borderRadius: "8px", marginRight: "1rem" }}>
-                  {i.icon}
+                  <IconRenderer type={i.icon_type} size={24} />
                 </span>
                 <div style={{ flex: 1 }}>
                   <div className="font-semibold">{i.name}</div>
-                  <div className="text-xs text-muted">Stok: <strong>{i.stock}</strong> · Estimasi: {i.price}</div>
+                  <div className="text-xs text-muted">Stok: <strong>{i.stock.toLocaleString("id-ID")} kg</strong> · Harga: Rp {i.price.toLocaleString("id-ID")}/kg</div>
                 </div>
                 <div style={{ marginRight: "2rem" }}>
                   <span className="badge badge-success" style={{ background: "#D1FAE5", color: "#10B981" }}>{i.status}</span>
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button className="btn-ghost" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}>Ubah Stok</button>
+                  <button className="btn-ghost" onClick={() => handleUpdateStock(i.id)} style={{ padding: "0.4rem 0.8/rem", fontSize: "0.8rem" }}>Ubah Stok</button>
                   <button className="btn-ghost" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}>Lacak</button>
                 </div>
               </div>
@@ -121,3 +190,4 @@ export default function ProdusenDashboard() {
     </div>
   );
 }
+

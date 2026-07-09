@@ -50,7 +50,7 @@ export default function AdminPlatformDashboard() {
 
       {/* Main Area */}
       <main style={{ flex: 1, padding: "2rem" }}>
-        <div style={{ display: "flex", justifyBetween: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <div>
             <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <LockIcon size={28} className="text-primary" /> Portal Admin Platform (Dharma)
@@ -105,7 +105,7 @@ export default function AdminPlatformDashboard() {
           <h3 className="font-semibold text-lg mb-4">Aktivitas Platform Terkini</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {activities.map((a, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", padding: "1rem", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#FFFFFF" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", border: "1px solid #E2E8F0", borderRadius: "8px", background: "#FFFFFF" }}>
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--color-text-subtle)", marginRight: "1rem" }}>{a.time}</span>
                 <div style={{ flex: 1 }}>
                   <div className="font-medium text-sm">
