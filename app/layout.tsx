@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lural Commerce & Supply Chain",
+  title: "PasarNusa & Supply Chain",
   description: "Platform perdagangan lokal UMKM dengan rantai pasok cerdas — menghubungkan produsen daerah dengan pembeli seluruh Indonesia.",
 };
 

@@ -5,14 +5,14 @@ import {
 } from "@/components/ProductIcons";
 
 export const metadata: Metadata = {
-  title: "Admin Platform Dashboard — Lural Commerce & Supply Chain",
+  title: "Admin Platform Dashboard — PasarNusa & Supply Chain",
 };
 
 const activities = [
   { time: "10:15", user: "Admin Toko Citra", action: "Menambahkan produk Kopi Arabika Gayo baru", category: "Katalog" },
   { time: "09:42", user: "Produsen Pak Budi", action: "Memperbarui stok Beras Merah sebanyak +500kg", category: "Stok Gudang" },
   { time: "08:12", user: "Sistem Rantai Pasok", action: "Penghitungan ongkos kirim rute Makassar-Jakarta berhasil", category: "Logistik" },
-  { time: "07:30", user: "Admin Toko Dedi", action: "Menyetujui pendaftaran pembeli baru: arif.pembeli@lural.com", category: "Registrasi" },
+  { time: "07:30", user: "Admin Toko Dedi", action: "Menyetujui pendaftaran pembeli baru: arif.pembeli@pasarnusa.com", category: "Registrasi" },
 ];
 
 export default function AdminPlatformDashboard() {
@@ -25,7 +25,7 @@ export default function AdminPlatformDashboard() {
             <rect width="28" height="28" rx="8" fill="#3B82F6" />
             <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
           </svg>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>Lural<span>Platform</span></span>
+          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span>Nusa</span></span>
         </div>
 
         <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", marginBottom: "0.75rem" }}>Sistem Utama</div>

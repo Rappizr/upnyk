@@ -10,7 +10,7 @@ export default function Header() {
           <rect width="28" height="28" rx="8" fill="currentColor" />
           <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" fillOpacity="0.9" />
         </svg>
-        Lural<span>Commerce</span>
+        Pasar<span>Nusa</span>
       </Link>
 
       {/* Search */}

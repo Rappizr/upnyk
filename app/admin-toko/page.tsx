@@ -64,7 +64,7 @@ export default function AdminTokoMasterPage() {
           <div className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-white font-bold" style={{ width: '2rem', height: '2rem', borderRadius: '0.5rem', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>R</div>
             <div>
-              <h1 className="font-bold text-lg leading-tight text-[#1E293B]" style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Rural Commerce</h1>
+              <h1 className="font-bold text-lg leading-tight text-[#1E293B]" style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>PasarNusa</h1>
               <p className="text-xs text-slate-500 font-medium" style={{ fontSize: '0.75rem', color: '#64748B', margin: 0 }}>Admin Toko / UMKM</p>
             </div>
           </div>

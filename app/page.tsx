@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Lural Commerce & Supply Chain — Platform Digitalisasi UMKM Lokal",
+  title: "PasarNusa & Supply Chain — Platform Digitalisasi UMKM Lokal",
   description: "Menghubungkan perdagangan lokal (rural) dengan rantai pasok cerdas B2B & B2C. Modern, Transparan, dan Terintegrasi.",
 };
 
@@ -28,7 +28,7 @@ export default function LandingPage() {
             <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
           </svg>
           <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--color-primary)" }}>
-            Lural<span style={{ color: "var(--color-secondary)" }}>Commerce</span>
+            Pasar<span style={{ color: "var(--color-secondary)" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
@@ -98,7 +98,7 @@ export default function LandingPage() {
             margin: "0 auto 2.5rem",
             lineHeight: 1.6
           }}>
-            Lural Commerce memodernisasi jalur distribusi perdagangan lokal, memastikan transparansi rantai pasok dari produsen pedesaan langsung ke tangan pembeli.
+            PasarNusa memodernisasi jalur distribusi perdagangan lokal, memastikan transparansi rantai pasok dari produsen pedesaan langsung ke tangan pembeli.
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
             <Link href="/login" className="btn-primary" style={{ padding: "0.875rem 2rem", fontSize: "1rem", borderRadius: "var(--radius-md)" }} id="btn-hero-login">
@@ -239,7 +239,7 @@ export default function LandingPage() {
         textAlign: "center"
       }}>
         <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-          <h2 style={{ fontSize: "2.25rem", fontWeight: 800, marginBottom: "1rem" }}>Siap Bergabung dengan Lural Commerce?</h2>
+          <h2 style={{ fontSize: "2.25rem", fontWeight: 800, marginBottom: "1rem" }}>Siap Bergabung dengan PasarNusa?</h2>
           <p style={{ opacity: 0.9, marginBottom: "2rem", fontSize: "1.05rem" }}>
             Akses portal sistem sesuai dengan hak akses peran (role) Anda sekarang dan mulai berkontribusi dalam digitalisasi rantai pasok rural.
           </p>
@@ -281,7 +281,7 @@ export default function LandingPage() {
                 <rect width="28" height="28" rx="8" fill="#3B82F6" />
                 <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
               </svg>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>Lural<span style={{ color: "#10B981" }}>Commerce</span></span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span style={{ color: "#10B981" }}>Nusa</span></span>
             </div>
             <div style={{ display: "flex", gap: "2rem" }}>
               <a href="#" style={{ color: "#94A3B8", textDecoration: "none", fontSize: "0.85rem" }}>Tentang Kami</a>
@@ -290,7 +290,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ borderTop: "1px solid #1E293B", paddingTop: "1.5rem", fontSize: "0.8rem", color: "#64748B" }}>
-            © 2025 Lural Commerce & Supply Chain Platform. Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.
+            © 2025 PasarNusa & Supply Chain Platform. Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.
           </div>
         </div>
       </footer>

@@ -56,7 +56,7 @@ export default function ProdusenDashboard() {
             <rect width="28" height="28" rx="8" fill="#10B981" />
             <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
           </svg>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>Lural<span>Produsen</span></span>
+          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>Pasar<span>Nusa</span></span>
         </div>
 
         <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.75rem" }}>Panel Produsen</div>

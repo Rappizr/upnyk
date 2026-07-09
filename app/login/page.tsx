@@ -168,7 +168,7 @@ export default function LoginPage() {
               <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
             </svg>
             <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-primary)" }}>
-              Lural<span style={{ color: "var(--color-secondary)" }}>Commerce</span>
+              Pasar<span style={{ color: "var(--color-secondary)" }}>Nusa</span>
             </span>
           </div>
 
@@ -176,7 +176,7 @@ export default function LoginPage() {
             Selamat Datang Kembali
           </h2>
           <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem", marginBottom: "2rem" }}>
-            Pilih jenis akun Anda untuk masuk ke sistem Lural Commerce & Supply Chain.
+            Pilih jenis akun Anda untuk masuk ke sistem PasarNusa & Supply Chain.
           </p>
 
           {/* Role Grid */}
