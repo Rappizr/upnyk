@@ -1,29 +1,141 @@
 {
   "products": [
-    { "id": 1, "icon_type": "rice", "name": "Beras Merah Organik", "origin": "Cianjur, Jawa Barat", "price": 28000, "stock": "Tersedia", "rating": 4.9, "category": "Pangan", "reviews": 312 },
-    { "id": 2, "icon_type": "coffee", "name": "Kopi Arabika Gayo", "origin": "Gayo, Aceh", "price": 95000, "stock": "Tersedia", "rating": 4.8, "category": "Minuman", "reviews": 218 },
-    { "id": 3, "icon_type": "spice", "name": "Bawang Merah Brebes", "origin": "Brebes, Jawa Tengah", "price": 18500, "stock": "Terbatas", "rating": 4.7, "category": "Pangan", "reviews": 156 },
-    { "id": 4, "icon_type": "oil", "name": "Minyak Kelapa VCO", "origin": "Minahasa, Sulawesi Utara", "price": 62000, "stock": "Tersedia", "rating": 4.9, "category": "Organik", "reviews": 407 },
-    { "id": 5, "icon_type": "spice", "name": "Cabai Merah Keriting", "origin": "Garut, Jawa Barat", "price": 45000, "stock": "Tersedia", "rating": 4.6, "category": "Rempah", "reviews": 89 },
-    { "id": 6, "icon_type": "coffee", "name": "Cokelat Bubuk Sulawesi", "origin": "Makassar, Sulawesi Selatan", "price": 55000, "stock": "Tersedia", "rating": 4.8, "category": "Olahan", "reviews": 174 },
-    { "id": 7, "icon_type": "oil", "name": "Santan Segar Kelapa", "origin": "Manado, Sulawesi Utara", "price": 12000, "stock": "Terbatas", "rating": 4.5, "category": "Pangan", "reviews": 93 },
-    { "id": 8, "icon_type": "honey", "name": "Madu Hutan Kalimantan", "origin": "Pontianak, Kalimantan Barat", "price": 135000, "stock": "Tersedia", "rating": 5.0, "category": "Organik", "reviews": 521 }
+    {
+      "id": 1,
+      "icon_type": "rice",
+      "name": "Beras Merah Organik",
+      "origin": "Cianjur, Jawa Barat",
+      "price": 28000,
+      "stock": "Tersedia",
+      "rating": 4.9,
+      "category": "Pangan",
+      "reviews": 312
+    },
+    {
+      "id": 2,
+      "icon_type": "coffee",
+      "name": "Kopi Arabika Gayo",
+      "origin": "Gayo, Aceh",
+      "price": 95000,
+      "stock": "Tersedia",
+      "rating": 4.8,
+      "category": "Minuman",
+      "reviews": 218
+    },
+    {
+      "id": 3,
+      "icon_type": "spice",
+      "name": "Bawang Merah Brebes",
+      "origin": "Brebes, Jawa Tengah",
+      "price": 18500,
+      "stock": "Terbatas",
+      "rating": 4.7,
+      "category": "Pangan",
+      "reviews": 156
+    },
+    {
+      "id": 4,
+      "icon_type": "oil",
+      "name": "Minyak Kelapa VCO",
+      "origin": "Minahasa, Sulawesi Utara",
+      "price": 62000,
+      "stock": "Tersedia",
+      "rating": 4.9,
+      "category": "Organik",
+      "reviews": 407
+    },
+    {
+      "id": 5,
+      "icon_type": "spice",
+      "name": "Cabai Merah Keriting",
+      "origin": "Garut, Jawa Barat",
+      "price": 45000,
+      "stock": "Tersedia",
+      "rating": 4.6,
+      "category": "Rempah",
+      "reviews": 89
+    },
+    {
+      "id": 6,
+      "icon_type": "coffee",
+      "name": "Cokelat Bubuk Sulawesi",
+      "origin": "Makassar, Sulawesi Selatan",
+      "price": 55000,
+      "stock": "Tersedia",
+      "rating": 4.8,
+      "category": "Olahan",
+      "reviews": 174
+    },
+    {
+      "id": 7,
+      "icon_type": "oil",
+      "name": "Santan Segar Kelapa",
+      "origin": "Manado, Sulawesi Utara",
+      "price": 12000,
+      "stock": "Terbatas",
+      "rating": 4.5,
+      "category": "Pangan",
+      "reviews": 93
+    },
+    {
+      "id": 8,
+      "icon_type": "honey",
+      "name": "Madu Hutan Kalimantan",
+      "origin": "Pontianak, Kalimantan Barat",
+      "price": 135000,
+      "stock": "Tersedia",
+      "rating": 5,
+      "category": "Organik",
+      "reviews": 521
+    }
   ],
   "orders": [
     {
       "id": "ORD-20250701-001",
-      "status": "Dikirim",
+      "status": "Selesai",
       "date": "01 Jul 2025",
       "supplier": "Koperasi Tani Maju",
-      "items": [{ "icon_type": "rice", "name": "Beras Merah Organik 5kg", "qty": 2, "price": 140000 }],
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik 5kg",
+          "qty": 2,
+          "price": 140000
+        }
+      ],
       "total": 280000,
       "timeline": [
-        { "label": "Pesanan Dibuat", "time": "01 Jul, 08:12", "done": true },
-        { "label": "Pembayaran Dikonfirmasi", "time": "01 Jul, 08:35", "done": true },
-        { "label": "Diproses Supplier", "time": "01 Jul, 10:00", "done": true },
-        { "label": "Dikirim Ekspedisi", "time": "02 Jul, 09:15", "done": true },
-        { "label": "Di Kurir Lokal", "time": "03 Jul, 07:30", "done": false, "active": true },
-        { "label": "Tiba di Tujuan", "time": "Estimasi 03 Jul", "done": false }
+        {
+          "label": "Pesanan Dibuat",
+          "time": "01 Jul, 08:12",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "01 Jul, 08:35",
+          "done": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "01 Jul, 10:00",
+          "done": true
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "18.43",
+          "done": true
+        },
+        {
+          "label": "Di Kurir Lokal",
+          "time": "18.43",
+          "done": true,
+          "active": true
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "Estimasi 03 Jul",
+          "done": false
+        }
       ]
     },
     {
@@ -31,7 +143,14 @@
       "status": "Selesai",
       "date": "25 Jun 2025",
       "supplier": "UMKM Rempah Nusantara",
-      "items": [{ "icon_type": "coffee", "name": "Kopi Arabika Gayo 250g", "qty": 3, "price": 95000 }],
+      "items": [
+        {
+          "icon_type": "coffee",
+          "name": "Kopi Arabika Gayo 250g",
+          "qty": 3,
+          "price": 95000
+        }
+      ],
       "total": 285000,
       "timeline": []
     },
@@ -40,24 +159,99 @@
       "status": "Belum Dibayar",
       "date": "20 Jun 2025",
       "supplier": "Agro Organik Sentosa",
-      "items": [{ "icon_type": "honey", "name": "Madu Hutan 500g", "qty": 1, "price": 135000 }],
+      "items": [
+        {
+          "icon_type": "honey",
+          "name": "Madu Hutan 500g",
+          "qty": 1,
+          "price": 135000
+        }
+      ],
       "total": 135000,
       "timeline": []
     }
   ],
   "wishlist": [
-    { "id": 1, "product_id": 8, "saved_at": "2 hari lalu", "price_dropped": true },
-    { "id": 2, "product_id": 2, "saved_at": "5 hari lalu", "price_dropped": false },
-    { "id": 3, "product_id": 3, "saved_at": "1 minggu lalu", "price_dropped": true },
-    { "id": 4, "product_id": 4, "saved_at": "2 minggu lalu", "price_dropped": false }
+    {
+      "id": 1,
+      "product_id": 8,
+      "saved_at": "2 hari lalu",
+      "price_dropped": true
+    },
+    {
+      "id": 2,
+      "product_id": 2,
+      "saved_at": "5 hari lalu",
+      "price_dropped": false
+    },
+    {
+      "id": 3,
+      "product_id": 3,
+      "saved_at": "1 minggu lalu",
+      "price_dropped": true
+    },
+    {
+      "id": 4,
+      "product_id": 4,
+      "saved_at": "2 minggu lalu",
+      "price_dropped": false
+    }
   ],
   "notifications": [
-    { "id": 1, "type": "Transaksi", "icon_type": "package", "title": "Pesanan Sedang Dikirim!", "body": "Pesanan ORD-20250701-001 kini ada di tangan kurir lokal. Estimasi tiba hari ini.", "time": "30 menit lalu", "unread": true },
-    { "id": 2, "type": "Promo", "icon_type": "star", "title": "Voucher Cashback 15%", "body": "Dapatkan cashback 15% untuk pembelian produk organik minimum Rp 200.000. Berlaku s/d 10 Jul.", "time": "2 jam lalu", "unread": true },
-    { "id": 3, "type": "Transaksi", "icon_type": "package", "title": "Pembayaran Dikonfirmasi", "body": "Pembayaran untuk pesanan ORD-20250701-001 sebesar Rp 280.000 berhasil dikonfirmasi.", "time": "5 jam lalu", "unread": true },
-    { "id": 4, "type": "Promo", "icon_type": "leaf", "title": "Flash Sale Produk Lokal", "body": "Flash sale dimulai! Diskon hingga 40% untuk produk pilihan dari Koperasi Tani Maju.", "time": "Kemarin", "unread": false },
-    { "id": 5, "type": "Keamanan", "icon_type": "lock", "title": "Login dari Perangkat Baru", "body": "Terdeteksi login dari perangkat baru (Chrome, Windows). Jika bukan Anda, segera ubah kata sandi.", "time": "2 hari lalu", "unread": false },
-    { "id": 6, "type": "Transaksi", "icon_type": "star", "title": "Ulasan Anda Membantu!", "body": "Ulasan Anda untuk Kopi Arabika Gayo telah dipublikasikan dan membantu 47 pembeli lain.", "time": "3 hari lalu", "unread": false }
+    {
+      "id": 1,
+      "type": "Transaksi",
+      "icon_type": "package",
+      "title": "Pesanan Sedang Dikirim!",
+      "body": "Pesanan ORD-20250701-001 kini ada di tangan kurir lokal. Estimasi tiba hari ini.",
+      "time": "30 menit lalu",
+      "unread": false
+    },
+    {
+      "id": 2,
+      "type": "Promo",
+      "icon_type": "star",
+      "title": "Voucher Cashback 15%",
+      "body": "Dapatkan cashback 15% untuk pembelian produk organik minimum Rp 200.000. Berlaku s/d 10 Jul.",
+      "time": "2 jam lalu",
+      "unread": false
+    },
+    {
+      "id": 3,
+      "type": "Transaksi",
+      "icon_type": "package",
+      "title": "Pembayaran Dikonfirmasi",
+      "body": "Pembayaran untuk pesanan ORD-20250701-001 sebesar Rp 280.000 berhasil dikonfirmasi.",
+      "time": "5 jam lalu",
+      "unread": false
+    },
+    {
+      "id": 4,
+      "type": "Promo",
+      "icon_type": "leaf",
+      "title": "Flash Sale Produk Lokal",
+      "body": "Flash sale dimulai! Diskon hingga 40% untuk produk pilihan dari Koperasi Tani Maju.",
+      "time": "Kemarin",
+      "unread": false
+    },
+    {
+      "id": 5,
+      "type": "Keamanan",
+      "icon_type": "lock",
+      "title": "Login dari Perangkat Baru",
+      "body": "Terdeteksi login dari perangkat baru (Chrome, Windows). Jika bukan Anda, segera ubah kata sandi.",
+      "time": "2 hari lalu",
+      "unread": false
+    },
+    {
+      "id": 6,
+      "type": "Transaksi",
+      "icon_type": "star",
+      "title": "Ulasan Anda Membantu!",
+      "body": "Ulasan Anda untuk Kopi Arabika Gayo telah dipublikasikan dan membantu 47 pembeli lain.",
+      "time": "3 hari lalu",
+      "unread": false
+    }
   ],
   "profile": {
     "name": "Arif Kurniawan",
@@ -65,12 +259,32 @@
     "phone": "+62 812-3456-7890",
     "bio": "Pengusaha UMKM yang aktif mencari supplier terpercaya untuk kebutuhan bisnis kuliner.",
     "addresses": [
-      { "id": 1, "label": "Rumah", "address": "Jl. Merdeka No. 45, RT 03/RW 07, Kel. Sukamaju, Kec. Cikarang Barat", "city": "Bekasi, Jawa Barat 17520", "default": true },
-      { "id": 2, "label": "Kantor", "address": "Menara BRI Lantai 12, Jl. Jenderal Sudirman Kav. 44-46", "city": "Jakarta Selatan, DKI Jakarta 12930", "default": false }
+      {
+        "id": 1,
+        "label": "Rumah",
+        "address": "Jl. Merdeka No. 45, RT 03/RW 07, Kel. Sukamaju, Kec. Cikarang Barat",
+        "city": "Bekasi, Jawa Barat 17520",
+        "default": true
+      },
+      {
+        "id": 2,
+        "label": "Kantor",
+        "address": "Menara BRI Lantai 12, Jl. Jenderal Sudirman Kav. 44-46",
+        "city": "Jakarta Selatan, DKI Jakarta 12930",
+        "default": false
+      }
     ],
     "payment_methods": [
-      { "name": "GoPay", "detail": "0812-3456-7890", "default": true },
-      { "name": "Bank BCA", "detail": "••••  ••••  ••••  1234", "default": false }
+      {
+        "name": "GoPay",
+        "detail": "0812-3456-7890",
+        "default": true
+      },
+      {
+        "name": "Bank BCA",
+        "detail": "••••  ••••  ••••  1234",
+        "default": false
+      }
     ]
   }
 }

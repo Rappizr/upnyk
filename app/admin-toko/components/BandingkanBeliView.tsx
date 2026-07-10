@@ -2,9 +2,30 @@
 
 import React from 'react';
 import { Star, MapPin, ArrowRight, ShoppingCart } from 'lucide-react';
+import { create } from 'zustand';
 
-export default function BandingkanBeliPage() {
-  const komparasiBahanBaku = [
+// =========================================================================
+// 1. STRUKTUR STORE ZUSTAND GLOBAL (LOGIKA PASOKAN BAHAN BAKU)
+// =========================================================================
+interface KomparasiItem {
+  id: number;
+  komoditas: string;
+  produsen: string;
+  harga: number;
+  jarak: string;
+  rating: number;
+  stokValue: number; // Nilai angka asli untuk kalkulasi potongan stok
+  stokUnit: string;  // Satuan berat/jumlah (Ton/Kg)
+  rekomendasi: string | null;
+}
+
+interface KomparasiState {
+  komparasiBahanBaku: KomparasiItem[];
+  beliKomoditas: (id: number) => void;
+}
+
+const useKomparasiStore = create<KomparasiState>((set) => ({
+  komparasiBahanBaku: [
     {
       id: 1,
       komoditas: "Beras Mentik Wangi (Per Kg)",
@@ -12,7 +33,8 @@ export default function BandingkanBeliPage() {
       harga: 13200,
       jarak: "0.4 Km",
       rating: 4.9,
-      stok: "1.2 Ton",
+      stokValue: 1.2,
+      stokUnit: "Ton",
       rekomendasi: "Harga & Jarak Terbaik"
     },
     {
@@ -22,7 +44,8 @@ export default function BandingkanBeliPage() {
       harga: 13500,
       jarak: "1.8 Km",
       rating: 4.7,
-      stok: "800 Kg",
+      stokValue: 800,
+      stokUnit: "Kg",
       rekomendasi: null
     },
     {
@@ -32,10 +55,48 @@ export default function BandingkanBeliPage() {
       harga: 12900,
       jarak: "4.5 Km",
       rating: 4.5,
-      stok: "2.5 Ton",
+      stokValue: 2.5,
+      stokUnit: "Ton",
       rekomendasi: "Termurah (Ongkir Menyesuaikan)"
     }
-  ];
+  ],
+
+  // Aksi interaktif pembelian langsung (Mengurangi stok secara real-time)
+  beliKomoditas: (id) =>
+    set((state) => {
+      const itemTerpilih = state.komparasiBahanBaku.find((item) => item.id === id);
+      if (!itemTerpilih) return {};
+
+      if (itemTerpilih.stokValue <= 0) {
+        alert(`Maaf, pasokan dari ${itemTerpilih.produsen} sedang habis!`);
+        return {};
+      }
+
+      alert(`Pesanan pembelian pasokan ke "${itemTerpilih.produsen}" berhasil dibuat! Invoice otomatis terbit di menu penjualan.`);
+
+      // Simulasi pengurangan stok harian mitra sebanyak 50 unit (Kg) atau 0.05 (Ton)
+      return {
+        komparasiBahanBaku: state.komparasiBahanBaku.map((item) => {
+          if (item.id === id) {
+            const pengurangan = item.stokUnit === 'Ton' ? 0.05 : 50;
+            const stokBaru = Math.max(0, item.stokValue - pengurangan);
+            return {
+              ...item,
+              stokValue: parseFloat(stokBaru.toFixed(2))
+            };
+          }
+          return item;
+        })
+      };
+    })
+}));
+
+// =========================================================================
+// 2. KOMPONEN UI UTAMA
+// =========================================================================
+export default function BandingkanBeliPage() {
+  // Konsumsi memori state global dari store hulu
+  const { komparasiBahanBaku, beliKomoditas } = useKomparasiStore();
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -48,7 +109,7 @@ export default function BandingkanBeliPage() {
         <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50" style={{ padding: '1.25rem', borderBottom: '1px solid #F1F5F9', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 className="font-bold text-base text-[#1E293B]" style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Analisis Komparasi Pasokan: Beras Mentik Wangi</h3>
           <span className="text-xs bg-blue-50 text-[#2563EB] font-semibold px-2.5 py-1 rounded-lg border border-blue-100" style={{ fontSize: '0.75rem', fontWeight: 600, backgroundColor: '#EFF6FF', color: '#2563EB', padding: '0.25rem 0.625rem', borderRadius: '0.5rem', border: '1px solid #BFDBFE' }}>
-            3 Produsen Ditemukan
+            {komparasiBahanBaku.length} Produsen Ditemukan
           </span>
         </div>
 
@@ -90,11 +151,31 @@ export default function BandingkanBeliPage() {
                       <Star className="w-3.5 h-3.5 fill-current" style={{ width: '0.875rem', height: '0.875rem' }} /> {item.rating}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem', color: '#475569', fontWeight: 500 }}>{item.stok}</td>
+                  <td style={{ padding: '1rem', color: '#475569', fontWeight: 700 }}>
+                    {item.stokValue === 0 ? (
+                      <span style={{ color: '#EF4444' }}>Habis</span>
+                    ) : (
+                      `${item.stokValue.toLocaleString('id-ID')} ${item.stokUnit}`
+                    )}
+                  </td>
                   <td style={{ padding: '1rem', paddingRight: '1.5rem', textAlign: 'right' }}>
                     <button 
+                      onClick={() => beliKomoditas(item.id)}
+                      disabled={item.stokValue <= 0}
                       className="bg-[#10B981] hover:bg-emerald-600 text-white font-semibold transition-colors shadow-sm"
-                      style={{ backgroundColor: '#10B981', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}
+                      style={{ 
+                        backgroundColor: item.stokValue <= 0 ? '#CBD5E1' : '#10B981', 
+                        color: '#ffffff', 
+                        padding: '0.5rem 1rem', 
+                        borderRadius: '0.75rem', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 600, 
+                        border: 'none', 
+                        cursor: item.stokValue <= 0 ? 'not-allowed' : 'pointer', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.375rem' 
+                      }}
                     >
                       <ShoppingCart className="w-3.5 h-3.5" style={{ width: '0.875rem', height: '0.875rem' }} /> Beli Langsung
                     </button>

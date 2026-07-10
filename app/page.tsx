@@ -1,36 +1,83 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+'use client';
 
-export const metadata: Metadata = {
-  title: "PasarNusa & Supply Chain — Platform Digitalisasi UMKM Lokal",
-  description: "Menghubungkan perdagangan lokal (rural) dengan rantai pasok cerdas B2B & B2C. Modern, Transparan, dan Terintegrasi.",
-};
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function LandingPage() {
+  // 1. Array URL Gambar Latar Belakang Baru (Stabil & Beresolusi Tinggi)
+  const bgImages = [
+    "https://images.unsplash.com/photo-1621274403997-37aae184f494?auto=format&fit=crop&q=80&w=1920", // Petani / Padi Nusantara
+    "https://images.unsplash.com/photo-1617696618050-b0fef0c666af?auto=format&fit=crop&q=80&w=1920", // Pengrajin Batik Indonesia
+    "https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&q=80&w=1920", // Perakitan Elektronik UMKM
+    "https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=1920"  // Pasar Tradisional Nusantara
+  ];
+
+  const [currentBg, setCurrentBg] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+useEffect(() => {
+  const handleScroll = () => {
+    setIsScrolled(window.scrollY > 50);
+  };
+
+  window.addEventListener("scroll", handleScroll);
+
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBg((prev) => (prev + 1) % bgImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [bgImages.length]);
+
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans)", overflowX: "hidden" }}>
+      
       {/* Navbar */}
-      <header style={{
-        background: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--color-border)",
-        padding: "1rem 3rem",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-      }}>
+<header
+  style={{
+    background: isScrolled
+      ? "rgba(255,255,255,0.95)"
+      : "transparent",
+    backdropFilter: isScrolled ? "blur(15px)" : "none",
+    borderBottom: isScrolled
+      ? "1px solid rgba(0,0,0,0.08)"
+      : "none",
+    boxShadow: isScrolled
+      ? "0 4px 20px rgba(0,0,0,0.08)"
+      : "none",
+    transition: "all .35s ease",
+    padding: "1rem 3rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    zIndex: 999,
+  }}
+>
+        {/* === BAGIAN LOGO HEADER === */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#2563EB" />
-            <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
-          </svg>
+    
+<img
+  src="/logo.png"
+  alt="Logo Icon"
+  style={{
+    height: "50px",
+    width: "auto",
+    objectFit: "contain",
+    borderRadius: "8px"
+  }}
+/>
           <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--color-primary)" }}>
             Pasar<span style={{ color: "var(--color-secondary)" }}>Nusa</span>
           </span>
         </div>
+        
         <nav style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
           <a href="#fitur" style={{ textDecoration: "none", color: "var(--color-text-muted)", fontSize: "0.9rem", fontWeight: 500 }}>Fitur Utama</a>
           <a href="#ekosistem" style={{ textDecoration: "none", color: "var(--color-text-muted)", fontSize: "0.9rem", fontWeight: 500 }}>Rantai Pasok</a>
@@ -46,75 +93,111 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section style={{
-        padding: "6rem 3rem 5rem",
-        textAlign: "center",
-        position: "relative",
-        background: "linear-gradient(180deg, #EFF6FF 0%, #F8FAFC 100%)"
-      }}>
-        {/* Decorative elements */}
-        <div style={{
-          position: "absolute",
-          top: "10%",
-          left: "5%",
-          width: "200px",
-          height: "200px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(30px)",
-        }} />
-        <div style={{
-          position: "absolute",
-          bottom: "10%",
-          right: "5%",
-          width: "250px",
-          height: "250px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(37,99,235,0.06) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(40px)",
-        }} />
-
+<section
+  style={{
+    minHeight: "89vh",
+    padding: "8rem 3rem 7rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    position: "relative",
+    overflow: "hidden",
+  }}
+>
+        
+        {bgImages.map((img, index) => (
+          <div
+            key={index}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('${img}')`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundAttachment: "fixed",
+              opacity: currentBg === index ? 1 : 0,
+              transition: "opacity 1.5s ease-in-out",
+              zIndex: 0
+            }}
+          />
+        ))}
+   
         <div style={{ maxWidth: "800px", margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <span className="badge badge-info" style={{ marginBottom: "1.25rem", padding: "0.4rem 0.9rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+          <span className="badge badge-info" style={{ 
+            marginBottom: "1.5rem", 
+            padding: "0.5rem 1rem", 
+            fontSize: "0.85rem", 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: "0.4rem",
+            backgroundColor: "rgba(59, 130, 246, 0.2)",
+            color: "#60A5FA",
+            border: "1px solid rgba(59, 130, 246, 0.3)",
+            backdropFilter: "blur(4px)"
+          }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
             Digitalisasi Perdagangan Rural & UMKM Lokal
           </span>
+          
           <h1 style={{
-            fontSize: "3.25rem",
+            fontSize: "3.5rem",
             fontWeight: 800,
-            color: "var(--color-text)",
+            color: "#FFFFFF",
             lineHeight: 1.2,
             marginBottom: "1.25rem",
             letterSpacing: "-0.02em"
           }}>
-            Hubungkan Komoditas Daerah dengan <span style={{ color: "var(--color-primary)" }}>Rantai Pasok Cerdas</span>
+            Hubungkan Komoditas Daerah dengan <span style={{ color: "#38BDF8" }}>Rantai Pasok Cerdas</span>
           </h1>
+          
           <p style={{
             fontSize: "1.15rem",
-            color: "var(--color-text-muted)",
+            color: "#E2E8F0",
             maxWidth: "640px",
             margin: "0 auto 2.5rem",
             lineHeight: 1.6
           }}>
             PasarNusa memodernisasi jalur distribusi perdagangan lokal, memastikan transparansi rantai pasok dari produsen pedesaan langsung ke tangan pembeli.
           </p>
+          
           <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
-            <Link href="/login" className="btn-primary" style={{ padding: "0.875rem 2rem", fontSize: "1rem", borderRadius: "var(--radius-md)" }} id="btn-hero-login">
+            <Link href="/login" className="btn-primary" style={{ padding: "0.875rem 2rem", fontSize: "1rem", borderRadius: "var(--radius-md)", backgroundColor: "#2563EB", color: "#FFFFFF", border: "none" }} id="btn-hero-login">
               🚀 Masuk ke Platform
             </Link>
-            <a href="#fitur" className="btn-ghost" style={{ padding: "0.875rem 2rem", fontSize: "1rem", borderRadius: "var(--radius-md)" }} id="btn-hero-learn">
+            <a href="#fitur" className="btn-ghost" style={{ padding: "0.875rem 2rem", fontSize: "1rem", borderRadius: "var(--radius-md)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.3)", backgroundColor: "rgba(255,255,255,0.1)", backdropFilter: "blur(4px)" }} id="btn-hero-learn">
               Pelajari Fitur →
             </a>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "3rem" }}>
+            {bgImages.map((_, idx) => (
+              <div 
+                key={idx} 
+                onClick={() => setCurrentBg(idx)}
+                style={{
+                  width: "8px", 
+                  height: "8px", 
+                  borderRadius: "50%", 
+                  backgroundColor: currentBg === idx ? "#38BDF8" : "rgba(255,255,255,0.3)",
+                  cursor: "pointer",
+                  transition: "background-color 0.3s ease"
+                }} 
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Stats Quick View */}
-      <section style={{ padding: "0 3rem 4rem", marginTop: "-2rem", position: "relative", zIndex: 2 }}>
+      {/* Quick Stats Grid View */}
+      <section style={{ padding: "0 3rem 4rem", marginTop: "-3rem", position: "relative", zIndex: 2 }}>
         <div className="stats-grid" style={{ maxWidth: "1000px", margin: "0 auto", gridTemplateColumns: "repeat(3, 1fr)" }}>
-          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}>
+          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", backgroundColor: "#FFFFFF" }}>
             <div style={{ color: "var(--color-primary)", marginBottom: "0.75rem" }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -124,11 +207,11 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <div className="stat-value">2.400+</div>
-              <div className="stat-label">Produsen & UMKM Lokal</div>
+              <div className="stat-value" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>2.400+</div>
+              <div className="stat-label" style={{ fontSize: "0.875rem", color: "#64748B", fontWeight: 500 }}>Produsen & UMKM Lokal</div>
             </div>
           </div>
-          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}>
+          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", backgroundColor: "#FFFFFF" }}>
             <div style={{ color: "var(--color-secondary)", marginBottom: "0.75rem" }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
@@ -138,25 +221,24 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <div className="stat-value">Real-Time</div>
-              <div className="stat-label">Pelacakan Rantai Pasok</div>
+              <div className="stat-value" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>Real-Time</div>
+              <div className="stat-label" style={{ fontSize: "0.875rem", color: "#64748B", fontWeight: 500 }}>Pelacakan Rantai Pasok</div>
             </div>
           </div>
-          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)" }}>
+          <div className="stat-card" style={{ padding: "1.75rem", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-md)", backgroundColor: "#FFFFFF" }}>
             <div style={{ color: "var(--color-alert)", marginBottom: "0.75rem" }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
             <div>
-              <div className="stat-value">100% Aman</div>
-              <div className="stat-label">Verifikasi & Transaksi B2B/B2C</div>
+              <div className="stat-value" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>100% Aman</div>
+              <div className="stat-label" style={{ fontSize: "0.875rem", color: "#64748B", fontWeight: 500 }}>Verifikasi & Transaksi B2B/B2C</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
       <section id="fitur" style={{ padding: "5rem 3rem", background: "#FFFFFF", borderTop: "1px solid var(--color-border)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
@@ -231,13 +313,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section style={{
-        padding: "5rem 3rem",
-        background: "linear-gradient(135deg, var(--color-primary) 0%, #1D4ED8 100%)",
-        color: "#FFFFFF",
-        textAlign: "center"
-      }}>
+<section
+  style={{
+    padding: "6rem 3rem",
+    position: "relative",
+    overflow: "hidden",
+
+backgroundImage: `
+linear-gradient(
+rgba(15,23,42,.75),
+rgba(15,23,42,.75)
+),
+url("https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&w=1920&q=80")
+`,
+
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
+
+    color: "#fff",
+    textAlign: "center",
+  }}
+>
         <div style={{ maxWidth: "600px", margin: "0 auto" }}>
           <h2 style={{ fontSize: "2.25rem", fontWeight: 800, marginBottom: "1rem" }}>Siap Bergabung dengan PasarNusa?</h2>
           <p style={{ opacity: 0.9, marginBottom: "2rem", fontSize: "1.05rem" }}>
@@ -266,7 +364,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer style={{
         padding: "3rem",
         background: "#0F172A",
@@ -276,21 +373,29 @@ export default function LandingPage() {
       }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2rem" }}>
+            
+            {/* === BAGIAN LOGO FOOTER === */}
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="8" fill="#3B82F6" />
-                <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
-              </svg>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span style={{ color: "#10B981" }}>Nusa</span></span>
+              <img 
+                src="/logo.png" 
+                alt="Logo Icon" 
+                style={{ height: "24px", width: "auto", objectFit: "contain", borderRadius: "4px" }} 
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF" }}>
+                Pasar<span style={{ color: "#10B981" }}>Nusa</span>
+              </span>
             </div>
+
             <div style={{ display: "flex", gap: "2rem" }}>
+              <a href="#" style={{ color: "#94A3B8", textDecoration: "none", fontSize: "0.85rem" }}>Pengembang</a>
               <a href="#" style={{ color: "#94A3B8", textDecoration: "none", fontSize: "0.85rem" }}>Tentang Kami</a>
               <a href="#" style={{ color: "#94A3B8", textDecoration: "none", fontSize: "0.85rem" }}>Kontak Mitra</a>
               <a href="#" style={{ color: "#94A3B8", textDecoration: "none", fontSize: "0.85rem" }}>Kebijakan Privasi</a>
             </div>
           </div>
           <div style={{ borderTop: "1px solid #1E293B", paddingTop: "1.5rem", fontSize: "0.8rem", color: "#64748B" }}>
-            © 2025 PasarNusa & Supply Chain Platform. Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.
+            © 2026 PasarNusa & Supply Chain Platform. Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.
           </div>
         </div>
       </footer>

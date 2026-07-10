@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Image, Trash2, X, ShoppingBag } from 'lucide-react';
+import { Plus, Image, Trash2, Edit3, X, ShoppingBag } from 'lucide-react';
+import { create } from 'zustand';
 
+// =========================================================================
+// 1. STRUKTUR STORE ZUSTAND GLOBAL (LOGIKA UTAMA MANAJEMEN KATALOG)
+// =========================================================================
 interface Produk {
   id: number;
   nama: string;
@@ -10,61 +14,106 @@ interface Produk {
   stok: number;
   kategori: string;
   deskripsi: string;
+  images: string[]; // Menampung array 5 slot gambar [utama, sub1, sub2, sub3, sub4]
 }
 
-export default function KelolaProdukView() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [daftarProduk, setDaftarProduk] = useState<Produk[]>([
-    {
-      id: 1,
-      nama: "Beras Mentik Wangi Premium",
-      harga: 14500,
-      stok: 350,
-      kategori: "Pertanian / Hasil Bumi",
-      deskripsi: "Beras organik hasil panen Kelompok Tani Lestari kualitas super."
-    },
-    {
-      id: 2,
-      nama: "Madu Hutan Klanceng Pure",
-      harga: 85000,
-      stok: 14,
-      kategori: "Kuliner / Cemilan",
-      deskripsi: "Madu murni asli dari budidaya lebah hutan desa."
-    }
-  ]);
+interface KatalogState {
+  daftarProduk: Produk[];
+  tambahProduk: (produk: Produk) => void;
+  editProduk: (id: number, updatedProduk: Omit<Produk, 'id'>) => void;
+  hapusProduk: (id: number) => void;
+}
 
-  // State Form
+const useKatalogStore = create<KatalogState>((set) => ({
+  // Murni kosong tanpa data dummy bawaan
+  daftarProduk: [],
+
+  tambahProduk: (produk) => 
+    set((state) => ({ daftarProduk: [produk, ...state.daftarProduk] })),
+
+  editProduk: (id, updatedProduk) =>
+    set((state) => ({
+      daftarProduk: state.daftarProduk.map((p) => p.id === id ? { ...p, ...updatedProduk } : p)
+    })),
+
+  hapusProduk: (id) =>
+    set((state) => ({
+      daftarProduk: state.daftarProduk.filter((p) => p.id !== id)
+    })),
+}));
+
+// =========================================================================
+// 2. KOMPONEN UI UTAMA
+// =========================================================================
+export default function KelolaProdukView() {
+  // Konsumsi data katalog langsung dari Zustand Store global
+  const { daftarProduk, tambahProduk, editProduk, hapusProduk } = useKatalogStore();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'tambah' | 'edit'>('tambah');
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  // State Form Dinamis
   const [nama, setNama] = useState('');
   const [harga, setHarga] = useState('');
   const [stok, setStok] = useState('');
   const [kategori, setKategori] = useState('Pertanian / Hasil Bumi');
   const [deskripsi, setDeskripsi] = useState('');
+  const [formImages, setFormImages] = useState<string[]>(["", "", "", "", ""]);
 
-  const handleTambahProduk = (e: React.FormEvent) => {
+  const openTambahModal = () => {
+    setModalMode('tambah');
+    setEditingId(null);
+    setNama('');
+    setHarga('');
+    setStok('');
+    setKategori('Pertanian / Hasil Bumi');
+    setDeskripsi('');
+    setFormImages(["", "", "", "", ""]); 
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (produk: Produk) => {
+    setModalMode('edit');
+    setEditingId(produk.id);
+    setNama(produk.nama);
+    setHarga(produk.harga.toString());
+    setStok(produk.stok.toString());
+    setKategori(produk.kategori);
+    setDeskripsi(produk.deskripsi);
+    setFormImages(produk.images || ["", "", "", "", ""]);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProduk = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nama || !harga || !stok) return;
 
-    const produkBaru: Produk = {
-      id: Date.now(),
+    const dataPayload = {
       nama,
       harga: Number(harga),
       stok: Number(stok),
       kategori,
-      deskripsi
+      deskripsi,
+      images: formImages
     };
 
-    setDaftarProduk([produkBaru, ...daftarProduk]);
-    
-    // Reset & Close Modal
-    setNama('');
-    setHarga('');
-    setStok('');
-    setDeskripsi('');
+    if (modalMode === 'tambah') {
+      tambahProduk({
+        id: Date.now(),
+        ...dataPayload
+      });
+    } else if (modalMode === 'edit' && editingId !== null) {
+      editProduk(editingId, dataPayload);
+    }
+
     setIsModalOpen(false);
   };
 
-  const handleHapusProduk = (id: number) => {
-    setDaftarProduk(daftarProduk.filter(p => p.id !== id));
+  const handleHapusAction = (id: number, namaProduk: string) => {
+    if(confirm(`Apakah Anda yakin ingin menghapus "${namaProduk}" dari katalog live?`)) {
+      hapusProduk(id);
+    }
   };
 
   return (
@@ -80,7 +129,7 @@ export default function KelolaProdukView() {
           <p className="text-xs text-slate-400 mt-0.5" style={{ fontSize: '0.75rem', color: '#64748B', margin: 0, marginTop: '0.25rem' }}>Produk aktif yang terdaftar dan disinkronisasikan langsung ke halaman pembeli.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={openTambahModal}
           className="bg-[#2563EB] hover:bg-blue-700 text-white font-semibold transition-all shadow-md shadow-blue-100 shrink-0"
           style={{ backgroundColor: '#2563EB', color: '#ffffff', padding: '0.625rem 1.25rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
@@ -88,114 +137,144 @@ export default function KelolaProdukView() {
         </button>
       </div>
 
-      {/* KATALOG GRID (FULL WIDTH & LEGA) - Dikunci pakai CSS Grid murni */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', width: '100%' }}>
-        {daftarProduk.map((produk) => (
-          <div 
-            key={produk.id} 
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow"
-            style={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #E2E8F0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
-          >
-            <div className="h-40 bg-slate-100 flex items-center justify-center text-slate-300 relative" style={{ height: '10rem', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <Image className="w-12 h-12" style={{ width: '3rem', height: '3rem', color: '#CBD5E1' }} />
-              <span 
-                className="absolute text-white text-[10px] font-bold"
-                style={{ position: 'absolute', top: '0.75rem', left: '0.75rem', backgroundColor: '#2563EB', padding: '0.25rem 0.625rem', borderRadius: '0.5rem', fontSize: '10px', fontWeight: 700 }}
-              >
-                {produk.kategori}
-              </span>
-            </div>
-            
-            <div className="p-5 flex-1 flex flex-col justify-between" style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <h4 className="font-bold text-base text-[#1E293B] truncate" style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>{produk.nama}</h4>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2 min-h-[2rem]" style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.25rem', margin: 0, minHeight: '2rem' }}>{produk.deskripsi || 'Tidak ada deskripsi produk.'}</p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center" style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>Harga Jual</p>
-                  <p className="text-base font-extrabold text-[#10B981]" style={{ fontSize: '1rem', fontWeight: 800, color: '#10B981', margin: 0, marginTop: '0.125rem' }}>Rp {produk.harga.toLocaleString('id-ID')}</p>
-                </div>
-                <div className="text-right" style={{ textAlign: 'right' }}>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" style={{ fontSize: '10px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>Stok Toko</p>
-                  <p className="text-sm font-bold text-[#1E293B]" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1E293B', margin: 0, marginTop: '0.125rem' }}>{produk.stok} pcs</p>
-                </div>
-              </div>
-
-              <div className="mt-3 pt-2 border-t border-slate-100/60 flex justify-between items-center" style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, backgroundColor: '#ECFDF5', padding: '0.125rem 0.5rem', borderRadius: '0.25rem', border: '1px solid #D1FAE5' }}>Live Terhubung</span>
-                <button onClick={() => handleHapusProduk(produk.id)} className="text-slate-400 hover:text-[#EF4444] transition-colors p-1.5 rounded-xl hover:bg-red-50" style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '0.375rem', borderRadius: '0.5rem' }}>
-                  <Trash2 className="w-4 h-4" style={{ width: '1rem', height: '1rem', color: '#94A3B8' }} />
-                </button>
-              </div>
-            </div>
+      {/* KATALOG GRID (DIKUNCI 4 KOLOM) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', width: '100%' }}>
+        {daftarProduk.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', padding: '4rem 2rem', textAlign: 'center', color: '#94A3B8', backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #E2E8F0', fontWeight: 500 }}>
+            Belum ada produk jualan aktif terdaftar. Klik tombol "Tambah Produk Baru" di atas untuk menayangkan komoditas Anda.
           </div>
-        ))}
+        ) : (
+          daftarProduk.map((produk) => (
+            <div 
+              key={produk.id} 
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow"
+              style={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #E2E8F0', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
+              <div className="h-36 bg-slate-100 flex items-center justify-center text-slate-300 relative" style={{ height: '9rem', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <Image className="w-10 h-10" style={{ width: '2.5rem', height: '2.5rem', color: '#CBD5E1' }} />
+                <span 
+                  className="absolute text-white text-[10px] font-bold"
+                  style={{ position: 'absolute', top: '0.625rem', left: '0.625rem', backgroundColor: '#2563EB', padding: '0.2rem 0.5rem', borderRadius: '0.375rem', fontSize: '10px', fontWeight: 700 }}
+                >
+                  {produk.kategori.split(' / ')[0]}
+                </span>
+              </div>
+              
+              <div className="p-4 flex-1 flex flex-col justify-between" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <h4 className="font-bold text-sm text-[#1E293B] truncate" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1E293B', margin: 0 }} title={produk.nama}>{produk.nama}</h4>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-2 min-h-[2rem]" style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.25rem', margin: 0, minHeight: '2rem', lineHeight: '1.4' }}>{produk.deskripsi || 'Tidak ada deskripsi produk.'}</p>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-center" style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider" style={{ fontSize: '9px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>Harga Jual</p>
+                    <p className="text-sm font-extrabold text-[#10B981]" style={{ fontSize: '0.875rem', fontWeight: 800, color: '#10B981', margin: 0, marginTop: '0.125rem' }}>Rp {produk.harga.toLocaleString('id-ID')}</p>
+                  </div>
+                  <div className="text-right" style={{ textAlign: 'right' }}>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider" style={{ fontSize: '9px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', margin: 0 }}>Stok Toko</p>
+                    <p className="text-xs font-bold text-[#1E293B]" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1E293B', margin: 0, marginTop: '0.125rem' }}>{produk.stok} pcs</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-100/60 flex justify-between items-center" style={{ marginTop: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '10px', color: '#10B981', fontWeight: 600, backgroundColor: '#ECFDF5', padding: '0.125rem 0.375rem', borderRadius: '0.25rem', border: '1px solid #D1FAE5' }}>Live Terhubung</span>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button onClick={() => openEditModal(produk)} className="text-slate-400 hover:text-[#2563EB] transition-colors p-1 rounded-lg hover:bg-blue-50" style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '0.25rem', borderRadius: '0.375rem' }}>
+                      <Edit3 className="w-4 h-4" style={{ width: '0.95rem', height: '0.95rem', color: '#64748B' }} />
+                    </button>
+                    <button onClick={() => handleHapusAction(produk.id, produk.nama)} className="text-slate-400 hover:text-[#EF4444] transition-colors p-1 rounded-lg hover:bg-red-50" style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', padding: '0.25rem', borderRadius: '0.375rem' }}>
+                      <Trash2 className="w-4 h-4" style={{ width: '0.95rem', height: '0.95rem', color: '#94A3B8' }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      {/* POP-UP MODAL BACKGROUND OVERLAY */}
+      {/* POP-UP MODAL BOX INTERAKTIF 1 FOTO UTAMA + 4 SUB-FOTO */}
       {isModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
           
-          {/* CONTAINER MODAL BOX */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '1rem', border: '1px solid #E2E8F0', maxWidth: '32rem', width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
             
-            {/* MODAL HEADER */}
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+            {/* DYNAMIC MODAL HEADER */}
+            <div style={{ padding: '1.125rem 1.25rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#2563EB' }}>
-                <ShoppingBag style={{ width: '1.25rem', height: '1.25rem' }} />
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>Form Tambah Produk</h3>
+                <ShoppingBag style={{ width: '1.15rem', height: '1.15rem' }} />
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1E293B', margin: 0 }}>
+                  {modalMode === 'tambah' ? 'Form Tambah Produk Baru' : 'Form Ubah Informasi Produk'}
+                </h3>
               </div>
               <button onClick={() => setIsModalOpen(false)} style={{ border: 'none', backgroundColor: 'transparent', cursor: 'pointer', color: '#94A3B8', padding: '0.25rem', borderRadius: '0.5rem' }}>
-                <X style={{ width: '1.25rem', height: '1.25rem' }} />
+                <X style={{ width: '1.15rem', height: '1.15rem' }} />
               </button>
             </div>
 
             {/* MODAL FORM BODY */}
-            <form onSubmit={handleTambahProduk} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleSaveProduk} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              
+              {/* GALERI FOTO GRID: 1 Utama (Besar) + 4 Sub-Foto */}
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Foto Sampul Komoditas</label>
-                <div style={{ border: '2px dashed #E2E8F0', borderRadius: '0.75rem', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', color: '#94A3B8' }}>
-                  <Image style={{ width: '1.75rem', height: '1.75rem', color: '#CBD5E1', marginBottom: '0.25rem' }} />
-                  <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>Klik untuk unggah foto</span>
-                  <span style={{ fontSize: '10px', color: '#94A3B8' }}>Maksimal resolusi file 2MB</span>
+                <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.375rem' }}>Foto Sampul Komoditas (Maksimal 5)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  
+                  {/* Slot Utama (Besar) */}
+                  <div style={{ border: '1.5px dashed #CBD5E1', borderRadius: '0.75rem', padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', color: '#94A3B8', cursor: 'pointer' }}>
+                    <Image style={{ width: '1.5rem', height: '1.5rem', color: '#94A3B8', marginBottom: '0.25rem' }} />
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>Klik untuk unggah foto baru</span>
+                  </div>
+
+                  {/* 4 Slot Sub-Foto Sejajar di Bawah */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                    {[1, 2, 3, 4].map((idx) => (
+                      <div 
+                        key={idx}
+                        style={{ border: '1.5px dashed #E2E8F0', borderRadius: '0.5rem', padding: '0.625rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', color: '#CBD5E1', cursor: 'pointer' }}
+                      >
+                        <Plus style={{ width: '1rem', height: '1rem', color: '#94A3B8' }} />
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Nama Produk Dagangan</label>
+                <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Nama Produk Dagangan</label>
                 <input 
                   type="text" required value={nama} onChange={(e) => setNama(e.target.value)}
                   placeholder="Contoh: Keripik Singkong Madu Desa" 
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#1E293B', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.625rem', fontSize: '0.85rem', color: '#1E293B', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Harga Jual (Rp)</label>
+                  <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Harga Jual (Rp)</label>
                   <input 
                     type="number" required value={harga} onChange={(e) => setHarga(e.target.value)}
                     placeholder="Contoh: 15000" 
-                    style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#1E293B', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.625rem', fontSize: '0.85rem', color: '#1E293B', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Kuantitas Stok</label>
+                  <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Kuantitas Stok</label>
                   <input 
                     type="number" required value={stok} onChange={(e) => setStok(e.target.value)}
                     placeholder="100" 
-                    style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#1E293B', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.625rem', fontSize: '0.85rem', color: '#1E293B', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Pilih Kelompok Kategori</label>
+                <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Pilih Kelompok Kategori</label>
                 <select 
                   value={kategori} onChange={(e) => setKategori(e.target.value)}
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#1E293B', backgroundColor: '#ffffff', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.625rem', fontSize: '0.85rem', color: '#1E293B', backgroundColor: '#ffffff', boxSizing: 'border-box' }}
                 >
                   <option value="Pertanian / Hasil Bumi">Pertanian / Hasil Bumi</option>
                   <option value="Peternakan">Peternakan</option>
@@ -205,28 +284,28 @@ export default function KelolaProdukView() {
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Deskripsi & Catatan</label>
+                <label style={{ fontSize: '10px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>Deskripsi & Catatan</label>
                 <textarea 
                   rows={3} value={deskripsi} onChange={(e) => setDeskripsi(e.target.value)}
                   placeholder="Tuliskan spesifikasi produk jualan di sini..." 
-                  style={{ width: '100%', padding: '0.625rem 0.875rem', border: '1px solid #E2E8F0', borderRadius: '0.75rem', fontSize: '0.875rem', color: '#1E293B', boxSizing: 'border-box', resize: 'vertical' }}
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1px solid #E2E8F0', borderRadius: '0.625rem', fontSize: '0.85rem', color: '#1E293B', boxSizing: 'border-box', resize: 'vertical' }}
                 />
               </div>
 
-              {/* MODAL FOOTER BUTTONS */}
-              <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', justifyContent: 'flex-end' }}>
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', justifyContent: 'flex-end' }}>
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  style={{ padding: '0.625rem 1rem', border: '1px solid #E2E8F0', backgroundColor: '#ffffff', color: '#475569', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '0.5rem 1rem', border: '1px solid #E2E8F0', backgroundColor: '#ffffff', color: '#475569', borderRadius: '0.625rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
-                  style={{ padding: '0.625rem 1.25rem', border: 'none', backgroundColor: '#2563EB', color: '#ffffff', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' }}
+                  style={{ padding: '0.5rem 1.25rem', border: 'none', backgroundColor: '#2563EB', color: '#ffffff', borderRadius: '0.625rem', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' }}
                 >
-                  Tayangkan Produk (Live)
+                  {modalMode === 'tambah' ? 'Tayangkan Produk (Live)' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>

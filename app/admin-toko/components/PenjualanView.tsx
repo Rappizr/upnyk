@@ -2,12 +2,49 @@
 
 import React from 'react';
 import { Eye, CheckCircle2, Clock } from 'lucide-react';
+import { create } from 'zustand';
 
+// =========================================================================
+// 1. STRUKTUR STORE ZUSTAND GLOBAL (LOGIKA TRANSREKAP PENJUALAN MURNI)
+// =========================================================================
+interface PesananItem {
+  id: string;
+  pelanggan: string;
+  tgl: string;
+  total: number;
+  status: 'Diproses' | 'Selesai';
+}
+
+interface PenjualanState {
+  daftarPesanan: PesananItem[];
+  prosesPesanan: (id: string) => void;
+  lihatDetailInvoice: (id: string) => void;
+}
+
+const usePenjualanStore = create<PenjualanState>((set) => ({
+  // SEkarang murni kosong total tanpa data inisial bawaan
+  daftarPesanan: [],
+
+  prosesPesanan: (id) =>
+    set((state) => {
+      alert(`Pesanan ${id} berhasil diproses! Status invoice kini diperbarui menjadi Selesai.`);
+      return {
+        daftarPesanan: state.daftarPesanan.map((item) =>
+          item.id === id ? { ...item, status: 'Selesai' } : item
+        ),
+      };
+    }),
+
+  lihatDetailInvoice: (id) => {
+    alert(`Membuka berkas dokumen digital lembar tagihan resmi untuk invoice: ${id}`);
+  }
+}));
+
+// =========================================================================
+// 2. KOMPONEN UI UTAMA
+// =========================================================================
 export default function PenjualanPage() {
-  const pesanan = [
-    { id: "INV-2026-001", pelanggan: "Resto Rasa Desa", tgl: "09 Juli 2026", total: 1250000, status: "Diproses" },
-    { id: "INV-2026-002", pelanggan: "Toko Kelontong Bu Sri", tgl: "08 Juli 2026", total: 450000, status: "Selesai" }
-  ];
+  const { daftarPesanan, prosesPesanan, lihatDetailInvoice } = usePenjualanStore();
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -31,48 +68,64 @@ export default function PenjualanPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100" style={{ display: 'table-row-group' }}>
-              {pesanan.map((item) => (
-                <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }} className="hover:bg-slate-50/50">
-                  <td style={{ padding: '1rem', paddingLeft: '1.5rem', fontFamily: 'monospace', fontWeight: 700, color: '#2563EB' }}>{item.id}</td>
-                  <td style={{ padding: '1rem', fontWeight: 600, color: '#1E293B' }}>{item.pelanggan}</td>
-                  <td style={{ padding: '1rem', color: '#64748B' }}>{item.tgl}</td>
-                  <td style={{ padding: '1rem', fontWeight: 700, color: '#1E293B' }}>Rp {item.total.toLocaleString('id-ID')}</td>
-                  <td style={{ padding: '1rem' }}>
-                    <span 
-                      className="inline-flex items-center gap-1 font-semibold"
-                      style={{ 
-                        padding: '0.125rem 0.5rem', 
-                        borderRadius: '0.5rem', 
-                        fontSize: '0.75rem',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
-                        backgroundColor: item.status === 'Selesai' ? '#ECFDF5' : '#EFF6FF',
-                        color: item.status === 'Selesai' ? '#10B981' : '#2563EB'
-                      }}
-                    >
-                      {item.status === 'Selesai' ? <CheckCircle2 style={{ width: '0.75rem', height: '0.75rem' }} /> : <Clock style={{ width: '0.75rem', height: '0.75rem' }} />}
-                      {item.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', paddingRight: '1.5rem', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <button 
-                        className="border border-slate-200 hover:bg-slate-50 text-slate-600" 
-                        style={{ padding: '0.5rem', borderRadius: '0.75rem', backgroundColor: '#ffffff', border: '1px solid #E2E8F0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <Eye className="w-4 h-4" style={{ width: '1rem', height: '1rem' }} />
-                      </button>
-                      <button 
-                        className="bg-[#2563EB] hover:bg-blue-700 text-white font-semibold shadow-sm"
-                        style={{ backgroundColor: '#2563EB', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-                      >
-                        Proses
-                      </button>
-                    </div>
+              {daftarPesanan.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '3.5rem 2rem', textAlign: 'center', color: '#94A3B8', fontWeight: 500 }}>
+                    Belum ada invoice pesanan yang masuk atau tercatat di sistem saat ini.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                daftarPesanan.map((item) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9' }} className="hover:bg-slate-50/50">
+                    <td style={{ padding: '1rem', paddingLeft: '1.5rem', fontFamily: 'monospace', fontWeight: 700, color: '#2563EB' }}>{item.id}</td>
+                    <td style={{ padding: '1rem', fontWeight: 600, color: '#1E293B' }}>{item.pelanggan}</td>
+                    <td style={{ padding: '1rem', color: '#64748B' }}>{item.tgl}</td>
+                    <td style={{ padding: '1rem', fontWeight: 700, color: '#1E293B' }}>Rp {item.total.toLocaleString('id-ID')}</td>
+                    <td style={{ padding: '1rem' }}>
+                      <span 
+                        className="inline-flex items-center gap-1 font-semibold"
+                        style={{ 
+                          padding: '0.25rem 0.5rem', 
+                          borderRadius: '0.5rem', 
+                          fontSize: '0.75rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          backgroundColor: item.status === 'Selesai' ? '#ECFDF5' : '#EFF6FF',
+                          color: item.status === 'Selesai' ? '#10B981' : '#2563EB',
+                          fontWeight: 600
+                        }}
+                      >
+                        {item.status === 'Selesai' ? <CheckCircle2 style={{ width: '0.75rem', height: '0.75rem' }} /> : <Clock style={{ width: '0.75rem', height: '0.75rem' }} />}
+                        {item.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', paddingRight: '1.5rem', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button 
+                          type="button"
+                          onClick={() => lihatDetailInvoice(item.id)}
+                          className="border border-slate-200 hover:bg-slate-50 text-slate-600" 
+                          style={{ padding: '0.5rem', borderRadius: '0.75rem', backgroundColor: '#ffffff', border: '1px solid #E2E8F0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Eye className="w-4 h-4" style={{ width: '1rem', height: '1rem' }} />
+                        </button>
+                        
+                        {item.status === 'Diproses' && (
+                          <button 
+                            type="button"
+                            onClick={() => prosesPesanan(item.id)}
+                            className="bg-[#2563EB] hover:bg-blue-700 text-white font-semibold shadow-sm"
+                            style={{ backgroundColor: '#2563EB', color: '#ffffff', padding: '0.5rem 1rem', borderRadius: '0.75rem', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                          >
+                            Proses
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
