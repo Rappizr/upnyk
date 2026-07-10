@@ -1,8 +1,58 @@
 "use client";
 import { useState, useEffect } from "react";
-import { 
-  UserIcon, LocationIcon, StarIcon, CameraIcon, SaveIcon, DollarIcon
-} from "@/components/ProductIcons";
+function UserIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function LocationIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function StarIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function CameraIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
+function SaveIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  );
+}
+
+function DollarIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
 
 export default function ProfilView() {
   const [tab, setTab] = useState("biodata");
@@ -12,20 +62,10 @@ export default function ProfilView() {
   const [bio, setBio] = useState("");
   const [addresses, setAddresses] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-  const [claimedVouchers, setClaimedVouchers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // Load claimed vouchers from localStorage
-    const savedVouchers = localStorage.getItem("claimedVouchers");
-    if (savedVouchers) {
-      try {
-        setClaimedVouchers(JSON.parse(savedVouchers));
-      } catch (e) {
-        console.error(e);
-      }
-    }
 
     async function loadProfile() {
       try {
@@ -74,7 +114,7 @@ export default function ProfilView() {
       <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <UserIcon size={28} className="text-primary" /> Profil Saya
       </h1>
-      <p className="page-subtitle">Kelola data diri, alamat pengiriman, dan riwayat klaim voucher diskon toko Anda</p>
+      <p className="page-subtitle">Kelola data diri, alamat pengiriman, dan metode pembayaran Anda</p>
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-muted)" }}>Memuat profil...</div>
@@ -117,8 +157,7 @@ export default function ProfilView() {
               {[
                 ["biodata", "Biodata", <UserIcon size={16} key="bio" />], 
                 ["alamat", "Alamat", <LocationIcon size={16} key="addr" />], 
-                ["pembayaran", "Pembayaran", <DollarIcon size={16} key="pay" />],
-                ["voucher", "Voucher Toko", <span key="vouch" style={{ fontSize: "1rem" }}>🎟️</span>]
+                ["pembayaran", "Pembayaran", <DollarIcon size={16} key="pay" />]
               ].map(([key, label, icon]) => (
                 <button key={key as string} className={`tab-btn${tab === key ? " active" : ""}`} onClick={() => setTab(key as string)} id={`profil-tab-${key}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                   {icon} {label as string}
@@ -212,43 +251,7 @@ export default function ProfilView() {
               </div>
             )}
 
-            {/* Voucher Diskon Toko Claim History */}
-            {tab === "voucher" && (
-              <div>
-                <div className="text-sm font-semibold" style={{ marginBottom: "1rem" }}>Riwayat Klaim Voucher Koperasi</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {claimedVouchers.map((v, i) => (
-                    <div key={i} className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #10B981" }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                          <span className="font-bold text-sm" style={{ color: "var(--color-primary)" }}>{v.title}</span>
-                          <span className="badge badge-success" style={{ fontSize: "0.7rem" }}>{v.status}</span>
-                        </div>
-                        <div className="text-xs text-muted">{v.min}</div>
-                        <div className="text-xs text-subtle" style={{ marginTop: "0.25rem" }}>Diklaim pada: {v.claimedAt}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div className="text-xs text-muted" style={{ marginBottom: "0.25rem" }}>Kode Voucher</div>
-                        <span style={{ fontFamily: "monospace", background: "var(--color-bg)", padding: "0.25rem 0.625rem", borderRadius: "var(--radius-sm)", border: "1px dashed var(--color-border)", fontWeight: 700, fontSize: "0.9rem" }}>
-                          {v.code}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {claimedVouchers.length === 0 && (
-                    <div className="card" style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-subtle)" }}>
-                      <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.5rem" }}>🎟️</span>
-                      Belum ada voucher koperasi yang diklaim.
-                      <div style={{ marginTop: "0.75rem" }}>
-                        <a href="/pembeli" className="btn-secondary" style={{ fontSize: "0.8rem", padding: "0.4rem 1rem", textDecoration: "none" }}>
-                          Klaim Voucher di Beranda
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Removed voucher history tab */}
           </div>
         </div>
       )}

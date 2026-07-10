@@ -1,9 +1,137 @@
 "use client";
 import { useState, useEffect } from "react";
-import { IconRenderer } from "@/components/IconRenderer";
-import { 
-  TrashIcon, CartIcon, LocationIcon, TruckIcon
-} from "@/components/ProductIcons";
+function RiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+function CoffeeIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+      <path d="M6 1v3M10 1v3M14 1v3" />
+    </svg>
+  );
+}
+
+function SpiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2c1.5 4 4 4 4 8 0 4.5-3.5 8-8 8s-8-3.5-8-8c0-4 2.5-4 4-8" />
+      <path d="M12 10a4 4 0 0 0-4-4" />
+    </svg>
+  );
+}
+
+function OilIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z" />
+    </svg>
+  );
+}
+
+function HoneyIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+      <path d="M12 6v12M8 10h8M6 14h12" />
+    </svg>
+  );
+}
+
+function GrainIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2a15 15 0 0 0-8 13.5C4 19.5 7.5 22 12 22s8-2.5 8-6.5C20 15 16 2 12 2z" />
+      <path d="M12 2v20" />
+    </svg>
+  );
+}
+
+function LeafIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 0 8.5C17 15 15 18 11 20z" />
+      <path d="M19 2c-2.26 4.33-5.27 7.14-8 18" />
+    </svg>
+  );
+}
+
+function FactoryIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M2 20h20M20 16v4M4 20v-8l6-4v4l6-4v4l4-4v12" />
+    </svg>
+  );
+}
+
+function TrashIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function CartIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </svg>
+  );
+}
+
+function LocationIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function TruckIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  );
+}
+
+function IconRenderer({ type, size = 24, className = "", ...props }: any) {
+  const normalized = type.toLowerCase();
+  switch (normalized) {
+    case "rice":
+      return <RiceIcon size={size} className={className} {...props} />;
+    case "coffee":
+      return <CoffeeIcon size={size} className={className} {...props} />;
+    case "spice":
+      return <SpiceIcon size={size} className={className} {...props} />;
+    case "oil":
+      return <OilIcon size={size} className={className} {...props} />;
+    case "honey":
+      return <HoneyIcon size={size} className={className} {...props} />;
+    case "grain":
+      return <GrainIcon size={size} className={className} {...props} />;
+    case "leaf":
+      return <LeafIcon size={size} className={className} {...props} />;
+    case "factory":
+      return <FactoryIcon size={size} className={className} {...props} />;
+    default:
+      return <RiceIcon size={size} className={className} {...props} />;
+  }
+}
 
 const productStoreMap: Record<number, string> = {
   1: "Koperasi Tani Maju",
@@ -16,15 +144,30 @@ const productStoreMap: Record<number, string> = {
   8: "Koperasi Madu Borneo"
 };
 
+
+
 interface CartViewProps {
   onCartUpdated: () => void;
   onNavigateToOrders: () => void;
+  onUpdateCartCount?: (count: number) => void;
 }
 
-export default function CartView({ onCartUpdated, onNavigateToOrders }: CartViewProps) {
+const getProductWeight = (productId: number): number => {
+  const weightMap: Record<number, number> = {
+    1: 1.0,
+    2: 0.5,
+    3: 1.0,
+    4: 0.5,
+    5: 0.25,
+    6: 0.25,
+    7: 0.5,
+    8: 0.5
+  };
+  return weightMap[productId] || 1.0;
+};
+
+export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCartCount }: CartViewProps) {
   const [cartItems, setCartItems] = useState<any[]>([]);
-  const [vouchers, setVouchers] = useState<any[]>([]);
-  const [selectedVoucherCode, setSelectedVoucherCode] = useState<string>("");
   const [step, setStep] = useState<"cart" | "payment" | "success">("cart");
   const [selectedPayment, setSelectedPayment] = useState<"qris" | "bank" | "cod">("qris");
   const [submitting, setSubmitting] = useState(false);
@@ -34,25 +177,15 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
 
   useEffect(() => {
     loadCart();
-    loadVouchers();
   }, []);
 
   const loadCart = () => {
     const saved = localStorage.getItem("cartItems");
     if (saved) {
       try {
-        setCartItems(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
-
-  const loadVouchers = () => {
-    const saved = localStorage.getItem("claimedVouchers");
-    if (saved) {
-      try {
-        setVouchers(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setCartItems(parsed);
+        onUpdateCartCount?.(parsed.length);
       } catch (e) {
         console.error(e);
       }
@@ -70,6 +203,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
     setCartItems(updated);
     localStorage.setItem("cartItems", JSON.stringify(updated));
     onCartUpdated();
+    onUpdateCartCount?.(updated.length);
   };
 
   const removeItem = (id: number) => {
@@ -77,23 +211,15 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
     setCartItems(updated);
     localStorage.setItem("cartItems", JSON.stringify(updated));
     onCartUpdated();
+    onUpdateCartCount?.(updated.length);
   };
 
   // Calculations
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * item.qty, 0);
   const shippingFee = subtotal > 0 ? 10000 : 0;
-  
-  // Calculate discount based on selected voucher
-  let discount = 0;
-  if (selectedVoucherCode === "PANENRAYA20") {
-    discount = Math.round(subtotal * 0.2);
-  } else if (selectedVoucherCode === "ONGKIRPELOSOK") {
-    discount = 10000; // Free shipping
-  } else if (selectedVoucherCode === "TANIMAJU15") {
-    discount = 15000;
-  }
-  
+  const discount = 0;
   const grandTotal = Math.max(0, subtotal + shippingFee - discount);
+  const totalWeight = cartItems.reduce((sum, item) => sum + (getProductWeight(item.product?.id) * item.qty), 0);
 
   // Group items by supplier for multi-supplier orders
   const handleConfirmOrder = () => {
@@ -148,7 +274,15 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
         discount,
         grandTotal,
         paymentMethod: selectedPayment === "qris" ? "QRIS (Pembayaran Instan)" : selectedPayment === "bank" ? "Transfer Bank" : "Cash on Delivery (COD)",
-        supplierCount: Object.keys(grouped).length
+        supplierCount: Object.keys(grouped).length,
+        totalWeight,
+        items: cartItems.map(item => ({
+          name: item.product?.name,
+          qty: item.qty,
+          price: item.product?.price,
+          weight: getProductWeight(item.product?.id) * item.qty,
+          icon_type: item.product?.icon_type
+        }))
       });
 
       // Clear Cart
@@ -179,6 +313,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
           Terima kasih atas kontribusi Anda memajukan Koperasi Tani & Kelompok Usaha Pedesaan di Indonesia melalui PasarNusa.
         </p>
 
+
+
         <div className="card" style={{ textAlign: "left", padding: "1.5rem", marginBottom: "2rem" }}>
           <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.1rem", borderBottom: "1px solid var(--color-border-light)", paddingBottom: "0.5rem" }}>
             Detail Transaksi
@@ -189,6 +325,10 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
               <strong>{orderSummary.itemsCount} Unit</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--color-text-subtle)" }}>Total Berat</span>
+              <strong>{orderSummary.totalWeight.toFixed(2).replace(".", ",")} kg</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "var(--color-text-subtle)" }}>Total Toko Koperasi</span>
               <strong>{orderSummary.supplierCount} Koperasi</strong>
             </div>
@@ -196,7 +336,20 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
               <span style={{ color: "var(--color-text-subtle)" }}>Metode Pembayaran</span>
               <span className="badge badge-info">{orderSummary.paymentMethod}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--color-border)", paddingTop: "0.75rem", fontSize: "1.05rem" }}>
+            
+            <div style={{ borderTop: "1px dashed var(--color-border)", borderBottom: "1px dashed var(--color-border)", padding: "0.75rem 0", margin: "0.25rem 0" }}>
+              <span className="text-xs text-muted font-bold" style={{ display: "block", marginBottom: "0.5rem", textTransform: "uppercase" }}>Daftar Barang</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {orderSummary.items?.map((item: any, idx: number) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                    <span style={{ color: "var(--color-text)" }}>{item.name} <span className="text-muted">x{item.qty} ({item.weight.toFixed(2).replace(".", ",")} kg)</span></span>
+                    <span className="font-semibold" style={{ color: "var(--color-text)" }}>Rp {(item.price * item.qty).toLocaleString("id-ID")}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "0.25rem", fontSize: "1.05rem" }}>
               <strong>Total Pembayaran</strong>
               <strong style={{ color: "var(--color-primary)" }}>Rp {orderSummary.grandTotal.toLocaleString("id-ID")}</strong>
             </div>
@@ -216,72 +369,64 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
         </div>
 
         {showReceipt && (
-          <div style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center",
-            justifyContent: "center", zIndex: 1000, padding: "1rem"
-          }}>
-            <div className="card" style={{
-              maxWidth: "500px", width: "100%", padding: "2rem",
-              background: "#ffffff", borderRadius: "var(--radius-md)",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              position: "relative", border: "1px solid var(--color-border)"
-            }}>
+          <div className="modal-overlay">
+            <div className="card modal-container" style={{ maxWidth: "500px", padding: "2rem", position: "relative" }}>
               <button 
                 onClick={() => setShowReceipt(false)}
-                style={{
-                  position: "absolute", top: "1rem", right: "1rem", border: "none",
-                  background: "transparent", fontSize: "1.5rem", cursor: "pointer",
-                  color: "var(--color-text-muted)"
-                }}
+                className="modal-close-btn"
+                style={{ position: "absolute", top: "1rem", right: "1rem" }}
               >
-                ×
+                &times;
               </button>
-              <div style={{ textAlign: "center", borderBottom: "2px dashed var(--color-border)", paddingBottom: "1.5rem", marginBottom: "1.5rem" }}>
-                <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-primary)", letterSpacing: "1px" }}>PASARNUSA</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--color-text-subtle)", marginTop: "0.25rem" }}>Desa Mandiri, Ekonomi Berdikari</div>
-                <div style={{
-                  display: "inline-block", border: "2px solid #10B981", color: "#10B981",
-                  padding: "0.25rem 0.75rem", borderRadius: "4px", fontSize: "0.8rem",
-                  fontWeight: "bold", textTransform: "uppercase", marginTop: "1rem",
-                  transform: "rotate(-5deg)", letterSpacing: "1px"
-                }}>
-                  LUNAS / PAID
-                </div>
+              
+              <div className="receipt-header">
+                <div className="receipt-logo">PASARNUSA</div>
+                <div className="receipt-slogan">Desa Mandiri, Ekonomi Berdikari</div>
+                <div className="receipt-stamp">LUNAS / PAID</div>
               </div>
               
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem", marginBottom: "1.5rem", textAlign: "left" }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span className="text-muted">Tanggal Transaksi</span>
-                  <span className="font-medium">{new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <div className="receipt-meta-grid">
+                <div className="receipt-meta-row">
+                  <span className="receipt-meta-label">Tanggal Transaksi</span>
+                  <span className="receipt-meta-val">{new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span className="text-muted">Metode Pembayaran</span>
-                  <span className="font-semibold">{orderSummary.paymentMethod}</span>
+                <div className="receipt-meta-row">
+                  <span className="receipt-meta-label">Metode Pembayaran</span>
+                  <span className="receipt-meta-val">{orderSummary.paymentMethod}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span className="text-muted">Status Pembayaran</span>
+                <div className="receipt-meta-row">
+                  <span className="receipt-meta-label">Status Pembayaran</span>
                   <span style={{ color: "#10B981", fontWeight: "bold" }}>Berhasil (Terverifikasi)</span>
                 </div>
               </div>
 
-              <div style={{ borderBottom: "1px solid var(--color-border-light)", paddingBottom: "1rem", marginBottom: "1rem", textAlign: "left" }}>
-                <div className="font-semibold text-xs text-muted" style={{ marginBottom: "0.5rem", textTransform: "uppercase" }}>Rincian Belanja</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
+              <div className="receipt-section">
+                <div className="receipt-section-title">Rincian Barang</div>
+                <div className="receipt-items-list">
+                  {orderSummary.items?.map((item: any, idx: number) => (
+                    <div key={idx} className="receipt-item-row">
+                      <span>{item.name} <span className="text-muted">x{item.qty} ({item.weight.toFixed(2).replace(".", ",")} kg)</span></span>
+                      <span>Rp {(item.price * item.qty).toLocaleString("id-ID")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="receipt-section">
+                <div className="receipt-section-title">Rincian Belanja</div>
+                <div className="receipt-items-list">
+                  <div className="receipt-total-row">
                     <span>Total Belanja ({orderSummary.itemsCount} barang)</span>
                     <span>Rp {orderSummary.subtotal.toLocaleString("id-ID")}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
+                  <div className="receipt-total-row">
+                    <span>Total Berat</span>
+                    <span>{orderSummary.totalWeight.toFixed(2).replace(".", ",")} kg</span>
+                  </div>
+                  <div className="receipt-total-row">
                     <span>Ongkos Kirim</span>
                     <span>Rp {shippingFee.toLocaleString("id-ID")}</span>
                   </div>
-                  {orderSummary.discount > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--color-alert)" }}>
-                      <span>Diskon Voucher</span>
-                      <span>- Rp {orderSummary.discount.toLocaleString("id-ID")}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -446,21 +591,14 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
                 <p className="text-xs text-muted" style={{ marginBottom: "1rem" }}>
                   Harap unggah tangkapan layar (screenshot) atau foto bukti transfer/transaksi Anda untuk divalidasi oleh admin.
                 </p>
-                <div style={{ 
-                  border: "2px dashed var(--color-border)", 
-                  borderRadius: "8px", 
-                  padding: "1.5rem", 
-                  textAlign: "center",
-                  background: paymentProof ? "rgba(16, 185, 129, 0.03)" : "var(--color-bg)",
-                  borderColor: paymentProof ? "#10B981" : "var(--color-border)"
-                }}>
+                <div className={`upload-zone${paymentProof ? " success" : ""}`}>
                   {paymentProof ? (
                     <div>
-                      <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📄</div>
-                      <div className="font-semibold text-sm" style={{ color: "#10B981", marginBottom: "0.25rem" }}>
+                      <div className="upload-icon">📄</div>
+                      <div className="upload-success-title">
                         Bukti Pembayaran Terunggah!
                       </div>
-                      <div className="text-xs text-muted" style={{ fontFamily: "monospace", marginBottom: "1rem" }}>
+                      <div className="upload-filename">
                         {paymentProof}
                       </div>
                       <button 
@@ -473,17 +611,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
                     </div>
                   ) : (
                     <div>
-                      <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📤</div>
-                      <label 
-                        className="btn-secondary"
-                        style={{ 
-                          display: "inline-block", 
-                          padding: "0.4rem 1rem", 
-                          fontSize: "0.8rem", 
-                          cursor: "pointer",
-                          marginBottom: "0.5rem"
-                        }}
-                      >
+                      <div className="upload-icon">📤</div>
+                      <label className="upload-btn-secondary">
                         Pilih File Gambar
                         <input 
                           type="file" 
@@ -514,15 +643,14 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
                 <span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="text-muted">Total Berat</span>
+                <span>{totalWeight.toFixed(2).replace(".", ",")} kg</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-muted">Ongkos Kirim</span>
                 <span>Rp {shippingFee.toLocaleString("id-ID")}</span>
               </div>
-              {discount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-alert)" }}>
-                  <span>Voucher Diskon</span>
-                  <span>- Rp {discount.toLocaleString("id-ID")}</span>
-                </div>
-              )}
+              
               <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--color-border-light)", paddingTop: "0.75rem", fontSize: "1rem" }}>
                 <strong>Total Pembayaran</strong>
                 <strong style={{ color: "var(--color-primary)" }}>Rp {grandTotal.toLocaleString("id-ID")}</strong>
@@ -634,40 +762,19 @@ export default function CartView({ onCartUpdated, onNavigateToOrders }: CartView
             <h3 style={{ margin: 0, fontSize: "1.1rem", borderBottom: "1px solid var(--color-border-light)", paddingBottom: "0.5rem" }}>
               Ringkasan Belanja
             </h3>
-
-            {/* Voucher Selection */}
-            {vouchers.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                <label className="text-xs text-muted font-bold">Gunakan Voucher Klaim</label>
-                <select 
-                  className="form-input" 
-                  value={selectedVoucherCode} 
-                  onChange={(e) => setSelectedVoucherCode(e.target.value)}
-                  style={{ padding: "0.4rem 0.5rem", fontSize: "0.8rem" }}
-                >
-                  <option value="">-- Pilih Voucher --</option>
-                  {vouchers.map((v) => (
-                    <option key={v.code} value={v.code}>{v.title} ({v.min})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.875rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-muted">Total Harga ({cartItems.reduce((sum, item) => sum + item.qty, 0)} barang)</span>
                 <span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span className="text-muted">Total Berat</span>
+                <span>{totalWeight.toFixed(2).replace(".", ",")} kg</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-muted">Estimasi Ongkos Kirim</span>
                 <span>Rp {shippingFee.toLocaleString("id-ID")}</span>
               </div>
-              {discount > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", color: "var(--color-alert)" }}>
-                  <span>Diskon Voucher</span>
-                  <span>- Rp {discount.toLocaleString("id-ID")}</span>
-                </div>
-              )}
               
               <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--color-border-light)", paddingTop: "0.75rem", fontSize: "1rem" }}>
                 <strong>Total Pembayaran</strong>

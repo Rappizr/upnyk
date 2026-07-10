@@ -1,9 +1,144 @@
 "use client";
 import { useEffect, useState } from "react";
-import { IconRenderer } from "@/components/IconRenderer";
-import { 
-  StarIcon, HeartIcon, CartIcon, PackageIcon, LocationIcon
-} from "@/components/ProductIcons";
+function RiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+function CoffeeIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+      <path d="M6 1v3M10 1v3M14 1v3" />
+    </svg>
+  );
+}
+
+function SpiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2c1.5 4 4 4 4 8 0 4.5-3.5 8-8 8s-8-3.5-8-8c0-4 2.5-4 4-8" />
+      <path d="M12 10a4 4 0 0 0-4-4" />
+    </svg>
+  );
+}
+
+function OilIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z" />
+    </svg>
+  );
+}
+
+function HoneyIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+      <path d="M12 6v12M8 10h8M6 14h12" />
+    </svg>
+  );
+}
+
+function GrainIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2a15 15 0 0 0-8 13.5C4 19.5 7.5 22 12 22s8-2.5 8-6.5C20 15 16 2 12 2z" />
+      <path d="M12 2v20" />
+    </svg>
+  );
+}
+
+function LeafIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 0 8.5C17 15 15 18 11 20z" />
+      <path d="M19 2c-2.26 4.33-5.27 7.14-8 18" />
+    </svg>
+  );
+}
+
+function FactoryIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M2 20h20M20 16v4M4 20v-8l6-4v4l6-4v4l4-4v12" />
+    </svg>
+  );
+}
+
+function StarIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function HeartIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+    </svg>
+  );
+}
+
+function CartIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </svg>
+  );
+}
+
+function PackageIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function LocationIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function IconRenderer({ type, size = 24, className = "", ...props }: any) {
+  const normalized = type.toLowerCase();
+  switch (normalized) {
+    case "rice":
+      return <RiceIcon size={size} className={className} {...props} />;
+    case "coffee":
+      return <CoffeeIcon size={size} className={className} {...props} />;
+    case "spice":
+      return <SpiceIcon size={size} className={className} {...props} />;
+    case "oil":
+      return <OilIcon size={size} className={className} {...props} />;
+    case "honey":
+      return <HoneyIcon size={size} className={className} {...props} />;
+    case "grain":
+      return <GrainIcon size={size} className={className} {...props} />;
+    case "leaf":
+      return <LeafIcon size={size} className={className} {...props} />;
+    case "factory":
+      return <FactoryIcon size={size} className={className} {...props} />;
+    default:
+      return <RiceIcon size={size} className={className} {...props} />;
+  }
+}
 
 // Mocking Rural Co-op Stores (Toko-Toko Koperasi Pelosok Pilihan)
 const coops = [
@@ -42,32 +177,13 @@ const coops = [
   },
 ];
 
-const promos = [
-  { id: 1, title: "Diskon Panen Raya 20%", min: "Min. Belanja Rp 100K", code: "PANENRAYA20", color: "#10B981" },
-  { id: 2, title: "Gratis Ongkir Pelosok", min: "Min. Belanja Rp 50K", code: "ONGKIRPELOSOK", color: "#3B82F6" },
-  { id: 3, title: "Voucher Koperasi Tani", min: "Tanpa Min. Belanja", code: "TANIMAJU15", color: "#EC4899" }
-];
-
 export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () => void }) {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [claimedCodes, setClaimedCodes] = useState<string[]>([]);
-  const [currentPromoIdx, setCurrentPromoIdx] = useState(0);
 
   useEffect(() => {
-    // Load claimed vouchers from localStorage
-    const saved = localStorage.getItem("claimedVouchers");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setClaimedCodes(parsed.map((v: any) => v.code));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
     async function loadData() {
       try {
         const [prodRes, orderRes, wlRes] = await Promise.all([
@@ -90,44 +206,6 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
     }
     loadData();
   }, []);
-
-  // Auto scroll promo banners
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentPromoIdx((prev) => (prev + 1) % promos.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleClaimVoucher = (promo: any) => {
-    if (claimedCodes.includes(promo.code)) {
-      alert("Voucher sudah diklaim sebelumnya!");
-      return;
-    }
-
-    const saved = localStorage.getItem("claimedVouchers");
-    let currentVouchers = [];
-    if (saved) {
-      try {
-        currentVouchers = JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    const newVoucher = {
-      code: promo.code,
-      title: promo.title,
-      min: promo.min,
-      claimedAt: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-      status: "Tersedia"
-    };
-
-    currentVouchers.push(newVoucher);
-    localStorage.setItem("claimedVouchers", JSON.stringify(currentVouchers));
-    setClaimedCodes([...claimedCodes, promo.code]);
-    alert(`Berhasil mengklaim voucher ${promo.title}! Cek riwayatnya di tab Profil.`);
-  };
 
   const handleAddToWishlist = async (productId: number) => {
     try {
@@ -204,49 +282,6 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
           </div>
         </div>
       </div>
-
-      {/* Promo Banner Slider */}
-      <div className="card" style={{ marginBottom: "1.5rem", padding: "1.25rem", background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)", color: "white", border: "none", overflow: "hidden", position: "relative" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <div className="badge badge-warning" style={{ marginBottom: "0.5rem", background: "rgba(245,158,11,0.2)", color: "#F59E0B" }}>
-              Klaim Voucher Toko Koperasi
-            </div>
-            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, margin: "0 0 0.25rem 0", color: "#FFFFFF" }}>
-              {promos[currentPromoIdx].title}
-            </h3>
-            <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: "0 0 1rem 0" }}>
-              {promos[currentPromoIdx].min} · Kode: <strong style={{ color: "#F59E0B" }}>{promos[currentPromoIdx].code}</strong>
-            </p>
-            <button 
-              className="btn-primary" 
-              onClick={() => handleClaimVoucher(promos[currentPromoIdx])} 
-              style={{ fontSize: "0.8rem", padding: "0.4rem 1rem", background: promos[currentPromoIdx].color, border: "none", color: "white" }}
-            >
-              {claimedCodes.includes(promos[currentPromoIdx].code) ? "✓ Voucher Diklaim" : "Klaim Sekarang"}
-            </button>
-          </div>
-          <div style={{ fontSize: "3.5rem", opacity: 0.25 }}>
-            🎟️
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "0.35rem", justifyContent: "center", marginTop: "0.75rem" }}>
-          {promos.map((p, idx) => (
-            <span 
-              key={p.id} 
-              onClick={() => setCurrentPromoIdx(idx)}
-              style={{ 
-                width: "8px", 
-                height: "8px", 
-                borderRadius: "50%", 
-                background: currentPromoIdx === idx ? "#FFFFFF" : "rgba(255,255,255,0.3)", 
-                cursor: "pointer" 
-              }} 
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="stats-grid" style={{ marginBottom: "1.5rem" }}>
         <div className="stat-card">
@@ -267,15 +302,6 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
           <div>
             <div className="stat-value">{loading ? "..." : completedOrdersCount}</div>
             <div className="stat-label">Pesanan Selesai</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon yellow">
-            <StarIcon size={22} />
-          </div>
-          <div>
-            <div className="stat-value">{claimedCodes.length} / {promos.length}</div>
-            <div className="stat-label">Voucher Diklaim</div>
           </div>
         </div>
         <div className="stat-card">

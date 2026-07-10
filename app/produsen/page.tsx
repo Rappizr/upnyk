@@ -1,10 +1,84 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { IconRenderer } from "@/components/IconRenderer";
-import { 
-  RiceIcon, LeafIcon, FactoryIcon, TruckIcon, DollarIcon
-} from "@/components/ProductIcons";
+function RiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+function LeafIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 0 8.5C17 15 15 18 11 20z" />
+      <path d="M19 2c-2.26 4.33-5.27 7.14-8 18" />
+    </svg>
+  );
+}
+
+function SpiceIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2c1.5 4 4 4 4 8 0 4.5-3.5 8-8 8s-8-3.5-8-8c0-4 2.5-4 4-8" />
+      <path d="M12 10a4 4 0 0 0-4-4" />
+    </svg>
+  );
+}
+
+function GrainIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M12 2a15 15 0 0 0-8 13.5C4 19.5 7.5 22 12 22s8-2.5 8-6.5C20 15 16 2 12 2z" />
+      <path d="M12 2v20" />
+    </svg>
+  );
+}
+
+function FactoryIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M2 20h20M20 16v4M4 20v-8l6-4v4l6-4v4l4-4v12" />
+    </svg>
+  );
+}
+
+function TruckIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
+    </svg>
+  );
+}
+
+function DollarIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  );
+}
+
+function IconRenderer({ type, size = 24, className = "", ...props }: any) {
+  const normalized = type.toLowerCase();
+  switch (normalized) {
+    case "rice":
+      return <RiceIcon size={size} className={className} {...props} />;
+    case "leaf":
+      return <LeafIcon size={size} className={className} {...props} />;
+    case "spice":
+      return <SpiceIcon size={size} className={className} {...props} />;
+    case "grain":
+      return <GrainIcon size={size} className={className} {...props} />;
+    default:
+      return <LeafIcon size={size} className={className} {...props} />;
+  }
+}
 
 export default function ProdusenDashboard() {
   const [items, setItems] = useState([

@@ -91,6 +91,52 @@
   ],
   "orders": [
     {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 2,
+          "price": 28000
+        }
+      ],
+      "total": 56000,
+      "payment_method": "COD",
+      "status": "Diproses",
+      "proof_uploaded": false,
+      "proof_filename": null,
+      "id": "ORD-20260710-447",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "19.30",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
       "supplier": "Koperasi Brebes Jaya",
       "items": [
         {
@@ -456,7 +502,7 @@
     },
     {
       "id": "ORD-20250620-003",
-      "status": "Belum Dibayar",
+      "status": "Diproses",
       "date": "20 Jun 2025",
       "supplier": "Agro Organik Sentosa",
       "items": [
@@ -474,26 +520,8 @@
   "wishlist": [
     {
       "id": 1,
-      "product_id": 8,
-      "saved_at": "2 hari lalu",
-      "price_dropped": true
-    },
-    {
-      "id": 2,
-      "product_id": 2,
-      "saved_at": "5 hari lalu",
-      "price_dropped": false
-    },
-    {
-      "id": 3,
-      "product_id": 3,
-      "saved_at": "1 minggu lalu",
-      "price_dropped": true
-    },
-    {
-      "id": 4,
-      "product_id": 4,
-      "saved_at": "2 minggu lalu",
+      "product_id": 1,
+      "saved_at": "Baru saja",
       "price_dropped": false
     }
   ],

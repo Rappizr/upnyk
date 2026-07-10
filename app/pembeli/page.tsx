@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { IconRenderer } from "@/components/IconRenderer";
 import Link from "next/link";
 
 import DashboardView from "./components/DashboardView";
@@ -49,11 +48,54 @@ export default function PembeliMasterPage() {
         </svg>
       )
     },
-    { name: "Marketplace", icon: <IconRenderer type="cart" size={18} /> },
-    { name: "Wishlist", icon: <IconRenderer type="heart" size={18} /> },
-    { name: "Pesanan", icon: <IconRenderer type="package" size={18} /> },
-    { name: "Notifikasi", icon: <IconRenderer type="bell" size={18} />, badge: 3 },
-    { name: "Profil", icon: <IconRenderer type="user" size={18} /> }
+    { 
+      name: "Marketplace", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="8" cy="21" r="1" />
+          <circle cx="19" cy="21" r="1" />
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+        </svg>
+      )
+    },
+    { 
+      name: "Wishlist", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+        </svg>
+      )
+    },
+    { 
+      name: "Pesanan", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          <line x1="12" y1="22.08" x2="12" y2="12" />
+        </svg>
+      )
+    },
+    { 
+      name: "Notifikasi", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      ), 
+      badge: 3 
+    },
+    { 
+      name: "Profil", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    }
   ];
 
   return (
