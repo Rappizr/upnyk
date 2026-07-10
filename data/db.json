@@ -91,6 +91,306 @@
   ],
   "orders": [
     {
+      "supplier": "Koperasi Brebes Jaya",
+      "items": [
+        {
+          "icon_type": "spice",
+          "name": "Bawang Merah Brebes",
+          "qty": 1,
+          "price": 18500
+        }
+      ],
+      "total": 18500,
+      "payment_method": "QRIS",
+      "id": "ORD-20260710-236",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.18",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 2,
+          "price": 28000
+        }
+      ],
+      "total": 56000,
+      "payment_method": "COD",
+      "id": "ORD-20260710-324",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.18",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 1,
+          "price": 28000
+        }
+      ],
+      "total": 28000,
+      "payment_method": "QRIS",
+      "id": "ORD-20260710-723",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.09",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 1,
+          "price": 28000
+        }
+      ],
+      "total": 28000,
+      "payment_method": "QRIS",
+      "id": "ORD-20260710-106",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.07",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Gayo Indah",
+      "items": [
+        {
+          "icon_type": "coffee",
+          "name": "Kopi Arabika Gayo",
+          "qty": 1,
+          "price": 95000
+        }
+      ],
+      "total": 95000,
+      "payment_method": "QRIS",
+      "id": "ORD-20260710-387",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.07",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 1,
+          "price": 28000
+        }
+      ],
+      "total": 28000,
+      "payment_method": "QRIS",
+      "id": "ORD-20260710-717",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "18.02",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
+      "supplier": "Koperasi Tani Maju",
+      "items": [
+        {
+          "icon_type": "rice",
+          "name": "Beras Merah Organik",
+          "qty": 1,
+          "price": 28000
+        }
+      ],
+      "total": 28000,
+      "id": "ORD-20260710-798",
+      "date": "10 Jul 2026",
+      "timeline": [
+        {
+          "label": "Pesanan Dibuat",
+          "time": "17.54",
+          "done": true
+        },
+        {
+          "label": "Pembayaran Dikonfirmasi",
+          "time": "",
+          "done": false,
+          "active": true
+        },
+        {
+          "label": "Diproses Supplier",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Dikirim Ekspedisi",
+          "time": "",
+          "done": false
+        },
+        {
+          "label": "Tiba di Tujuan",
+          "time": "",
+          "done": false
+        }
+      ]
+    },
+    {
       "id": "ORD-20250701-001",
       "status": "Selesai",
       "date": "01 Jul 2025",
@@ -122,13 +422,13 @@
         },
         {
           "label": "Dikirim Ekspedisi",
-          "time": "18.43",
+          "time": "02 Jul, 09:15",
           "done": true
         },
         {
           "label": "Di Kurir Lokal",
-          "time": "18.43",
-          "done": true,
+          "time": "03 Jul, 07:30",
+          "done": false,
           "active": true
         },
         {
@@ -205,7 +505,7 @@
       "title": "Pesanan Sedang Dikirim!",
       "body": "Pesanan ORD-20250701-001 kini ada di tangan kurir lokal. Estimasi tiba hari ini.",
       "time": "30 menit lalu",
-      "unread": false
+      "unread": true
     },
     {
       "id": 2,
@@ -214,7 +514,7 @@
       "title": "Voucher Cashback 15%",
       "body": "Dapatkan cashback 15% untuk pembelian produk organik minimum Rp 200.000. Berlaku s/d 10 Jul.",
       "time": "2 jam lalu",
-      "unread": false
+      "unread": true
     },
     {
       "id": 3,
@@ -223,7 +523,7 @@
       "title": "Pembayaran Dikonfirmasi",
       "body": "Pembayaran untuk pesanan ORD-20250701-001 sebesar Rp 280.000 berhasil dikonfirmasi.",
       "time": "5 jam lalu",
-      "unread": false
+      "unread": true
     },
     {
       "id": 4,

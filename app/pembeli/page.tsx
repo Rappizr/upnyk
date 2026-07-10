@@ -1,199 +1,195 @@
 "use client";
-import { useEffect, useState } from "react";
-import AppLayout from "@/components/AppLayout";
+import React, { useState, useEffect } from "react";
 import { IconRenderer } from "@/components/IconRenderer";
-import { 
-  StarIcon, HeartIcon, CartIcon, PackageIcon, LocationIcon
-} from "@/components/ProductIcons";
+import Link from "next/link";
 
-const producers = [
-  { icon_type: "leaf", name: "Koperasi Tani Maju", location: "Karawang", products: 48, rating: 4.8 },
-  { icon_type: "factory", name: "UMKM Rempah Nusantara", location: "Medan", products: 35, rating: 4.7 },
-  { icon_type: "leaf", name: "Agro Organik Sentosa", location: "Malang", products: 62, rating: 4.9 },
-];
+import DashboardView from "./components/DashboardView";
+import MarketplaceView from "./components/MarketplaceView";
+import WishlistView from "./components/WishlistView";
+import PesananView from "./components/PesananView";
+import NotifikasiView from "./components/NotifikasiView";
+import ProfilView from "./components/ProfilView";
+import CartView from "./components/CartView";
 
-export default function PembeliHomePage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [wishlistCount, setWishlistCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+export default function PembeliMasterPage() {
+  const [activeTab, setActiveTab] = useState("Beranda");
+  const [cartCount, setCartCount] = useState(0);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [prodRes, orderRes, wlRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/orders"),
-          fetch("/api/wishlist")
-        ]);
-        const prodData = await prodRes.json();
-        const orderData = await orderRes.json();
-        const wlData = await wlRes.json();
-
-        setProducts(prodData.slice(0, 4)); // Show top 4
-        setOrders(orderData);
-        setWishlistCount(wlData.length);
-      } catch (err) {
-        console.error("Failed to load dashboard data:", err);
-      } finally {
-        setLoading(false);
+  const updateCartCount = () => {
+    if (typeof window !== "undefined") {
+      const items = localStorage.getItem("cartItems");
+      if (items) {
+        try {
+          const parsed = JSON.parse(items);
+          const totalQty = parsed.reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
+          setCartCount(totalQty);
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        setCartCount(0);
       }
     }
-    loadData();
+  };
+
+  useEffect(() => {
+    updateCartCount();
+    // Periodically sync or listen to storage changes
+    window.addEventListener("storage", updateCartCount);
+    return () => window.removeEventListener("storage", updateCartCount);
   }, []);
 
-  const activeOrdersCount = orders.filter(o => o.status !== "Selesai" && o.status !== "Dibatalkan").length;
-  const completedOrdersCount = orders.filter(o => o.status === "Selesai").length;
+  const sidebarItems = [
+    { 
+      name: "Beranda", 
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      )
+    },
+    { name: "Marketplace", icon: <IconRenderer type="cart" size={18} /> },
+    { name: "Wishlist", icon: <IconRenderer type="heart" size={18} /> },
+    { name: "Pesanan", icon: <IconRenderer type="package" size={18} /> },
+    { name: "Notifikasi", icon: <IconRenderer type="bell" size={18} />, badge: 3 },
+    { name: "Profil", icon: <IconRenderer type="user" size={18} /> }
+  ];
 
   return (
-    <AppLayout>
-      {/* Hero Banner */}
-      <div className="hero-banner">
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <div className="badge badge-info" style={{ background: "rgba(255,255,255,0.2)", color: "white", marginBottom: "0.75rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-            <StarIcon size={14} fill="currentColor" /> Platform UMKM #1 Indonesia
-          </div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 800, marginBottom: "0.5rem", lineHeight: 1.3 }}>
-            Selamat Datang, Arif!
-          </h1>
-          <p style={{ opacity: 0.85, maxWidth: "460px", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
-            Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.
-          </p>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <a href="/pembeli/marketplace" className="btn-primary" style={{ background: "white", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-explore-marketplace">
-              <CartIcon size={16} /> Jelajahi Marketplace
-            </a>
-            <a href="/pembeli/pesanan" className="btn-ghost" style={{ borderColor: "rgba(255,255,255,0.4)", color: "white", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-lihat-pesanan">
-              <PackageIcon size={16} /> Lihat Pesanan Saya
-            </a>
-          </div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* HEADER NAVBAR */}
+      <header className="header-nav">
+        <div className="header-logo" style={{ cursor: "pointer" }} onClick={() => setActiveTab("Beranda")}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="var(--color-primary)" />
+            <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" fillOpacity="0.9" />
+          </svg>
+          Pasar<span>Nusa</span>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon blue">
-            <PackageIcon size={22} />
-          </div>
-          <div>
-            <div className="stat-value">{loading ? "..." : activeOrdersCount}</div>
-            <div className="stat-label">Pesanan Aktif</div>
-          </div>
+        <div className="header-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+          </svg>
+          <input type="text" placeholder="Cari produk, supplier, atau kategori…" id="header-search-input" />
         </div>
-        <div className="stat-card">
-          <div className="stat-icon green">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
+
+        <div className="header-actions">
+          <button className="icon-btn" onClick={() => setActiveTab("Keranjang")} title="Keranjang" style={{ background: "transparent", border: "none", cursor: "pointer", position: "relative" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
             </svg>
-          </div>
-          <div>
-            <div className="stat-value">{loading ? "..." : completedOrdersCount}</div>
-            <div className="stat-label">Pesanan Selesai</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon yellow">
-            <StarIcon size={22} />
-          </div>
-          <div>
-            <div className="stat-value">12</div>
-            <div className="stat-label">Voucher Tersedia</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon red">
-            <HeartIcon size={22} />
-          </div>
-          <div>
-            <div className="stat-value">{loading ? "..." : wishlistCount}</div>
-            <div className="stat-label">Item di Wishlist</div>
-          </div>
-        </div>
-      </div>
+            {cartCount > 0 ? (
+              <span style={{ position: "absolute", top: "-5px", right: "-5px", background: "var(--color-secondary)", color: "white", borderRadius: "50%", width: "16px", height: "16px", fontSize: "0.65rem", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+                {cartCount}
+              </span>
+            ) : (
+              <span className="badge-dot" style={{ background: "var(--color-secondary)" }} />
+            )}
+          </button>
 
-      {/* Rekomendasi Produk */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <div>
-          <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <StarIcon size={20} className="text-amber-500" fill="currentColor" /> Rekomendasi untuk Anda
-          </div>
-          <div className="text-sm text-muted">Produk terlaris dari UMKM lokal terdekat</div>
-        </div>
-        <a href="/pembeli/marketplace" className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id="btn-lihat-semua-produk">
-          Lihat Semua →
-        </a>
-      </div>
+          <button className="icon-btn" onClick={() => setActiveTab("Notifikasi")} title="Notifikasi" style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span className="badge-dot" />
+          </button>
 
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "2rem", color: "var(--color-text-muted)" }}>Memuat produk rekomendasi...</div>
-      ) : (
-        <div className="product-grid" style={{ marginBottom: "1.75rem" }}>
-          {products.map((p) => (
-            <div key={p.id} className="product-card card-hover" id={`product-card-${p.id}`}>
-              <div className="product-img" style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IconRenderer type={p.icon_type} size={32} className="text-amber-600" />
-              </div>
-              <div className="product-body">
-                <div className="product-name">{p.name}</div>
-                <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
-                  <LocationIcon size={14} /> {p.origin}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
-                  <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
-                    {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
+          <button className="avatar-btn" onClick={() => setActiveTab("Profil")} title="Profil Saya" style={{ border: "none", cursor: "pointer" }}>
+            AK
+          </button>
+        </div>
+      </header>
+
+      {/* BODY SHELL */}
+      <div className="app-shell">
+        <aside className="sidebar">
+          <div className="nav-section-title">Menu Utama</div>
+          {sidebarItems.map((item) => {
+            const isActive = activeTab === item.name;
+            return (
+              <button
+                key={item.name}
+                onClick={() => setActiveTab(item.name)}
+                className={`nav-item${isActive ? " active" : ""}`}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                <span>{item.name}</span>
+                {item.badge && (
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      background: "var(--color-primary)",
+                      color: "white",
+                      borderRadius: "999px",
+                      padding: "1px 7px",
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {item.badge}
                   </span>
-                  <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
-                    <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
-                  </span>
-                </div>
-                <div className="product-price">Rp {p.price.toLocaleString("id-ID")}/unit</div>
-                <div className="product-footer">
-                  <button className="btn-primary" style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-add-cart-${p.id}`}>
-                    <CartIcon size={14} /> + Keranjang
-                  </button>
-                  <button className="icon-btn" id={`btn-wishlist-${p.id}`} title="Tambah Wishlist" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                    <HeartIcon size={16} />
-                  </button>
-                </div>
-              </div>
+                )}
+              </button>
+            );
+          })}
+          <div style={{ marginTop: "auto", padding: "0.875rem", borderTop: "1px solid var(--color-border)" }}>
+            <Link
+              href="/login"
+              className="nav-item"
+              style={{
+                color: "var(--color-alert)",
+                background: "var(--color-alert-light)",
+                fontWeight: 600,
+                borderRadius: "var(--radius-sm)",
+                padding: "0.5rem 0.875rem",
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                textDecoration: "none"
+              }}
+              id="btn-logout"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Keluar Akun</span>
+            </Link>
+            <div style={{ fontSize: "0.75rem", color: "var(--color-text-subtle)" }}>
+              © 2025 Lural Commerce
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ fontSize: "0.7rem", color: "var(--color-text-subtle)", marginTop: "2px" }}>
+              v1.0.0 — UMKM Edition
+            </div>
+          </div>
+        </aside>
 
-      {/* Produsen Lokal */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <div>
-          <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <IconRenderer type="factory" size={20} className="text-slate-700" /> Produsen Lokal Terdekat
-          </div>
-          <div className="text-sm text-muted">Supplier terpercaya di sekitar Anda</div>
-        </div>
+        <main className="main-content">
+          {activeTab === "Beranda" && <DashboardView onCartUpdated={updateCartCount} />}
+          {activeTab === "Marketplace" && <MarketplaceView onCartUpdated={updateCartCount} />}
+          {activeTab === "Wishlist" && <WishlistView onCartUpdated={updateCartCount} />}
+          {activeTab === "Pesanan" && <PesananView />}
+          {activeTab === "Notifikasi" && <NotifikasiView />}
+          {activeTab === "Profil" && <ProfilView />}
+          {activeTab === "Keranjang" && <CartView onCartUpdated={updateCartCount} onNavigateToOrders={() => setActiveTab("Pesanan")} />}
+        </main>
       </div>
-      <div className="grid-3" style={{ marginBottom: "1.75rem" }}>
-        {producers.map((p, i) => (
-          <div key={i} className="card card-hover" id={`producer-card-${i}`} style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-primary-light)", borderRadius: "var(--radius-sm)" }}>
-              <IconRenderer type={p.icon_type} size={24} className="text-emerald-500" />
-            </div>
-            <div>
-              <div className="font-semibold text-sm">{p.name}</div>
-              <div className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                <LocationIcon size={12} /> {p.location}
-              </div>
-              <div className="text-xs text-muted" style={{ marginTop: "0.25rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                <span>{p.products} produk</span>
-                <span>·</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.15rem" }}>
-                  <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </AppLayout>
+    </div>
   );
 }
-
