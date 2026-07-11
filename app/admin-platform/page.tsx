@@ -1,596 +1,366 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 import Link from "next/link";
 
-// 1. IMPORT SEMUA KOMPONEN DARI FOLDER COMPONENTS
-import DataUMKM from "./components/dataUMKM";
-import VerifikasiAkun from "./components/verivikasiAkun";
-import SuspendAkun from "./components/suspandAkun";
-import KategoriUsaha from "./components/manajemen-kategori";
-import KategoriSupplier from "./components/kategori-supplier";
-import KategoriBahanBaku from "./components/kategori-bahan-baku";
-import KategoriLimbah from "./components/kategori-limbah";
-import SemuaTransaksi from "./components/semua-transaksi";
-import SemuaKolaborasi from "./components/semua-kolaborasi";
-import StatistikUMKM from "./components/statistik-umkm";
-import StatistikLimbah from "./components/statistik-limbah";
-import StatistikBahanBaku from "./components/statistik-bahan-baku";
-import StatistikSupplier from "./components/statistik-supplier";
+import VerifikasiPeran from "./components/verifikasi-peran";
+import PetaRantaiPasok from "./components/peta-rantai-pasok";
+import EscrowTransaksi from "./components/escrow-transaksi";
+import LaporanDampak from "./components/laporan-dampak";
+import ProfilAdminPage, { ProfilAdmin } from "./components/profil-admin";
 
 // ============================================================================
-// TIPE DATA — dipakai bersama, ditulis manual di sini (tanpa file lib terpisah)
+// TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
 // ============================================================================
-export type UmkmStatus = "Aktif" | "Pending" | "Suspended" | "Ditolak";
+export type JenisAkun = "Admin Toko" | "Produsen" | "Supplier";
+export type TipeEntitas = "Toko" | "Produsen" | "Supplier";
 
-export interface UmkmEntry {
+export interface Pendaftar {
   id: string;
   nama: string;
-  pemilik: string;
-  kategori: string;
-  wilayah: string;
-  status: UmkmStatus;
+  jenisAkun: JenisAkun;
+  lokasi: string;
   tanggal: string;
-  dokumen?: string;
+  status: "Menunggu" | "Disetujui" | "Ditolak";
 }
 
-export interface PelanggaranEntry {
+export interface Entitas {
   id: string;
   nama: string;
-  jenis: string;
-  pelanggaran: string;
-  status: string;
+  tipe: TipeEntitas;
+  lokasi: string;
+  status: "Aktif" | "Nonaktif";
+}
+
+export interface EscrowTx {
+  id: string;
+  pembeli: string;
+  toko: string;
+  produsen: string;
+  nominal: number;
+  persenToko: number;
+  persenProdusen: number;
+  status: "Ditahan" | "Tersalur" | "Disengketakan";
   tanggal: string;
 }
 
-const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-
-function bulanFromTanggal(tanggal: string) {
-  const parts = tanggal.split(" ");
-  return parts.length >= 2 ? parts[1] : tanggal;
+export interface Komoditas {
+  nama: string;
+  hargaPlatform: number;
+  hargaTengkulak: number;
+  volumeTon: number;
 }
 
-// ============================================================================
-// DATA DUMMY AWAL
-// ============================================================================
-const initialUmkm: UmkmEntry[] = [
-  { id: "UMKM-001", nama: "Keripik Tempe Sanan", pemilik: "Pak Baihaqi", kategori: "Makanan & Minuman", wilayah: "Malang", status: "Aktif", tanggal: "12 Feb 2026" },
-  { id: "UMKM-002", nama: "Kopi Arabika Gayo", pemilik: "Ibu Citra", kategori: "Pertanian / Komoditas", wilayah: "Aceh", status: "Pending", tanggal: "05 Jul 2026", dokumen: "NIB & Sertifikat Halal" },
-  { id: "UMKM-003", nama: "Kerajinan Bambu Jaya", pemilik: "Dedi Kurniawan", kategori: "Kerajinan Kriya", wilayah: "Yogyakarta", status: "Aktif", tanggal: "20 Jan 2025" },
-  { id: "UMKM-004", nama: "Toko Curang (Minyak Kita)", pemilik: "Rian", kategori: "Bahan Pokok", wilayah: "Jakarta", status: "Suspended", tanggal: "14 Mar 2026" },
-  { id: "UMKM-005", nama: "Tenun Ikat Sasak", pemilik: "Ibu Nur", kategori: "Fashion & Tekstil", wilayah: "Lombok", status: "Aktif", tanggal: "09 Mei 2026" },
-  { id: "UMKM-006", nama: "Sambal Bu Rudy", pemilik: "Ibu Rudy", kategori: "Makanan & Minuman", wilayah: "Surabaya", status: "Aktif", tanggal: "02 Jun 2026" },
-  { id: "UMKM-007", nama: "Madu Hutan Sumbawa", pemilik: "Pak Ahmad", kategori: "Pertanian / Komoditas", wilayah: "NTB", status: "Pending", tanggal: "07 Jul 2026", dokumen: "P-IRT & KTP Pemilik" },
-  { id: "UMKM-008", nama: "Batik Pekalongan Asli", pemilik: "Ibu Sari", kategori: "Fashion & Tekstil", wilayah: "Pekalongan", status: "Aktif", tanggal: "18 Apr 2026" },
-  { id: "UMKM-009", nama: "Anyaman Rotan Kalimantan", pemilik: "Pak Junaidi", kategori: "Kerajinan Kriya", wilayah: "Kalimantan", status: "Aktif", tanggal: "25 Mei 2026" },
-  { id: "UMKM-010", nama: "Beras Organik Cianjur", pemilik: "Pak Dadan", kategori: "Bahan Pokok", wilayah: "Cianjur", status: "Pending", tanggal: "08 Jul 2026", dokumen: "NIB & Surat Domisili" },
+const initialPendaftar: Pendaftar[] = [
+  { id: "REG-101", nama: "Koperasi Tani Makmur", jenisAkun: "Admin Toko", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
+  { id: "REG-102", nama: "Budi Santoso", jenisAkun: "Produsen", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
+  { id: "REG-103", nama: "Distributor Pupuk Nasional", jenisAkun: "Supplier", lokasi: "Surabaya, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
+  { id: "REG-104", nama: "Gabungan Kelompok Tani Jombang", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
 ];
 
-const initialPelanggaran: PelanggaranEntry[] = [
-  { id: "UMKM-004", nama: "Toko Curang (Minyak Kita)", jenis: "UMKM", pelanggaran: "Manipulasi Stok & Harga Subsidi", status: "Suspended", tanggal: "14 Mar 2026" },
-  { id: "SUP-012", nama: "Supplier Pupuk Palsu", jenis: "Supplier", pelanggaran: "Aduan Kualitas Tidak Sesuai Deskripsi", status: "Review Internal", tanggal: "02 Jul 2026" },
+const initialEntitas: Entitas[] = [
+  { id: "ENT-01", nama: "Warung Makmur Jaya", tipe: "Toko", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-02", nama: "Toko Sembako Berkah", tipe: "Toko", lokasi: "Jombang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-03", nama: "Keripik Tempe Sanan", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-04", nama: "Kopi Arabika Gayo", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
+  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", tipe: "Supplier", lokasi: "Malang, Jawa Timur", status: "Aktif" },
 ];
 
-const activities = [
-  { tanggal: "10 Jul 2026, 10:15", umkm: "UMKM Keripik Tempe", keterangan: "Mengajukan verifikasi profil usaha baru", status: "Verifikasi", warna: "#2563EB" },
-  { tanggal: "10 Jul 2026, 09:42", umkm: "Supplier Makmur", keterangan: "Menambahkan stok limbah sekam padi sebanyak +2 Ton", status: "Limbah", warna: "#10B981" },
-  { tanggal: "10 Jul 2026, 08:12", umkm: "Sistem Transaksi", keterangan: "Kolaborasi sewa alat pencacah sampah plastik berhasil diverifikasi", status: "Penyewaan", warna: "#F59E0B" },
-  { tanggal: "09 Jul 2026, 07:30", umkm: "Toko Curang (Minyak Kita)", keterangan: "Ditangguhkan (suspend) karena pelanggaran syarat & ketentuan", status: "Manajemen User", warna: "#EF4444" },
-  { tanggal: "09 Jul 2026, 16:05", umkm: "Kopi Arabika Gayo", keterangan: "Transaksi penjualan bahan baku senilai Rp 12.500.000 berhasil", status: "Transaksi", warna: "#2563EB" },
+const initialTransaksi: EscrowTx[] = [
+  { id: "TX-90211", pembeli: "Minimarket Sejahtera", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1575000, persenToko: 70, persenProdusen: 30, status: "Tersalur", tanggal: "05 Jul 2026" },
+  { id: "TX-90212", pembeli: "Koperasi Pasar Besar", toko: "Toko Sembako Berkah", produsen: "Kopi Arabika Gayo", nominal: 900000, persenToko: 65, persenProdusen: 35, status: "Ditahan", tanggal: "08 Jul 2026" },
+  { id: "TX-90213", pembeli: "Warung Bu Ida", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1500000, persenToko: 70, persenProdusen: 30, status: "Ditahan", tanggal: "09 Jul 2026" },
+  { id: "TX-90214", pembeli: "Toko Barokah", toko: "Toko Sembako Berkah", produsen: "Kopi Arabika Gayo", nominal: 620000, persenToko: 60, persenProdusen: 40, status: "Disengketakan", tanggal: "07 Jul 2026" },
 ];
 
-const admins = [
-  { id: 1, nama: "Ringga", peran: "Admin Utama", inisial: "RG", warna: "#2563EB" },
-  { id: 2, nama: "Raffy", peran: "Admin Operasional", inisial: "RF", warna: "#10B981" },
-  { id: 3, nama: "Rizal", peran: "Admin Teknis", inisial: "RZ", warna: "#F59E0B" },
-];
-
-const transaksiMonthly = [
-  { bulan: "Feb", untung: 120, rugi: 20 },
-  { bulan: "Mar", untung: 95, rugi: 40 },
-  { bulan: "Apr", untung: 150, rugi: 15 },
-  { bulan: "Mei", untung: 60, rugi: 110 },
-  { bulan: "Jun", untung: 180, rugi: 25 },
-  { bulan: "Jul", untung: 140, rugi: 30 },
-];
-
-const alatDisewa = [
-  { nama: "Vacuum Frying Machine", jumlah: 210 },
-  { nama: "Mesin Pencacah Plastik", jumlah: 180 },
-  { nama: "Cold Storage Portable", jumlah: 150 },
-  { nama: "Mesin Pengemas Vakum", jumlah: 130 },
-  { nama: "Alat Pengering Surya", jumlah: 172 },
-];
-
-const kolaborasiList = [
-  { mitra: "Gabungan Kelompok Tani Makmur", bidang: "Suplai Bahan Baku Organik", status: "Aktif" },
-  { mitra: "Pabrik Plastik Biodegradable", bidang: "Pengolahan Limbah Kulit Kopi", status: "Aktif" },
-  { mitra: "Koperasi Tenun Lombok", bidang: "Kontrak Suplai Pewarna Alami", status: "Berjalan" },
-  { mitra: "UMKM Keripik Buah Sejahtera", bidang: "Sharing Alat Vacuum Frying", status: "Selesai" },
-];
-
-const limbahList = [
-  { jenis: "Ampas Kopi Organik", jumlah: "18.4 Ton" },
-  { jenis: "Sekam Padi", jumlah: "12.1 Ton" },
-  { jenis: "Kain Perca Katun", jumlah: "8.7 Ton" },
-  { jenis: "Kulit Kayu & Serbuk", jumlah: "6.0 Ton" },
-];
-
-const supplierMonthly = [
-  { bulan: "Feb", jumlah: 260 },
-  { bulan: "Mar", jumlah: 275 },
-  { bulan: "Apr", jumlah: 290 },
-  { bulan: "Mei", jumlah: 300 },
-  { bulan: "Jun", jumlah: 308 },
-  { bulan: "Jul", jumlah: 318 },
-];
-const supplierList = [
-  { nama: "Pengepul Kedelai Lokal", kategori: "Bahan Baku", wilayah: "Malang" },
-  { nama: "Koperasi Petani Cabai Makmur", kategori: "Bahan Baku", wilayah: "Garut" },
-  { nama: "Distributor Benang Sutra Nusantara", kategori: "Tekstil", wilayah: "Bandung" },
-  { nama: "Pabrik Pupuk Kompos Sejahtera", kategori: "Pertanian", wilayah: "Bogor" },
+const initialKomoditas: Komoditas[] = [
+  { nama: "Keripik Tempe", hargaPlatform: 45000, hargaTengkulak: 32000, volumeTon: 12.4 },
+  { nama: "Kopi Arabika", hargaPlatform: 78000, hargaTengkulak: 55000, volumeTon: 8.1 },
+  { nama: "Beras Organik", hargaPlatform: 15500, hargaTengkulak: 11000, volumeTon: 24.6 },
+  { nama: "Madu Hutan", hargaPlatform: 120000, hargaTengkulak: 85000, volumeTon: 3.2 },
 ];
 
 // Komponen SVG Ikon Mandiri
-const IconDashboard = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
-const IconUser = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
-const IconLayers = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>;
-const IconActivity = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
-const IconFileText = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 22 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>;
-const IconDollar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>;
-const IconPackage = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
-const IconTruck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
-const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const IconChevronDown = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
-const IconAlert = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
+const IconUserCheck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>;
+const IconMap = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>;
+const IconShieldLock = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><rect x="9" y="11" width="6" height="5" rx="1"></rect><path d="M10 11V9a2 2 0 0 1 4 0v2"></path></svg>;
+const IconReport = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>;
+const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
+const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
+const IconShield = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg>;
+const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
 
-type StatKey = "umkm" | "transaksi" | "alat" | "kolaborasi" | "limbah" | "supplier";
+interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
+interface MenuGroupDef { title: string; items: MenuItemDef[] }
 
-// Bar chart sederhana tanpa library — cukup pakai div + style
-function MiniBarChart({ data, labelKey, valueKey, color = "#2563EB" }: { data: any[]; labelKey: string; valueKey: string; color?: string }) {
-  const max = Math.max(...data.map((d) => d[valueKey]), 1);
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem", height: "160px", padding: "0.5rem 0" }}>
-      {data.map((d, i) => (
-        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
-          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.25rem" }}>{d[valueKey]}</div>
-          <div style={{ width: "100%", maxWidth: "36px", height: `${(d[valueKey] / max) * 100}%`, background: color, borderRadius: "6px 6px 0 0", minHeight: "4px" }} />
-          <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: "0.4rem" }}>{d[labelKey]}</div>
-        </div>
-      ))}
-    </div>
-  );
+const menuGroups: MenuGroupDef[] = [
+  { title: "Main", items: [
+    { key: "dashboard", label: "Dashboard", icon: IconDashboard },
+    { key: "profil", label: "Profil Admin", icon: IconUserCheck },
+  ] },
+  { title: "Pengawasan", items: [
+    { key: "verifikasi", label: "Verifikasi & Peran", icon: IconUserCheck },
+    { key: "peta", label: "Peta Rantai Pasok", icon: IconMap },
+  ] },
+  { title: "Transaksi", items: [{ key: "escrow", label: "Escrow & Transaksi", icon: IconShieldLock }] },
+  { title: "Laporan", items: [{ key: "laporan", label: "Laporan Dampak", icon: IconReport }] },
+];
+
+function formatRupiah(n: number) {
+  return "Rp " + n.toLocaleString("id-ID");
+}
+function formatRupiahRingkas(n: number) {
+  if (n >= 1000000000) return `Rp ${(n / 1000000000).toFixed(1)}M`;
+  if (n >= 1000000) return `Rp ${(n / 1000000).toFixed(1)}jt`;
+  return formatRupiah(n);
 }
 
-// Grafik untung/rugi
-function ProfitLossChart({ data }: { data: { bulan: string; untung: number; rugi: number }[] }) {
-  const maxVal = Math.max(...data.map((d) => Math.max(d.untung, d.rugi)), 1);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", height: "220px", padding: "0.5rem 0" }}>
-      {data.map((d, i) => {
-        const net = d.untung - d.rugi;
-        const isProfit = net >= 0;
-        const barHeight = (Math.abs(net) / maxVal) * 90;
-        return (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", width: "100%" }}>
-              {isProfit && <div style={{ width: "100%", maxWidth: "34px", margin: "0 auto", height: `${barHeight}%`, background: "#2563EB", borderRadius: "6px 6px 0 0", minHeight: "4px" }} title={`Untung Rp ${net}jt`} />}
-            </div>
-            <div style={{ width: "100%", borderTop: "2px solid #CBD5E1" }} />
-            <div style={{ flex: 1, width: "100%" }}>
-              {!isProfit && <div style={{ width: "100%", maxWidth: "34px", margin: "0 auto", height: `${barHeight}%`, background: "#EF4444", borderRadius: "0 0 6px 6px", minHeight: "4px" }} title={`Rugi Rp ${Math.abs(net)}jt`} />}
-            </div>
-            <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: "0.4rem" }}>{d.bulan}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const pageTitles: Record<string, string> = {
+  dashboard: "Dashboard",
+  profil: "Profil Admin",
+  verifikasi: "Verifikasi & Peran",
+  peta: "Peta Rantai Pasok",
+  escrow: "Escrow & Transaksi",
+  laporan: "Laporan Dampak",
+};
 
 export default function AdminPlatformDashboard() {
-  const [activeMenu, setActiveMenu] = useState("ringkasan");
-  const [statModal, setStatModal] = useState<StatKey | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportView, setExportView] = useState(false);
-  const [onDutyId, setOnDutyId] = useState(1);
+  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ---- SEMUA DATA UTAMA DIPEGANG DI SINI, DIOPER SEBAGAI PROPS KE HALAMAN LAIN ----
-  const [umkmList, setUmkmList] = useState<UmkmEntry[]>(initialUmkm);
-  const [pelanggaranList, setPelanggaranList] = useState<PelanggaranEntry[]>(initialPelanggaran);
-
-  function addUmkm(entry: Omit<UmkmEntry, "id" | "tanggal">) {
-    setUmkmList((prev) => {
-      const nextNumber = prev.length + 1;
-      const id = `UMKM-${String(nextNumber).padStart(3, "0")}`;
-      return [{ id, tanggal: todayLabel(), ...entry }, ...prev];
-    });
-  }
-
-  function setUmkmStatus(id: string, status: UmkmStatus) {
-    setUmkmList((prev) => prev.map((u) => (u.id === id ? { ...u, status } : u)));
-  }
-
-  function addPelanggaran(entry: { nama: string; jenis: string; pelanggaran: string; targetUmkmId?: string }) {
-    setPelanggaranList((prev) => {
-      const id = entry.targetUmkmId || `VIO-${String(prev.length + 1).padStart(3, "0")}`;
-      return [{ id, nama: entry.nama, jenis: entry.jenis, pelanggaran: entry.pelanggaran, status: "Suspended", tanggal: todayLabel() }, ...prev];
-    });
-    if (entry.targetUmkmId) setUmkmStatus(entry.targetUmkmId, "Suspended");
-  }
-
-  function pulihkanPelanggaran(id: string) {
-    setPelanggaranList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Dipulihkan" } : p)));
-    setUmkmStatus(id, "Aktif");
-  }
-
-  const onDuty = admins.find((a) => a.id === onDutyId)!;
-
-  // ---- Angka & grafik dashboard dihitung langsung dari umkmList ----
-  const totalUmkm = umkmList.length;
-  const pendingCount = umkmList.filter((u) => u.status === "Pending").length;
-
-  const umkmMonthly = useMemo(() => {
-    const map: Record<string, number> = {};
-    umkmList.forEach((u) => { const b = bulanFromTanggal(u.tanggal); map[b] = (map[b] || 0) + 1; });
-    return Object.entries(map).map(([bulan, jumlah]) => ({ bulan, jumlah }));
-  }, [umkmList]);
-
-  const umkmBySektor = useMemo(() => {
-    const map: Record<string, number> = {};
-    umkmList.forEach((u) => { map[u.kategori] = (map[u.kategori] || 0) + 1; });
-    return Object.entries(map).map(([sektor, jumlah]) => ({ sektor, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
-  }, [umkmList]);
-
-  const bulanRugi = useMemo(() => transaksiMonthly.filter((t) => t.rugi > t.untung), []);
-
-  const getNavStyle = (menuName: string) => ({
-    color: activeMenu === menuName ? "#FFFFFF" : "rgba(255, 255, 255, 0.75)",
-    background: activeMenu === menuName ? "rgba(255,255,255,0.18)" : "transparent",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    padding: "0.5rem 0.75rem",
-    borderRadius: "6px",
-    textDecoration: "none",
-    fontSize: "0.9rem",
-    cursor: "pointer",
+  const [pendaftarList, setPendaftarList] = useState<Pendaftar[]>(initialPendaftar);
+  const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitas);
+  const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksi);
+  const [komoditasList] = useState<Komoditas[]>(initialKomoditas);
+  const [profilAdmin, setProfilAdmin] = useState<ProfilAdmin>({
+    nama: "Nadia Ramadhani",
+    jabatan: "Super Admin",
+    email: "nadia@pasarnusa.id",
+    telepon: "0813-2345-6789",
+    bergabung: "Jan 2026",
+    inisial: "NR",
   });
 
-  function exportWord() {
-    const rows = activities.map((a) => `<tr><td style="padding:6px;border:1px solid #ddd;">${a.tanggal}</td><td style="padding:6px;border:1px solid #ddd;">${a.umkm}</td><td style="padding:6px;border:1px solid #ddd;">${a.keterangan}</td><td style="padding:6px;border:1px solid #ddd;">${a.status}</td></tr>`).join("");
-    const html = `<html><head><meta charset="utf-8"><title>Laporan Audit PasarNusa</title></head><body>
-      <h2>Laporan Audit Platform PasarNusa</h2>
-      <p>Diunduh oleh: ${onDuty.nama} (${onDuty.peran}) — ${new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}</p>
-      <h3>Ringkasan</h3>
-      <ul>
-        <li>Total UMKM: ${totalUmkm}</li>
-        <li>Total Transaksi: 18.400</li>
-        <li>Penyewaan Alat: 842</li>
-        <li>Total Kolaborasi: 1.205</li>
-        <li>Limbah Terjual: 45.2 Ton</li>
-        <li>Total Supplier: 318</li>
-      </ul>
-      <h3>Log Aktivitas Terbaru</h3>
-      <table style="border-collapse:collapse;width:100%;font-size:12px;">
-        <tr style="background:#EFF6FF;"><th style="padding:6px;border:1px solid #ddd;">Tanggal</th><th style="padding:6px;border:1px solid #ddd;">UMKM</th><th style="padding:6px;border:1px solid #ddd;">Keterangan</th><th style="padding:6px;border:1px solid #ddd;">Status</th></tr>
-        ${rows}
-      </table>
-    </body></html>`;
-    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "laporan-audit-pasarnusa.doc";
-    link.click();
-    URL.revokeObjectURL(url);
-    setExportOpen(false);
+  function approvePendaftar(id: string) {
+    setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Disetujui" } : p)));
+    const p = pendaftarList.find((x) => x.id === id);
+    if (p) {
+      const tipe: TipeEntitas = p.jenisAkun === "Admin Toko" ? "Toko" : p.jenisAkun === "Produsen" ? "Produsen" : "Supplier";
+      const entId = `ENT-${String(entitasList.length + 1).padStart(2, "0")}`;
+      setEntitasList((prev) => [...prev, { id: entId, nama: p.nama, tipe, lokasi: p.lokasi, status: "Aktif" }]);
+    }
+  }
+  function rejectPendaftar(id: string) {
+    setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Ditolak" } : p)));
   }
 
-  function exportPDF() {
-    setExportOpen(false);
-    setTimeout(() => window.print(), 100);
+  function salurkanDana(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+  }
+  function tandaiSengketa(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Disengketakan" } : t)));
+  }
+  function selesaikanSengketa(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+  }
+
+  // ---- Angka turunan — semua saling terhubung dari 3 sumber data di atas ----
+  const totalToko = entitasList.filter((e) => e.tipe === "Toko").length;
+  const totalProdusen = entitasList.filter((e) => e.tipe === "Produsen").length;
+  const totalSupplier = entitasList.filter((e) => e.tipe === "Supplier").length;
+  const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
+  const totalMenunggu = pendaftarList.filter((p) => p.status === "Menunggu").length;
+  const escrowDitahan = transaksiList.filter((t) => t.status === "Ditahan").length;
+
+  const indeksHargaAdil = useMemo(() => {
+    if (komoditasList.length === 0) return 0;
+    const rasio = komoditasList.map((k) => k.hargaTengkulak / k.hargaPlatform);
+    const avgRasio = rasio.reduce((s, r) => s + r, 0) / rasio.length;
+    return Math.round(avgRasio * 100);
+  }, [komoditasList]);
+
+  const daerahProduktif = useMemo(() => {
+    const map: Record<string, number> = {};
+    entitasList.forEach((e) => { map[e.lokasi] = (map[e.lokasi] || 0) + 1; });
+    return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
+  }, [entitasList]);
+
+  function selectMenu(key: string) {
+    setActiveMenu(key);
+    setSidebarOpen(false);
   }
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
-      <style>{`@media print { .no-print { display: none !important; } .print-area { overflow: visible !important; height: auto !important; } }`}</style>
+      <style>{`
+        .ap-sidebar { width: 220px; }
+        .ap-hamburger { display: none; }
+        .ap-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .ap-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+        .ap-user-name { display: block; }
+        @media (max-width: 900px) {
+          .ap-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
+          .ap-sidebar.open { transform: translateX(0); }
+          .ap-hamburger { display: flex; }
+          .ap-stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .ap-panels-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .ap-stats-grid { grid-template-columns: 1fr; }
+          .ap-user-name { display: none; }
+        }
+      `}</style>
 
-      {/* Sidebar Admin Platform */}
-      <aside className="no-print" style={{ width: "260px", background: "#2563EB", color: "#F8FAFC", padding: "1.5rem 1rem 1.5rem 1.5rem", display: "flex", flexDirection: "column", height: "100vh" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem", paddingRight: "0.5rem" }}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#FFFFFF" fillOpacity="0.15" />
-            <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
-          </svg>
-          <span style={{ fontSize: "1.2rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span style={{ color: "#D1FAE5" }}>Nusa</span></span>
+      {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
+
+      {/* Sidebar */}
+      <aside className={`ap-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#1E293B", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
+            </div>
+            <div><div style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "rgba(255,255,255,.5)" }}>Admin Platform</div></div>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.6)" }}><IconX /></button>
         </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", overflowY: "auto", flex: 1, paddingRight: "0.5rem", paddingBottom: "1rem" }}>
-          <div>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Sistem Utama</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span onClick={() => setActiveMenu("ringkasan")} style={getNavStyle("ringkasan")}><IconDashboard /> Dashboard Ringkasan</span>
-            </nav>
-          </div>
-          <div>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Manajemen User</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span onClick={() => setActiveMenu("data-umkm")} style={getNavStyle("data-umkm")}><IconUser /> Data UMKM</span>
-              <span onClick={() => setActiveMenu("verifikasi-umkm")} style={getNavStyle("verifikasi-umkm")}>
-                <IconUser /> Verifikasi UMKM
-                {pendingCount > 0 && <span style={{ background: "#10B981", color: "white", fontSize: "0.65rem", padding: "1px 5px", borderRadius: "10px", marginLeft: "auto" }}>{pendingCount}</span>}
-              </span>
-              <span onClick={() => setActiveMenu("suspend-akun")} style={getNavStyle("suspend-akun")}><IconUser /> Suspend Akun</span>
-            </nav>
-          </div>
-          <div>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Manajemen Kategori</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span onClick={() => setActiveMenu("kat-usaha")} style={getNavStyle("kat-usaha")}><IconLayers /> Kategori Usaha</span>
-              <span onClick={() => setActiveMenu("kat-supplier")} style={getNavStyle("kat-supplier")}><IconLayers /> Kategori Produsen & Supplier</span>
-              <span onClick={() => setActiveMenu("kat-bahan")} style={getNavStyle("kat-bahan")}><IconLayers /> Kategori Bahan Baku</span>
-              <span onClick={() => setActiveMenu("kat-limbah")} style={getNavStyle("kat-limbah")}><IconLayers /> Kategori Limbah</span>
-            </nav>
-          </div>
-          <div>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Monitoring</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span onClick={() => setActiveMenu("semua-transaksi")} style={getNavStyle("semua-transaksi")}><IconActivity /> Semua Transaksi</span>
-              <span onClick={() => setActiveMenu("semua-kolaborasi")} style={getNavStyle("semua-kolaborasi")}><IconActivity /> Semua Kolaborasi</span>
-            </nav>
-          </div>
-          <div>
-            <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Laporan</div>
-            <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span onClick={() => setActiveMenu("stat-umkm")} style={getNavStyle("stat-umkm")}><IconFileText /> Statistik UMKM</span>
-              <span onClick={() => setActiveMenu("stat-limbah")} style={getNavStyle("stat-limbah")}><IconFileText /> Statistik Limbah</span>
-              <span onClick={() => setActiveMenu("stat-bahan")} style={getNavStyle("stat-bahan")}><IconFileText /> Statistik Bahan Baku</span>
-              <span onClick={() => setActiveMenu("stat-supplier")} style={getNavStyle("stat-supplier")}><IconFileText /> Statistik Produsen & Supplier</span>
-            </nav>
-          </div>
-        </div>
-
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "1rem", marginTop: "auto", paddingRight: "0.5rem" }}>
-          <Link href="/login" style={{ width: "100%", justifyContent: "center", color: "#FFFFFF", background: "#EF4444", border: "1px solid #EF4444", borderRadius: "6px", display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.5rem", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600 }}>Keluar</Link>
+        <nav style={{ padding: "14px 10px", flex: 1, overflowY: "auto" }}>
+          {menuGroups.map((group) => (
+            <div key={group.title} style={{ marginBottom: "14px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,.4)", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = activeMenu === item.key;
+                const badge = item.key === "verifikasi" && totalMenunggu > 0 ? totalMenunggu : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
+                return (
+                  <div
+                    key={item.key}
+                    onClick={() => selectMenu(item.key)}
+                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#2563EB" : "transparent", color: active ? "#fff" : "rgba(255,255,255,.75)", fontSize: "13px", cursor: "pointer", marginBottom: "1px", fontWeight: active ? 600 : 400 }}
+                  >
+                    <Icon /> <span style={{ flex: 1 }}>{item.label}</span>
+                    {badge > 0 && <span style={{ background: active ? "rgba(255,255,255,.25)" : "#EF4444", color: "#fff", fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "999px" }}>{badge}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "12px" }}>
+          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "rgba(239,68,68,.15)", color: "#F87171", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
         </div>
       </aside>
 
-      {/* AREA UTAMA / KONTEN DINAMIS */}
-      <div style={{ flex: 1, height: "100vh", overflow: "hidden" }} className="print-area">
-        {activeMenu === "ringkasan" && (
-          <main style={{ flex: 1, padding: "1.5rem clamp(1rem, 4vw, 2rem)", overflowY: "auto", height: "100vh" }}>
+      {/* Konten */}
+      <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button onClick={() => setSidebarOpen(true)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
+            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <IconBell />
+              {totalMenunggu > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+            </div>
+            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1E293B", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+              {profilAdmin.fotoUrl ? <img src={profilAdmin.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profilAdmin.inisial}
+            </div>
+            <div className="ap-user-name">
+              <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profilAdmin.nama}</div>
+              <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>{profilAdmin.jabatan}</div>
+            </div>
+          </div>
+        </div>
 
-            <div className="no-print" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem 1.25rem", marginBottom: "1.5rem", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1rem" }}>
-              <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", marginRight: "0.25rem" }}>Admin Bertugas Hari Ini:</div>
-              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-                {admins.map((a) => (
-                  <button key={a.id} onClick={() => setOnDutyId(a.id)} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 0.75rem 0.4rem 0.4rem", borderRadius: "999px", border: a.id === onDutyId ? `2px solid ${a.warna}` : "1px solid #E2E8F0", background: a.id === onDutyId ? `${a.warna}15` : "white", cursor: "pointer" }}>
-                    <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: a.warna, color: "white", fontSize: "0.7rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{a.inisial}</div>
-                    <div style={{ textAlign: "left" }}>
-                      <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1E293B" }}>{a.nama}</div>
-                      <div style={{ fontSize: "0.65rem", color: "#64748B" }}>{a.peran}</div>
+        {activeMenu === "dashboard" && (
+          <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+            {/* Hero */}
+            <div style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", borderRadius: "16px", padding: "1.5rem clamp(1.25rem, 4vw, 2rem)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+              <div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.1)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconShield /> Super Admin Console</span>
+                <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profilAdmin.nama.split(" ")[0]}!</div>
+                <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.65)", marginTop: "0.3rem", maxWidth: "460px" }}>Awasi pertumbuhan ekosistem, verifikasi mitra baru, dan pastikan setiap transaksi berjalan adil dan aman.</div>
+              </div>
+              <button onClick={() => selectMenu("laporan")} style={{ background: "#fff", color: "#1E293B", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                Lihat Laporan Dampak <IconArrowRight />
+              </button>
+            </div>
+
+            {/* Stat cards */}
+            <div className="ap-stats-grid" style={{ marginBottom: "1.25rem" }}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalToko}</div>
+                <div style={{ fontSize: "0.68rem", color: "#2563EB", marginTop: "0.15rem" }}>Lihat di peta →</div>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL PRODUSEN</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalProdusen}</div>
+                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Lihat di peta →</div>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL SUPPLIER</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalSupplier}</div>
+                <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Lihat di peta →</div>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("escrow")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PERPUTARAN DANA</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalGMV)}</div>
+                <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>{transaksiList.length} transaksi</div>
+              </div>
+              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("laporan")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", letterSpacing: ".03em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.7rem", fontWeight: 400 }}>/100</span></div>
+                <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Lebih adil dari tengkulak</div>
+              </div>
+            </div>
+
+            {/* Panels */}
+            <div className="ap-panels-grid">
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Menunggu verifikasi</div>
+                  {totalMenunggu > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>{totalMenunggu} akun baru</span>}
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Pendaftar baru menunggu persetujuan peran</div>
+                {pendaftarList.filter((p) => p.status === "Menunggu").length === 0 ? (
+                  <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Tidak ada pendaftaran yang menunggu.</p>
+                ) : (
+                  pendaftarList.filter((p) => p.status === "Menunggu").slice(0, 3).map((p) => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.55rem 0", borderBottom: "1px solid #F1F5F9", gap: "0.5rem" }}>
+                      <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{p.nama}</div><div style={{ fontSize: "0.68rem", color: "#94A3B8" }}>Mendaftar sebagai {p.jenisAkun}</div></div>
+                      <button onClick={() => selectMenu("verifikasi")} style={{ background: "#2563EB", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Tinjau</button>
                     </div>
-                    {a.id === onDutyId && <span style={{ fontSize: "0.65rem", fontWeight: 700, color: a.warna, marginLeft: "0.25rem" }}>● Bertugas</span>}
-                  </button>
+                  ))
+                )}
+              </div>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Aktivitas escrow terbaru</div>
+                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Dana yang tertahan dan tersalurkan</div>
+                {transaksiList.slice(0, 3).map((t, i) => (
+                  <div key={t.id} onClick={() => selectMenu("escrow")} style={{ padding: "0.5rem 0", borderBottom: i < 2 ? "1px solid #F1F5F9" : "none", cursor: "pointer" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{t.id}</span>
+                      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: t.status === "Tersalur" ? "#059669" : t.status === "Ditahan" ? "#D97706" : "#DC2626" }}>{t.status}</span>
+                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{formatRupiah(t.nominal)} — {t.toko}</div>
+                  </div>
                 ))}
               </div>
             </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-              <div>
-                <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Dashboard Super Admin</h1>
-                <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Panel kontrol penuh pengelolaan siklus ekosistem PasarNusa.</p>
-              </div>
-              <div className="no-print" style={{ position: "relative" }}>
-                <button onClick={() => setExportOpen((v) => !v)} style={{ background: "#2563EB", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "6px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  Unduh Laporan Audit <IconChevronDown />
-                </button>
-                {exportOpen && (
-                  <div style={{ position: "absolute", right: 0, top: "110%", background: "white", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 8px 20px rgba(0,0,0,0.1)", width: "200px", overflow: "hidden", zIndex: 50 }}>
-                    <div onClick={() => { setExportView(true); setExportOpen(false); }} style={{ padding: "0.7rem 1rem", fontSize: "0.85rem", color: "#334155", cursor: "pointer", borderBottom: "1px solid #F1F5F9" }}>👁️ Lihat Ringkasan</div>
-                    <div onClick={exportPDF} style={{ padding: "0.7rem 1rem", fontSize: "0.85rem", color: "#334155", cursor: "pointer", borderBottom: "1px solid #F1F5F9" }}>📄 Unduh PDF</div>
-                    <div onClick={exportWord} style={{ padding: "0.7rem 1rem", fontSize: "0.85rem", color: "#334155", cursor: "pointer" }}>📝 Unduh Word</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-              {[
-                { key: "umkm" as StatKey, icon: <IconUser />, bg: "#EFF6FF", color: "#2563EB", value: totalUmkm.toLocaleString("id-ID"), label: "Total UMKM" },
-                { key: "transaksi" as StatKey, icon: <IconDollar />, bg: "#D1FAE5", color: "#10B981", value: "18.4K", label: "Total Transaksi" },
-                { key: "alat" as StatKey, icon: <IconPackage />, bg: "#FEE2E2", color: "#EF4444", value: "842", label: "Penyewaan Alat" },
-                { key: "kolaborasi" as StatKey, icon: <IconActivity />, bg: "#FEF3C7", color: "#92400E", value: "1.205", label: "Total Kolaborasi" },
-                { key: "limbah" as StatKey, icon: <IconTruck />, bg: "#EFF6FF", color: "#2563EB", value: "45.2 T", label: "Limbah Terjual" },
-                { key: "supplier" as StatKey, icon: <IconUser />, bg: "#D1FAE5", color: "#10B981", value: "318", label: "Total Supplier" },
-              ].map((s) => (
-                <div key={s.key} onClick={() => setStatModal(s.key)} style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "1rem", cursor: "pointer" }}>
-                  <div style={{ background: s.bg, color: s.color, padding: "0.5rem", borderRadius: "8px", display: "flex" }}>{s.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>{s.value}</div>
-                    <div style={{ fontSize: "0.8rem", color: "#64748B" }}>{s.label}</div>
-                  </div>
-                  <span style={{ fontSize: "0.7rem", color: "#94A3B8" }}>Detail →</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
-              <h3 style={{ margin: 0, padding: "1.25rem 1.25rem 0.75rem", fontSize: "1.1rem", fontWeight: 600, color: "#1E293B" }}>Aktivitas Log Sistem & Tata Kelola Platform</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem", minWidth: "600px" }}>
-                  <thead>
-                    <tr style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
-                      <th style={{ padding: "0.75rem 1.25rem", color: "#475569", fontWeight: 600 }}>Tanggal</th>
-                      <th style={{ padding: "0.75rem 1.25rem", color: "#475569", fontWeight: 600 }}>UMKM / Entitas</th>
-                      <th style={{ padding: "0.75rem 1.25rem", color: "#475569", fontWeight: 600 }}>Keterangan</th>
-                      <th style={{ padding: "0.75rem 1.25rem", color: "#475569", fontWeight: 600 }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activities.map((a, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                        <td style={{ padding: "0.85rem 1.25rem", color: "#64748B", whiteSpace: "nowrap" }}>{a.tanggal}</td>
-                        <td style={{ padding: "0.85rem 1.25rem", fontWeight: 600, color: "#1E293B" }}>{a.umkm}</td>
-                        <td style={{ padding: "0.85rem 1.25rem", color: "#334155" }}>{a.keterangan}</td>
-                        <td style={{ padding: "0.85rem 1.25rem" }}>
-                          <span style={{ background: `${a.warna}18`, color: a.warna, fontSize: "0.75rem", fontWeight: 600, padding: "0.2rem 0.6rem", borderRadius: "999px" }}>{a.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {statModal && (
-              <div className="no-print" onClick={() => setStatModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "560px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                    <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>
-                      {statModal === "umkm" && "Detail Total UMKM"}
-                      {statModal === "transaksi" && "Detail Untung & Rugi Transaksi"}
-                      {statModal === "alat" && "Detail Penyewaan Alat"}
-                      {statModal === "kolaborasi" && "Detail Kolaborasi"}
-                      {statModal === "limbah" && "Detail Limbah Terjual"}
-                      {statModal === "supplier" && "Detail Supplier"}
-                    </h2>
-                    <button onClick={() => setStatModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
-                  </div>
-
-                  {statModal === "umkm" && (
-                    <>
-                      <p style={{ fontSize: "0.85rem", color: "#64748B", marginBottom: "0.5rem" }}>UMKM terdaftar per bulan (data asli dari Data UMKM)</p>
-                      <MiniBarChart data={umkmMonthly} labelKey="bulan" valueKey="jumlah" color="#2563EB" />
-                      <p style={{ fontSize: "0.85rem", color: "#64748B", margin: "1rem 0 0.5rem" }}>Sebaran berdasarkan bidang usaha</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                        {umkmBySektor.map((s) => (
-                          <div key={s.sektor} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", padding: "0.5rem 0.75rem", background: "#F8FAFC", borderRadius: "8px" }}>
-                            <span style={{ color: "#334155" }}>{s.sektor}</span>
-                            <strong style={{ color: "#1E293B" }}>{s.jumlah}</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {statModal === "transaksi" && (
-                    <>
-                      <p style={{ fontSize: "0.85rem", color: "#64748B", marginBottom: "0.5rem" }}>Untung (biru) vs Rugi (merah) per bulan, dalam juta rupiah</p>
-                      <ProfitLossChart data={transaksiMonthly} />
-                      {bulanRugi.length > 0 ? (
-                        <div style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", borderRadius: "10px", padding: "0.85rem 1rem", marginTop: "1rem", display: "flex", gap: "0.6rem" }}>
-                          <span style={{ color: "#EF4444" }}><IconAlert /></span>
-                          <div style={{ fontSize: "0.8rem", color: "#991B1B" }}>
-                            <strong>Rekomendasi otomatis:</strong> Terdeteksi kerugian di bulan {bulanRugi.map((b) => b.bulan).join(", ")}. Disarankan audit ulang biaya operasional dan tinjau kembali harga jual di bulan tersebut.
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ background: "#D1FAE5", borderRadius: "10px", padding: "0.85rem 1rem", marginTop: "1rem", fontSize: "0.8rem", color: "#065F46" }}>Tidak ada bulan dengan kerugian saat ini. Performa transaksi sehat.</div>
-                      )}
-                    </>
-                  )}
-
-                  {statModal === "alat" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {alatDisewa.map((a) => {
-                        const max = Math.max(...alatDisewa.map((x) => x.jumlah));
-                        return (
-                          <div key={a.nama}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.25rem" }}>
-                              <span style={{ color: "#334155" }}>{a.nama}</span>
-                              <strong style={{ color: "#1E293B" }}>{a.jumlah}x</strong>
-                            </div>
-                            <div style={{ height: "8px", background: "#F1F5F9", borderRadius: "999px", overflow: "hidden" }}>
-                              <div style={{ width: `${(a.jumlah / max) * 100}%`, height: "100%", background: "#EF4444" }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {statModal === "kolaborasi" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                      {kolaborasiList.map((k) => (
-                        <div key={k.mitra} style={{ padding: "0.75rem", background: "#F8FAFC", borderRadius: "10px", border: "1px solid #F1F5F9" }}>
-                          <div style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.9rem" }}>{k.mitra}</div>
-                          <div style={{ color: "#64748B", fontSize: "0.8rem", margin: "0.2rem 0" }}>{k.bidang}</div>
-                          <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#92400E", background: "#FEF3C7", padding: "0.15rem 0.5rem", borderRadius: "999px" }}>{k.status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {statModal === "limbah" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      {limbahList.map((l) => (
-                        <div key={l.jenis} style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.85rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem" }}>
-                          <span style={{ color: "#334155" }}>{l.jenis}</span>
-                          <strong style={{ color: "#2563EB" }}>{l.jumlah}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {statModal === "supplier" && (
-                    <>
-                      <p style={{ fontSize: "0.85rem", color: "#64748B", marginBottom: "0.5rem" }}>Pertumbuhan jumlah supplier per bulan</p>
-                      <MiniBarChart data={supplierMonthly} labelKey="bulan" valueKey="jumlah" color="#10B981" />
-                      <p style={{ fontSize: "0.85rem", color: "#64748B", margin: "1rem 0 0.5rem" }}>Beberapa supplier terbaru</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                        {supplierList.map((s) => (
-                          <div key={s.nama} style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.85rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem" }}>
-                            <div>
-                              <div style={{ fontWeight: 600, color: "#1E293B" }}>{s.nama}</div>
-                              <div style={{ color: "#94A3B8", fontSize: "0.75rem" }}>{s.kategori} • {s.wilayah}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {exportView && (
-              <div className="no-print" onClick={() => setExportView(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "480px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                    <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>Ringkasan Laporan Audit</h2>
-                    <button onClick={() => setExportView(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
-                  </div>
-                  <p style={{ fontSize: "0.8rem", color: "#64748B", marginBottom: "1rem" }}>Disiapkan oleh {onDuty.nama} ({onDuty.peran}) • {new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.85rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Total UMKM</span><strong>{totalUmkm}</strong></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Total Transaksi</span><strong>18.400</strong></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Penyewaan Alat</span><strong>842</strong></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Total Kolaborasi</span><strong>1.205</strong></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Limbah Terjual</span><strong>45.2 Ton</strong></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Total Supplier</span><strong>318</strong></div>
-                  </div>
-                </div>
-              </div>
-            )}
           </main>
         )}
 
-        {/* Halaman lain — data & fungsi umkm/pelanggaran dioper lewat props */}
-        {activeMenu === "data-umkm" && <DataUMKM umkmList={umkmList} addUmkm={addUmkm} setUmkmStatus={setUmkmStatus} />}
-        {activeMenu === "verifikasi-umkm" && <VerifikasiAkun umkmList={umkmList} setUmkmStatus={setUmkmStatus} />}
-        {activeMenu === "suspend-akun" && <SuspendAkun umkmList={umkmList} pelanggaranList={pelanggaranList} addPelanggaran={addPelanggaran} pulihkanPelanggaran={pulihkanPelanggaran} />}
-        {activeMenu === "kat-usaha" && <KategoriUsaha />}
-        {activeMenu === "kat-supplier" && <KategoriSupplier />}
-        {activeMenu === "kat-bahan" && <KategoriBahanBaku />}
-        {activeMenu === "kat-limbah" && <KategoriLimbah />}
-        {activeMenu === "semua-transaksi" && <SemuaTransaksi />}
-        {activeMenu === "semua-kolaborasi" && <SemuaKolaborasi />}
-        {activeMenu === "stat-umkm" && <StatistikUMKM />}
-        {activeMenu === "stat-limbah" && <StatistikLimbah />}
-        {activeMenu === "stat-bahan" && <StatistikBahanBaku />}
-        {activeMenu === "stat-supplier" && <StatistikSupplier />}
+        {activeMenu === "verifikasi" && <VerifikasiPeran pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} />}
+        {activeMenu === "peta" && <PetaRantaiPasok entitasList={entitasList} transaksiList={transaksiList} />}
+        {activeMenu === "escrow" && <EscrowTransaksi transaksiList={transaksiList} salurkanDana={salurkanDana} tandaiSengketa={tandaiSengketa} selesaikanSengketa={selesaikanSengketa} />}
+        {activeMenu === "laporan" && <LaporanDampak komoditasList={komoditasList} daerahProduktif={daerahProduktif} indeksHargaAdil={indeksHargaAdil} totalGMV={totalGMV} entitasList={entitasList} />}
+        {activeMenu === "profil" && <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} />}
       </div>
     </div>
   );

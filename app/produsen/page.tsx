@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 
@@ -107,79 +107,6 @@ const initialPengeluaran: Pengeluaran[] = [
   { id: "EXP-03", keterangan: "Ongkos kirim bahan baku", nominal: 150000, tanggal: "07 Jul 2026", kategori: "Logistik" },
 ];
 
-const salesMonthly = [
-  { bulan: "Feb", nilai: 8500000 },
-  { bulan: "Mar", nilai: 10200000 },
-  { bulan: "Apr", nilai: 9600000 },
-  { bulan: "Mei", nilai: 13400000 },
-  { bulan: "Jun", nilai: 12100000 },
-];
-
-// ---- Lokasi kota untuk peta pelacakan (tanpa perlu API key — pakai OpenStreetMap) ----
-const cityCoords: Record<string, [number, number]> = {
-  Malang: [-7.9666, 112.6326],
-  Jombang: [-7.5460, 112.2384],
-  Surabaya: [-7.2575, 112.7521],
-  Sidoarjo: [-7.4478, 112.7183],
-};
-const gudangAsal: [number, number] = cityCoords.Malang;
-
-export function extractCity(alamat: string): string {
-  const known = Object.keys(cityCoords);
-  const found = known.find((c) => alamat.toLowerCase().includes(c.toLowerCase()));
-  return found || "Malang";
-}
-export function coordFromAlamat(alamat: string): [number, number] {
-  return cityCoords[extractCity(alamat)];
-}
-
-export function MiniMap({ markers, height = 220 }: { markers: { lat: number; lng: number; label: string; color?: string }[]; height?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-
-  useEffect(() => {
-    function init() {
-      const L = (window as any).L;
-      if (!ref.current || !L || markers.length === 0) return;
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-      const map = L.map(ref.current, { scrollWheelZoom: false }).setView([markers[0].lat, markers[0].lng], 8);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
-      markers.forEach((m) => {
-        L.circleMarker([m.lat, m.lng], { radius: 9, color: m.color || "#10B981", fillColor: m.color || "#10B981", fillOpacity: 0.9, weight: 2 }).addTo(map).bindPopup(m.label);
-      });
-      if (markers.length > 1) {
-        map.fitBounds(L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number])), { padding: [30, 30] });
-      }
-      mapRef.current = map;
-    }
-    if ((window as any).L) {
-      init();
-    } else {
-      if (!document.getElementById("leaflet-css")) {
-        const link = document.createElement("link");
-        link.id = "leaflet-css";
-        link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        document.head.appendChild(link);
-      }
-      let script = document.getElementById("leaflet-js") as HTMLScriptElement | null;
-      if (!script) {
-        script = document.createElement("script");
-        script.id = "leaflet-js";
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-        document.body.appendChild(script);
-      }
-      script.addEventListener("load", init);
-      return () => script?.removeEventListener("load", init);
-    }
-    return () => {
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    };
-  }, [markers]);
-
-  return <div ref={ref} style={{ height, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
-}
-
 // Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
@@ -192,7 +119,6 @@ const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
 const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
-const IconAlert = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 
 interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
 interface MenuGroupDef { title: string; items: MenuItemDef[] }
@@ -212,10 +138,6 @@ const menuGroups: MenuGroupDef[] = [
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
-}
-function avgRating(ulasan: Ulasan[]) {
-  if (ulasan.length === 0) return 0;
-  return ulasan.reduce((s, u) => s + u.rating, 0) / ulasan.length;
 }
 
 const pageTitles: Record<string, string> = {
@@ -285,7 +207,6 @@ export default function ProdusenDashboard() {
   const pesananAktif = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses" || p.status === "Dikirim").length;
   const semuaUlasan = useMemo(() => stokList.flatMap((s) => s.ulasan.map((u) => ({ ...u, produk: s.nama }))), [stokList]);
   const ratingRata = useMemo(() => (semuaUlasan.length ? semuaUlasan.reduce((s, u) => s + u.rating, 0) / semuaUlasan.length : 0), [semuaUlasan]);
-  const maxSales = Math.max(...salesMonthly.map((s) => s.nilai), totalPendapatan || 1);
 
   function selectMenu(key: string) {
     setActiveMenu(key);
