@@ -171,7 +171,7 @@ export default function TentangKamiPage() {
     marginBottom: "1.5rem",
   }}
 />
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A" }}>Ringga</h3>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A" }}>Ringga Budi Utama</h3>
               <p style={{ color: "#38BDF8", fontWeight: 600, fontSize: "0.85rem", marginTop: "0.25rem" }}>Frontend Developer</p>
 
               <div style={{ display: "flex", gap: "1rem", marginTop: "1.25rem" }}>
@@ -185,9 +185,18 @@ export default function TentangKamiPage() {
             </div>
 
             <div className="modern-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: "80px", height: "80px", background: "#F1F5F9", borderRadius: "50%", margin: "0 auto 1.5rem", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
-                <Code size={32} />
-              </div>
+<img
+  src="/rizal.jpeg"
+  alt="Rizal"
+  style={{
+    width: "90px",
+    height: "90px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "4px solid #E2E8F0",
+    marginBottom: "1.5rem",
+  }}
+/>
               <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A" }}>Rizal</h3>
               <p style={{ color: "#38BDF8", fontWeight: 600, fontSize: "0.85rem", marginTop: "0.25rem" }}>Full Stack Developer</p>
 
