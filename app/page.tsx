@@ -4,12 +4,10 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function LandingPage() {
-  // Array URL Gambar Latar Belakang Baru (Stabil & Beresolusi Tinggi)
   const bgImages = [
-    "https://images.unsplash.com/photo-1621274403997-37aae184f494?auto=format&fit=crop&q=80&w=1920", // Petani / Padi Nusantara
-    "https://images.unsplash.com/photo-1617696618050-b0fef0c666af?auto=format&fit=crop&q=80&w=1920", // Pengrajin Batik Indonesia
-    "https://images.unsplash.com/photo-1563770660941-20978e870e26?auto=format&fit=crop&q=80&w=1920", // Perakitan Elektronik UMKM
-    "https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=1920"  // Pasar Tradisional Nusantara
+    "/logo1.png",
+    "/logo2.png", 
+    "/logo3.png", 
   ];
 
   const [currentBg, setCurrentBg] = useState(0);
@@ -95,8 +93,8 @@ export default function LandingPage() {
         
         <nav style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
           <a href="#fitur" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Fitur Utama</a>
-          <a href="#ekosistem" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Rantai Pasok</a>
-          <a href="#mitra" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Mitra UMKM</a>
+          <a href="/rantai-pasok" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Rantai Pasok</a>
+          <a href="/mitra" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Mitra UMKM</a>
           
           <Link href="/login" className="btn-glow" style={{ 
             padding: "0.6rem 1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
@@ -118,9 +116,16 @@ export default function LandingPage() {
           <div key={index} style={{
             position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
             backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.9)), url('${img}')`,
-            backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed",
-            opacity: currentBg === index ? 1 : 0, transform: currentBg === index ? "scale(1)" : "scale(1.05)",
-            transition: "opacity 2s ease-in-out, transform 6s linear", zIndex: 0
+backgroundSize: "125%",
+backgroundPosition: "center", 
+backgroundRepeat: "no-repeat",
+backgroundAttachment: "fixed",
+opacity: currentBg === index ? 1 : 0,
+transform: currentBg === index
+  ? "scale(1.08)"
+  : "scale(1.13)",
+
+transition: "opacity 2s ease-in-out, transform 6s ease",
           }} />
         ))}
    
@@ -285,16 +290,16 @@ export default function LandingPage() {
     </a>
   </div>
 
-  {/* Kontak */}
+  {/* Pusat Bantuan */}
   <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}>
-    <a href="#" className="footer-link">
-      Kontak Mitra
+    <a href="/pusat-bantuan" className="footer-link">
+      Pusat Bantuan
     </a>
   </div>
 
   {/* Privasi */}
   <div style={{ display: "flex", flexDirection: "column", gap: "0.7rem" }}>
-    <a href="#" className="footer-link">
+    <a href="/privasi" className="footer-link">
       Privasi
     </a>
   </div>
