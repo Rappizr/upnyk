@@ -1,780 +1,422 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import {
-  Sprout, Package, Truck, Wallet, User, Plus, X, Trash2,
-  ArrowUpRight, MapPin, CheckCircle2, Clock, AlertTriangle,
-  ChevronRight, Search, Bell, LogOut
-} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
-/* ============================================================
-   TIPE DATA
-   ============================================================ */
-type Kategori = 'Padi & Serealia' | 'Sayur & Buah' | 'Peternakan' | 'Kerajinan';
-type StatusPesanan = 'baru' | 'diproses' | 'dikirim' | 'selesai';
-type LangkahKirim = 0 | 1 | 2 | 3; // Dikemas, Diambil Kurir, Dalam Perjalanan, Terkirim
+import StokKomoditas from "./components/stok-komoditas";
+import PenjualanB2B from "./components/penjualan-b2b";
+import Pengiriman from "./components/pengiriman";
+import Keuangan from "./components/keuangan";
+import ProfilUMKM from "./components/profil-umkm";
 
-interface Produk {
+// ============================================================================
+// TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
+// ============================================================================
+export interface Profil {
+  nama: string;
+  usaha: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  kategori: string;
+  terverifikasi: boolean;
+  inisial: string;
+  fotoUrl?: string;
+}
+
+export interface StokItem {
   id: string;
   nama: string;
-  kategori: Kategori;
-  stok: number;
+  jumlah: number;
   satuan: string;
-  harga: number;
-  tanggalPanen: string; // yyyy-mm-dd
-  umurSimpanHari: number;
+  hargaSatuan: number;
+  status: "Aman" | "Menipis" | "Habis";
 }
 
-interface Pesanan {
+export interface Pesanan {
   id: string;
   pembeli: string;
-  produkId: string;
+  itemId: string;
+  item: string;
   jumlah: number;
-  status: StatusPesanan;
-  langkahKirim: LangkahKirim;
-  kurir?: string;
-}
-
-interface Transaksi {
-  id: string;
+  satuan: string;
+  total: number;
+  status: "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
   tanggal: string;
+  alamatKirim: string;
+  noResi?: string;
+}
+
+export interface Pengeluaran {
+  id: string;
   keterangan: string;
-  tipe: 'masuk' | 'keluar';
-  jumlah: number;
+  nominal: number;
+  tanggal: string;
+  kategori: string;
 }
 
-interface Toast {
-  id: number;
-  pesan: string;
-  tipe: 'sukses' | 'info' | 'peringatan';
+const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+
+const initialProfil: Profil = {
+  nama: "Pak Baihaqi",
+  usaha: "Keripik Tempe Sanan",
+  alamat: "Jl. Sanan No. 12, Malang, Jawa Timur",
+  telepon: "0812-3456-7890",
+  email: "baihaqi.sanan@gmail.com",
+  kategori: "Makanan & Minuman",
+  terverifikasi: true,
+  inisial: "PB",
+};
+
+const initialStok: StokItem[] = [
+  { id: "STK-01", nama: "Keripik Tempe Original", jumlah: 320, satuan: "kg", hargaSatuan: 45000, status: "Aman" },
+  { id: "STK-02", nama: "Keripik Tempe Pedas", jumlah: 8, satuan: "kg", hargaSatuan: 48000, status: "Menipis" },
+  { id: "STK-03", nama: "Kemasan Vakum 250gr", jumlah: 15, satuan: "pcs", hargaSatuan: 1200, status: "Menipis" },
+  { id: "STK-04", nama: "Tempe Kedelai Mentah", jumlah: 0, satuan: "kg", hargaSatuan: 12000, status: "Habis" },
+];
+
+const initialPesanan: Pesanan[] = [
+  { id: "ORD-2201", pembeli: "Warung Makmur Jaya", itemId: "STK-01", item: "Keripik Tempe Original", jumlah: 20, satuan: "kg", total: 900000, status: "Selesai", tanggal: "05 Jul 2026", alamatKirim: "Jl. Merdeka No. 5, Malang", noResi: "JNE-88213411" },
+  { id: "ORD-2202", pembeli: "Toko Sembako Berkah", itemId: "STK-02", item: "Keripik Tempe Pedas", jumlah: 12, satuan: "kg", total: 576000, status: "Dikirim", tanggal: "08 Jul 2026", alamatKirim: "Jl. Gus Dur No. 9, Jombang, Jawa Timur", noResi: "JNE-88220091" },
+  { id: "ORD-2203", pembeli: "Minimarket Sejahtera", itemId: "STK-01", item: "Keripik Tempe Original", jumlah: 35, satuan: "kg", total: 1575000, status: "Diproses", tanggal: "09 Jul 2026", alamatKirim: "Jl. Gajah Mada No. 3, Surabaya, Jawa Timur" },
+  { id: "ORD-2204", pembeli: "Koperasi Pasar Besar", itemId: "STK-01", item: "Keripik Tempe Original", jumlah: 10, satuan: "kg", total: 450000, status: "Baru", tanggal: "10 Jul 2026", alamatKirim: "Pasar Besar Malang, Los C12" },
+];
+
+const initialPengeluaran: Pengeluaran[] = [
+  { id: "EXP-01", keterangan: "Pembelian kedelai mentah", nominal: 850000, tanggal: "03 Jul 2026", kategori: "Bahan Baku" },
+  { id: "EXP-02", keterangan: "Kemasan vakum & label", nominal: 320000, tanggal: "06 Jul 2026", kategori: "Kemasan" },
+  { id: "EXP-03", keterangan: "Ongkos kirim bahan baku", nominal: 150000, tanggal: "07 Jul 2026", kategori: "Logistik" },
+];
+
+const salesMonthly = [
+  { bulan: "Feb", nilai: 8500000 },
+  { bulan: "Mar", nilai: 10200000 },
+  { bulan: "Apr", nilai: 9600000 },
+  { bulan: "Mei", nilai: 13400000 },
+  { bulan: "Jun", nilai: 12100000 },
+];
+
+// ---- Lokasi kota untuk peta pelacakan (tanpa perlu API key — pakai OpenStreetMap) ----
+const cityCoords: Record<string, [number, number]> = {
+  Malang: [-7.9666, 112.6326],
+  Jombang: [-7.5460, 112.2384],
+  Surabaya: [-7.2575, 112.7521],
+  Sidoarjo: [-7.4478, 112.7183],
+};
+const gudangAsal: [number, number] = cityCoords.Malang;
+
+export function extractCity(alamat: string): string {
+  const known = Object.keys(cityCoords);
+  const found = known.find((c) => alamat.toLowerCase().includes(c.toLowerCase()));
+  return found || "Malang";
+}
+export function coordFromAlamat(alamat: string): [number, number] {
+  return cityCoords[extractCity(alamat)];
 }
 
-/* ============================================================
-   DATA AWAL
-   ============================================================ */
-const produkAwal: Produk[] = [
-  { id: 'p1', nama: 'Beras Merah Organik', kategori: 'Padi & Serealia', stok: 1200, satuan: 'kg', harga: 24000, tanggalPanen: '2026-05-25', umurSimpanHari: 180 },
-  { id: 'p2', nama: 'Jagung Manis Pipil', kategori: 'Sayur & Buah', stok: 850, satuan: 'kg', harga: 8000, tanggalPanen: '2026-07-05', umurSimpanHari: 10 },
-  { id: 'p3', nama: 'Kentang Granola', kategori: 'Sayur & Buah', stok: 600, satuan: 'kg', harga: 12000, tanggalPanen: '2026-07-02', umurSimpanHari: 21 },
-  { id: 'p4', nama: 'Telur Ayam Kampung', kategori: 'Peternakan', stok: 90, satuan: 'tray', harga: 42000, tanggalPanen: '2026-07-06', umurSimpanHari: 14 },
-];
+// Peta kecil pakai Leaflet dari CDN — tidak perlu npm install apapun
+export function MiniMap({ markers, height = 220 }: { markers: { lat: number; lng: number; label: string; color?: string }[]; height?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
 
-const pesananAwal: Pesanan[] = [
-  { id: 'ORD-2294', pembeli: 'Koperasi Desa Maju', produkId: 'p1', jumlah: 200, status: 'baru', langkahKirim: 0 },
-  { id: 'ORD-2293', pembeli: 'UMKM Berkah Alam', produkId: 'p2', jumlah: 80, status: 'baru', langkahKirim: 0 },
-  { id: 'ORD-2291', pembeli: 'Toko Barokah', produkId: 'p4', jumlah: 15, status: 'diproses', langkahKirim: 1, kurir: 'JNE Kargo' },
-  { id: 'ORD-2288', pembeli: 'CV Dapur Nusantara', produkId: 'p3', jumlah: 50, status: 'dikirim', langkahKirim: 2, kurir: 'Sicepat Gudang' },
-  { id: 'ORD-2280', pembeli: 'Ibu Sari — Katering', produkId: 'p1', jumlah: 30, status: 'selesai', langkahKirim: 3 },
-];
+  useEffect(() => {
+    function init() {
+      const L = (window as any).L;
+      if (!ref.current || !L || markers.length === 0) return;
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      const map = L.map(ref.current, { scrollWheelZoom: false }).setView([markers[0].lat, markers[0].lng], 8);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+      markers.forEach((m) => {
+        L.circleMarker([m.lat, m.lng], { radius: 9, color: m.color || "#2563EB", fillColor: m.color || "#2563EB", fillOpacity: 0.9, weight: 2 }).addTo(map).bindPopup(m.label);
+      });
+      if (markers.length > 1) {
+        map.fitBounds(L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number])), { padding: [30, 30] });
+      }
+      mapRef.current = map;
+    }
 
-const transaksiAwal: Transaksi[] = [
-  { id: 't1', tanggal: '8 Jul 2026', keterangan: 'Pesanan ORD-2280 — Beras Merah', tipe: 'masuk', jumlah: 720000 },
-  { id: 't2', tanggal: '5 Jul 2026', keterangan: 'Komisi platform Juni 2026', tipe: 'keluar', jumlah: 384000 },
-];
+    if ((window as any).L) {
+      init();
+    } else {
+      if (!document.getElementById("leaflet-css")) {
+        const link = document.createElement("link");
+        link.id = "leaflet-css";
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(link);
+      }
+      let script = document.getElementById("leaflet-js") as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "leaflet-js";
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        document.body.appendChild(script);
+      }
+      script.addEventListener("load", init);
+      return () => script?.removeEventListener("load", init);
+    }
 
-const langkahLabel = ['Dikemas', 'Diambil Kurir', 'Dalam Perjalanan', 'Terkirim'];
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
+  }, [markers]);
 
-const formatRupiah = (n: number) =>
-  'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-
-function sisaHari(tanggalPanen: string, umurSimpanHari: number) {
-  const panen = new Date(tanggalPanen).getTime();
-  const kadaluarsa = panen + umurSimpanHari * 86400000;
-  const now = new Date('2026-07-09').getTime();
-  return Math.max(0, Math.round((kadaluarsa - now) / 86400000));
+  return <div ref={ref} style={{ height, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
 }
 
-/* ============================================================
-   KOMPONEN UTAMA
-   ============================================================ */
+// Komponen SVG Ikon Mandiri
+const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
+const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
+const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
+const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
+const IconWallet = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
+const IconUser = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const IconMapPin = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+const IconCheckCircle = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+const IconAlert = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+
+const menuItems = [
+  { key: "dashboard", label: "Dashboard", icon: IconDashboard },
+  { key: "stok", label: "Stok Komoditas", icon: IconPackage },
+  { key: "penjualan", label: "Penjualan B2B", icon: IconStore },
+  { key: "pengiriman", label: "Pengiriman", icon: IconTruck },
+  { key: "keuangan", label: "Keuangan", icon: IconWallet },
+  { key: "profil", label: "Profil UMKM", icon: IconUser },
+];
+
+function formatRupiah(n: number) {
+  return "Rp " + n.toLocaleString("id-ID");
+}
+
 export default function ProdusenDashboard() {
-  const [view, setView] = useState<'dashboard' | 'stok' | 'pesanan' | 'pengiriman' | 'keuangan' | 'profil'>('dashboard');
-  const [produk, setProduk] = useState<Produk[]>(produkAwal);
-  const [pesanan, setPesanan] = useState<Pesanan[]>(pesananAwal);
-  const [transaksi, setTransaksi] = useState<Transaksi[]>(transaksiAwal);
-  const [saldo, setSaldo] = useState(5400000);
-  const [saldoTertunda, setSaldoTertunda] = useState(1200000);
-  const [profil, setProfil] = useState({
-    nama: 'Pak Budi', usaha: 'Ladang Makmur', jenis: 'Petani',
-    telepon: '+62 812-3456-7890', alamat: 'Dusun Sumberrejo, Jombang, Jawa Timur',
-    deskripsi: 'Menyediakan hasil panen segar langsung dari petani lokal Jombang, dipanen dan dikirim dalam 24 jam.',
-  });
+  const [activeMenu, setActiveMenu] = useState("dashboard");
 
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const [modalTambah, setModalTambah] = useState(false);
-  const [modalStok, setModalStok] = useState<Produk | null>(null);
-  const [modalTarik, setModalTarik] = useState(false);
-  const [filterPesanan, setFilterPesanan] = useState<'semua' | StatusPesanan>('semua');
+  const [profil, setProfil] = useState<Profil>(initialProfil);
+  const [stokList, setStokList] = useState<StokItem[]>(initialStok);
+  const [pesananList, setPesananList] = useState<Pesanan[]>(initialPesanan);
+  const [pengeluaranList, setPengeluaranList] = useState<Pengeluaran[]>(initialPengeluaran);
 
-  const tampilkanToast = (pesan: string, tipe: Toast['tipe'] = 'sukses') => {
-    const id = Date.now();
-    setToasts((t) => [...t, { id, pesan, tipe }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
-  };
+  function hitungStatus(jumlah: number): StokItem["status"] {
+    if (jumlah <= 0) return "Habis";
+    if (jumlah <= 10) return "Menipis";
+    return "Aman";
+  }
 
-  const namaProduk = (id: string) => produk.find((p) => p.id === id)?.nama ?? '—';
-  const hargaProduk = (id: string) => produk.find((p) => p.id === id)?.harga ?? 0;
+  function addStok(item: Omit<StokItem, "id" | "status">) {
+    const id = `STK-${String(stokList.length + 1).padStart(2, "0")}`;
+    setStokList((prev) => [{ id, status: hitungStatus(item.jumlah), ...item }, ...prev]);
+  }
+  function updateStok(id: string, patch: Partial<StokItem>) {
+    setStokList((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch, status: hitungStatus(patch.jumlah ?? s.jumlah) } : s)));
+  }
+  function deleteStok(id: string) {
+    setStokList((prev) => prev.filter((s) => s.id !== id));
+  }
 
-  /* -------------------- AKSI -------------------- */
-  const tambahProduk = (p: Omit<Produk, 'id'>) => {
-    setProduk((prev) => [...prev, { ...p, id: 'p' + (prev.length + 1) + Date.now() }]);
-    setModalTambah(false);
-    tampilkanToast(`${p.nama} ditambahkan ke gudang.`);
-  };
+  function addPesanan(pembeli: string, itemId: string, jumlah: number, alamatKirim: string) {
+    const item = stokList.find((s) => s.id === itemId);
+    if (!item) return;
+    const id = `ORD-${2200 + pesananList.length + 1}`;
+    const total = item.hargaSatuan * jumlah;
+    setPesananList((prev) => [{ id, pembeli, itemId, item: item.nama, jumlah, satuan: item.satuan, total, status: "Baru", tanggal: todayLabel(), alamatKirim }, ...prev]);
+    updateStok(itemId, { jumlah: Math.max(0, item.jumlah - jumlah) });
+  }
 
-  const ubahStok = (id: string, stokBaru: number) => {
-    setProduk((prev) => prev.map((p) => (p.id === id ? { ...p, stok: stokBaru } : p)));
-    setModalStok(null);
-    tampilkanToast('Stok diperbarui.');
-  };
-
-  const hapusProduk = (id: string) => {
-    setProduk((prev) => prev.filter((p) => p.id !== id));
-    tampilkanToast('Produk dihapus dari gudang.', 'info');
-  };
-
-  const terimaPesanan = (id: string) => {
-    setPesanan((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'diproses', langkahKirim: 1, kurir: 'Menunggu penjemputan' } : o)));
-    tampilkanToast(`${id} dikonfirmasi, siapkan komoditasnya.`);
-  };
-
-  const majukanKirim = (id: string) => {
-    setPesanan((prev) =>
-      prev.map((o) => {
-        if (o.id !== id) return o;
-        const langkah = Math.min(3, (o.langkahKirim + 1)) as LangkahKirim;
-        const selesai = langkah === 3;
-        if (selesai) {
-          const total = o.jumlah * hargaProduk(o.produkId);
-          setTransaksi((t) => [{ id: 'tx' + Date.now(), tanggal: '9 Jul 2026', keterangan: `Pesanan ${o.id} — ${namaProduk(o.produkId)}`, tipe: 'masuk', jumlah: total }, ...t]);
-          setSaldo((s) => s + total);
-          tampilkanToast(`${o.id} terkirim! Dana masuk ke saldo.`);
-        } else {
-          tampilkanToast(`${o.id}: ${langkahLabel[langkah]}`, 'info');
-        }
-        return { ...o, langkahKirim: langkah, status: selesai ? 'selesai' : 'dikirim', kurir: o.kurir ?? 'Kurir mitra' };
+  function updatePesananStatus(id: string, status: Pesanan["status"]) {
+    setPesananList((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const noResi = status === "Dikirim" && !p.noResi ? `JNE-${Math.floor(80000000 + Math.random() * 9999999)}` : p.noResi;
+        return { ...p, status, noResi };
       })
     );
-  };
+  }
 
-  const tarikSaldo = (jumlah: number) => {
-    if (jumlah > saldo) {
-      tampilkanToast('Jumlah melebihi saldo tersedia.', 'peringatan');
-      return;
-    }
-    setSaldo((s) => s - jumlah);
-    setSaldoTertunda((s) => s + jumlah);
-    setTransaksi((t) => [{ id: 'tx' + Date.now(), tanggal: '9 Jul 2026', keterangan: 'Penarikan ke rekening bank', tipe: 'keluar', jumlah }, ...t]);
-    setModalTarik(false);
-    tampilkanToast('Penarikan diajukan, diproses 1–2 hari kerja.');
-  };
+  function addPengeluaran(entry: Omit<Pengeluaran, "id" | "tanggal">) {
+    const id = `EXP-${String(pengeluaranList.length + 1).padStart(2, "0")}`;
+    setPengeluaranList((prev) => [{ id, tanggal: todayLabel(), ...entry }, ...prev]);
+  }
 
-  /* -------------------- DATA TURUNAN -------------------- */
-  const totalPanenAktif = produk.reduce((sum, p) => sum + p.stok, 0);
-  const nilaiStok = produk.reduce((sum, p) => sum + p.stok * p.harga, 0);
-  const pengirimanAktif = pesanan.filter((o) => o.status === 'diproses' || o.status === 'dikirim');
-  const pesananBaru = pesanan.filter((o) => o.status === 'baru').length;
-  const pendapatanBulanIni = transaksi.filter((t) => t.tipe === 'masuk').reduce((s, t) => s + t.jumlah, 0);
-  const profitBersih = pendapatanBulanIni - transaksi.filter((t) => t.tipe === 'keluar').reduce((s, t) => s + t.jumlah, 0);
+  // ---- Angka turunan buat dashboard ----
+  const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
+  const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");
+  const totalPendapatan = pesananList.filter((p) => p.status === "Selesai").reduce((s, p) => s + p.total, 0);
+  const totalPengeluaran = pengeluaranList.reduce((s, p) => s + p.nominal, 0);
+  const saldo = totalPendapatan - totalPengeluaran;
+  const pesananAktif = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses" || p.status === "Dikirim").length;
+  const penjualanBulanIni = pesananList.filter((p) => p.status === "Selesai").reduce((s, p) => s + p.total, 0) + salesMonthly[salesMonthly.length - 1].nilai * 0;
+  const maxSales = Math.max(...salesMonthly.map((s) => s.nilai), penjualanBulanIni || 1);
 
-  const produkUrutFresh = useMemo(
-    () => [...produk].sort((a, b) => sisaHari(a.tanggalPanen, a.umurSimpanHari) - sisaHari(b.tanggalPanen, b.umurSimpanHari)),
-    [produk]
-  );
-
-  const pesananTerfilter = filterPesanan === 'semua' ? pesanan : pesanan.filter((o) => o.status === filterPesanan);
-
-  const navItems: { key: typeof view; label: string; icon: React.ElementType; badge?: number }[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: Sprout },
-    { key: 'stok', label: 'Stok Komoditas', icon: Package },
-    { key: 'pesanan', label: 'Penjualan B2B', icon: ArrowUpRight, badge: pesananBaru },
-    { key: 'pengiriman', label: 'Pengiriman', icon: Truck, badge: pengirimanAktif.length },
-    { key: 'keuangan', label: 'Keuangan', icon: Wallet },
-    { key: 'profil', label: 'Profil UMKM', icon: User },
-  ];
+  const getNavStyle = (key: string) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "9px",
+    padding: "9px 10px",
+    borderRadius: "8px",
+    background: activeMenu === key ? "rgba(255,255,255,.18)" : "transparent",
+    color: activeMenu === key ? "#fff" : "rgba(255,255,255,.75)",
+    fontSize: "13.5px",
+    cursor: "pointer",
+    marginBottom: "3px",
+  } as const);
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] text-[#1E293B]" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
-        .font-display { font-family: 'Sora', sans-serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        @keyframes slideUp { from { opacity:0; transform: translateY(8px);} to { opacity:1; transform:none; } }
-        @keyframes popIn { from { opacity:0; transform: scale(.96);} to { opacity:1; transform:scale(1);} }
-        .anim-slide { animation: slideUp .28s ease both; }
-        .anim-pop { animation: popIn .18s ease both; }
-      `}</style>
-
-      {/* ================= SIDEBAR ================= */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col sticky top-0 h-screen shrink-0">
-        <div className="px-5 py-5 flex items-center gap-2.5 border-b border-slate-100">
-          <div className="w-9 h-9 rounded-xl bg-[#10B981] flex items-center justify-center shadow-sm shadow-emerald-100">
-            <Sprout className="w-5 h-5 text-white" />
+    <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
+      {/* Sidebar */}
+      <aside style={{ width: "220px", background: "#2563EB", padding: "18px 12px", display: "flex", flexDirection: "column", height: "100vh", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "22px", padding: "0 4px" }}>
+          <div style={{ width: "26px", height: "26px", borderRadius: "7px", background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
           </div>
-          <div>
-            <div className="font-display font-bold text-[15px] text-[#10B981] leading-none">PasarNusa</div>
-            <div className="text-[11px] text-slate-400 font-medium mt-0.5">Panel Produsen</div>
-          </div>
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: "15px" }}>PasarNusa</span>
         </div>
-
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">Panel Produsen</div>
-          {navItems.map(({ key, label, icon: Icon, badge }) => {
-            const active = view === key;
+        <nav style={{ flex: 1, overflowY: "auto" }}>
+          {menuItems.map((m) => {
+            const Icon = m.icon;
             return (
-              <button
-                key={key}
-                onClick={() => setView(key)}
-                className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all ${
-                  active ? 'bg-[#EFF9F4] text-[#0F766E] font-semibold' : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className={`w-[18px] h-[18px] ${active ? 'text-[#10B981]' : 'text-slate-400 group-hover:text-slate-500'}`} />
-                <span className="flex-1 text-left">{label}</span>
-                {!!badge && badge > 0 && (
-                  <span className={`text-[10.5px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-[#10B981] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                    {badge}
-                  </span>
-                )}
-                {active && <span className="w-1 h-1 rounded-full bg-[#10B981]" />}
-              </button>
+              <div key={m.key} onClick={() => setActiveMenu(m.key)} style={getNavStyle(m.key)}>
+                <Icon /> {m.label}
+              </div>
             );
           })}
         </nav>
-
-        <div className="p-3 border-t border-slate-100">
-          <div className="flex items-center gap-2.5 px-2 py-2">
-            <div className="w-9 h-9 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-display font-bold text-[13px]">
-              {profil.nama.split(' ').map((s) => s[0]).slice(0, 2).join('')}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold truncate">{profil.nama}</div>
-              <div className="text-[11px] text-slate-400 truncate">{profil.usaha}</div>
-            </div>
-            <button className="text-slate-300 hover:text-[#EF4444]" title="Keluar">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.2)", paddingTop: "12px", marginTop: "12px" }}>
+          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "#EF4444", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
         </div>
       </aside>
 
-      {/* ================= MAIN ================= */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-[68px] bg-white/80 backdrop-blur border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-2 text-slate-400 text-[13px]">
-            <Search className="w-[15px] h-[15px]" />
-            <input placeholder="Cari produk, pesanan..." className="bg-transparent outline-none w-56 placeholder:text-slate-400" />
-          </div>
-          <div className="flex items-center gap-3">
-            {pesananBaru > 0 && (
-              <button onClick={() => setView('pesanan')} className="flex items-center gap-1.5 bg-[#ECFDF5] text-[#0F766E] px-3 py-1.5 rounded-lg text-[12.5px] font-semibold border border-emerald-100 hover:bg-emerald-100 transition-colors">
-                <ArrowUpRight className="w-[14px] h-[14px]" />
-                {pesananBaru} pesanan baru masuk
-              </button>
-            )}
-            <button className="relative w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-[#1E293B]">
-              <Bell className="w-[17px] h-[17px]" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-            </button>
-          </div>
-        </header>
+      {/* Konten */}
+      <div style={{ flex: 1, height: "100vh", overflowY: "auto" }}>
+        {activeMenu === "dashboard" && (
+          <main style={{ padding: "2rem" }}>
+            {/* Kartu Sambutan Biru — diperbesar */}
+            <div style={{ background: "#2563EB", borderRadius: "16px", padding: "1.75rem 2rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1.25rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+                <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(255,255,255,.2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.6rem", fontWeight: 700, flexShrink: 0, overflow: "hidden" }}>
+                  {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
+                </div>
+                <div>
+                  <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>Halo, {profil.nama}</div>
+                  <div style={{ fontSize: "1rem", color: "rgba(255,255,255,.9)", marginTop: "0.2rem" }}>{profil.usaha}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", color: "rgba(255,255,255,.75)", marginTop: "0.4rem" }}><IconMapPin /> {profil.alamat}</div>
+                </div>
+              </div>
+              {profil.terverifikasi && (
+                <span style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.2)", color: "#fff", fontSize: "0.82rem", fontWeight: 600, padding: "0.5rem 0.9rem", borderRadius: "999px" }}><IconCheckCircle /> Terverifikasi</span>
+              )}
+            </div>
 
-        <main className="p-8 flex-1 overflow-y-auto">
-          {view === 'dashboard' && (
-            <DashboardTab
-              totalPanenAktif={totalPanenAktif}
-              pengirimanAktif={pengirimanAktif.length}
-              nilaiStok={nilaiStok}
-              saldo={saldo}
-              produkUrutFresh={produkUrutFresh}
-              pesanan={pesanan}
-              namaProduk={namaProduk}
-              onLihatSemua={() => setView('pesanan')}
-              onTerima={terimaPesanan}
-            />
-          )}
+            {/* KPI Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+              <div onClick={() => setActiveMenu("stok")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", cursor: "pointer" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "9px", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.6rem" }}><IconPackage /></div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} unit</div>
+                <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total stok tersedia →</div>
+              </div>
+              <div onClick={() => setActiveMenu("penjualan")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", cursor: "pointer" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "9px", background: "#D1FAE5", color: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.6rem" }}><IconStore /></div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalPendapatan)}</div>
+                <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Penjualan selesai →</div>
+              </div>
+              <div onClick={() => setActiveMenu("pengiriman")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", cursor: "pointer" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "9px", background: "#FEF3C7", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.6rem" }}><IconTruck /></div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{pesananAktif}</div>
+                <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Pesanan diproses →</div>
+              </div>
+              <div onClick={() => setActiveMenu("keuangan")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", cursor: "pointer" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "9px", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.6rem" }}><IconWallet /></div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(saldo)}</div>
+                <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Saldo tersedia →</div>
+              </div>
+            </div>
 
-          {view === 'stok' && (
-            <StokTab
-              produk={produk}
-              onTambah={() => setModalTambah(true)}
-              onUbahStok={(p) => setModalStok(p)}
-              onHapus={hapusProduk}
-              onLacak={() => setView('pengiriman')}
-            />
-          )}
-
-          {view === 'pesanan' && (
-            <PesananTab
-              pesanan={pesananTerfilter}
-              filter={filterPesanan}
-              setFilter={setFilterPesanan}
-              namaProduk={namaProduk}
-              onTerima={terimaPesanan}
-              onProses={majukanKirim}
-            />
-          )}
-
-          {view === 'pengiriman' && (
-            <PengirimanTab pesanan={pengirimanAktif} namaProduk={namaProduk} onMajukan={majukanKirim} />
-          )}
-
-          {view === 'keuangan' && (
-            <KeuanganTab
-              saldo={saldo}
-              saldoTertunda={saldoTertunda}
-              pendapatanBulanIni={pendapatanBulanIni}
-              profitBersih={profitBersih}
-              transaksi={transaksi}
-              onTarik={() => setModalTarik(true)}
-            />
-          )}
-
-          {view === 'profil' && <ProfilTab profil={profil} setProfil={setProfil} onSimpan={() => tampilkanToast('Profil usaha disimpan.')} />}
-        </main>
-      </div>
-
-      {/* ================= MODALS ================= */}
-      {modalTambah && <ModalTambahProduk onClose={() => setModalTambah(false)} onSimpan={tambahProduk} />}
-      {modalStok && <ModalUbahStok produk={modalStok} onClose={() => setModalStok(null)} onSimpan={ubahStok} />}
-      {modalTarik && <ModalTarikSaldo saldo={saldo} onClose={() => setModalTarik(false)} onTarik={tarikSaldo} />}
-
-      {/* ================= TOASTS ================= */}
-      <div className="fixed bottom-5 right-5 flex flex-col gap-2 z-50">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`anim-slide px-4 py-3 rounded-xl shadow-lg text-[13px] font-medium flex items-center gap-2 text-white ${
-              t.tipe === 'sukses' ? 'bg-[#10B981]' : t.tipe === 'peringatan' ? 'bg-[#EF4444]' : 'bg-[#1E293B]'
-            }`}
-          >
-            {t.tipe === 'sukses' ? <CheckCircle2 className="w-4 h-4" /> : t.tipe === 'peringatan' ? <AlertTriangle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-            {t.pesan}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   TAB: DASHBOARD  — signature widget: Jendela Kesegaran Panen
-   ============================================================ */
-function DashboardTab({
-  totalPanenAktif, pengirimanAktif, nilaiStok, saldo, produkUrutFresh, pesanan, namaProduk, onLihatSemua, onTerima,
-}: {
-  totalPanenAktif: number; pengirimanAktif: number; nilaiStok: number; saldo: number;
-  produkUrutFresh: Produk[]; pesanan: Pesanan[]; namaProduk: (id: string) => string;
-  onLihatSemua: () => void; onTerima: (id: string) => void;
-}) {
-  const antrianBaru = pesanan.filter((o) => o.status === 'baru').slice(0, 3);
-
-  return (
-    <div className="space-y-6 anim-slide">
-      <div>
-        <h1 className="font-display font-bold text-[22px]">Portal Produsen — Ladang Makmur</h1>
-        <p className="text-slate-500 text-[13.5px] mt-1">Kelola komoditas hasil tani dan distribusi ke agen/marketplace.</p>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Total Hasil Panen Aktif" value={`${totalPanenAktif.toLocaleString('id-ID')} kg`} icon={Sprout} color="green" />
-        <StatCard label="Pengiriman Berjalan" value={`${pengirimanAktif}`} icon={Truck} color="blue" />
-        <StatCard label="Estimasi Nilai Stok" value={formatRupiah(nilaiStok)} icon={Package} color="amber" />
-        <StatCard label="Saldo Siap Tarik" value={formatRupiah(saldo)} icon={Wallet} color="green" />
-      </div>
-
-      <div className="grid grid-cols-5 gap-5">
-        {/* Signature: Jendela Kesegaran Panen */}
-        <div className="col-span-3 bg-white rounded-2xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-display font-bold text-[15px]">Jendela Kesegaran Panen</h3>
-          </div>
-          <p className="text-[12px] text-slate-400 mb-4">Sisa waktu sebelum komoditas melewati masa simpan optimalnya.</p>
-          <div className="space-y-3.5">
-            {produkUrutFresh.map((p) => {
-              const sisa = sisaHari(p.tanggalPanen, p.umurSimpanHari);
-              const pct = Math.min(100, Math.round((sisa / p.umurSimpanHari) * 100));
-              const warna = sisa <= 3 ? '#EF4444' : sisa <= 10 ? '#F59E0B' : '#10B981';
-              return (
-                <div key={p.id} className="flex items-center gap-3">
-                  <div className="w-32 shrink-0 text-[12.5px] font-semibold truncate">{p.nama}</div>
-                  <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: warna }} />
-                  </div>
-                  <div className="w-24 shrink-0 text-right text-[11.5px] font-bold font-mono" style={{ color: warna }}>
-                    {sisa === 0 ? 'Segera kirim' : `${sisa} hari lagi`}
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+              {/* Grafik Penjualan */}
+              <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+                <h3 style={{ margin: "0 0 1rem 0", fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>Penjualan Bulanan</h3>
+                <div style={{ display: "flex", alignItems: "flex-end", height: "140px", gap: "0.9rem" }}>
+                  {salesMonthly.map((m) => (
+                    <div key={m.bulan} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                      <div style={{ width: "100%", maxWidth: "34px", height: `${(m.nilai / maxSales) * 100}%`, background: "#93C5FD", borderRadius: "5px 5px 0 0", minHeight: "4px" }} />
+                      <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: "0.35rem" }}>{m.bulan}</div>
+                    </div>
+                  ))}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                    <div style={{ width: "100%", maxWidth: "34px", height: `${(Math.max(penjualanBulanIni, 1) / maxSales) * 100}%`, background: "#2563EB", borderRadius: "5px 5px 0 0", minHeight: "4px" }} />
+                    <div style={{ fontSize: "0.72rem", color: "#1E293B", fontWeight: 700, marginTop: "0.35rem" }}>Jul</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              </div>
 
-        {/* Antrian pesanan baru */}
-        <div className="col-span-2 bg-white rounded-2xl border border-slate-200 p-6 flex flex-col">
-          <h3 className="font-display font-bold text-[15px] mb-1">Menunggu Konfirmasi</h3>
-          <p className="text-[12px] text-slate-400 mb-4">Pesanan yang perlu segera kamu terima.</p>
-          <div className="space-y-2.5 flex-1">
-            {antrianBaru.length === 0 && <p className="text-[13px] text-slate-400 italic">Tidak ada pesanan menunggu saat ini.</p>}
-            {antrianBaru.map((o) => (
-              <div key={o.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[12.5px] font-semibold truncate">{namaProduk(o.produkId)}</div>
-                  <div className="text-[11px] text-slate-400 truncate">{o.pembeli}</div>
+              {/* Stok Menipis */}
+              <div onClick={() => setActiveMenu("stok")} style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #FCA5A5", cursor: "pointer" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <span style={{ color: "#EF4444" }}><IconAlert /></span>
+                  <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#991B1B" }}>Stok menipis / habis</span>
                 </div>
-                <button onClick={() => onTerima(o.id)} className="shrink-0 text-[11.5px] font-semibold bg-[#10B981] text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600">
-                  Terima
-                </button>
-              </div>
-            ))}
-          </div>
-          <button onClick={onLihatSemua} className="mt-4 text-[12.5px] font-semibold text-[#2563EB] flex items-center gap-1 hover:gap-2 transition-all">
-            Lihat semua penjualan <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: 'green' | 'blue' | 'amber' }) {
-  const map = {
-    green: { bg: '#ECFDF5', text: '#10B981', border: '#10B981' },
-    blue: { bg: '#EFF4FF', text: '#2563EB', border: '#2563EB' },
-    amber: { bg: '#FFFBEB', text: '#B45309', border: '#F59E0B' },
-  }[color];
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 border-l-4" style={{ borderLeftColor: map.border }}>
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: map.bg }}>
-        <Icon className="w-[18px] h-[18px]" style={{ color: map.text }} />
-      </div>
-      <div className="font-display font-extrabold text-[20px] font-mono">{value}</div>
-      <div className="text-[12px] text-slate-400 font-medium mt-0.5">{label}</div>
-    </div>
-  );
-}
-
-/* ============================================================
-   TAB: STOK KOMODITAS
-   ============================================================ */
-function StokTab({ produk, onTambah, onUbahStok, onHapus, onLacak }: {
-  produk: Produk[]; onTambah: () => void; onUbahStok: (p: Produk) => void; onHapus: (id: string) => void; onLacak: () => void;
-}) {
-  return (
-    <div className="space-y-5 anim-slide">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display font-bold text-[20px]">Stok Komoditas</h1>
-          <p className="text-slate-500 text-[13px] mt-1">Kelola hasil panen di gudang, harga, dan ketersediaan.</p>
-        </div>
-        <button onClick={onTambah} className="flex items-center gap-1.5 bg-[#10B981] text-white px-4 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-100">
-          <Plus className="w-4 h-4" /> Tambah Hasil Bumi
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {produk.map((p, i) => {
-          const sisa = sisaHari(p.tanggalPanen, p.umurSimpanHari);
-          const status = sisa <= 3 ? { label: 'Segera Kadaluarsa', bg: '#FEF2F2', text: '#B91C1C' } : sisa <= 10 ? { label: 'Perlu Dipantau', bg: '#FFFBEB', text: '#B45309' } : { label: 'Siap Kirim', bg: '#ECFDF5', text: '#047857' };
-          return (
-            <div key={p.id} className={`flex items-center gap-4 px-6 py-4 ${i !== produk.length - 1 ? 'border-b border-slate-100' : ''}`}>
-              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
-                <Package className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold truncate">{p.nama}</div>
-                <div className="text-[12px] text-slate-400">Stok: <b className="text-slate-600 font-mono">{p.stok.toLocaleString('id-ID')} {p.satuan}</b> · Harga: <b className="text-slate-600 font-mono">{formatRupiah(p.harga)}/{p.satuan}</b></div>
-              </div>
-              <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: status.bg, color: status.text }}>{status.label}</span>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => onUbahStok(p)} className="text-[12px] font-semibold border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">Ubah Stok</button>
-                <button onClick={onLacak} className="text-[12px] font-semibold border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">Lacak</button>
-                <button onClick={() => onHapus(p.id)} className="text-slate-300 hover:text-[#EF4444] px-1"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            </div>
-          );
-        })}
-        {produk.length === 0 && <div className="p-10 text-center text-slate-400 text-[13px]">Belum ada komoditas. Tambahkan hasil bumi pertamamu.</div>}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   TAB: PENJUALAN B2B (PESANAN)
-   ============================================================ */
-const statusBadge: Record<StatusPesanan, { label: string; bg: string; text: string }> = {
-  baru: { label: 'Baru', bg: '#EFF4FF', text: '#1D4ED8' },
-  diproses: { label: 'Diproses', bg: '#FFFBEB', text: '#B45309' },
-  dikirim: { label: 'Dikirim', bg: '#F1F5F9', text: '#475569' },
-  selesai: { label: 'Selesai', bg: '#ECFDF5', text: '#047857' },
-};
-
-function PesananTab({ pesanan, filter, setFilter, namaProduk, onTerima, onProses }: {
-  pesanan: Pesanan[]; filter: 'semua' | StatusPesanan; setFilter: (f: 'semua' | StatusPesanan) => void;
-  namaProduk: (id: string) => string; onTerima: (id: string) => void; onProses: (id: string) => void;
-}) {
-  const tabs: { key: 'semua' | StatusPesanan; label: string }[] = [
-    { key: 'semua', label: 'Semua' }, { key: 'baru', label: 'Baru' }, { key: 'diproses', label: 'Diproses' },
-    { key: 'dikirim', label: 'Dikirim' }, { key: 'selesai', label: 'Selesai' },
-  ];
-  return (
-    <div className="space-y-5 anim-slide">
-      <div>
-        <h1 className="font-display font-bold text-[20px]">Penjualan B2B</h1>
-        <p className="text-slate-500 text-[13px] mt-1">Konfirmasi dan proses pesanan dari agen & mitra grosir.</p>
-      </div>
-
-      <div className="flex gap-2">
-        {tabs.map((t) => (
-          <button key={t.key} onClick={() => setFilter(t.key)} className={`text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full border transition-colors ${filter === t.key ? 'bg-[#1E293B] text-white border-[#1E293B]' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {pesanan.map((o, i) => {
-          const badge = statusBadge[o.status];
-          return (
-            <div key={o.id} className={`flex items-center gap-4 px-6 py-4 ${i !== pesanan.length - 1 ? 'border-b border-slate-100' : ''}`}>
-              <div className="w-24 shrink-0 font-mono text-[12px] text-slate-400">{o.id}</div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold truncate">{namaProduk(o.produkId)}</div>
-                <div className="text-[12px] text-slate-400">{o.jumlah} unit · {o.pembeli}</div>
-              </div>
-              <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: badge.bg, color: badge.text }}>{badge.label}</span>
-              <div className="shrink-0">
-                {o.status === 'baru' && <button onClick={() => onTerima(o.id)} className="text-[12px] font-semibold bg-[#10B981] text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600">Terima</button>}
-                {(o.status === 'diproses' || o.status === 'dikirim') && <button onClick={() => onProses(o.id)} className="text-[12px] font-semibold bg-[#2563EB] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">Majukan Status</button>}
-                {o.status === 'selesai' && <span className="text-[12px] text-slate-300 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Tuntas</span>}
-              </div>
-            </div>
-          );
-        })}
-        {pesanan.length === 0 && <div className="p-10 text-center text-slate-400 text-[13px]">Tidak ada pesanan di kategori ini.</div>}
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   TAB: PENGIRIMAN
-   ============================================================ */
-function PengirimanTab({ pesanan, namaProduk, onMajukan }: { pesanan: Pesanan[]; namaProduk: (id: string) => string; onMajukan: (id: string) => void }) {
-  return (
-    <div className="space-y-5 anim-slide">
-      <div>
-        <h1 className="font-display font-bold text-[20px]">Pengiriman</h1>
-        <p className="text-slate-500 text-[13px] mt-1">Pantau posisi komoditas yang sedang dalam perjalanan.</p>
-      </div>
-
-      {pesanan.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400 text-[13px]">
-          Tidak ada pengiriman aktif saat ini.
-        </div>
-      )}
-
-      {pesanan.map((o) => (
-        <div key={o.id} className="bg-white rounded-2xl border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-[13.5px] font-semibold">{o.id} · {namaProduk(o.produkId)}</div>
-              <div className="text-[12px] text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> Tujuan: {o.pembeli} · {o.kurir}</div>
-            </div>
-            <button onClick={() => onMajukan(o.id)} className="text-[12px] font-semibold bg-[#2563EB] text-white px-3.5 py-2 rounded-lg hover:bg-blue-700">
-              {o.langkahKirim < 3 ? `Tandai: ${langkahLabel[o.langkahKirim + 1]}` : 'Selesai'}
-            </button>
-          </div>
-          <div className="flex items-center">
-            {langkahLabel.map((label, idx) => {
-              const done = idx <= o.langkahKirim;
-              const current = idx === o.langkahKirim;
-              return (
-                <div key={label} className="flex-1 flex flex-col items-center gap-1.5 relative">
-                  {idx > 0 && <div className="absolute top-[11px] right-1/2 w-full h-0.5" style={{ background: idx <= o.langkahKirim ? '#10B981' : '#F1F5F9' }} />}
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10.5px] font-bold z-10" style={{ background: done ? (current ? '#2563EB' : '#10B981') : '#F1F5F9', color: done ? '#fff' : '#94A3B8' }}>
-                    {done && !current ? '✓' : idx + 1}
+                {stokMenipis.length === 0 ? (
+                  <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Semua stok dalam kondisi aman.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                    {stokMenipis.map((s) => (
+                      <div key={s.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
+                        <span style={{ color: "#334155" }}>{s.nama}</span>
+                        <strong style={{ color: s.status === "Habis" ? "#EF4444" : "#D97706" }}>{s.jumlah} {s.satuan}</strong>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-[10.5px] font-semibold text-center" style={{ color: done ? '#1E293B' : '#94A3B8' }}>{label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ============================================================
-   TAB: KEUANGAN
-   ============================================================ */
-function KeuanganTab({ saldo, saldoTertunda, pendapatanBulanIni, profitBersih, transaksi, onTarik }: {
-  saldo: number; saldoTertunda: number; pendapatanBulanIni: number; profitBersih: number; transaksi: Transaksi[]; onTarik: () => void;
-}) {
-  return (
-    <div className="space-y-5 anim-slide">
-      <div>
-        <h1 className="font-display font-bold text-[20px]">Keuangan</h1>
-        <p className="text-slate-500 text-[13px] mt-1">Ringkasan pendapatan dan penarikan saldo usahamu.</p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <div className="text-[12px] text-slate-400 font-medium">Saldo Tersedia</div>
-          <div className="font-display font-extrabold text-[21px] font-mono mt-1" style={{ color: '#10B981' }}>{formatRupiah(saldo)}</div>
-          <button onClick={onTarik} className="mt-3 text-[12px] font-semibold bg-[#10B981] text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600">Tarik Saldo</button>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <div className="text-[12px] text-slate-400 font-medium">Pendapatan Tercatat</div>
-          <div className="font-display font-extrabold text-[21px] font-mono mt-1">{formatRupiah(pendapatanBulanIni)}</div>
-          <div className="text-[11.5px] text-slate-400 mt-3">Dari pesanan yang sudah terkirim</div>
-        </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <div className="text-[12px] text-slate-400 font-medium">Penarikan Tertunda</div>
-          <div className="font-display font-extrabold text-[21px] font-mono mt-1">{formatRupiah(saldoTertunda)}</div>
-          <div className="text-[11.5px] text-slate-400 mt-3">Diproses 1–2 hari kerja</div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h3 className="font-display font-bold text-[15px] mb-4">Riwayat Transaksi</h3>
-        <div className="space-y-0.5">
-          {transaksi.map((t, i) => (
-            <div key={t.id} className={`flex items-center justify-between py-3 ${i !== transaksi.length - 1 ? 'border-b border-slate-100' : ''}`}>
-              <div>
-                <div className="text-[13px] font-medium">{t.keterangan}</div>
-                <div className="text-[11.5px] text-slate-400">{t.tanggal}</div>
-              </div>
-              <div className="font-mono text-[13px] font-bold" style={{ color: t.tipe === 'masuk' ? '#10B981' : '#EF4444' }}>
-                {t.tipe === 'masuk' ? '+' : '-'}{formatRupiah(t.jumlah)}
+                )}
               </div>
             </div>
-          ))}
-          {transaksi.length === 0 && <p className="text-[13px] text-slate-400 italic py-4">Belum ada transaksi.</p>}
-        </div>
+
+            {/* Peta Pengiriman Aktif */}
+            <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0", marginBottom: "1.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.9rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>Posisi Pesanan Aktif</h3>
+                <span onClick={() => setActiveMenu("pengiriman")} style={{ fontSize: "0.78rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Lihat semua pengiriman →</span>
+              </div>
+              <MiniMap
+                markers={[
+                  { lat: gudangAsal[0], lng: gudangAsal[1], label: `Gudang ${profil.usaha} (asal pengiriman)`, color: "#10B981" },
+                  ...pesananList
+                    .filter((p) => p.status === "Diproses" || p.status === "Dikirim")
+                    .map((p) => {
+                      const [lat, lng] = coordFromAlamat(p.alamatKirim);
+                      return { lat, lng, label: `${p.id} — ${p.pembeli} (${p.status})`, color: p.status === "Dikirim" ? "#2563EB" : "#F59E0B" };
+                    }),
+                ]}
+              />
+            </div>
+
+            {/* Pesanan Terbaru */}
+            <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+              <h3 style={{ margin: 0, padding: "1.1rem 1.1rem 0.75rem", fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>Pesanan B2B terbaru</h3>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem", minWidth: "500px" }}>
+                  <tbody>
+                    {pesananList.slice(0, 4).map((p) => (
+                      <tr key={p.id} onClick={() => setActiveMenu("penjualan")} style={{ borderTop: "1px solid #F1F5F9", cursor: "pointer" }}>
+                        <td style={{ padding: "0.75rem 1.1rem", fontWeight: 600, color: "#1E293B" }}>{p.pembeli}</td>
+                        <td style={{ padding: "0.75rem 1.1rem", color: "#64748B" }}>{p.item}</td>
+                        <td style={{ padding: "0.75rem 1.1rem", color: "#1E293B", fontWeight: 600 }}>{formatRupiah(p.total)}</td>
+                        <td style={{ padding: "0.75rem 1.1rem" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 600, padding: "0.2rem 0.55rem", borderRadius: "999px", background: p.status === "Selesai" ? "#D1FAE5" : p.status === "Dikirim" ? "#E0F2FE" : p.status === "Diproses" ? "#FEF3C7" : p.status === "Dibatalkan" ? "#FEE2E2" : "#F1F5F9", color: p.status === "Selesai" ? "#065F46" : p.status === "Dikirim" ? "#075985" : p.status === "Diproses" ? "#92400E" : p.status === "Dibatalkan" ? "#991B1B" : "#475569" }}>{p.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </main>
+        )}
+
+        {activeMenu === "stok" && <StokKomoditas stokList={stokList} addStok={addStok} updateStok={updateStok} deleteStok={deleteStok} />}
+        {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} stokList={stokList} addPesanan={addPesanan} updatePesananStatus={updatePesananStatus} />}
+        {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={updatePesananStatus} />}
+        {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={addPengeluaran} />}
+        {activeMenu === "profil" && <ProfilUMKM profil={profil} setProfil={setProfil} />}
       </div>
     </div>
-  );
-}
-
-/* ============================================================
-   TAB: PROFIL UMKM
-   ============================================================ */
-function ProfilTab({ profil, setProfil, onSimpan }: { profil: any; setProfil: (fn: any) => void; onSimpan: () => void }) {
-  const update = (key: string, val: string) => setProfil((p: any) => ({ ...p, [key]: val }));
-  return (
-    <div className="space-y-5 anim-slide max-w-2xl">
-      <div>
-        <h1 className="font-display font-bold text-[20px]">Profil UMKM</h1>
-        <p className="text-slate-500 text-[13px] mt-1">Informasi ini tampil ke agen dan pembeli di marketplace.</p>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Nama Pemilik" value={profil.nama} onChange={(v) => update('nama', v)} />
-          <Field label="Nama Usaha" value={profil.usaha} onChange={(v) => update('usaha', v)} />
-          <Field label="Jenis Produsen" value={profil.jenis} onChange={(v) => update('jenis', v)} select options={['Petani', 'Peternak', 'Pengrajin']} />
-          <Field label="Nomor Telepon" value={profil.telepon} onChange={(v) => update('telepon', v)} />
-        </div>
-        <Field label="Alamat Lokasi" value={profil.alamat} onChange={(v) => update('alamat', v)} />
-        <Field label="Deskripsi Usaha" value={profil.deskripsi} onChange={(v) => update('deskripsi', v)} textarea />
-        <div className="flex justify-end pt-2">
-          <button onClick={onSimpan} className="bg-[#2563EB] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold hover:bg-blue-700">Simpan Perubahan</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value, onChange, textarea, select, options }: {
-  label: string; value: string; onChange: (v: string) => void; textarea?: boolean; select?: boolean; options?: string[];
-}) {
-  return (
-    <div className={textarea ? 'col-span-2' : ''}>
-      <label className="text-[12px] font-semibold text-slate-500 block mb-1.5">{label}</label>
-      {select ? (
-        <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#2563EB]">
-          {options!.map((o) => <option key={o}>{o}</option>)}
-        </select>
-      ) : textarea ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#2563EB] resize-none" />
-      ) : (
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#2563EB]" />
-      )}
-    </div>
-  );
-}
-
-/* ============================================================
-   MODAL: LAYOUT DASAR
-   ============================================================ */
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-40 p-4" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="anim-pop bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-bold text-[16px]">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ModalTambahProduk({ onClose, onSimpan }: { onClose: () => void; onSimpan: (p: Omit<Produk, 'id'>) => void }) {
-  const [nama, setNama] = useState('');
-  const [kategori, setKategori] = useState<Kategori>('Sayur & Buah');
-  const [stok, setStok] = useState('');
-  const [satuan, setSatuan] = useState('kg');
-  const [harga, setHarga] = useState('');
-  const [tanggalPanen, setTanggalPanen] = useState('2026-07-09');
-  const [umurSimpan, setUmurSimpan] = useState('14');
-
-  const submit = () => {
-    if (!nama || !stok || !harga) return;
-    onSimpan({ nama, kategori, stok: parseInt(stok), satuan, harga: parseInt(harga), tanggalPanen, umurSimpanHari: parseInt(umurSimpan) });
-  };
-
-  return (
-    <ModalShell title="Tambah Hasil Bumi" onClose={onClose}>
-      <div className="space-y-3">
-        <Field label="Nama Komoditas" value={nama} onChange={setNama} />
-        <Field label="Kategori" value={kategori} onChange={(v) => setKategori(v as Kategori)} select options={['Padi & Serealia', 'Sayur & Buah', 'Peternakan', 'Kerajinan']} />
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Jumlah Stok" value={stok} onChange={setStok} />
-          <Field label="Satuan" value={satuan} onChange={setSatuan} select options={['kg', 'tray', 'karung', 'pcs', 'botol']} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Harga per Satuan (Rp)" value={harga} onChange={setHarga} />
-          <Field label="Umur Simpan (hari)" value={umurSimpan} onChange={setUmurSimpan} />
-        </div>
-        <Field label="Tanggal Panen" value={tanggalPanen} onChange={setTanggalPanen} />
-        <button onClick={submit} className="w-full bg-[#10B981] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-emerald-600 mt-2">Simpan Komoditas</button>
-      </div>
-    </ModalShell>
-  );
-}
-
-function ModalUbahStok({ produk, onClose, onSimpan }: { produk: Produk; onClose: () => void; onSimpan: (id: string, stok: number) => void }) {
-  const [stok, setStok] = useState(String(produk.stok));
-  return (
-    <ModalShell title={`Ubah Stok — ${produk.nama}`} onClose={onClose}>
-      <Field label={`Jumlah stok (${produk.satuan})`} value={stok} onChange={setStok} />
-      <button onClick={() => onSimpan(produk.id, parseInt(stok) || 0)} className="w-full bg-[#2563EB] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-blue-700 mt-3">Perbarui Stok</button>
-    </ModalShell>
-  );
-}
-
-function ModalTarikSaldo({ saldo, onClose, onTarik }: { saldo: number; onClose: () => void; onTarik: (jumlah: number) => void }) {
-  const [jumlah, setJumlah] = useState('');
-  return (
-    <ModalShell title="Tarik Saldo" onClose={onClose}>
-      <p className="text-[12.5px] text-slate-400 mb-3">Saldo tersedia: <b className="text-slate-600 font-mono">{formatRupiah(saldo)}</b></p>
-      <Field label="Jumlah Penarikan (Rp)" value={jumlah} onChange={setJumlah} />
-      <button onClick={() => onTarik(parseInt(jumlah) || 0)} className="w-full bg-[#10B981] text-white py-2.5 rounded-xl text-[13px] font-semibold hover:bg-emerald-600 mt-3">Ajukan Penarikan</button>
-    </ModalShell>
   );
 }
