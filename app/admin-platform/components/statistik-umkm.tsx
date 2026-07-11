@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useState } from "react";
 
 const monthlyData = [
@@ -31,6 +32,17 @@ const IconTrend = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="no
 const IconCheck = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const IconMap = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+=======
+import { Card, PageHeader, StatCard } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const monthly = [
+  { label: "Jan", value: 40 },
+  { label: "Feb", value: 55 },
+  { label: "Mar", value: 70 },
+  { label: "Apr", value: 95 },
+];
+>>>>>>> Stashed changes
 
 export default function StatistikUmkmPage() {
   const [bulanDetail, setBulanDetail] = useState<{ bulan: string; jumlah: number } | null>(null);
@@ -41,6 +53,7 @@ export default function StatistikUmkmPage() {
   const totalWilayah = wilayahData.reduce((s, x) => s + x.jumlah, 0);
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh", width: "100%" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Statistik Data UMKM</h1>
@@ -156,5 +169,37 @@ export default function StatistikUmkmPage() {
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Statistik Data UMKM"
+        subtitle="Analisis pertumbuhan pendaftaran, sebaran wilayah, dan keaktifan mitra UMKM."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard icon={<Icon.TrendUp size={20} />} value="+240" label="UMKM Baru Bulan Ini" tone="blue" />
+        <StatCard icon={<Icon.UserCheck size={20} />} value="94.2%" label="Rasio UMKM Aktif Transaksi" tone="green" />
+        <StatCard icon={<Icon.Building size={20} />} value="34 Provinsi" label="Sebaran Jangkauan Wilayah" tone="amber" />
+      </div>
+
+      <Card>
+        <h3 className="text-base font-semibold text-[var(--color-text)] mb-6">Tren Pertumbuhan Bulanan (2026)</h3>
+        <div className="flex items-end gap-6 h-52 pl-4 border-l-2 border-b-2 border-[var(--color-border)]">
+          {monthly.map((m, i) => (
+            <div key={m.label} className="flex-1 flex flex-col items-center justify-end h-full">
+              <div
+                className={`w-full rounded-t-lg flex items-end justify-center pb-1.5 text-white text-xs font-semibold transition-all ${
+                  i === monthly.length - 1 ? "bg-[var(--color-primary)]" : "bg-[var(--color-primary)]/60"
+                }`}
+                style={{ height: `${m.value}%` }}
+              >
+                {m.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+>>>>>>> Stashed changes
   );
 }

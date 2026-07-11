@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState, FormEvent } from "react";
+=======
+import CategoryManager from "./ui/CategoryManager";
+>>>>>>> Stashed changes
 
 interface KategoriItem {
   id: string;
@@ -17,6 +21,7 @@ const initialData: KategoriItem[] = [
   { id: "CAT-D03", nama: "Sisa Kain Perca Katun", totalItem: "22 Industri", status: "Aktif", pertumbuhan: -3, anggota: ["Konveksi Batik Solo", "Tenun Ikat Sasak"] },
 ];
 
+<<<<<<< Updated upstream
 const IconSearch = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconLayers = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>;
@@ -238,5 +243,17 @@ export default function KategoriLimbahPage() {
         </div>
       )}
     </main>
+=======
+export default function KategoriLimbahPage() {
+  return (
+    <CategoryManager
+      title="Kategori Limbah"
+      subtitle="Kelola pengelompokan limbah sisa produksi untuk ekonomi sirkular."
+      addLabel="Tambah Kategori Limbah"
+      totalLabel="Total Industri"
+      searchPlaceholder="Cari kategori limbah..."
+      data={dataKategori}
+    />
+>>>>>>> Stashed changes
   );
 }

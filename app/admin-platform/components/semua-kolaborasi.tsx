@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState, FormEvent } from "react";
 
 interface Kolaborasi {
@@ -17,6 +18,16 @@ const initialData: Kolaborasi[] = [
   { id: "COL-7702", inisiator: "Gabungan Kelompok Tani", mitra: "UMKM Keripik Buah", proyek: "Sharing Session & Sharing Alat Vacuum Frying", durasi: "12 Bulan", status: "Aktif", deskripsi: "Penggunaan bersama mesin vacuum frying untuk menekan biaya investasi alat produksi bagi UMKM skala kecil." },
   { id: "COL-7703", inisiator: "Kopi Gayo Kolektif", mitra: "Pabrik Plastik Biodegradable", proyek: "Suplai Limbah Kulit Ceri Kopi", durasi: "3 Bulan", status: "Selesai", deskripsi: "Kulit ceri kopi diolah menjadi bahan baku plastik biodegradable, kontrak percobaan 3 bulan telah selesai dengan hasil baik." },
   { id: "COL-7704", inisiator: "Tenun Ikat Lombok", mitra: "Supplier Pewarna Alami", proyek: "Kontrak Eksklusif Suplai Indigofera", durasi: "24 Bulan", status: "Menunggu TTD", deskripsi: "Kontrak jangka panjang suplai pewarna alami indigofera, menunggu tanda tangan dari pihak supplier." },
+=======
+import { Badge, Button, PageHeader, Select, SearchInput, statusVariant, Table, TableCard, Td, Th, THead, Toolbar, Tr } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const dataKolaborasi = [
+  { id: "COL-7701", inisiator: "UMKM Tahu Sumedang", mitra: "Petani Budidaya Jamur", proyek: "Pemanfaatan Ampas Tahu untuk Media Tanam", durasi: "6 Bulan", status: "Berjalan" },
+  { id: "COL-7702", inisiator: "Gabungan Kelompok Tani", mitra: "UMKM Keripik Buah", proyek: "Sharing Session & Alat Vacuum Frying", durasi: "12 Bulan", status: "Aktif" },
+  { id: "COL-7703", inisiator: "Kopi Gayo Kolektif", mitra: "Pabrik Plastik Biodegradable", proyek: "Suplai Limbah Kulit Ceri Kopi", durasi: "3 Bulan", status: "Selesai" },
+  { id: "COL-7704", inisiator: "Tenun Ikat Lombok", mitra: "Supplier Pewarna Alami", proyek: "Kontrak Eksklusif Suplai Indigofera", durasi: "24 Bulan", status: "Menunggu TTD" },
+>>>>>>> Stashed changes
 ];
 
 const statusStyle: Record<string, { bg: string; color: string }> = {
@@ -76,6 +87,7 @@ export default function SemuaKolaborasiPage() {
   }
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh", width: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
@@ -247,5 +259,56 @@ export default function SemuaKolaborasiPage() {
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Semua Kolaborasi"
+        subtitle="Pantau kontrak kemitraan sirkular dan gotong royong infrastruktur antar pelaku usaha."
+        action={<Button icon={<Icon.Plus size={16} />}>Buka Hub Kolaborasi Baru</Button>}
+      />
+
+      <Toolbar>
+        <SearchInput placeholder="Cari inisiator, mitra, atau proyek..." />
+        <Select icon={false}>
+          <option value="">Semua Status</option>
+          <option value="berjalan">Berjalan</option>
+          <option value="aktif">Aktif</option>
+          <option value="selesai">Selesai</option>
+          <option value="ttd">Menunggu TTD</option>
+        </Select>
+      </Toolbar>
+
+      <TableCard>
+        <Table>
+          <THead>
+            <Th>ID Kontrak</Th>
+            <Th>Inisiator Utama</Th>
+            <Th>Mitra Kolaborasi</Th>
+            <Th>Nama Proyek</Th>
+            <Th>Durasi</Th>
+            <Th>Status</Th>
+            <Th center>Aksi</Th>
+          </THead>
+          <tbody>
+            {dataKolaborasi.map((col) => (
+              <Tr key={col.id}>
+                <Td className="font-semibold text-[var(--color-text-muted)]">{col.id}</Td>
+                <Td className="font-semibold">{col.inisiator}</Td>
+                <Td className="text-[var(--color-text-muted)]">{col.mitra}</Td>
+                <Td className="font-medium">{col.proyek}</Td>
+                <Td className="text-[var(--color-text-muted)]">{col.durasi}</Td>
+                <Td>
+                  <Badge variant={statusVariant(col.status)}>{col.status}</Badge>
+                </Td>
+                <Td center>
+                  <Button className="px-3 py-1.5 text-xs" icon={<Icon.Eye size={14} />}>Tinjau MOU</Button>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableCard>
+    </div>
+>>>>>>> Stashed changes
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState, FormEvent } from "react";
 
 type UmkmStatus = "Aktif" | "Pending" | "Suspended" | "Ditolak";
@@ -81,8 +82,18 @@ export default function SuspendAkun({ umkmList, pelanggaranList, addPelanggaran,
     setForm({ nama: "", jenis: "UMKM", pelanggaran: "", targetUmkmId: "" });
     setShowManualModal(false);
   }
+=======
+import { Badge, Button, PageHeader, statusVariant, Table, TableCard, Td, Th, THead, Tr } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const akunBermasalah = [
+  { id: "UMKM-004", nama: "Toko Curang (Minyak Kita)", jenis: "UMKM", pelanggaran: "Manipulasi Stok & Harga Subsidi", status: "Suspended", tanggal: "14 Mar 2026" },
+  { id: "SUP-012", nama: "Supplier Pupuk Palsu", jenis: "Supplier", pelanggaran: "Aduan Kualitas Tidak Sesuai Deskripsi", status: "Review Internal", tanggal: "02 Jul 2026" },
+];
+>>>>>>> Stashed changes
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh", width: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
@@ -221,5 +232,46 @@ export default function SuspendAkun({ umkmList, pelanggaranList, addPelanggaran,
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Pelanggaran & Suspend Akun"
+        subtitle="Tindak lanjuti pelaporan pengguna atau bekukan akun yang melanggar aturan platform."
+        action={<Button variant="danger" icon={<Icon.UserX size={16} />}>Suspend Akun Manual</Button>}
+      />
+
+      <TableCard>
+        <Table>
+          <THead>
+            <Th>ID Pengguna</Th>
+            <Th>Nama Akun / Entitas</Th>
+            <Th>Peran</Th>
+            <Th>Alasan Pelanggaran</Th>
+            <Th>Status</Th>
+            <Th center>Aksi</Th>
+          </THead>
+          <tbody>
+            {akunBermasalah.map((row) => (
+              <Tr key={row.id}>
+                <Td className="font-semibold text-[var(--color-text-muted)]">{row.id}</Td>
+                <Td className="font-semibold">{row.nama}</Td>
+                <Td className="text-[var(--color-text-muted)]">{row.jenis}</Td>
+                <Td className="text-[#991B1B]">{row.pelanggaran}</Td>
+                <Td>
+                  <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
+                </Td>
+                <Td center>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button variant="subtle" className="px-3 py-1.5 text-xs">Investigasi</Button>
+                    {row.status === "Suspended" && <Button variant="successSubtle" className="px-3 py-1.5 text-xs">Pulihkan Akun</Button>}
+                  </div>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableCard>
+    </div>
+>>>>>>> Stashed changes
   );
 }

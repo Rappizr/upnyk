@@ -1,9 +1,19 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState } from "react";
 import Link from "next/link";
+=======
+import { useState } from "react";
+import type { ComponentType } from "react";
 
-// 1. IMPORT SEMUA KOMPONEN DARI FOLDER COMPONENTS
+import AdminHeader from "./components/AdminHeader";
+import AdminSidebar, { MenuKey } from "./components/AdminSidebar";
+import { Card, StatCard } from "./components/ui/AdminUI";
+import { Button } from "./components/ui/AdminUI";
+import { Icon } from "./components/ui/icons";
+>>>>>>> Stashed changes
+
 import DataUMKM from "./components/dataUMKM";
 import VerifikasiAkun from "./components/verivikasiAkun";
 import SuspendAkun from "./components/suspandAkun";
@@ -18,6 +28,7 @@ import StatistikLimbah from "./components/statistik-limbah";
 import StatistikBahanBaku from "./components/statistik-bahan-baku";
 import StatistikSupplier from "./components/statistik-supplier";
 
+<<<<<<< Updated upstream
 // ============================================================================
 // TIPE DATA — dipakai bersama, ditulis manual di sini (tanpa file lib terpisah)
 // ============================================================================
@@ -256,6 +267,113 @@ export default function AdminPlatformDashboard() {
     fontSize: "0.9rem",
     cursor: "pointer",
   });
+=======
+const activities: { time: string; user: string; action: string; category: string }[] = [
+  { time: "10:15", user: "UMKM Keripik Tempe", action: "Mengajukan verifikasi profil usaha baru", category: "Verifikasi" },
+  { time: "09:42", user: "Supplier Makmur", action: "Menambahkan stok limbah sekam padi sebanyak +2 Ton", category: "Limbah" },
+  { time: "08:12", user: "Sistem Transaksi", action: "Kolaborasi sewa alat pencacah sampah plastik berhasil diverifikasi", category: "Penyewaan" },
+  { time: "07:30", user: "Admin", action: "Menangguhkan (suspend) akun 'Toko Curang' karena pelanggaran syarat & ketentuan", category: "Manajemen User" },
+];
+
+const categoryStyle: Record<string, { dot: string; text: string; barColor: string }> = {
+  Verifikasi: { dot: "bg-[var(--color-primary)]", text: "text-[var(--color-primary-dark)]", barColor: "var(--color-primary)" },
+  Limbah: { dot: "bg-[var(--color-secondary)]", text: "text-[#047857]", barColor: "var(--color-secondary)" },
+  Penyewaan: { dot: "bg-[var(--color-warning)]", text: "text-[#92400E]", barColor: "var(--color-warning)" },
+  "Manajemen User": { dot: "bg-[var(--color-alert)]", text: "text-[#991B1B]", barColor: "var(--color-alert)" },
+};
+
+function DashboardRingkasan() {
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Hero */}
+      <div className="hero-banner mb-8">
+        <div className="relative z-10 flex items-start justify-between gap-6 flex-wrap">
+          <div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/15 px-2.5 py-1 rounded-full mb-4">
+              <Icon.Shield size={13} /> Super Admin Console
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight max-w-xl">
+              Panel kontrol penuh untuk siklus ekosistem PasarNusa.
+            </h1>
+            <p className="text-white/80 text-sm sm:text-base mt-3 max-w-lg">
+              Pantau UMKM, rantai pasok, transaksi, dan kolaborasi sirkular dalam satu tempat.
+            </p>
+          </div>
+          <Button variant="secondary" icon={<Icon.Download size={16} />} className="relative z-10">
+            Unduh Laporan Audit
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats grid — 3 per baris supaya kartunya lega, bukan dipepetin 6 sekaligus */}
+      <div className="mb-3">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--color-text-subtle)]">Ringkasan Platform</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-10">
+        <StatCard icon={<Icon.Users size={22} />} value="2.410" label="Total UMKM" tone="blue" />
+        <StatCard icon={<Icon.Wallet size={22} />} value="18.4K" label="Total Transaksi" tone="green" />
+        <StatCard icon={<Icon.Truck size={22} />} value="842" label="Penyewaan Alat" tone="red" />
+        <StatCard icon={<Icon.Venn size={22} />} value="1.205" label="Total Kolaborasi" tone="amber" />
+        <StatCard icon={<Icon.Recycle size={22} />} value="45.2 T" label="Limbah Terjual" tone="sky" />
+        <StatCard icon={<Icon.Building size={22} />} value="318" label="Total Supplier" tone="violet" />
+      </div>
+
+      {/* Activity log */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--color-text-subtle)] flex items-center gap-2">
+          <Icon.FileText size={15} /> Aktivitas & Tata Kelola Platform
+        </h2>
+        <span className="text-xs font-semibold text-[var(--color-primary)] cursor-pointer hover:underline">Lihat Semua Log →</span>
+      </div>
+      <Card noPad className="p-4 sm:p-6">
+        <div className="flex flex-col gap-3">
+          {activities.map((a, i) => {
+            const style = categoryStyle[a.category] ?? { dot: "bg-slate-400", text: "text-slate-600", barColor: "#CBD5E1" };
+            return (
+              <div
+                key={i}
+                style={{ borderLeftColor: style.barColor }}
+                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-4 border border-[var(--color-border-light)] border-l-[3px] bg-[var(--color-bg)] rounded-r-xl hover:bg-white transition-colors"
+              >
+                <span className="text-xs font-bold text-[var(--color-text-muted)] shrink-0 w-12 tabular-nums">{a.time}</span>
+                <div className="flex-1 text-sm text-[var(--color-text)] min-w-0">
+                  <strong className="font-semibold">{a.user}</strong> — {a.action}
+                </div>
+                <span className={`shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold w-fit ${style.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                  {a.category}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+const PAGES: Record<MenuKey, ComponentType> = {
+  ringkasan: DashboardRingkasan,
+  "data-umkm": DataUMKM,
+  "verifikasi-umkm": VerifikasiAkun,
+  "suspend-akun": SuspendAkun,
+  "kat-usaha": KategoriUsaha,
+  "kat-supplier": KategoriSupplier,
+  "kat-bahan": KategoriBahanBaku,
+  "kat-limbah": KategoriLimbah,
+  "semua-transaksi": SemuaTransaksi,
+  "semua-kolaborasi": SemuaKolaborasi,
+  "stat-umkm": StatistikUMKM,
+  "stat-limbah": StatistikLimbah,
+  "stat-bahan": StatistikBahanBaku,
+  "stat-supplier": StatistikSupplier,
+};
+
+export default function AdminPlatformDashboard() {
+  const [activeMenu, setActiveMenu] = useState<MenuKey>("ringkasan");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const ActivePage = PAGES[activeMenu];
+>>>>>>> Stashed changes
 
   function exportWord() {
     const rows = activities.map((a) => `<tr><td style="padding:6px;border:1px solid #ddd;">${a.tanggal}</td><td style="padding:6px;border:1px solid #ddd;">${a.umkm}</td><td style="padding:6px;border:1px solid #ddd;">${a.keterangan}</td><td style="padding:6px;border:1px solid #ddd;">${a.status}</td></tr>`).join("");
@@ -293,6 +411,7 @@ export default function AdminPlatformDashboard() {
   }
 
   return (
+<<<<<<< Updated upstream
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
       <style>{`@media print { .no-print { display: none !important; } .print-area { overflow: visible !important; height: auto !important; } }`}</style>
 
@@ -591,6 +710,19 @@ export default function AdminPlatformDashboard() {
         {activeMenu === "stat-limbah" && <StatistikLimbah />}
         {activeMenu === "stat-bahan" && <StatistikBahanBaku />}
         {activeMenu === "stat-supplier" && <StatistikSupplier />}
+=======
+    <div className="h-screen flex flex-col bg-[var(--color-bg)] overflow-hidden">
+      <AdminHeader onMenuClick={() => setSidebarOpen(true)} pendingCount={4} />
+
+      <div className="flex-1 flex overflow-hidden">
+        <AdminSidebar active={activeMenu} onSelect={setActiveMenu} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-[1440px] mx-auto">
+            <ActivePage />
+          </div>
+        </main>
+>>>>>>> Stashed changes
       </div>
     </div>
   );

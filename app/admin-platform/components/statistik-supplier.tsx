@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useState } from "react";
 
 const monthlyGrowth = [
@@ -120,5 +121,21 @@ export default function StatistikSupplierPage() {
         </div>
       )}
     </main>
+=======
+import SimpleStatsPage from "./ui/SimpleStatsPage";
+import { Icon } from "./ui/icons";
+
+export default function StatistikSupplierPage() {
+  return (
+    <SimpleStatsPage
+      title="Statistik Produsen & Supplier"
+      subtitle="Analisis kinerja ketepatan pengiriman logistik, pemenuhan order B2B, dan rating kepuasan mitra."
+      stats={[
+        { icon: <Icon.Sparkle size={20} />, value: "4.8 / 5.0", label: "Rata-rata Rating Supplier", tone: "amber" },
+        { icon: <Icon.Truck size={20} />, value: "96.5%", label: "SLA Ketepatan Waktu Logistik", tone: "blue" },
+        { icon: <Icon.Building size={20} />, value: "318 Mitra", label: "Total Produsen Skala Besar", tone: "violet" },
+      ]}
+    />
+>>>>>>> Stashed changes
   );
 }

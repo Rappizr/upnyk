@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState, FormEvent } from "react";
 
 // ============================================================================
@@ -100,10 +101,42 @@ export default function DataUMKM({ umkmList, addUmkm, setUmkmStatus }: Props) {
           </select>
         </div>
         <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} style={{ padding: "0.5rem 1rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", color: "#334155" }}>
+=======
+import { Badge, Button, Pagination, Select, SearchInput, statusVariant, Table, TableCard, Td, Th, THead, Toolbar, Tr, PageHeader } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const umkmData = [
+  { id: "UMKM-001", nama: "Keripik Tempe Sanan", pemilik: "Pak Baihaqi", kategori: "Makanan & Minuman", wilayah: "Malang", status: "Aktif", tanggal: "12 Feb 2026" },
+  { id: "UMKM-002", nama: "Kopi Arabika Gayo", pemilik: "Ibu Citra", kategori: "Pertanian / Komoditas", wilayah: "Aceh", status: "Pending", tanggal: "05 Jul 2026" },
+  { id: "UMKM-003", nama: "Kerajinan Bambu Jaya", pemilik: "Dedi Kurniawan", kategori: "Kerajinan Kriya", wilayah: "Yogyakarta", status: "Aktif", tanggal: "20 Jan 2025" },
+  { id: "UMKM-004", nama: "Toko Curang (Minyak Kita)", pemilik: "Rian", kategori: "Bahan Pokok", wilayah: "Jakarta", status: "Suspended", tanggal: "14 Mar 2026" },
+  { id: "UMKM-005", nama: "Tenun Ikat Sasak", pemilik: "Ibu Nur", kategori: "Fashion & Tekstil", wilayah: "Lombok", status: "Aktif", tanggal: "09 Mei 2026" },
+];
+
+export default function DataUMKM() {
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Data UMKM"
+        subtitle="Manajemen data seluruh pelaku UMKM yang terdaftar di platform PasarNusa."
+        action={<Button icon={<Icon.Plus size={16} />}>Tambah Data UMKM</Button>}
+      />
+
+      <Toolbar>
+        <SearchInput placeholder="Cari nama UMKM, pemilik, atau ID..." />
+        <Select>
+          <option value="">Semua Kategori</option>
+          <option value="kuliner">Makanan & Minuman</option>
+          <option value="kriya">Kerajinan Kriya</option>
+          <option value="tani">Pertanian</option>
+        </Select>
+        <Select icon={false}>
+>>>>>>> Stashed changes
           <option value="">Semua Status</option>
           <option value="aktif">Aktif</option>
           <option value="pending">Pending</option>
           <option value="suspended">Suspended</option>
+<<<<<<< Updated upstream
           <option value="ditolak">Ditolak</option>
         </select>
       </div>
@@ -225,5 +258,46 @@ export default function DataUMKM({ umkmList, addUmkm, setUmkmStatus }: Props) {
         </div>
       )}
     </main>
+=======
+        </Select>
+      </Toolbar>
+
+      <TableCard>
+        <Table>
+          <THead>
+            <Th>ID UMKM</Th>
+            <Th>Nama Usaha</Th>
+            <Th>Pemilik</Th>
+            <Th>Kategori</Th>
+            <Th>Wilayah</Th>
+            <Th>Status</Th>
+            <Th center>Aksi</Th>
+          </THead>
+          <tbody>
+            {umkmData.map((row) => (
+              <Tr key={row.id}>
+                <Td className="font-semibold text-[var(--color-text-muted)]">{row.id}</Td>
+                <Td className="font-semibold">{row.nama}</Td>
+                <Td className="text-[var(--color-text-muted)]">{row.pemilik}</Td>
+                <Td className="text-[var(--color-text-muted)]">{row.kategori}</Td>
+                <Td className="text-[var(--color-text-muted)]">{row.wilayah}</Td>
+                <Td>
+                  <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
+                </Td>
+                <Td center>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button variant="subtle" className="px-3 py-1.5 text-xs">Detail</Button>
+                    {row.status === "Pending" && <Button variant="successSubtle" className="px-3 py-1.5 text-xs">Verifikasi</Button>}
+                    {row.status === "Aktif" && <Button variant="dangerSubtle" className="px-3 py-1.5 text-xs">Suspend</Button>}
+                  </div>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+        <Pagination showing="1-5" total="2.410 data UMKM" />
+      </TableCard>
+    </div>
+>>>>>>> Stashed changes
   );
 }

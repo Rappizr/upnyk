@@ -1,6 +1,11 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useMemo, useState } from "react";
+=======
+import { Badge, Button, PageHeader, Select, SearchInput, statusVariant, Table, TableCard, Td, Th, THead, Toolbar, Tr } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+>>>>>>> Stashed changes
 
 interface Transaksi {
   id: string;
@@ -82,6 +87,7 @@ export default function SemuaTransaksiPage() {
   }
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh", width: "100%" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
@@ -247,5 +253,65 @@ export default function SemuaTransaksiPage() {
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Semua Transaksi"
+        subtitle="Monitor dan audit seluruh aktivitas pembayaran komoditas di dalam platform."
+        action={<Button variant="ghost" icon={<Icon.Download size={16} />}>Ekspor Laporan (CSV)</Button>}
+      />
+
+      <Toolbar>
+        <SearchInput placeholder="Cari ID transaksi, UMKM, atau supplier..." />
+        <Select>
+          <option value="">Semua Jenis</option>
+          <option value="bahan">Bahan Baku</option>
+          <option value="limbah">Penjualan Limbah</option>
+        </Select>
+        <Select icon={false}>
+          <option value="">Semua Status</option>
+          <option value="selesai">Selesai</option>
+          <option value="diproses">Diproses</option>
+          <option value="dikirim">Dikirim</option>
+          <option value="batal">Dibatalkan</option>
+        </Select>
+      </Toolbar>
+
+      <TableCard>
+        <Table>
+          <THead>
+            <Th>ID Transaksi</Th>
+            <Th>Tanggal</Th>
+            <Th>Pihak UMKM</Th>
+            <Th>Pihak Supplier</Th>
+            <Th>Jenis</Th>
+            <Th>Nominal</Th>
+            <Th>Status</Th>
+            <Th center>Aksi</Th>
+          </THead>
+          <tbody>
+            {dataTransaksi.map((tx) => (
+              <Tr key={tx.id}>
+                <Td className="font-semibold text-[var(--color-primary)]">{tx.id}</Td>
+                <Td className="text-[var(--color-text-muted)]">{tx.tanggal}</Td>
+                <Td className="font-semibold">{tx.umkm}</Td>
+                <Td className="text-[var(--color-text-muted)]">{tx.supplier}</Td>
+                <Td>
+                  <span className="text-xs bg-slate-100 text-[var(--color-text-muted)] px-2 py-1 rounded-md">{tx.jenis}</span>
+                </Td>
+                <Td className="font-bold">{tx.nominal}</Td>
+                <Td>
+                  <Badge variant={statusVariant(tx.status)}>{tx.status}</Badge>
+                </Td>
+                <Td center>
+                  <Button variant="subtle" className="px-3 py-1.5 text-xs">Detail Kelola</Button>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableCard>
+    </div>
+>>>>>>> Stashed changes
   );
 }

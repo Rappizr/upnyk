@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useState } from "react";
 
 const monthlyVolume = [
@@ -118,5 +119,21 @@ export default function StatistikBahanBakuPage() {
         </div>
       )}
     </main>
+=======
+import SimpleStatsPage from "./ui/SimpleStatsPage";
+import { Icon } from "./ui/icons";
+
+export default function StatistikBahanBakuPage() {
+  return (
+    <SimpleStatsPage
+      title="Statistik Komoditas Bahan Baku"
+      subtitle="Pantau stabilitas stok dan penawaran suplai komoditas utama kebutuhan industri rural."
+      stats={[
+        { icon: <Icon.Layers size={20} />, value: "1.412 SKU", label: "Total Jenis Bahan Baku Tersedia", tone: "sky" },
+        { icon: <Icon.TrendUp size={20} />, value: "Stabil", label: "Status Indeks Harga Pasar", tone: "green" },
+        { icon: <Icon.Truck size={20} />, value: "88.4 Ton", label: "Total Volume Distribusi Bahan Baku", tone: "violet" },
+      ]}
+    />
+>>>>>>> Stashed changes
   );
 }

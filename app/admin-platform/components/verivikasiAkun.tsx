@@ -1,4 +1,5 @@
 "use client";
+<<<<<<< Updated upstream
 
 import { useMemo, useState } from "react";
 
@@ -67,8 +68,20 @@ export default function VerifikasiAkun({ umkmList, setUmkmStatus }: Props) {
     });
     return Object.entries(map).map(([bulan, jumlah]) => ({ bulan, jumlah }));
   }, [umkmList]);
+=======
+
+import { ActionLink, Button, Card, PageHeader, Table, TableCard, Td, Th, THead, Tr } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const pengajuanVerifikasi = [
+  { id: "REQ-091", namaUsaha: "Kopi Arabika Gayo", pemilik: "Ibu Citra", dokumen: "NIB & Sertifikat Halal", tanggal: "05 Jul 2026", wilayah: "Aceh" },
+  { id: "REQ-092", namaUsaha: "Madu Hutan Sumbawa", pemilik: "Pak Ahmad", dokumen: "P-IRT & KTP Pemilik", tanggal: "07 Jul 2026", wilayah: "NTB" },
+  { id: "REQ-093", namaUsaha: "Kripik Singkong Renyah", pemilik: "Siti Aminah", dokumen: "NIB & KTP Pemilik", tanggal: "07 Jul 2026", wilayah: "Bandung" },
+];
+>>>>>>> Stashed changes
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Verifikasi Pendaftaran UMKM</h1>
@@ -156,5 +169,54 @@ export default function VerifikasiAkun({ umkmList, setUmkmStatus }: Props) {
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Verifikasi Pendaftaran UMKM"
+        subtitle="Tinjau dokumen legalitas dan setujui kemitraan UMKM baru sebelum tampil di marketplace."
+        action={
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary)] bg-[var(--color-primary-light)] px-3 py-2 rounded-lg">
+            <Icon.UserCheck size={16} /> {pengajuanVerifikasi.length} menunggu tinjauan
+          </span>
+        }
+      />
+
+      {pengajuanVerifikasi.length === 0 ? (
+        <Card className="text-center text-sm text-[var(--color-text-muted)] py-10">Tidak ada pengajuan verifikasi baru saat ini.</Card>
+      ) : (
+        <TableCard>
+          <Table>
+            <THead>
+              <Th>ID Pengajuan</Th>
+              <Th>Nama Usaha</Th>
+              <Th>Pemilik</Th>
+              <Th>Wilayah</Th>
+              <Th>Dokumen Kelengkapan</Th>
+              <Th center>Aksi</Th>
+            </THead>
+            <tbody>
+              {pengajuanVerifikasi.map((row) => (
+                <Tr key={row.id}>
+                  <Td className="font-semibold text-[var(--color-text-muted)]">{row.id}</Td>
+                  <Td className="font-semibold">{row.namaUsaha}</Td>
+                  <Td className="text-[var(--color-text-muted)]">{row.pemilik}</Td>
+                  <Td className="text-[var(--color-text-muted)]">{row.wilayah}</Td>
+                  <Td>
+                    <ActionLink>Lihat {row.dokumen}</ActionLink>
+                  </Td>
+                  <Td center>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button variant="successSubtle" className="px-3 py-1.5 text-xs" icon={<Icon.Check size={14} />}>Setujui</Button>
+                      <Button variant="dangerSubtle" className="px-3 py-1.5 text-xs" icon={<Icon.X size={14} />}>Tolak</Button>
+                    </div>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableCard>
+      )}
+    </div>
+>>>>>>> Stashed changes
   );
 }

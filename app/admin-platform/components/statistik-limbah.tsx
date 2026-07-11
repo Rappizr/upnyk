@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useState } from "react";
 
 const distribusiData = [
@@ -13,11 +14,22 @@ const IconRecycle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconAlert = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+=======
+import { Card, PageHeader, ProgressBar, StatCard } from "./ui/AdminUI";
+import { Icon } from "./ui/icons";
+
+const distribusi = [
+  { label: "Ampas Kopi Organik", value: 60, color: "#10B981" },
+  { label: "Sekam Padi", value: 25, color: "#F59E0B" },
+  { label: "Kain Perca Katun", value: 15, color: "#2563EB" },
+];
+>>>>>>> Stashed changes
 
 export default function StatistikLimbahPage() {
   const [detail, setDetail] = useState<(typeof distribusiData)[number] | null>(null);
 
   return (
+<<<<<<< Updated upstream
     <main style={{ flex: 1, padding: "2rem", overflowY: "auto", height: "100vh", width: "100%" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Statistik Tata Kelola Limbah</h1>
@@ -94,5 +106,28 @@ export default function StatistikLimbahPage() {
         </div>
       )}
     </main>
+=======
+    <div className="p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Statistik Tata Kelola Limbah"
+        subtitle="Metrik ekonomi sirkular — volume ampas industri yang berhasil didaur ulang kembali."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard icon={<Icon.Recycle size={20} />} value="45.2 Ton" label="Total Limbah Terutilisasi" tone="green" />
+        <StatCard icon={<Icon.Wallet size={20} />} value="Rp 184 Juta" label="Nilai Ekonomi Sirkular Berputar" tone="blue" />
+        <StatCard icon={<Icon.AlertTriangle size={20} />} value="12.4 Ton" label="Belum Terserap Pasar" tone="red" />
+      </div>
+
+      <Card>
+        <h3 className="text-base font-semibold text-[var(--color-text)] mb-5">Kategori Limbah Paling Diminati</h3>
+        <div className="flex flex-col gap-4">
+          {distribusi.map((d) => (
+            <ProgressBar key={d.label} label={d.label} value={d.value} color={d.color} />
+          ))}
+        </div>
+      </Card>
+    </div>
+>>>>>>> Stashed changes
   );
 }
