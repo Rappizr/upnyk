@@ -107,16 +107,7 @@ export default function LoginPage() {
   const activeConfig = roleConfigs[selectedRole];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)",
-        padding: "2rem",
-      }}
-    >
+    <div className="login-page-wrapper">
       {/* Decorative Blur Orbs */}
       <div
         style={{
@@ -145,23 +136,43 @@ export default function LoginPage() {
         }}
       />
 
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "1000px",
-          display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          background: "var(--color-card-bg)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-lg)",
-          overflow: "hidden",
-          border: "1px solid var(--color-border)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
+      {/* Back to Home Link */}
+      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "1rem", zIndex: 2 }}>
+        <a
+          href="/"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            color: "var(--color-text-muted)",
+            textDecoration: "none",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            transition: "color 0.15s ease",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-primary)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-muted)"}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          Kembali ke Beranda
+        </a>
+      </div>
+
+      <div className="login-container">
         {/* Left Side: Role Selector & Branding */}
-        <div style={{ padding: "3rem", borderRight: "1px solid var(--color-border)" }}>
+        <div className="login-left-panel">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
             <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect width="28" height="28" rx="8" fill="#2563EB" />
@@ -235,15 +246,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Login Form */}
-        <div
-          style={{
-            padding: "3rem",
-            background: "var(--color-border-light)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
+        <div className="login-right-panel">
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
             <span
               style={{
