@@ -4,14 +4,6 @@ import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import StokKomoditas from "./components/stok-komoditas";
-import PenjualanB2B from "./components/penjualan-b2b";
-import Pengiriman from "./components/pengiriman";
-import Keuangan from "./components/keuangan";
-import ProfilUMKM from "./components/profil-umkm";
-
-// ============================================================================
-// TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
 // ============================================================================
 export interface Profil {
   nama: string;
@@ -377,12 +369,6 @@ export default function ProdusenDashboard() {
             </div>
           </main>
         )}
-
-        {activeMenu === "stok" && <StokKomoditas stokList={stokList} addStok={addStok} updateStok={updateStok} deleteStok={deleteStok} />}
-        {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} stokList={stokList} addPesanan={addPesanan} updatePesananStatus={updatePesananStatus} />}
-        {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={updatePesananStatus} />}
-        {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={addPengeluaran} />}
-        {activeMenu === "profil" && <ProfilUMKM profil={profil} setProfil={setProfil} />}
       </div>
     </div>
   );
