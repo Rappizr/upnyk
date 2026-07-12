@@ -198,20 +198,20 @@ export default function AdminTokoDashboard() {
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
       {/* Sidebar */}
-      <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#F59E0B", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid rgba(255,255,255,.2)" }}>
+      <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
             </div>
-            <div><div style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "rgba(255,255,255,.75)" }}>Admin Toko / UMKM</div></div>
+            <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Admin Toko / UMKM</div></div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="at-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.8)" }}><IconX /></button>
+          <button onClick={() => setSidebarOpen(false)} className="at-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
         </div>
         <nav style={{ padding: "14px 10px", flex: 1, overflowY: "auto" }}>
           {menuGroups.map((group) => (
             <div key={group.title} style={{ marginBottom: "14px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,.7)", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
+              <div style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
@@ -220,18 +220,18 @@ export default function AdminTokoDashboard() {
                   <div
                     key={item.key}
                     onClick={() => selectMenu(item.key)}
-                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "rgba(255,255,255,.25)" : "transparent", color: "#fff", fontSize: "13px", cursor: "pointer", marginBottom: "1px", fontWeight: active ? 700 : 500 }}
+                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#F59E0B" : "transparent", color: active ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "1px", fontWeight: active ? 700 : 500 }}
                   >
                     <Icon /> <span style={{ flex: 1 }}>{item.label}</span>
-                    {badge > 0 && <span style={{ background: "#1E293B", color: "#fff", fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "999px" }}>{badge}</span>}
+                    {badge > 0 && <span style={{ background: active ? "rgba(255,255,255,.3)" : "#EF4444", color: "#fff", fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "999px" }}>{badge}</span>}
                   </div>
                 );
               })}
             </div>
           ))}
         </nav>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,.2)", padding: "12px" }}>
-          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "rgba(30,41,59,.25)", color: "#fff", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
+        <div style={{ borderTop: "1px solid #F1F5F9", padding: "12px" }}>
+          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "#FEE2E2", color: "#EF4444", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
         </div>
       </aside>
 

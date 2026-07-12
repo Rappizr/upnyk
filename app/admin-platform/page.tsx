@@ -9,12 +9,13 @@ import PetaRantaiPasok from "./components/peta-rantai-pasok";
 import EscrowTransaksi from "./components/escrow-transaksi";
 import LaporanDampak from "./components/laporan-dampak";
 import ProfilAdminPage, { ProfilAdmin } from "./components/profil-admin";
+import Pengaduan from "./components/pengaduan";
 
 // ============================================================================
 // TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
 // ============================================================================
-export type JenisAkun = "Admin Toko" | "Produsen" | "Supplier";
-export type TipeEntitas = "Toko" | "Produsen" | "Supplier";
+export type JenisAkun = "Admin Toko" | "Produsen";
+export type TipeEntitas = "Toko" | "Produsen";
 
 export interface Pendaftar {
   id: string;
@@ -45,6 +46,17 @@ export interface EscrowTx {
   tanggal: string;
 }
 
+export interface Pengaduan {
+  id: string;
+  pelapor: string;
+  role: string;
+  kontak: string;
+  kategori: "Manipulasi Harga" | "Kendala Teknis" | "Sengketa Transaksi" | "Lainnya";
+  deskripsi: string;
+  status: "Baru" | "Diproses" | "Selesai";
+  tanggal: string;
+}
+
 export interface Komoditas {
   nama: string;
   hargaPlatform: number;
@@ -55,8 +67,7 @@ export interface Komoditas {
 const initialPendaftar: Pendaftar[] = [
   { id: "REG-101", nama: "Koperasi Tani Makmur", jenisAkun: "Admin Toko", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
   { id: "REG-102", nama: "Budi Santoso", jenisAkun: "Produsen", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
-  { id: "REG-103", nama: "Distributor Pupuk Nasional", jenisAkun: "Supplier", lokasi: "Surabaya, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
-  { id: "REG-104", nama: "Gabungan Kelompok Tani Jombang", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
+  { id: "REG-103", nama: "Gabungan Kelompok Tani Jombang", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
 ];
 
 const initialEntitas: Entitas[] = [
@@ -64,7 +75,7 @@ const initialEntitas: Entitas[] = [
   { id: "ENT-02", nama: "Toko Sembako Berkah", tipe: "Toko", lokasi: "Jombang, Jawa Timur", status: "Aktif" },
   { id: "ENT-03", nama: "Keripik Tempe Sanan", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
   { id: "ENT-04", nama: "Kopi Arabika Gayo", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
-  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", tipe: "Supplier", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
 ];
 
 const initialTransaksi: EscrowTx[] = [
@@ -81,12 +92,19 @@ const initialKomoditas: Komoditas[] = [
   { nama: "Madu Hutan", hargaPlatform: 120000, hargaTengkulak: 85000, volumeTon: 3.2 },
 ];
 
+const initialPengaduan: Pengaduan[] = [
+  { id: "TIK-501", pelapor: "Budi Santoso", role: "Produsen Hulu", kontak: "0812-3456-7890", kategori: "Manipulasi Harga", deskripsi: "Admin Toko menekan harga beli jauh di bawah kesepakatan awal untuk komoditas kopi arabika, indikasi merugikan produsen.", status: "Baru", tanggal: "10 Jul 2026" },
+  { id: "TIK-502", pelapor: "Toko Sembako Berkah", role: "Admin Toko", kontak: "0813-2211-4455", kategori: "Kendala Teknis", deskripsi: "Aplikasi gagal memuat halaman Etalase Penjualan sejak pagi tadi, sudah coba refresh berkali-kali.", status: "Diproses", tanggal: "09 Jul 2026" },
+  { id: "TIK-503", pelapor: "Minimarket Sejahtera", role: "Pembeli", kontak: "0857-6677-8899", kategori: "Sengketa Transaksi", deskripsi: "Barang yang diterima tidak sesuai dengan yang dipesan, meminta peninjauan dana escrow transaksi TX-90213.", status: "Baru", tanggal: "10 Jul 2026" },
+];
+
 // Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconUserCheck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>;
 const IconMap = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>;
 const IconShieldLock = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><rect x="9" y="11" width="6" height="5" rx="1"></rect><path d="M10 11V9a2 2 0 0 1 4 0v2"></path></svg>;
 const IconReport = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>;
+const IconFlag = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>;
 const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
@@ -104,6 +122,7 @@ const menuGroups: MenuGroupDef[] = [
   { title: "Pengawasan", items: [
     { key: "verifikasi", label: "Verifikasi & Peran", icon: IconUserCheck },
     { key: "peta", label: "Peta Rantai Pasok", icon: IconMap },
+    { key: "pengaduan", label: "Pengaduan", icon: IconFlag },
   ] },
   { title: "Transaksi", items: [{ key: "escrow", label: "Escrow & Transaksi", icon: IconShieldLock }] },
   { title: "Laporan", items: [{ key: "laporan", label: "Laporan Dampak", icon: IconReport }] },
@@ -123,6 +142,7 @@ const pageTitles: Record<string, string> = {
   profil: "Profil Admin",
   verifikasi: "Verifikasi & Peran",
   peta: "Peta Rantai Pasok",
+  pengaduan: "Pengaduan",
   escrow: "Escrow & Transaksi",
   laporan: "Laporan Dampak",
 };
@@ -135,6 +155,7 @@ export default function AdminPlatformDashboard() {
   const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitas);
   const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksi);
   const [komoditasList] = useState<Komoditas[]>(initialKomoditas);
+  const [pengaduanList, setPengaduanList] = useState<Pengaduan[]>(initialPengaduan);
   const [profilAdmin, setProfilAdmin] = useState<ProfilAdmin>({
     nama: "Nadia Ramadhani",
     jabatan: "Super Admin",
@@ -148,7 +169,7 @@ export default function AdminPlatformDashboard() {
     setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Disetujui" } : p)));
     const p = pendaftarList.find((x) => x.id === id);
     if (p) {
-      const tipe: TipeEntitas = p.jenisAkun === "Admin Toko" ? "Toko" : p.jenisAkun === "Produsen" ? "Produsen" : "Supplier";
+      const tipe: TipeEntitas = p.jenisAkun === "Admin Toko" ? "Toko" : "Produsen";
       const entId = `ENT-${String(entitasList.length + 1).padStart(2, "0")}`;
       setEntitasList((prev) => [...prev, { id: entId, nama: p.nama, tipe, lokasi: p.lokasi, status: "Aktif" }]);
     }
@@ -167,10 +188,14 @@ export default function AdminPlatformDashboard() {
     setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
   }
 
+  function updateStatusPengaduan(id: string, status: Pengaduan["status"]) {
+    setPengaduanList((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+  }
+
   // ---- Angka turunan — semua saling terhubung dari 3 sumber data di atas ----
   const totalToko = entitasList.filter((e) => e.tipe === "Toko").length;
   const totalProdusen = entitasList.filter((e) => e.tipe === "Produsen").length;
-  const totalSupplier = entitasList.filter((e) => e.tipe === "Supplier").length;
+  const pengaduanAktif = pengaduanList.filter((p) => p.status === "Baru" || p.status === "Diproses").length;
   const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
   const totalMenunggu = pendaftarList.filter((p) => p.status === "Menunggu").length;
   const escrowDitahan = transaksiList.filter((t) => t.status === "Ditahan").length;
@@ -217,29 +242,29 @@ export default function AdminPlatformDashboard() {
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
       {/* Sidebar */}
-      <aside className={`ap-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#1E293B", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+      <aside className={`ap-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
             </div>
-            <div><div style={{ fontWeight: 700, color: "#fff", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "rgba(255,255,255,.5)" }}>Admin Platform</div></div>
+            <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Admin Platform</div></div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.6)" }}><IconX /></button>
+          <button onClick={() => setSidebarOpen(false)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
         </div>
         <nav style={{ padding: "14px 10px", flex: 1, overflowY: "auto" }}>
           {menuGroups.map((group) => (
             <div key={group.title} style={{ marginBottom: "14px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,.4)", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
+              <div style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
-                const badge = item.key === "verifikasi" && totalMenunggu > 0 ? totalMenunggu : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
+                const badge = item.key === "verifikasi" && totalMenunggu > 0 ? totalMenunggu : item.key === "pengaduan" && pengaduanAktif > 0 ? pengaduanAktif : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
                 return (
                   <div
                     key={item.key}
                     onClick={() => selectMenu(item.key)}
-                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#2563EB" : "transparent", color: active ? "#fff" : "rgba(255,255,255,.75)", fontSize: "13px", cursor: "pointer", marginBottom: "1px", fontWeight: active ? 600 : 400 }}
+                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#1E293B" : "transparent", color: active ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "1px", fontWeight: active ? 600 : 400 }}
                   >
                     <Icon /> <span style={{ flex: 1 }}>{item.label}</span>
                     {badge > 0 && <span style={{ background: active ? "rgba(255,255,255,.25)" : "#EF4444", color: "#fff", fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "999px" }}>{badge}</span>}
@@ -249,8 +274,8 @@ export default function AdminPlatformDashboard() {
             </div>
           ))}
         </nav>
-        <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "12px" }}>
-          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "rgba(239,68,68,.15)", color: "#F87171", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
+        <div style={{ borderTop: "1px solid #F1F5F9", padding: "12px" }}>
+          <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "#FEE2E2", color: "#EF4444", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
         </div>
       </aside>
 
@@ -303,10 +328,10 @@ export default function AdminPlatformDashboard() {
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalProdusen}</div>
                 <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Lihat di peta →</div>
               </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL SUPPLIER</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalSupplier}</div>
-                <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Lihat di peta →</div>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("pengaduan")}>
+                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PENGADUAN AKTIF</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pengaduanAktif}</div>
+                <div style={{ fontSize: "0.68rem", color: pengaduanAktif > 0 ? "#EF4444" : "#64748B", marginTop: "0.15rem" }}>{pengaduanAktif > 0 ? "Perlu ditinjau →" : "Tidak ada aduan"}</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("escrow")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PERPUTARAN DANA</div>
@@ -358,6 +383,7 @@ export default function AdminPlatformDashboard() {
 
         {activeMenu === "verifikasi" && <VerifikasiPeran pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} />}
         {activeMenu === "peta" && <PetaRantaiPasok entitasList={entitasList} transaksiList={transaksiList} />}
+        {activeMenu === "pengaduan" && <Pengaduan pengaduanList={pengaduanList} updateStatusPengaduan={updateStatusPengaduan} />}
         {activeMenu === "escrow" && <EscrowTransaksi transaksiList={transaksiList} salurkanDana={salurkanDana} tandaiSengketa={tandaiSengketa} selesaikanSengketa={selesaikanSengketa} />}
         {activeMenu === "laporan" && <LaporanDampak komoditasList={komoditasList} daerahProduktif={daerahProduktif} indeksHargaAdil={indeksHargaAdil} totalGMV={totalGMV} entitasList={entitasList} />}
         {activeMenu === "profil" && <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} />}
