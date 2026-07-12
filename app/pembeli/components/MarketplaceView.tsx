@@ -430,7 +430,7 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
 
         {/* Categories Chips */}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div className="category-scroll-strip" style={{ display: "flex", gap: "0.5rem" }}>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -585,7 +585,7 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
 
             {/* Modal Body */}
             <div className="modal-body">
-              <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "1.5rem" }}>
+              <div className="modal-product-layout">
                 {/* Product Image Icon container */}
                 <div className="modal-product-img">
                   <IconRenderer type={selectedProduct.icon_type} size={80} className="text-amber-600" />

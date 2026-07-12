@@ -45,15 +45,6 @@ function SaveIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
-function DollarIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  );
-}
-
 export default function ProfilView() {
   const [tab, setTab] = useState("biodata");
   const [name, setName] = useState("");
@@ -61,7 +52,6 @@ export default function ProfilView() {
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [addresses, setAddresses] = useState<any[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -76,7 +66,6 @@ export default function ProfilView() {
         setPhone(data.phone || "");
         setBio(data.bio || "");
         setAddresses(data.addresses || []);
-        setPaymentMethods(data.payment_methods || []);
       } catch (err) {
         console.error("Failed to load profile:", err);
       } finally {
@@ -114,12 +103,12 @@ export default function ProfilView() {
       <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <UserIcon size={28} className="text-primary" /> Profil Saya
       </h1>
-      <p className="page-subtitle">Kelola data diri, alamat pengiriman, dan metode pembayaran Anda</p>
+      <p className="page-subtitle">Kelola data diri dan alamat pengiriman Anda</p>
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-muted)" }}>Memuat profil...</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: "1.25rem" }}>
+        <div className="profile-layout">
           {/* Left Panel */}
           <div>
             <div className="card" style={{ textAlign: "center", marginBottom: "1rem" }}>
@@ -156,8 +145,7 @@ export default function ProfilView() {
             <div className="tabs" style={{ marginBottom: "1.25rem" }}>
               {[
                 ["biodata", "Biodata", <UserIcon size={16} key="bio" />], 
-                ["alamat", "Alamat", <LocationIcon size={16} key="addr" />], 
-                ["pembayaran", "Pembayaran", <DollarIcon size={16} key="pay" />]
+                ["alamat", "Alamat", <LocationIcon size={16} key="addr" />]
               ].map(([key, label, icon]) => (
                 <button key={key as string} className={`tab-btn${tab === key ? " active" : ""}`} onClick={() => setTab(key as string)} id={`profil-tab-${key}`} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                   {icon} {label as string}
@@ -227,31 +215,38 @@ export default function ProfilView() {
               </div>
             )}
 
-            {/* Pembayaran */}
-            {tab === "pembayaran" && (
-              <div>
-                {paymentMethods.map((pm, i) => (
-                  <div key={i} className="card" style={{ marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "1rem", borderLeft: pm.default ? "3px solid var(--color-secondary)" : undefined }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "var(--radius-sm)", background: "var(--color-bg)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary)" }}>
-                      <DollarIcon size={20} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span className="font-semibold text-sm">{pm.name}</span>
-                        {pm.default && <span className="badge badge-success">Utama</span>}
-                      </div>
-                      <div className="text-sm text-muted">{pm.detail}</div>
-                    </div>
-                    <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.3rem 0.625rem" }} id={`btn-edit-pm-${i}`}>Kelola</button>
-                  </div>
-                ))}
-                <button className="btn-ghost" style={{ width: "100%" }} id="btn-tambah-pembayaran">
-                  + Tambah Metode Pembayaran
-                </button>
-              </div>
-            )}
+
 
             {/* Removed voucher history tab */}
+            {/* Mobile-only Logout Section */}
+            <div className="mobile-only-logout" style={{ marginTop: "1.5rem" }}>
+              <a
+                href="/login"
+                className="nav-item"
+                style={{
+                  color: "var(--color-alert)",
+                  background: "var(--color-alert-light)",
+                  fontWeight: 600,
+                  borderRadius: "var(--radius-sm)",
+                  padding: "0.75rem 1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  textDecoration: "none",
+                  textAlign: "center",
+                  width: "100%"
+                }}
+                id="btn-logout-mobile"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Keluar Akun</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
