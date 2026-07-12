@@ -217,8 +217,8 @@ export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => 
       <p className="page-subtitle">Pantau produk favorit dan dapatkan notifikasi saat harga turun</p>
 
       {/* Summary */}
-      <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-        <div style={{ display: "flex", gap: "2rem" }}>
+      <div className="card wishlist-summary-card">
+        <div className="wishlist-summary-stats">
           <div><div className="stat-value">{items.length}</div><div className="text-sm text-muted">Item Tersimpan</div></div>
           <div><div className="stat-value text-secondary">{items.filter((i) => i.price_dropped).length}</div><div className="text-sm text-muted">Harga Turun</div></div>
           <div><div className="stat-value text-primary">
@@ -244,7 +244,7 @@ export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => 
                 <div style={{ width: 100, height: 100, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <IconRenderer type={p.icon_type} size={44} className="text-amber-500" />
                 </div>
-                <div style={{ padding: "1rem", flex: 1, display: "flex", alignItems: "center", gap: "1rem", justifyContent: "space-between" }}>
+                <div className="wishlist-card-body">
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.3rem" }}>
                       {item.price_dropped && (
@@ -269,7 +269,7 @@ export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => 
                       Rp {p.price.toLocaleString("id-ID")}
                     </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <div className="wishlist-card-actions">
                     <button 
                       className="btn-secondary" 
                       onClick={async () => {

@@ -696,7 +696,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           <button className="btn-primary" onClick={onNavigateToOrders} style={{ padding: "0.5rem 1.25rem" }}>Mulai Belanja</button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1.5rem", alignItems: "start" }}>
+        <div className="cart-layout">
           
           {/* Cart Items List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -704,54 +704,58 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               const p = item.product;
               const storeName = productStoreMap[p.id] || "Koperasi Pelosok Pilihan";
               return (
-                <div key={item.id} className="wishlist-card" style={{ display: "flex", padding: "0.75rem", gap: "1rem", alignItems: "center" }}>
-                  <div style={{ width: 80, height: 80, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)" }}>
-                    <IconRenderer type={p.icon_type} size={36} className="text-amber-600" />
-                  </div>
-                  
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.25rem" }}>
-                      <span className="badge badge-info" style={{ fontSize: "0.65rem" }}>Toko Koperasi</span>
-                      <span className="text-xs text-primary font-bold">{storeName}</span>
+                <div key={item.id} className="cart-item-card">
+                  <div className="cart-item-info" style={{ display: "flex", gap: "1rem", flex: 1, alignItems: "center" }}>
+                    <div style={{ width: 80, height: 80, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)", flexShrink: 0 }}>
+                      <IconRenderer type={p.icon_type} size={36} className="text-amber-600" />
                     </div>
-                    <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{p.name}</div>
-                    <div className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.15rem", marginTop: "0.15rem" }}>
-                      <LocationIcon size={12} /> {p.origin}
+                    
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.25rem" }}>
+                        <span className="badge badge-info" style={{ fontSize: "0.65rem" }}>Toko Koperasi</span>
+                        <span className="text-xs text-primary font-bold">{storeName}</span>
+                      </div>
+                      <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{p.name}</div>
+                      <div className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.15rem", marginTop: "0.15rem" }}>
+                        <LocationIcon size={12} /> {p.origin}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Quantity Controls */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", border: "1px solid var(--color-border)", borderRadius: "4px", padding: "2px" }}>
+                  <div className="cart-item-actions" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+                    {/* Quantity Controls */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", border: "1px solid var(--color-border)", borderRadius: "4px", padding: "2px" }}>
+                      <button 
+                        onClick={() => updateQty(item.id, item.qty - 1)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
+                      >
+                        -
+                      </button>
+                      <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{item.qty}</span>
+                      <button 
+                        onClick={() => updateQty(item.id, item.qty + 1)}
+                        style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={{ textAlign: "right", minWidth: "100px" }}>
+                      <div className="text-xs text-muted">Rp {p.price.toLocaleString("id-ID")}</div>
+                      <div className="font-bold text-primary" style={{ fontSize: "1rem" }}>
+                        Rp {(p.price * item.qty).toLocaleString("id-ID")}
+                      </div>
+                    </div>
+
                     <button 
-                      onClick={() => updateQty(item.id, item.qty - 1)}
-                      style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
+                      onClick={() => removeItem(item.id)}
+                      className="icon-btn" 
+                      title="Hapus dari keranjang"
+                      style={{ color: "var(--color-alert)", background: "rgba(239, 68, 68, 0.05)", flexShrink: 0 }}
                     >
-                      -
-                    </button>
-                    <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{item.qty}</span>
-                    <button 
-                      onClick={() => updateQty(item.id, item.qty + 1)}
-                      style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
-                    >
-                      +
+                      <TrashIcon size={16} />
                     </button>
                   </div>
-
-                  <div style={{ textAlign: "right", minWidth: "120px" }}>
-                    <div className="text-xs text-muted">Rp {p.price.toLocaleString("id-ID")} / unit</div>
-                    <div className="font-bold text-primary" style={{ fontSize: "1rem" }}>
-                      Rp {(p.price * item.qty).toLocaleString("id-ID")}
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => removeItem(item.id)}
-                    className="icon-btn" 
-                    title="Hapus dari keranjang"
-                    style={{ color: "var(--color-alert)", background: "rgba(239, 68, 68, 0.05)" }}
-                  >
-                    <TrashIcon size={16} />
-                  </button>
                 </div>
               );
             })}

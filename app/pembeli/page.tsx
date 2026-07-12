@@ -232,6 +232,29 @@ export default function PembeliMasterPage() {
           {activeTab === "Keranjang" && <CartView onCartUpdated={updateCartCount} onNavigateToOrders={() => setActiveTab("Pesanan")} />}
         </main>
       </div>
+
+      {/* BOTTOM NAV FOR MOBILE */}
+      <nav className="bottom-nav">
+        {sidebarItems.map((item) => {
+          const isActive = activeTab === item.name;
+          return (
+            <button
+              key={item.name}
+              onClick={() => setActiveTab(item.name)}
+              className={`bottom-nav-item${isActive ? " active" : ""}`}
+              id={`bottom-nav-${item.name.toLowerCase()}`}
+            >
+              <span className="bottom-nav-icon">{item.icon}</span>
+              <span className="bottom-nav-label">{item.name}</span>
+              {item.badge && (
+                <span className="bottom-nav-badge">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
