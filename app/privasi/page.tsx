@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Shield, Lock, Eye, CheckCircle2, UserCheck, Scale, FileText } from "lucide-react";
+import { ArrowLeft, Shield, Lock, Eye, CheckCircle2, FileText, Scale } from "lucide-react";
 
 export default function PrivasiPage() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -16,7 +16,6 @@ export default function PrivasiPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
       
-      {/* INJEKSI CSS MODERN */}
       <style dangerouslySetInnerHTML={{__html: `
         .glass-nav {
           background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
@@ -47,19 +46,141 @@ export default function PrivasiPage() {
           line-height: 1.6;
           margin-bottom: 0.75rem;
         }
+
+        @media (max-width: 768px) {
+          .header-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+          }
+          .nav-logo-text {
+            font-size: 0.85rem !important;
+          }
+          .nav-logo-img {
+            height: 20px !important;
+          }
+          .btn-back {
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            font-size: 0.55rem !important;
+            gap: 0.2rem !important;
+          }
+          .btn-back svg {
+            width: 10px !important;
+            height: 10px !important;
+          }
+          .hero-section {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-top: 6rem !important;
+            padding-bottom: 3rem !important;
+          }
+          .hero-badge {
+            font-size: 0.65rem !important;
+            padding: 0.35rem 0.85rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .hero-title {
+            font-size: 1.85rem !important;
+            line-height: 1.25 !important;
+          }
+          .hero-desc {
+            font-size: 0.85rem !important;
+          }
+          .main-content {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 3rem !important;
+            padding-bottom: 3rem !important;
+          }
+          .intro-block h3 {
+            font-size: 1.25rem !important;
+          }
+          .intro-block p {
+            font-size: 0.85rem !important;
+            line-height: 1.6 !important;
+          }
+          .policy-card {
+            padding: 1rem !important;
+            border-radius: 0.75rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .policy-card div:first-child {
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .policy-card div:first-child div {
+            padding: 0.4rem !important;
+            border-radius: 0.5rem !important;
+          }
+          .policy-card div:first-child div svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .policy-card h2 {
+            font-size: 0.95rem !important;
+          }
+          .policy-card p {
+            font-size: 0.8rem !important;
+            line-height: 1.5 !important;
+          }
+          .list-item {
+            gap: 0.4rem !important;
+            font-size: 0.75rem !important;
+            line-height: 1.5 !important;
+            margin-bottom: 0.6rem !important;
+          }
+          .list-item svg {
+            width: 12px !important;
+            height: 12px !important;
+            margin-top: 0.15rem !important;
+          }
+          .meta-update-row {
+            margin-top: 2.5rem !important;
+            padding-top: 1.5rem !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+          }
+          .meta-update-row div, .meta-update-row a {
+            font-size: 0.65rem !important;
+          }
+          .meta-update-row div svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .footer-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+          }
+          .footer-wrapper {
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 0px !important;
+          }
+          .footer-wrapper span {
+            font-size: 0.42rem !important;
+            line-height: 1.2 !important;
+          }
+        }
       `}} />
 
-      {/* NAVBAR */}
-      <header className="glass-nav" style={{ padding: "1rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
+      <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <img src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
+          <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
+          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
             Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
-          <Link href="/" style={{ 
-            padding: "0.6rem 1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
+          <Link href="/" className="btn-back" style={{ 
+            paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
             backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
@@ -68,39 +189,35 @@ export default function PrivasiPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION PRIVASI */}
-      <section style={{ 
-        padding: "13rem 2rem 6rem", 
+      <section className="hero-section" style={{ 
+        paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", 
         position: "relative", 
         backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.98)), url('https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1920')`,
-        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed"
+        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
       }}>
-        <div style={{ maxWidth: "850px", margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div style={{ display: "inline-block", padding: "0.5rem 1.5rem", borderRadius: "99px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
+        <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
+          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
             Data Protection &amp; Security
           </div>
-          <h1 style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
+          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
             Kebijakan Privasi <br /><span className="gradient-text">Ekosistem PasarNusa</span>
           </h1>
-          <p style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", margin: "0 auto" }}>
+          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
             Komitmen kami untuk melindungi riwayat digital, data transaksi, dan koordinat aset seluruh Produsen, Admin Toko, serta Pembeli secara aman dan transparan.
           </p>
         </div>
       </section>
 
-      {/* ISI DOKUMEN KEBIJAKAN PRIVASI */}
-      <main style={{ padding: "6rem 2rem", maxWidth: "900px", margin: "0 auto" }}>
+      <main className="main-content" style={{ paddingTop: "6rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
         
-        {/* PENGANTAR */}
-        <div style={{ marginBottom: "3.5rem", textAlign: "left" }}>
+        <div className="intro-block" style={{ marginBottom: "3.5rem", textAlign: "left" }}>
           <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1rem", letterSpacing: "-0.02em" }}>Komitmen Privasi Kami</h3>
           <p style={{ color: "#475569", fontSize: "1.05rem", lineHeight: 1.7, margin: 0 }}>
             PasarNusa ("kami") mengoperasikan platform digital manajemen rantai pasok rural komoditas. Kami memahami bahwa pengumpulan data riil di daerah pelosok membutuhkan infrastruktur kepercayaan tingkat tinggi. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menjaga, dan membagikan data Anda ketika menggunakan ekosistem PasarNusa.
           </p>
         </div>
 
-        {/* 1. DATA YANG KAMI KUMPULKAN */}
         <div className="policy-card">
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ background: "#EFF6FF", padding: "0.5rem", borderRadius: "0.75rem", color: "#2563EB" }}><FileText size={24} /></div>
@@ -123,7 +240,6 @@ export default function PrivasiPage() {
           </div>
         </div>
 
-        {/* 2. PENGGUNAAN DATA */}
         <div className="policy-card">
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ background: "#ECFDF5", padding: "0.5rem", borderRadius: "0.75rem", color: "#10B981" }}><Eye size={24} /></div>
@@ -146,30 +262,27 @@ export default function PrivasiPage() {
           </div>
         </div>
 
-        {/* 3. KEAMANAN DATA */}
         <div className="policy-card">
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ background: "#FEF2F2", padding: "0.5rem", borderRadius: "0.75rem", color: "#EF4444" }}><Lock size={24} /></div>
             <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>3. Perlindungan &amp; Keamanan Data</h2>
           </div>
-          <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
+          <p style={{ color: "#475569", lineHeight: 1.7, marginTop: "0px", marginBottom: "0px" }}>
             Seluruh jejak transaksi digital, laporan audit keuangan, dan saldo dompet digital (*Wallet Produsen*) dilindungi menggunakan enkripsi server tingkat tinggi. Penyaluran dana otomatis dari pembeli kota dikunci oleh sistem *Escrow* dan hanya didepositkan ke Wallet masing-masing pihak yang berhak setelah konfirmasi status pengiriman dinyatakan selesai.
           </p>
         </div>
 
-        {/* 4. KETERBUKAAN DATA AUDIT */}
         <div className="policy-card">
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
             <div style={{ background: "#FFFBEB", padding: "0.5rem", borderRadius: "0.75rem", color: "#D97706" }}><Scale size={24} /></div>
             <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>4. Keterbukaan Data Pihak Ketiga &amp; Lembaga</h2>
           </div>
-          <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
+          <p style={{ color: "#475569", lineHeight: 1.7, marginTop: "0px", marginBottom: "0px" }}>
             Sebagai bentuk dukungan nyata terhadap inklusi keuangan, riwayat kredit dan buku kas digital produsen hulu yang terekam dapat dibagikan kepada lembaga keuangan mitra (seperti penyedia kredit mikro) **hanya jika** mendapatkan persetujuan eksplisit dari pengguna yang bersangkutan. Kami tidak menjual data pribadi Anda kepada pihak broker iklan komersial mana pun.
           </p>
         </div>
 
-        {/* TANGGAL UPDATE */}
-        <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: "2rem", marginTop: "4rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div className="meta-update-row" style={{ borderTop: "1px solid #E2E8F0", paddingTop: "2rem", marginTop: "4rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#64748B", fontSize: "0.9rem" }}>
             <Shield size={16} />
             <span>Terakhir diperbarui: 11 Juli 2026</span>
@@ -179,9 +292,8 @@ export default function PrivasiPage() {
 
       </main>
 
-      {/* FOOTER PREMIUM */}
-      <footer style={{ padding: "3rem 4rem", background: "#0B1120", color: "#475569", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
+      <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+        <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
           <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
         </div>

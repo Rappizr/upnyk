@@ -433,14 +433,6 @@ export default function LandingPage() {
               <p style={{ color: "#64748B", lineHeight: 1.7, fontSize: "0.95rem" }}>Otomatisasi persetujuan pesanan masuk, sinkronisasi katalog harga langsung ke pasar pembeli, dan penanganan analitik limbah atau cacat produk.</p>
             </div>
 
-            <div className="modern-card" style={{ padding: "2.5rem", borderRadius: "1.5rem" }}>
-              <div style={{ background: "#F1F5F9", width: "64px", height: "64px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", marginBottom: "1.5rem" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.75rem" }}>Portal Admin Center</h3>
-              <p style={{ color: "#64748B", lineHeight: 1.7, fontSize: "0.95rem" }}>Kendali penuh untuk pengawasan volume GMV ekosistem, audit verifikasi mitra baru, dan proteksi integritas data server tingkat tinggi.</p>
-            </div>
-
           </div>
         </div>
       </section>
