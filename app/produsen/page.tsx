@@ -4,7 +4,12 @@ import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-// ============================================================================
+import StokKomoditas from "./components/stok-komoditas";
+import PenjualanB2B from "./components/penjualan-b2b";
+import Pengiriman from "./components/pengiriman";
+import Keuangan from "./components/keuangan";
+import ProfilUMKM from "./components/profil-umkm";
+
 export interface Profil {
   nama: string;
   usaha: string;
@@ -99,7 +104,6 @@ const initialPengeluaran: Pengeluaran[] = [
   { id: "EXP-03", keterangan: "Ongkos kirim bahan baku", nominal: 150000, tanggal: "07 Jul 2026", kategori: "Logistik" },
 ];
 
-// Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
@@ -228,7 +232,6 @@ export default function ProdusenDashboard() {
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
-      {/* Sidebar */}
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -264,9 +267,7 @@ export default function ProdusenDashboard() {
         </div>
       </aside>
 
-      {/* Konten */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
@@ -289,10 +290,9 @@ export default function ProdusenDashboard() {
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            {/* Hero */}
             <div style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem clamp(1.25rem, 4vw, 2rem)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7 hydrodynamic-size", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
                 <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</div>
                 <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.85)", marginTop: "0.3rem", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</div>
               </div>
@@ -301,12 +301,11 @@ export default function ProdusenDashboard() {
               </button>
             </div>
 
-            {/* Stat cards */}
             <div className="pn-stats-grid" style={{ marginBottom: "1.25rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
-                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }} onClick={() => selectMenu("stok")}>Kelola stok →</div>
+                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => selectMenu("stok")}>Kelola stok →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("penjualan")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
@@ -330,7 +329,6 @@ export default function ProdusenDashboard() {
               </div>
             </div>
 
-            {/* Panels */}
             <div className="pn-panels-grid">
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>
@@ -369,6 +367,43 @@ export default function ProdusenDashboard() {
             </div>
           </main>
         )}
+
+        {activeMenu === "stok" && (
+         <StokKomoditas
+  stokList={stokList}
+  addStok={addStok}
+  updateStok={updateStok}
+  deleteStok={deleteStok}
+/>
+        )}
+        {activeMenu === "penjualan" && (
+         <PenjualanB2B
+  pesananList={pesananList}
+  stokList={stokList}
+  addPesanan={addPesanan}
+  updatePesananStatus={updatePesananStatus}
+/>
+        )}
+        {activeMenu === "pengiriman" && (
+         <Pengiriman
+  pesananList={pesananList}
+  updatePesananStatus={updatePesananStatus}
+/>
+        )}
+        {activeMenu === "keuangan" && (
+         <Keuangan
+  pesananList={pesananList}
+  pengeluaranList={pengeluaranList}
+  addPengeluaran={addPengeluaran}
+/>
+        )}
+        {activeMenu === "profil" && (
+      <ProfilUMKM
+  profil={profil}
+  setProfil={setProfil}
+/>
+        )}
+
       </div>
     </div>
   );
