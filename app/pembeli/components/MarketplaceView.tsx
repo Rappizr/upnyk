@@ -106,6 +106,27 @@ function LocationIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
+function CashIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <rect width="20" height="12" x="2" y="6" rx="2" />
+      <circle cx="12" cy="12" r="2" />
+      <line x1="6" y1="12" x2="6.01" y2="12" />
+      <line x1="18" y1="12" x2="18.01" y2="12" />
+    </svg>
+  );
+}
+
+function InfoIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+  );
+}
+
 function IconRenderer({ type, size = 24, className = "", ...props }: any) {
   const normalized = type.toLowerCase();
   switch (normalized) {
@@ -148,7 +169,7 @@ const coopProfiles: Record<string, any> = {
     established: "2015",
     productsCount: 2,
     badge: "Koperasi Pelosok Pilihan",
-    bannerText: "🌾 Dapatkan Beras Organik Cianjur Segar Langsung dari Sawah Desa Sukamaju!"
+    bannerText: "Dapatkan Beras Organik Cianjur Segar Langsung dari Sawah Desa Sukamaju!"
   },
   "Koperasi Brebes Jaya": {
     name: "Koperasi Brebes Jaya",
@@ -161,7 +182,7 @@ const coopProfiles: Record<string, any> = {
     reviews: 320,
     productsCount: 2,
     badge: "UMKM Unggulan Desa",
-    bannerText: "🧅 Bawang Merah Brebes Khas Petani Wanasari, Pedas dan Gurih Alami!"
+    bannerText: "Bawang Merah Brebes Khas Petani Wanasari, Pedas dan Gurih Alami!"
   },
   "Koperasi Gayo Indah": {
     name: "Koperasi Gayo Indah",
@@ -174,7 +195,7 @@ const coopProfiles: Record<string, any> = {
     reviews: 218,
     productsCount: 1,
     badge: "Koperasi Kopi Ekspor",
-    bannerText: "☕ Cita Rasa Kopi Arabika Gayo Premium Langsung dari Pegunungan Aceh Tengah!"
+    bannerText: "Cita Rasa Kopi Arabika Gayo Premium Langsung dari Pegunungan Aceh Tengah!"
   },
   "Koperasi Sulawesi Makmur": {
     name: "Koperasi Sulawesi Makmur",
@@ -187,7 +208,7 @@ const coopProfiles: Record<string, any> = {
     reviews: 500,
     productsCount: 3,
     badge: "Koperasi Kelapa Pelosok",
-    bannerText: "🥥 Kelapa Segar Minahasa Diolah Menjadi VCO dan Santan Berkualitas!"
+    bannerText: "Kelapa Segar Minahasa Diolah Menjadi VCO dan Santan Berkualitas!"
   },
   "Koperasi Madu Borneo": {
     name: "Koperasi Madu Borneo",
@@ -200,7 +221,7 @@ const coopProfiles: Record<string, any> = {
     reviews: 521,
     productsCount: 1,
     badge: "Madu Hutan Bersertifikat",
-    bannerText: "🍯 Madu Murni Hutan Kalimantan Langsung dari Konservasi Suku Dayak Putussibau!"
+    bannerText: "Madu Murni Hutan Kalimantan Langsung dari Konservasi Suku Dayak Putussibau!"
   }
 };
 
@@ -251,7 +272,12 @@ const productDetailMap: Record<number, { weight: string; desc: string }> = {
   }
 };
 
-export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () => void }) {
+interface MarketplaceViewProps {
+  onCartUpdated?: () => void;
+  onNavigateToCart?: () => void;
+}
+
+export default function MarketplaceView({ onCartUpdated, onNavigateToCart }: MarketplaceViewProps) {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -262,6 +288,8 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
   const [wishlistedIds, setWishlistedIds] = useState<number[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [detailQty, setDetailQty] = useState(1);
+  const [showAddedToCartPopup, setShowAddedToCartPopup] = useState(false);
+  const [addedProductName, setAddedProductName] = useState("");
 
   useEffect(() => {
     if (searchParams) {
@@ -413,8 +441,9 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
               ← Tutup Profil Toko
             </button>
           </div>
-          <div style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--color-primary-light)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--color-primary)", fontWeight: 500 }}>
-            {activeCoop.bannerText}
+          <div style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--color-primary-light)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <InfoIcon size={16} style={{ flexShrink: 0 }} />
+            <span>{activeCoop.bannerText}</span>
           </div>
         </div>
       ) : (
@@ -499,7 +528,49 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
         /* Product Grid */
         <div className="product-grid">
           {filtered.map((p) => (
-            <div key={p.id} className="product-card card-hover" id={`mp-product-${p.id}`}>
+            <div 
+              key={p.id} 
+              className="product-card card-hover" 
+              id={`mp-product-${p.id}`}
+              style={{ position: "relative" }}
+            >
+              {/* Floating Wishlist Button */}
+              <button 
+                className="icon-btn" 
+                id={`btn-mp-wishlist-${p.id}`} 
+                title="Simpan ke Wishlist" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToWishlist(p.id);
+                }}
+                style={{ 
+                  position: "absolute",
+                  top: "0.5rem",
+                  right: "0.5rem",
+                  display: "inline-flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  width: "30px",
+                  height: "30px",
+                  borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  border: wishlistedIds.includes(p.id) ? "1px solid var(--color-alert)" : "1px solid var(--color-border)",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                  cursor: "pointer",
+                  color: wishlistedIds.includes(p.id) ? "var(--color-alert)" : "var(--color-text-subtle)",
+                  zIndex: 5,
+                  transition: "transform 0.15s, background 0.15s"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "scale(1.1)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                <HeartIcon size={14} fill={wishlistedIds.includes(p.id) ? "currentColor" : "none"} />
+              </button>
+
               <div 
                 className="product-img" 
                 onClick={() => {
@@ -514,7 +585,10 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
                   <div className="badge badge-gray text-xs">{p.category}</div>
                   <span 
-                    onClick={() => setSelectedStore(p.store)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedStore(p.store);
+                    }}
                     className="text-xs text-primary font-bold" 
                     style={{ cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -546,27 +620,63 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
                   </span>
                 </div>
                 <div className="product-price">Rp {p.price.toLocaleString("id-ID")}</div>
-                <div className="product-footer">
-                  <button className="btn-primary" onClick={() => handleAddOrder(p)} style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-mp-add-cart-${p.id}`}>
-                    <CartIcon size={14} /> + Beli
-                  </button>
+                
+                <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.75rem" }}>
                   <button 
-                    className="icon-btn" 
-                    id={`btn-mp-wishlist-${p.id}`} 
-                    title="Simpan ke Wishlist" 
-                    onClick={() => handleAddToWishlist(p.id)}
+                    className="btn-secondary" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddOrder(p, 1);
+                      setAddedProductName(p.name);
+                      setShowAddedToCartPopup(true);
+                    }} 
                     style={{ 
+                      flex: 1, 
+                      padding: "0.5rem 0.25rem", 
+                      fontSize: "0.75rem", 
                       display: "inline-flex", 
                       alignItems: "center", 
                       justifyContent: "center",
-                      color: wishlistedIds.includes(p.id) ? "var(--color-alert)" : "inherit"
-                    }}
+                      gap: "0.25rem",
+                      borderRadius: "6px",
+                      background: "var(--color-primary-light)",
+                      color: "var(--color-primary)",
+                      border: "1px solid var(--color-primary)",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer"
+                    }} 
+                    id={`btn-mp-add-cart-${p.id}`}
                   >
-                    <HeartIcon size={16} fill={wishlistedIds.includes(p.id) ? "currentColor" : "none"} />
+                    <CartIcon size={12} /> Keranjang
+                  </button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddOrder(p, 1);
+                      if (onNavigateToCart) onNavigateToCart();
+                    }} 
+                    style={{ 
+                      flex: 1, 
+                      padding: "0.5rem 0.25rem", 
+                      fontSize: "0.75rem", 
+                      display: "inline-flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      gap: "0.25rem",
+                      borderRadius: "6px",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer"
+                    }} 
+                    id={`btn-mp-buy-now-${p.id}`}
+                  >
+                    <CashIcon size={12} /> Beli
                   </button>
                 </div>
               </div>
-            </div >
+            </div>
           ))
 }
         </div >
@@ -676,17 +786,89 @@ export default function MarketplaceView({ onCartUpdated }: { onCartUpdated?: () 
                     <HeartIcon size={18} fill={wishlistedIds.includes(selectedProduct.id) ? "currentColor" : "none"} />
                   </button>
                   <button 
+                    className="btn-secondary"
+                    onClick={() => {
+                      handleAddOrder(selectedProduct, detailQty);
+                      setAddedProductName(selectedProduct.name);
+                      setShowAddedToCartPopup(true);
+                      setSelectedProduct(null);
+                    }}
+                    style={{ 
+                      padding: "0.5rem 1rem", 
+                      fontSize: "0.85rem", 
+                      display: "inline-flex", 
+                      alignItems: "center", 
+                      gap: "0.5rem", 
+                      borderRadius: "8px",
+                      background: "var(--color-primary-light)",
+                      color: "var(--color-primary)",
+                      border: "1px solid var(--color-primary)"
+                    }}
+                  >
+                    <CartIcon size={16} /> Keranjang
+                  </button>
+                  <button 
                     className="btn-primary"
                     onClick={() => {
                       handleAddOrder(selectedProduct, detailQty);
                       setSelectedProduct(null);
+                      if (onNavigateToCart) onNavigateToCart();
                     }}
-                    style={{ padding: "0.5rem 1.25rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: "8px" }}
+                    style={{ padding: "0.5rem 1rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: "8px" }}
                   >
-                    <CartIcon size={16} /> Tambah ke Keranjang
+                    <CashIcon size={16} /> Beli Sekarang
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddedToCartPopup && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="card modal-container" style={{ maxWidth: "400px", padding: "2rem", textAlign: "center", position: "relative" }}>
+            <button 
+              onClick={() => setShowAddedToCartPopup(false)}
+              className="modal-close-btn"
+              style={{ position: "absolute", top: "1rem", right: "1rem" }}
+            >
+              &times;
+            </button>
+            
+            <div style={{ width: "60px", height: "60px", background: "var(--color-primary-light)", color: "var(--color-primary)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem auto" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                <polyline points="10 10 12 12 16 8"/>
+              </svg>
+            </div>
+
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 800, margin: "0 0 0.5rem 0", color: "var(--color-primary)" }}>
+              Berhasil Ditambahkan!
+            </h3>
+            
+            <p style={{ fontSize: "0.9rem", color: "var(--color-text-subtle)", margin: "0 0 1.5rem 0", lineHeight: 1.5 }}>
+              <strong>{addedProductName}</strong> telah berhasil dimasukkan ke dalam keranjang belanja Anda.
+            </p>
+
+            <div style={{ display: "flex", gap: "0.75rem", flexDirection: "column" }}>
+              <button 
+                className="btn-primary" 
+                onClick={() => {
+                  setShowAddedToCartPopup(false);
+                  if (onNavigateToCart) onNavigateToCart();
+                }}
+                style={{ width: "100%", padding: "0.6rem 1rem", fontSize: "0.85rem", justifyContent: "center" }}
+              >
+                Lihat Keranjang Belanja
+              </button>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setShowAddedToCartPopup(false)}
+                style={{ width: "100%", padding: "0.6rem 1rem", fontSize: "0.85rem", justifyContent: "center" }}
+              >
+                Lanjut Belanja
+              </button>
             </div>
           </div>
         </div>

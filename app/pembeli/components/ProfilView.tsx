@@ -45,6 +45,16 @@ function SaveIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
+function BarChartIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
 export default function ProfilView() {
   const [tab, setTab] = useState("biodata");
   const [name, setName] = useState("");
@@ -127,7 +137,9 @@ export default function ProfilView() {
 
             {/* Stats */}
             <div className="card">
-              <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem" }}>📊 Statistik Saya</div>
+              <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                <BarChartIcon size={16} /> Statistik Saya
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 {stats.map((s, i) => (
                   <div key={i} style={{ background: "var(--color-bg)", borderRadius: "var(--radius-sm)", padding: "0.75rem", textAlign: "center" }}>
