@@ -177,7 +177,7 @@ const coops = [
   },
 ];
 
-export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () => void }) {
+export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpdated?: () => void, onNavigate?: (tab: string, storeName?: string) => void }) {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -273,12 +273,22 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
             Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.
           </p>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <a href="/pembeli/marketplace" className="btn-primary" style={{ background: "white", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-explore-marketplace">
+            <button 
+              onClick={() => onNavigate?.("Marketplace")} 
+              className="btn-primary" 
+              style={{ background: "white", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", gap: "0.5rem", border: "none", cursor: "pointer" }} 
+              id="btn-explore-marketplace"
+            >
               <CartIcon size={16} /> Jelajahi Marketplace
-            </a>
-            <a href="/pembeli/pesanan" className="btn-ghost" style={{ borderColor: "rgba(255,255,255,0.4)", color: "white", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-lihat-pesanan">
+            </button>
+            <button 
+              onClick={() => onNavigate?.("Pesanan")} 
+              className="btn-ghost" 
+              style={{ borderColor: "rgba(255,255,255,0.4)", color: "white", display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "transparent", cursor: "pointer" }} 
+              id="btn-lihat-pesanan"
+            >
               <PackageIcon size={16} /> Lihat Pesanan Saya
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -345,9 +355,13 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
               <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.15rem" }}>
                 <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {c.rating} ({c.reviews} ulasan)
               </span>
-              <a href={`/pembeli/marketplace?store=${encodeURIComponent(c.name)}`} className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem", textDecoration: "none" }}>
+              <button 
+                onClick={() => onNavigate?.("Marketplace", c.name)} 
+                className="btn-secondary" 
+                style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem", border: "none", cursor: "pointer" }}
+              >
                 Kunjungi Toko
-              </a>
+              </button>
             </div>
           </div>
         ))}
@@ -361,9 +375,14 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
           </div>
           <div className="text-sm text-muted">Produk segar dan olahan unggulan langsung dari desa</div>
         </div>
-        <a href="/pembeli/marketplace" className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id="btn-lihat-semua-produk">
+        <button 
+          onClick={() => onNavigate?.("Marketplace")} 
+          className="btn-ghost" 
+          style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", cursor: "pointer", background: "transparent" }} 
+          id="btn-lihat-semua-produk"
+        >
           Lihat Semua →
-        </a>
+        </button>
       </div>
 
       {loading ? (

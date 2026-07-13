@@ -275,9 +275,16 @@ const productDetailMap: Record<number, { weight: string; desc: string }> = {
 interface MarketplaceViewProps {
   onCartUpdated?: () => void;
   onNavigateToCart?: () => void;
+  initialStoreFilter?: string;
+  clearInitialStoreFilter?: () => void;
 }
 
-export default function MarketplaceView({ onCartUpdated, onNavigateToCart }: MarketplaceViewProps) {
+export default function MarketplaceView({ 
+  onCartUpdated, 
+  onNavigateToCart,
+  initialStoreFilter,
+  clearInitialStoreFilter
+}: MarketplaceViewProps) {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -290,6 +297,13 @@ export default function MarketplaceView({ onCartUpdated, onNavigateToCart }: Mar
   const [detailQty, setDetailQty] = useState(1);
   const [showAddedToCartPopup, setShowAddedToCartPopup] = useState(false);
   const [addedProductName, setAddedProductName] = useState("");
+
+  useEffect(() => {
+    if (initialStoreFilter) {
+      setSelectedStore(initialStoreFilter);
+      clearInitialStoreFilter?.();
+    }
+  }, [initialStoreFilter, clearInitialStoreFilter]);
 
   useEffect(() => {
     if (searchParams) {

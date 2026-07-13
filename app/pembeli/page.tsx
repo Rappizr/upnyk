@@ -12,6 +12,7 @@ import CartView from "./components/CartView";
 
 export default function PembeliMasterPage() {
   const [activeTab, setActiveTab] = useState("Beranda");
+  const [selectedStoreFilter, setSelectedStoreFilter] = useState("");
   const [cartCount, setCartCount] = useState(0);
 
   const updateCartCount = () => {
@@ -223,8 +224,25 @@ export default function PembeliMasterPage() {
         </aside>
 
         <main className="main-content">
-          {activeTab === "Beranda" && <DashboardView onCartUpdated={updateCartCount} />}
-          {activeTab === "Marketplace" && <MarketplaceView onCartUpdated={updateCartCount} onNavigateToCart={() => setActiveTab("Keranjang")} />}
+          {activeTab === "Beranda" && (
+            <DashboardView 
+              onCartUpdated={updateCartCount} 
+              onNavigate={(tab: string, storeName?: string) => {
+                setActiveTab(tab);
+                if (storeName) {
+                  setSelectedStoreFilter(storeName);
+                }
+              }} 
+            />
+          )}
+          {activeTab === "Marketplace" && (
+            <MarketplaceView 
+              onCartUpdated={updateCartCount} 
+              onNavigateToCart={() => setActiveTab("Keranjang")} 
+              initialStoreFilter={selectedStoreFilter}
+              clearInitialStoreFilter={() => setSelectedStoreFilter("")}
+            />
+          )}
           {activeTab === "Wishlist" && <WishlistView onCartUpdated={updateCartCount} />}
           {activeTab === "Pesanan" && <PesananView />}
           {activeTab === "Notifikasi" && <NotifikasiView />}
