@@ -109,6 +109,40 @@ function TruckIcon({ size = 24, className = "", ...props }: any) {
   );
 }
 
+function SparklesIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ReceiptIcon({ size = 16, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+      <path d="M16 8H8M16 12H8M13 16H8" />
+    </svg>
+  );
+}
+
+function FileTextIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8" />
+    </svg>
+  );
+}
+
+function UploadIcon({ size = 24, className = "", ...props }: any) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+    </svg>
+  );
+}
+
 function IconRenderer({ type, size = 24, className = "", ...props }: any) {
   const normalized = type.toLowerCase();
   switch (normalized) {
@@ -169,7 +203,7 @@ const getProductWeight = (productId: number): number => {
 export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCartCount }: CartViewProps) {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [step, setStep] = useState<"cart" | "payment" | "success">("cart");
-  const [selectedPayment, setSelectedPayment] = useState<"qris" | "bank" | "cod">("qris");
+  const [selectedPayment, setSelectedPayment] = useState<"qris" | "bank">("qris");
   const [submitting, setSubmitting] = useState(false);
   const [orderSummary, setOrderSummary] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -248,7 +282,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
         const supplierTotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
         // Distribute discount and shipping proportionally (simplification)
-        const isCOD = selectedPayment === "cod";
         const res = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -257,9 +290,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             items,
             total: supplierTotal,
             payment_method: selectedPayment.toUpperCase(),
-            status: isCOD ? "Diproses" : "Belum Dibayar",
-            proof_uploaded: !isCOD,
-            proof_filename: isCOD ? null : paymentProof
+            status: "Belum Dibayar",
+            proof_uploaded: true,
+            proof_filename: paymentProof
           })
         });
         return res.json();
@@ -273,7 +306,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         subtotal,
         discount,
         grandTotal,
-        paymentMethod: selectedPayment === "qris" ? "QRIS (Pembayaran Instan)" : selectedPayment === "bank" ? "Transfer Bank" : "Cash on Delivery (COD)",
+        paymentMethod: selectedPayment === "qris" ? "QRIS (Pembayaran Instan)" : "Transfer Bank",
         supplierCount: Object.keys(grouped).length,
         totalWeight,
         items: cartItems.map(item => ({
@@ -307,7 +340,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           </svg>
         </div>
         <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--color-primary)", marginBottom: "0.5rem" }}>
-          Pesanan Selesai Dibuat! 🎉
+          Pesanan Selesai Dibuat! <SparklesIcon size={24} style={{ color: "var(--color-secondary)", display: "inline-block", verticalAlign: "middle" }} />
         </h1>
         <p style={{ color: "var(--color-text-subtle)", marginBottom: "2rem", lineHeight: 1.5 }}>
           Terima kasih atas kontribusi Anda memajukan Koperasi Tani & Kelompok Usaha Pedesaan di Indonesia melalui PasarNusa.
@@ -358,7 +391,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
 
         <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
           <button className="btn-secondary" onClick={() => setShowReceipt(true)} style={{ padding: "0.75rem 1.5rem", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
-            🧾 Bukti Pembayaran
+            <ReceiptIcon size={16} /> Bukti Pembayaran
           </button>
           <button className="btn-primary" onClick={onNavigateToOrders} style={{ padding: "0.75rem 1.5rem" }}>
             Lacak Pesanan Saya
@@ -459,7 +492,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           Pilih Metode Pembayaran
         </h1>
 
-        <div className="grid-3" style={{ marginBottom: "2rem" }}>
+        <div className="grid-2" style={{ marginBottom: "2rem" }}>
           {/* QRIS Card */}
           <div 
             onClick={() => setSelectedPayment("qris")}
@@ -495,25 +528,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             </div>
             <p className="text-xs text-muted" style={{ lineHeight: 1.4 }}>
               Transfer manual atau Virtual Account ke Bank Mandiri, BRI, BNI, atau BCA.
-            </p>
-          </div>
-
-          {/* COD Card */}
-          <div 
-            onClick={() => setSelectedPayment("cod")}
-            className="card card-hover" 
-            style={{ 
-              cursor: "pointer", 
-              border: selectedPayment === "cod" ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
-              background: selectedPayment === "cod" ? "var(--color-primary-light)" : "white"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-              <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: selectedPayment === "cod" ? "var(--color-primary)" : "var(--color-border)" }} />
-              <strong style={{ fontSize: "1.1rem" }}>Cash on Delivery</strong>
-            </div>
-            <p className="text-xs text-muted" style={{ lineHeight: 1.4 }}>
-              Bayar tunai secara aman kepada kurir ketika kiriman pesanan sampai di tujuan Anda.
             </p>
           </div>
         </div>
@@ -572,17 +586,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               </div>
             )}
 
-            {selectedPayment === "cod" && (
-              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                <div style={{ fontSize: "2.5rem" }}>📦</div>
-                <div>
-                  <h3 style={{ margin: "0 0 0.25rem 0" }}>Cash on Delivery (COD)</h3>
-                  <p style={{ margin: 0, fontSize: "0.85rem", lineHeight: 1.4, color: "var(--color-text-subtle)" }}>
-                    Anda akan membayar secara tunai langsung ke kurir logistik desa saat pesanan sampai di alamat pengiriman Anda. Pastikan menyiapkan uang pas sejumlah total tagihan.
-                  </p>
-                </div>
-              </div>
-            )}
+
 
             {/* Upload Bukti Pembayaran */}
             {(selectedPayment === "qris" || selectedPayment === "bank") && (
@@ -594,7 +598,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                 <div className={`upload-zone${paymentProof ? " success" : ""}`}>
                   {paymentProof ? (
                     <div>
-                      <div className="upload-icon">📄</div>
+                      <div className="upload-icon"><FileTextIcon size={32} style={{ color: "var(--color-primary)" }} /></div>
                       <div className="upload-success-title">
                         Bukti Pembayaran Terunggah!
                       </div>
@@ -611,7 +615,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                     </div>
                   ) : (
                     <div>
-                      <div className="upload-icon">📤</div>
+                      <div className="upload-icon"><UploadIcon size={32} style={{ color: "var(--color-text-subtle)" }} /></div>
                       <label className="upload-btn-secondary">
                         Pilih File Gambar
                         <input 
@@ -659,7 +663,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               <button 
                 className="btn-primary" 
                 onClick={handleCheckoutPayment}
-                disabled={submitting || ((selectedPayment === "qris" || selectedPayment === "bank") && !paymentProof)}
+                disabled={submitting || !paymentProof}
                 style={{ 
                   width: "100%", 
                   padding: "0.75rem", 
@@ -668,8 +672,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                   alignItems: "center", 
                   justifyContent: "center", 
                   gap: "0.5rem",
-                  opacity: (submitting || ((selectedPayment === "qris" || selectedPayment === "bank") && !paymentProof)) ? 0.6 : 1,
-                  cursor: (submitting || ((selectedPayment === "qris" || selectedPayment === "bank") && !paymentProof)) ? "not-allowed" : "pointer"
+                  opacity: (submitting || !paymentProof) ? 0.6 : 1,
+                  cursor: (submitting || !paymentProof) ? "not-allowed" : "pointer"
                 }}
               >
                 {submitting ? "Memproses Transaksi..." : "Selesaikan Pemesanan"}
@@ -690,7 +694,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
 
       {cartItems.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "4rem 2rem" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛒</div>
+          <div style={{ marginBottom: "1rem", display: "flex", justifyContent: "center", color: "var(--color-text-subtle)" }}>
+            <CartIcon size={64} />
+          </div>
           <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Keranjang belanja Anda kosong</h2>
           <p style={{ color: "var(--color-text-subtle)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>Jelajahi hasil tani segar dari toko koperasi tani kami sekarang juga.</p>
           <button className="btn-primary" onClick={onNavigateToOrders} style={{ padding: "0.5rem 1.25rem" }}>Mulai Belanja</button>

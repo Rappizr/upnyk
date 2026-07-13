@@ -224,7 +224,7 @@ export default function PembeliMasterPage() {
 
         <main className="main-content">
           {activeTab === "Beranda" && <DashboardView onCartUpdated={updateCartCount} />}
-          {activeTab === "Marketplace" && <MarketplaceView onCartUpdated={updateCartCount} />}
+          {activeTab === "Marketplace" && <MarketplaceView onCartUpdated={updateCartCount} onNavigateToCart={() => setActiveTab("Keranjang")} />}
           {activeTab === "Wishlist" && <WishlistView onCartUpdated={updateCartCount} />}
           {activeTab === "Pesanan" && <PesananView />}
           {activeTab === "Notifikasi" && <NotifikasiView />}

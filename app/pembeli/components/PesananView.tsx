@@ -122,14 +122,15 @@ function IconRenderer({ type, size = 24, className = "", ...props }: any) {
   }
 }
 
-const tabs = ["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"];
+const tabs = ["Semua", "Sudah Dibayar", "Dikirim", "Selesai"];
 
 const statusColor: Record<string, string> = {
+  "Sudah Dibayar": "badge-warning",
   "Belum Dibayar": "badge-warning",
-  Diproses: "badge-info",
+  Diproses: "badge-warning",
   Dikirim: "badge-info",
   Selesai: "badge-success",
-  Dibatalkan: "badge-danger",
+  Dibatalkan: "badge-gray",
 };
 
 export default function PesananView() {
@@ -175,53 +176,26 @@ export default function PesananView() {
   };
 
   const getCustomTimeline = (order: any) => {
-    // Return custom timeline based on order status to match requirements:
-    // dikemas oleh toko -> dikirim kurir -> sampai tujuan
     const dateStr = order.date || "Hari ini";
     switch (order.status) {
       case "Belum Dibayar":
-        if (order.proof_uploaded) {
-          return [
-            { label: "Pesanan Dibuat", time: dateStr, done: true, active: false },
-            { label: "Bukti Pembayaran Diunggah", time: "Menunggu konfirmasi admin toko", done: true, active: false },
-            { label: "Verifikasi Pembayaran", time: "Sedang diproses oleh admin", done: false, active: true },
-            { label: "Dikemas oleh Toko", time: "-", done: false, active: false },
-            { label: "Dikirim Kurir", time: "-", done: false, active: false },
-            { label: "Sampai Tujuan", time: "-", done: false, active: false }
-          ];
-        }
-        return [
-          { label: "Pesanan Dibuat", time: dateStr, done: true, active: false },
-          { label: "Menunggu Pembayaran", time: "Segera lakukan pembayaran", done: false, active: true },
-          { label: "Dikemas oleh Toko", time: "-", done: false, active: false },
-          { label: "Dikirim Kurir", time: "-", done: false, active: false },
-          { label: "Sampai Tujuan", time: "-", done: false, active: false }
-        ];
       case "Diproses":
         return [
-          { label: "Pesanan Dibuat & Dibayar", time: dateStr, done: true, active: false },
-          { label: "Dikemas oleh Toko", time: "Sedang dikemas oleh produsen pelosok", done: false, active: true },
-          { label: "Dikirim Kurir", time: "-", done: false, active: false },
-          { label: "Sampai Tujuan", time: "-", done: false, active: false }
+          { label: "Sudah Dibayar", time: dateStr, done: true, active: true },
+          { label: "Dikirim", time: "-", done: false, active: false },
+          { label: "Selesai", time: "-", done: false, active: false }
         ];
       case "Dikirim":
         return [
-          { label: "Pesanan Dibuat & Dibayar", time: dateStr, done: true, active: false },
-          { label: "Dikemas oleh Toko", time: "Selesai dikemas", done: true, active: false },
-          { label: "Dikirim Kurir", time: "Dalam perjalanan oleh kurir", done: false, active: true },
-          { label: "Sampai Tujuan", time: "Estimasi tiba segera", done: false, active: false }
+          { label: "Sudah Dibayar", time: dateStr, done: true, active: false },
+          { label: "Dikirim", time: "Dalam perjalanan oleh kurir", done: true, active: true },
+          { label: "Selesai", time: "-", done: false, active: false }
         ];
       case "Selesai":
         return [
-          { label: "Pesanan Dibuat & Dibayar", time: dateStr, done: true, active: false },
-          { label: "Dikemas oleh Toko", time: "Selesai dikemas", done: true, active: false },
-          { label: "Dikirim Kurir", time: "Selesai dikirim", done: true, active: false },
-          { label: "Sampai Tujuan", time: "Barang diterima dengan baik", done: true, active: true }
-        ];
-      case "Dibatalkan":
-        return [
-          { label: "Pesanan Dibuat", time: dateStr, done: true, active: false },
-          { label: "Pesanan Dibatalkan", time: "Dibatalkan oleh sistem/pembeli", done: true, active: true }
+          { label: "Sudah Dibayar", time: dateStr, done: true, active: false },
+          { label: "Dikirim", time: "Selesai dikirim", done: true, active: false },
+          { label: "Selesai", time: "Barang diterima dengan baik", done: true, active: true }
         ];
       default:
         return [];
@@ -230,8 +204,13 @@ export default function PesananView() {
 
   const filtered =
     activeTab === "Semua"
-      ? orders
-      : orders.filter((o) => o.status === activeTab);
+      ? orders.filter(o => o.status !== "Dibatalkan")
+      : orders.filter((o) => {
+          if (activeTab === "Sudah Dibayar") {
+            return o.status === "Belum Dibayar" || o.status === "Diproses";
+          }
+          return o.status === activeTab;
+        });
 
   return (
     <>
@@ -263,8 +242,18 @@ export default function PesananView() {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
                       <span className="font-semibold text-sm">{order.id}</span>
-                      <span className={`badge ${order.proof_uploaded ? "badge-info" : (statusColor[order.status] || "badge-gray")}`}>
-                        {order.proof_uploaded ? "Menunggu Konfirmasi" : order.status}
+                      <span className={`badge ${
+                        order.status === "Belum Dibayar" || order.status === "Diproses"
+                          ? "badge-warning"
+                          : order.status === "Dikirim"
+                          ? "badge-info"
+                          : order.status === "Selesai"
+                          ? "badge-success"
+                          : "badge-gray"
+                      }`}>
+                        {order.status === "Belum Dibayar" || order.status === "Diproses"
+                          ? "Sudah Dibayar"
+                          : order.status}
                       </span>
                     </div>
                     <div className="text-xs text-muted" style={{ marginTop: "0.25rem" }}>
