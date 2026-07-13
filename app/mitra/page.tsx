@@ -39,7 +39,7 @@ export default function MitraUmkmPage() {
       klaster: "peternakan",
       icon: <Milk size={24} />,
       produsen: 95,
-      komoditas: "Susu Sapi Segar, Daging Sapi Potong, Pupuk Organik",
+      komoditas: "Susu Sapi Segar, Daging Sapi Potong, Pupuk",
       badgeColor: "#F59E0B"
     },
     {
@@ -69,7 +69,7 @@ export default function MitraUmkmPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
       
-      {/* INJEKSI CSS MODERN & RESPONSIVE REPLIKA DESKTOP DI MOBILE */}
+      {/* INJEKSI CSS MODERN & RESPONSIVE REPLIKA 3 KOLOM GRID DI MOBILE */}
       <style dangerouslySetInnerHTML={{__html: `
         .glass-nav {
           background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
@@ -150,8 +150,8 @@ export default function MitraUmkmPage() {
             font-size: 0.85rem !important;
           }
           .main-content {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
             padding-top: 2.5rem !important;
             padding-bottom: 2.5rem !important;
           }
@@ -185,35 +185,97 @@ export default function MitraUmkmPage() {
             width: 100%;
             text-align: left;
           }
+
+          /* --- HADIRKAN FIX 3 KOLOM GRID MENYAMPING DI HP --- */
           .cards-grid {
-            grid-template-columns: 1fr !important;
-            gap: 1rem !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
           }
           .mitra-card {
-            padding: 1.25rem !important;
-            border-radius: 1rem !important;
+            padding: 0.4rem 0.3rem !important;
+            border-radius: 0.5rem !important;
           }
-          .mitra-card h3 {
-            font-size: 1.1rem !important;
+          .mitra-card div:first-child {
+            margin-bottom: 0.4rem !important;
           }
-          .stat-parameter-box {
-            padding: 0.75rem !important;
-            gap: 1rem !important;
-            margin-bottom: 1rem !important;
+          .mitra-card div:first-child div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 0.4rem !important;
           }
-          .stat-parameter-box div:first-child {
-            padding-right: 1rem !important;
-          }
-          .stat-parameter-box div div:first-child {
-            font-size: 0.65rem !important;
-          }
-          .stat-parameter-box div div:last-child {
-            font-size: 1.1rem !important;
-          }
-          .stat-parameter-box div div:last-child svg {
+          .mitra-card div:first-child div:first-child svg {
             width: 14px !important;
             height: 14px !important;
           }
+          .mitra-card div:first-child div:last-child {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.42rem !important;
+            gap: 0.15rem !important;
+          }
+          .mitra-card div:first-child div:last-child svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          .mitra-card h3 {
+            font-size: 0.55rem !important;
+            line-height: 1.15 !important;
+            margin-bottom: 0.2rem !important;
+          }
+          .mitra-card div:nth-child(3) {
+            margin-bottom: 0.5rem !important;
+            gap: 0.15rem !important;
+          }
+          .mitra-card div:nth-child(3) svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          .mitra-card div:nth-child(3) span {
+            font-size: 0.45rem !important;
+          }
+          
+          /* KOTAK PARAMETER STATS DI HP HARUS DISEDERHANAKAN AGAR COCOK */
+          .stat-parameter-box {
+            padding: 0.3rem !important;
+            border-radius: 0.35rem !important;
+            gap: 0.35rem !important;
+            margin-bottom: 0.5rem !important;
+            flex-direction: column !important;
+          }
+          .stat-parameter-box div:first-child {
+            border-right: none !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            padding-right: 0px !important;
+            padding-bottom: 0.3rem !important;
+          }
+          .stat-parameter-box div div:first-child {
+            font-size: 0.42rem !important;
+            line-height: 1 !important;
+          }
+          .stat-parameter-box div div:last-child {
+            font-size: 0.55rem !important;
+            line-height: 1 !important;
+            margin-top: 0.1rem !important;
+            gap: 0.15rem !important;
+          }
+          .stat-parameter-box div div:last-child svg {
+            width: 10px !important;
+            height: 10px !important;
+          }
+          .stat-parameter-box div div:last-child span {
+            font-size: 0.42rem !important;
+          }
+          .stat-parameter-box div:last-child div:last-child {
+            font-size: 0.45rem !important;
+            margin-top: 0.1rem !important;
+          }
+
+          .mitra-card div:last-child {
+            font-size: 0.42rem !important;
+            line-height: 1.2 !important;
+          }
+          .mitra-card div:last-child strong {
+            margin-bottom: 0.1rem !important;
+          }
+
           .footer-container {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
@@ -233,6 +295,7 @@ export default function MitraUmkmPage() {
         }
       `}} />
 
+      {/* NAVBAR */}
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -251,6 +314,7 @@ export default function MitraUmkmPage() {
         </nav>
       </header>
 
+      {/* HERO SECTION */}
       <section className="hero-section" style={{ 
         paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", 
@@ -271,12 +335,13 @@ export default function MitraUmkmPage() {
         </div>
       </section>
 
+      {/* KONTEN UTAMA */}
       <main className="main-content" style={{ paddingTop: "5rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         
         <div className="filter-bar-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "3.5rem", borderBottom: "1px solid #E2E8F0", paddingBottom: "1.5rem" }}>
           <div className="filter-group-buttons" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             <button onClick={() => setSelectedFilter('semua')} className="filter-btn" style={{ background: selectedFilter === 'semua' ? '#1E293B' : '#ffffff', color: selectedFilter === 'semua' ? '#ffffff' : '#475569' }}>
-              Semua Klaster
+              All Klaster
             </button>
             <button onClick={() => setSelectedFilter('pertanian')} className="filter-btn" style={{ background: selectedFilter === 'pertanian' ? '#10B981' : '#ffffff', color: selectedFilter === 'pertanian' ? '#ffffff' : '#475569', borderColor: selectedFilter === 'pertanian' ? '#10B981' : '#E2E8F0' }}>
               <Sprout size={16} /> Pertanian
@@ -340,6 +405,7 @@ export default function MitraUmkmPage() {
 
       </main>
 
+      {/* FOOTER */}
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
