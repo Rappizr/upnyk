@@ -9,7 +9,7 @@ interface Komoditas {
   volumeTon: number;
 }
 interface DaerahProduktif { lokasi: string; jumlah: number }
-interface Entitas { id: string; nama: string; tipe: "Toko" | "Produsen" | "Supplier"; lokasi: string; status: string }
+interface Entitas { id: string; nama: string; tipe: "Toko" | "Produsen"; lokasi: string; status: string }
 
 interface Props {
   komoditasList: Komoditas[];
@@ -38,11 +38,52 @@ export default function LaporanDampak({ komoditasList, daerahProduktif, indeksHa
   const maxVolume = Math.max(...komoditasList.map((k) => k.volumeTon), 1);
   const maxDaerah = Math.max(...daerahProduktif.map((d) => d.jumlah), 1);
 
+  function unduhPDF() {
+    window.print();
+  }
+
+  function unduhWord() {
+    const baris = (label: string, value: string) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:bold;">${label}</td><td style="padding:6px 10px;border:1px solid #ddd;">${value}</td></tr>`;
+    const komoditasRows = komoditasList.map((k) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${k.nama}</td><td style="padding:6px 10px;border:1px solid #ddd;">${k.volumeTon} ton</td><td style="padding:6px 10px;border:1px solid #ddd;">${formatRupiah(k.hargaPlatform)}</td><td style="padding:6px 10px;border:1px solid #ddd;">${formatRupiah(k.hargaTengkulak)}</td></tr>`).join("");
+    const daerahRows = daerahProduktif.map((d) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${d.lokasi}</td><td style="padding:6px 10px;border:1px solid #ddd;">${d.jumlah} mitra</td></tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Dampak PasarNusa</title></head><body style="font-family:Calibri,Arial,sans-serif;">
+      <h1>Laporan Dampak PasarNusa</h1>
+      <table style="border-collapse:collapse;margin-bottom:20px;">
+        ${baris("Indeks Harga Adil", `${indeksHargaAdil}/100`)}
+        ${baris("Total Perputaran Dana", formatRupiahRingkas(totalGMV))}
+        ${baris("Wilayah Terjangkau", `${daerahProduktif.length} wilayah`)}
+      </table>
+      <h2>Komoditas Terlaris Nasional</h2>
+      <table style="border-collapse:collapse;margin-bottom:20px;">
+        <tr><th style="padding:6px 10px;border:1px solid #ddd;">Komoditas</th><th style="padding:6px 10px;border:1px solid #ddd;">Volume</th><th style="padding:6px 10px;border:1px solid #ddd;">Harga PasarNusa</th><th style="padding:6px 10px;border:1px solid #ddd;">Estimasi Tengkulak</th></tr>
+        ${komoditasRows}
+      </table>
+      <h2>Daerah Paling Produktif</h2>
+      <table style="border-collapse:collapse;">
+        <tr><th style="padding:6px 10px;border:1px solid #ddd;">Wilayah</th><th style="padding:6px 10px;border:1px solid #ddd;">Jumlah Mitra</th></tr>
+        ${daerahRows}
+      </table>
+    </body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Laporan-Dampak-PasarNusa.doc";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Laporan Dampak</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Bukti kuantitatif dampak platform — indeks harga adil, komoditas terlaris, dan daerah paling produktif.</p>
+      <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Laporan Dampak</h1>
+          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Bukti kuantitatif dampak platform — indeks harga adil, komoditas terlaris, dan daerah paling produktif.</p>
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button onClick={unduhPDF} style={{ background: "#FEE2E2", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#991B1B", cursor: "pointer" }}>Unduh PDF</button>
+          <button onClick={unduhWord} style={{ background: "#EFF6FF", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Unduh Word</button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>

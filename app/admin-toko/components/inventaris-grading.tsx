@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, FormEvent } from "react";
 
 type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -28,10 +28,93 @@ interface Pembelian {
   status: "Menunggu" | "Diterima";
   tanggal: string;
 }
+interface Produsen { id: string; nama: string; lokasi: string; komoditas: string; estimasiPanenHari: number }
+
+// ---- Tipe minimal untuk Leaflet (dimuat dari CDN, bukan lewat npm, jadi tidak ada @types) ----
+interface LeafletLayer {
+  addTo: (map: LeafletMapInstance) => LeafletLayer;
+  bindPopup: (html: string) => LeafletLayer;
+  getBounds: () => unknown;
+}
+interface LeafletMapInstance {
+  setView: (center: [number, number], zoom: number) => LeafletMapInstance;
+  remove: () => void;
+  fitBounds: (bounds: unknown, options?: { padding?: [number, number] }) => void;
+}
+interface LeafletStatic {
+  map: (el: HTMLElement, opts?: { scrollWheelZoom?: boolean }) => LeafletMapInstance;
+  tileLayer: (url: string, opts?: { attribution?: string }) => LeafletLayer;
+  circleMarker: (latlng: [number, number], opts?: Record<string, unknown>) => LeafletLayer;
+  polyline: (points: [number, number][], opts?: Record<string, unknown>) => LeafletLayer;
+}
+declare const window: Window & { L?: LeafletStatic };
+
+const cityCoords: Record<string, [number, number]> = {
+  Malang: [-7.9666, 112.6326],
+  Jombang: [-7.5460, 112.2384],
+  Surabaya: [-7.2575, 112.7521],
+  Sidoarjo: [-7.4478, 112.7183],
+  Sumbawa: [-8.4869, 117.4256],
+};
+const gudangToko: [number, number] = cityCoords.Malang;
+function coordFromLokasi(lokasi: string): [number, number] {
+  const known = Object.keys(cityCoords);
+  const found = known.find((c) => lokasi.toLowerCase().includes(c.toLowerCase()));
+  return cityCoords[found || "Malang"];
+}
+
+function MiniMap({ markers, height = 200 }: { markers: { lat: number; lng: number; label: string; color?: string }[]; height?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMapInstance | null>(null);
+
+  useEffect(() => {
+    function init() {
+      const L = window.L;
+      if (!ref.current || !L || markers.length === 0) return;
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      const map = L.map(ref.current, { scrollWheelZoom: false }).setView([markers[0].lat, markers[0].lng], 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(map);
+      markers.forEach((m) => {
+        L.circleMarker([m.lat, m.lng], { radius: 9, color: m.color || "#F59E0B", fillColor: m.color || "#F59E0B", fillOpacity: 0.9, weight: 2 }).addTo(map).bindPopup(m.label);
+      });
+      if (markers.length > 1) {
+        const line = L.polyline(markers.map((m) => [m.lat, m.lng] as [number, number]), { color: "#94A3B8", weight: 2, dashArray: "6 6" }).addTo(map);
+        map.fitBounds(line.getBounds(), { padding: [30, 30] });
+      }
+      mapRef.current = map;
+    }
+    if (window.L) {
+      init();
+    } else {
+      if (!document.getElementById("leaflet-css")) {
+        const link = document.createElement("link");
+        link.id = "leaflet-css";
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(link);
+      }
+      let script = document.getElementById("leaflet-js") as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "leaflet-js";
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        document.body.appendChild(script);
+      }
+      script.addEventListener("load", init);
+      return () => script?.removeEventListener("load", init);
+    }
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
+  }, [markers]);
+
+  return <div ref={ref} style={{ height, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
+}
 
 interface Props {
   stokList: StokToko[];
   pembelianList: Pembelian[];
+  produsenList: Produsen[];
   terimaPembelian: (id: string, grade: Grade) => void;
   updateStok: (id: string, patch: Partial<StokToko>) => void;
 }
@@ -52,12 +135,13 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function InventarisGrading({ stokList, pembelianList, terimaPembelian, updateStok }: Props) {
+export default function InventarisGrading({ stokList, pembelianList, produsenList, terimaPembelian, updateStok }: Props) {
   const [search, setSearch] = useState("");
   const [gradingItem, setGradingItem] = useState<Pembelian | null>(null);
   const [gradePilih, setGradePilih] = useState<Grade>("A");
   const [editItem, setEditItem] = useState<StokToko | null>(null);
   const [editJumlah, setEditJumlah] = useState(0);
+  const [lacakId, setLacakId] = useState<string | null>(null);
 
   const menungguGrading = pembelianList.filter((p) => p.status === "Menunggu");
   const filtered = useMemo(() => {
@@ -108,12 +192,32 @@ export default function InventarisGrading({ stokList, pembelianList, terimaPembe
         <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.5rem" }}>
           <h3 style={{ margin: "0 0 0.9rem 0", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Barang Masuk — Perlu Grading</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {menungguGrading.map((p) => (
-              <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem", flexWrap: "wrap", gap: "0.5rem" }}>
-                <div><div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div><div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Dari {p.produsen} • {p.tanggal}</div></div>
-                <button onClick={() => { setGradingItem(p); setGradePilih("A"); }} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 600, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer" }}>Terima & Grading</button>
-              </div>
-            ))}
+            {menungguGrading.map((p) => {
+              const produsen = produsenList.find((pr) => pr.id === p.produsenId);
+              const asal = produsen ? coordFromLokasi(produsen.lokasi) : gudangToko;
+              return (
+                <div key={p.id} style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <div><div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div><div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Dari {p.produsen} • {p.tanggal}</div></div>
+                    <div style={{ display: "flex", gap: "0.4rem" }}>
+                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
+                      <button onClick={() => { setGradingItem(p); setGradePilih("A"); }} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 600, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer" }}>Terima & Grading</button>
+                    </div>
+                  </div>
+                  {lacakId === p.id && (
+                    <div style={{ marginTop: "0.75rem" }}>
+                      <MiniMap
+                        markers={[
+                          { lat: asal[0], lng: asal[1], label: `Asal: ${p.produsen}`, color: "#10B981" },
+                          { lat: gudangToko[0], lng: gudangToko[1], label: "Tujuan: Gudang Toko", color: "#F59E0B" },
+                        ]}
+                      />
+                      <p style={{ fontSize: "0.72rem", color: "#94A3B8", marginTop: "0.5rem" }}>Titik hijau = lokasi produsen • Titik oranye = gudang tokomu</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

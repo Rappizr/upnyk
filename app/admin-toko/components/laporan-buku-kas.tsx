@@ -48,11 +48,45 @@ export default function LaporanBukuKas({ pembelianList, penjualanList }: Props) 
   const totalKeluar = pembelianList.filter((p) => p.status === "Diterima").reduce((s, p) => s + p.total, 0);
   const labaBersih = totalMasuk - totalKeluar;
 
+  function unduhPDF() {
+    window.print();
+  }
+
+  function unduhWord() {
+    const rows = riwayat.map((r) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${r.tanggal}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.keterangan}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.tipe === "masuk" ? "+" : "-"} ${formatRupiah(r.nominal)}</td></tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buku Kas</title></head><body style="font-family:Calibri,Arial,sans-serif;">
+      <h1>Buku Kas — PasarNusa Admin Toko</h1>
+      <table style="border-collapse:collapse;margin-bottom:20px;">
+        <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:bold;">Total Omset (Masuk)</td><td style="padding:6px 10px;border:1px solid #ddd;">${formatRupiah(totalMasuk)}</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:bold;">Total Belanja (Keluar)</td><td style="padding:6px 10px;border:1px solid #ddd;">${formatRupiah(totalKeluar)}</td></tr>
+        <tr><td style="padding:6px 10px;border:1px solid #ddd;font-weight:bold;">Laba Bersih</td><td style="padding:6px 10px;border:1px solid #ddd;">${formatRupiah(labaBersih)}</td></tr>
+      </table>
+      <h2>Riwayat Transaksi</h2>
+      <table style="border-collapse:collapse;">
+        <tr><th style="padding:6px 10px;border:1px solid #ddd;">Tanggal</th><th style="padding:6px 10px;border:1px solid #ddd;">Keterangan</th><th style="padding:6px 10px;border:1px solid #ddd;">Nominal</th></tr>
+        ${rows}
+      </table>
+    </body></html>`;
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Buku-Kas-PasarNusa.doc";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Buku Kas</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Total belanja bahan baku ke produsen vs total omset penjualan ke pembeli kota, dalam satu buku kas digital.</p>
+      <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Buku Kas</h1>
+          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Total belanja bahan baku ke produsen vs total omset penjualan ke pembeli kota, dalam satu buku kas digital.</p>
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button onClick={unduhPDF} style={{ background: "#FEE2E2", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#991B1B", cursor: "pointer" }}>Unduh PDF</button>
+          <button onClick={unduhWord} style={{ background: "#EFF6FF", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Unduh Word</button>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>

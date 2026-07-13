@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState, FormEvent } from "react";
+import { useMemo, useState } from "react";
 
 type PesananStatus = "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
 
-interface StokItem { id: string; nama: string; jumlah: number; satuan: string; hargaSatuan: number; status: string; }
 interface Pesanan {
   id: string;
   pembeli: string;
@@ -18,11 +17,9 @@ interface Pesanan {
   alamatKirim: string;
   noResi?: string;
 }
-
 interface Props {
   pesananList: Pesanan[];
-  stokList: StokItem[];
-  addPesanan: (pembeli: string, itemId: string, jumlah: number, alamatKirim: string) => void;
+  deletePesanan: (id: string) => void;
   updatePesananStatus: (id: string, status: PesananStatus) => void;
 }
 
@@ -46,12 +43,10 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function PenjualanB2B({ pesananList, stokList, addPesanan, updatePesananStatus }: Props) {
+export default function PenjualanB2B({ pesananList, deletePesanan, updatePesananStatus }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pesanan | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [form, setForm] = useState({ pembeli: "", itemId: "", jumlah: "", alamatKirim: "" });
 
   const filtered = useMemo(() => {
     return pesananList.filter((p) => {
@@ -65,31 +60,24 @@ export default function PenjualanB2B({ pesananList, stokList, addPesanan, update
   const totalPendapatan = pesananList.filter((p) => p.status === "Selesai").reduce((s, p) => s + p.total, 0);
   const totalAktif = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses").length;
 
-  const selectedItem = stokList.find((s) => s.id === form.itemId);
-  const estimasiTotal = selectedItem && form.jumlah ? selectedItem.hargaSatuan * Number(form.jumlah) : 0;
-
-  function handleAddSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!form.pembeli || !form.itemId || !form.jumlah || !form.alamatKirim) return;
-    addPesanan(form.pembeli, form.itemId, Number(form.jumlah), form.alamatKirim);
-    setForm({ pembeli: "", itemId: "", jumlah: "", alamatKirim: "" });
-    setShowAddModal(false);
-  }
-
   function ubahStatus(status: PesananStatus) {
     if (!detail) return;
     updatePesananStatus(detail.id, status);
     setDetail({ ...detail, status });
   }
 
+  function handleTolak(id: string, pembeli: string) {
+    if (confirm(`Tolak pesanan dari ${pembeli}? Stok akan dikembalikan otomatis.`)) {
+      deletePesanan(id);
+      if (detail?.id === id) setDetail(null);
+    }
+  }
+
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Penjualan B2B</h1>
-          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Kelola pesanan grosir dari mitra bisnis, terhubung langsung dengan stok kamu.</p>
-        </div>
-        <button onClick={() => setShowAddModal(true)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem" }}>+ Catat Pesanan Baru</button>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Penjualan B2B</h1>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Kelola pesanan grosir yang masuk dari Admin Toko, terhubung langsung dengan stok kamu.</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -134,7 +122,7 @@ export default function PenjualanB2B({ pesananList, stokList, addPesanan, update
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan yang cocok.</td></tr>
+              <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan yang cocok.</td></tr>
             )}
             {filtered.map((p) => {
               const s = statusStyle[p.status];
@@ -148,7 +136,14 @@ export default function PenjualanB2B({ pesananList, stokList, addPesanan, update
                   <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</td>
                   <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
                   <td style={{ padding: "1rem", textAlign: "center" }}>
-                    <button onClick={() => setDetail(p)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
+                    {p.status === "Baru" ? (
+                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                        <button onClick={() => updatePesananStatus(p.id, "Diproses")} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Terima</button>
+                        <button onClick={() => handleTolak(p.id, p.pembeli)} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setDetail(p)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
+                    )}
                   </td>
                 </tr>
               );
@@ -209,53 +204,10 @@ export default function PenjualanB2B({ pesananList, stokList, addPesanan, update
             {detail.status !== "Selesai" && detail.status !== "Dibatalkan" && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button onClick={() => ubahStatus("Dibatalkan")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "white", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Batalkan</button>
-                {detail.status === "Baru" && <button onClick={() => ubahStatus("Diproses")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 600, cursor: "pointer" }}>Proses Pesanan</button>}
                 {detail.status === "Diproses" && <button onClick={() => ubahStatus("Dikirim")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Kirim Pesanan</button>}
                 {detail.status === "Dikirim" && <button onClick={() => ubahStatus("Selesai")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tandai Selesai</button>}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {showAddModal && (
-        <div onClick={() => setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "420px", maxWidth: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.1rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>Catat Pesanan Baru</h2>
-              <button onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
-            </div>
-            <form onSubmit={handleAddSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Nama Pembeli *</label>
-                <input required value={form.pembeli} onChange={(e) => setForm({ ...form, pembeli: e.target.value })} placeholder="Contoh: Warung Makmur Jaya" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Produk *</label>
-                <select required value={form.itemId} onChange={(e) => setForm({ ...form, itemId: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white" }}>
-                  <option value="">Pilih produk...</option>
-                  {stokList.filter((s) => s.jumlah > 0).map((s) => <option key={s.id} value={s.id}>{s.nama} (stok: {s.jumlah} {s.satuan})</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Jumlah {selectedItem ? `(maks ${selectedItem.jumlah} ${selectedItem.satuan})` : ""} *</label>
-                <input required type="number" min="1" max={selectedItem?.jumlah} value={form.jumlah} onChange={(e) => setForm({ ...form, jumlah: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Alamat Kirim *</label>
-                <input required value={form.alamatKirim} onChange={(e) => setForm({ ...form, alamatKirim: e.target.value })} placeholder="Contoh: Jl. Merdeka No. 5, Malang" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
-              </div>
-              {estimasiTotal > 0 && (
-                <div style={{ background: "#ECFDF5", borderRadius: "8px", padding: "0.65rem 0.85rem", display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                  <span style={{ color: "#10B981", fontWeight: 600 }}>Estimasi Total</span>
-                  <strong style={{ color: "#1E293B" }}>{formatRupiah(estimasiTotal)}</strong>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Batal</button>
-                <button type="submit" style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Simpan Pesanan</button>
-              </div>
-            </form>
           </div>
         </div>
       )}

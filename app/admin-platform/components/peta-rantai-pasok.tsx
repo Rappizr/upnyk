@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type TipeEntitas = "Toko" | "Produsen" | "Supplier";
+type TipeEntitas = "Toko" | "Produsen";
 
 interface Entitas {
   id: string;
@@ -57,11 +57,10 @@ function coordFromLokasi(lokasi: string): [number, number] {
   return cityCoords[found || "Malang"];
 }
 
-const tipeColor: Record<TipeEntitas, string> = { Toko: "#2563EB", Produsen: "#10B981", Supplier: "#F59E0B" };
+const tipeColor: Record<TipeEntitas, string> = { Toko: "#2563EB", Produsen: "#10B981" };
 const tipeBg: Record<TipeEntitas, { bg: string; color: string }> = {
   Toko: { bg: "#EFF6FF", color: "#2563EB" },
   Produsen: { bg: "#ECFDF5", color: "#059669" },
-  Supplier: { bg: "#FEF3C7", color: "#92400E" },
 };
 
 function MiniMap({ entitasList }: { entitasList: Entitas[] }) {
@@ -133,12 +132,12 @@ export default function PetaRantaiPasok({ entitasList, transaksiList }: Props) {
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Peta Rantai Pasok</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Visualisasi jaringan Supplier, Admin Toko, dan Produsen yang sudah terverifikasi di ekosistem.</p>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Visualisasi jaringan Admin Toko dan Produsen yang sudah terverifikasi di ekosistem.</p>
       </div>
 
       <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <button onClick={() => setTipeFilter("")} style={{ background: tipeFilter === "" ? "#1E293B" : "white", color: tipeFilter === "" ? "#fff" : "#334155", border: "1px solid #E2E8F0", padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>Semua ({entitasList.length})</button>
-        {(["Toko", "Produsen", "Supplier"] as TipeEntitas[]).map((t) => (
+        {(["Toko", "Produsen"] as TipeEntitas[]).map((t) => (
           <button key={t} onClick={() => setTipeFilter(t)} style={{ background: tipeFilter === t ? tipeColor[t] : "white", color: tipeFilter === t ? "#fff" : tipeColor[t], border: `1px solid ${tipeColor[t]}`, padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>
             {t} ({entitasList.filter((e) => e.tipe === t).length})
           </button>
@@ -150,7 +149,6 @@ export default function PetaRantaiPasok({ entitasList, transaksiList }: Props) {
         <div style={{ display: "flex", gap: "1rem", marginTop: "0.75rem", fontSize: "0.75rem", color: "#64748B", flexWrap: "wrap" }}>
           <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Toko, marginRight: "5px" }} />Admin Toko</span>
           <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Produsen, marginRight: "5px" }} />Produsen</span>
-          <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Supplier, marginRight: "5px" }} />Supplier</span>
         </div>
       </div>
 

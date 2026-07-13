@@ -4,12 +4,14 @@ import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import VerifikasiPeran from "./components/verifikasi-peran";
 import PetaRantaiPasok from "./components/peta-rantai-pasok";
 import EscrowTransaksi from "./components/escrow-transaksi";
 import LaporanDampak from "./components/laporan-dampak";
 import ProfilAdminPage, { ProfilAdmin } from "./components/profil-admin";
-import Pengaduan from "./components/pengaduan";
+import PengaduanPage from "./components/pengaduan";
+import DataUMKM from "./components/data-umkm";
+import DataProdusen from "./components/data-produsen";
+import DataPembeli from "./components/data-pembeli";
 
 // ============================================================================
 // TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
@@ -20,6 +22,7 @@ export type TipeEntitas = "Toko" | "Produsen";
 export interface Pendaftar {
   id: string;
   nama: string;
+  pemilik: string;
   jenisAkun: JenisAkun;
   lokasi: string;
   tanggal: string;
@@ -29,8 +32,18 @@ export interface Pendaftar {
 export interface Entitas {
   id: string;
   nama: string;
+  pemilik: string;
   tipe: TipeEntitas;
   lokasi: string;
+  status: "Aktif" | "Nonaktif";
+}
+
+export interface Pembeli {
+  id: string;
+  namaLengkap: string;
+  alamat: string;
+  telepon: string;
+  email: string;
   status: "Aktif" | "Nonaktif";
 }
 
@@ -65,17 +78,23 @@ export interface Komoditas {
 }
 
 const initialPendaftar: Pendaftar[] = [
-  { id: "REG-101", nama: "Koperasi Tani Makmur", jenisAkun: "Admin Toko", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
-  { id: "REG-102", nama: "Budi Santoso", jenisAkun: "Produsen", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
-  { id: "REG-103", nama: "Gabungan Kelompok Tani Jombang", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
+  { id: "REG-101", nama: "Koperasi Tani Makmur", pemilik: "Slamet Wijaya", jenisAkun: "Admin Toko", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
+  { id: "REG-102", nama: "Keripik Bu Sari", pemilik: "Budi Santoso", jenisAkun: "Produsen", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
+  { id: "REG-103", nama: "Gabungan Kelompok Tani Jombang", pemilik: "Hendra Kusuma", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
 ];
 
 const initialEntitas: Entitas[] = [
-  { id: "ENT-01", nama: "Warung Makmur Jaya", tipe: "Toko", lokasi: "Malang, Jawa Timur", status: "Aktif" },
-  { id: "ENT-02", nama: "Toko Sembako Berkah", tipe: "Toko", lokasi: "Jombang, Jawa Timur", status: "Aktif" },
-  { id: "ENT-03", nama: "Keripik Tempe Sanan", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
-  { id: "ENT-04", nama: "Kopi Arabika Gayo", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
-  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-01", nama: "Warung Makmur Jaya", pemilik: "Made Aditya", tipe: "Toko", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-02", nama: "Toko Sembako Berkah", pemilik: "Siti Rahma", tipe: "Toko", lokasi: "Jombang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-03", nama: "Keripik Tempe Sanan", pemilik: "Budi Santoso", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+  { id: "ENT-04", nama: "Kopi Arabika Gayo", pemilik: "Rina Kartika", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
+  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", pemilik: "Agus Salim", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
+];
+
+const initialPembeli: Pembeli[] = [
+  { id: "BUY-01", namaLengkap: "Minimarket Sejahtera", alamat: "Jl. Ijen No. 8, Malang, Jawa Timur", telepon: "0813-1122-3344", email: "sejahtera.mart@gmail.com", status: "Aktif" },
+  { id: "BUY-02", namaLengkap: "Koperasi Pasar Besar", alamat: "Pasar Besar Malang, Los C12", telepon: "0857-9988-7766", email: "koperasi.pasarbesar@gmail.com", status: "Aktif" },
+  { id: "BUY-03", namaLengkap: "Warung Bu Ida", alamat: "Jl. Kawi No. 21, Malang, Jawa Timur", telepon: "0812-5544-3322", email: "buida.warung@gmail.com", status: "Aktif" },
 ];
 
 const initialTransaksi: EscrowTx[] = [
@@ -100,7 +119,6 @@ const initialPengaduan: Pengaduan[] = [
 
 // Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
-const IconUserCheck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m17 11 2 2 4-4"></path></svg>;
 const IconMap = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>;
 const IconShieldLock = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><rect x="9" y="11" width="6" height="5" rx="1"></rect><path d="M10 11V9a2 2 0 0 1 4 0v2"></path></svg>;
 const IconReport = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="15" y2="17"></line></svg>;
@@ -110,6 +128,10 @@ const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
 const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconShield = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
+const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
+const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
+const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
+const IconUsers = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
 
 interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
 interface MenuGroupDef { title: string; items: MenuItemDef[] }
@@ -117,10 +139,11 @@ interface MenuGroupDef { title: string; items: MenuItemDef[] }
 const menuGroups: MenuGroupDef[] = [
   { title: "Main", items: [
     { key: "dashboard", label: "Dashboard", icon: IconDashboard },
-    { key: "profil", label: "Profil Admin", icon: IconUserCheck },
   ] },
   { title: "Pengawasan", items: [
-    { key: "verifikasi", label: "Verifikasi & Peran", icon: IconUserCheck },
+    { key: "umkm", label: "Data UMKM", icon: IconStore },
+    { key: "produsen", label: "Data Produsen", icon: IconPackage },
+    { key: "pembeli", label: "Data Pembeli", icon: IconUsers },
     { key: "peta", label: "Peta Rantai Pasok", icon: IconMap },
     { key: "pengaduan", label: "Pengaduan", icon: IconFlag },
   ] },
@@ -139,8 +162,9 @@ function formatRupiahRingkas(n: number) {
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
-  profil: "Profil Admin",
-  verifikasi: "Verifikasi & Peran",
+  umkm: "Data UMKM",
+  produsen: "Data Produsen",
+  pembeli: "Data Pembeli",
   peta: "Peta Rantai Pasok",
   pengaduan: "Pengaduan",
   escrow: "Escrow & Transaksi",
@@ -150,9 +174,12 @@ const pageTitles: Record<string, string> = {
 export default function AdminPlatformDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profilPopupOpen, setProfilPopupOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const [pendaftarList, setPendaftarList] = useState<Pendaftar[]>(initialPendaftar);
   const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitas);
+  const [pembeliList, setPembeliList] = useState<Pembeli[]>(initialPembeli);
   const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksi);
   const [komoditasList] = useState<Komoditas[]>(initialKomoditas);
   const [pengaduanList, setPengaduanList] = useState<Pengaduan[]>(initialPengaduan);
@@ -171,11 +198,17 @@ export default function AdminPlatformDashboard() {
     if (p) {
       const tipe: TipeEntitas = p.jenisAkun === "Admin Toko" ? "Toko" : "Produsen";
       const entId = `ENT-${String(entitasList.length + 1).padStart(2, "0")}`;
-      setEntitasList((prev) => [...prev, { id: entId, nama: p.nama, tipe, lokasi: p.lokasi, status: "Aktif" }]);
+      setEntitasList((prev) => [...prev, { id: entId, nama: p.nama, pemilik: p.pemilik, tipe, lokasi: p.lokasi, status: "Aktif" }]);
     }
   }
   function rejectPendaftar(id: string) {
     setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Ditolak" } : p)));
+  }
+  function toggleSuspendEntitas(id: string) {
+    setEntitasList((prev) => prev.map((e) => (e.id === id ? { ...e, status: e.status === "Aktif" ? "Nonaktif" : "Aktif" } : e)));
+  }
+  function toggleSuspendPembeli(id: string) {
+    setPembeliList((prev) => prev.map((b) => (b.id === id ? { ...b, status: b.status === "Aktif" ? "Nonaktif" : "Aktif" } : b)));
   }
 
   function salurkanDana(id: string) {
@@ -198,6 +231,8 @@ export default function AdminPlatformDashboard() {
   const pengaduanAktif = pengaduanList.filter((p) => p.status === "Baru" || p.status === "Diproses").length;
   const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
   const totalMenunggu = pendaftarList.filter((p) => p.status === "Menunggu").length;
+  const menungguToko = pendaftarList.filter((p) => p.status === "Menunggu" && p.jenisAkun === "Admin Toko").length;
+  const menungguProdusen = pendaftarList.filter((p) => p.status === "Menunggu" && p.jenisAkun === "Produsen").length;
   const escrowDitahan = transaksiList.filter((t) => t.status === "Ditahan").length;
 
   const indeksHargaAdil = useMemo(() => {
@@ -212,6 +247,13 @@ export default function AdminPlatformDashboard() {
     entitasList.forEach((e) => { map[e.lokasi] = (map[e.lokasi] || 0) + 1; });
     return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
   }, [entitasList]);
+
+  interface NotifItem { id: string; text: string; sub: string; tujuan: string }
+  const notifItems: NotifItem[] = [
+    ...pendaftarList.filter((p) => p.status === "Menunggu").map((p) => ({ id: `reg-${p.id}`, text: `Pendaftaran baru: ${p.nama}`, sub: `${p.jenisAkun} • ${p.lokasi}`, tujuan: p.jenisAkun === "Admin Toko" ? "umkm" : "produsen" })),
+    ...pengaduanList.filter((p) => p.status === "Baru").map((p) => ({ id: `adu-${p.id}`, text: `Aduan baru dari ${p.pelapor}`, sub: p.kategori, tujuan: "pengaduan" })),
+    ...transaksiList.filter((t) => t.status === "Disengketakan").map((t) => ({ id: `tx-${t.id}`, text: `Transaksi disengketakan: ${t.id}`, sub: `${t.toko} ↔ ${t.produsen}`, tujuan: "escrow" })),
+  ];
 
   function selectMenu(key: string) {
     setActiveMenu(key);
@@ -259,7 +301,7 @@ export default function AdminPlatformDashboard() {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
-                const badge = item.key === "verifikasi" && totalMenunggu > 0 ? totalMenunggu : item.key === "pengaduan" && pengaduanAktif > 0 ? pengaduanAktif : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
+                const badge = item.key === "umkm" && menungguToko > 0 ? menungguToko : item.key === "produsen" && menungguProdusen > 0 ? menungguProdusen : item.key === "pengaduan" && pengaduanAktif > 0 ? pengaduanAktif : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
                 return (
                   <div
                     key={item.key}
@@ -288,19 +330,50 @@ export default function AdminPlatformDashboard() {
             <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IconBell />
-              {totalMenunggu > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+            <div style={{ position: "relative" }}>
+              <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: notifOpen ? "#F1F5F9" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <IconBell />
+                {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+              </div>
+              {notifOpen && (
+                <>
+                  <div onClick={() => setNotifOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
+                  <div style={{ position: "absolute", top: "42px", right: 0, width: "320px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", zIndex: 60, maxHeight: "380px", overflowY: "auto" }}>
+                    <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #F1F5F9", fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>Notifikasi</div>
+                    {notifItems.length === 0 ? (
+                      <div style={{ padding: "1.25rem 1rem", fontSize: "0.8rem", color: "#94A3B8", textAlign: "center" }}>Tidak ada notifikasi baru.</div>
+                    ) : (
+                      notifItems.map((n) => (
+                        <div key={n.id} onClick={() => { selectMenu(n.tujuan); setNotifOpen(false); }} style={{ padding: "0.7rem 1rem", borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{n.text}</div>
+                          <div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>{n.sub}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1E293B", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-              {profilAdmin.fotoUrl ? <img src={profilAdmin.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profilAdmin.inisial}
-            </div>
-            <div className="ap-user-name">
-              <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profilAdmin.nama}</div>
-              <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>{profilAdmin.jabatan}</div>
+            <div onClick={() => setProfilPopupOpen(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1E293B", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                {profilAdmin.fotoUrl ? <img src={profilAdmin.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profilAdmin.inisial}
+              </div>
+              <div className="ap-user-name">
+                <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profilAdmin.nama}</div>
+                <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>{profilAdmin.jabatan}</div>
+              </div>
+              <span className="ap-user-name" style={{ color: "#94A3B8" }}><IconChevronDown /></span>
             </div>
           </div>
         </div>
+
+        {profilPopupOpen && (
+          <div onClick={() => setProfilPopupOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "4.5rem 1rem 1rem", overflowY: "auto" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", width: "100%" }}>
+              <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} />
+            </div>
+          </div>
+        )}
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
@@ -318,15 +391,15 @@ export default function AdminPlatformDashboard() {
 
             {/* Stat cards */}
             <div className="ap-stats-grid" style={{ marginBottom: "1.25rem" }}>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalToko}</div>
-                <div style={{ fontSize: "0.68rem", color: "#2563EB", marginTop: "0.15rem" }}>Lihat di peta →</div>
+                <div style={{ fontSize: "0.68rem", color: "#2563EB", marginTop: "0.15rem" }}>Lihat data →</div>
               </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("peta")}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("produsen")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL PRODUSEN</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalProdusen}</div>
-                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Lihat di peta →</div>
+                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Lihat data →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("pengaduan")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PENGADUAN AKTIF</div>
@@ -359,7 +432,7 @@ export default function AdminPlatformDashboard() {
                   pendaftarList.filter((p) => p.status === "Menunggu").slice(0, 3).map((p) => (
                     <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.55rem 0", borderBottom: "1px solid #F1F5F9", gap: "0.5rem" }}>
                       <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{p.nama}</div><div style={{ fontSize: "0.68rem", color: "#94A3B8" }}>Mendaftar sebagai {p.jenisAkun}</div></div>
-                      <button onClick={() => selectMenu("verifikasi")} style={{ background: "#2563EB", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Tinjau</button>
+                      <button onClick={() => selectMenu(p.jenisAkun === "Admin Toko" ? "umkm" : "produsen")} style={{ background: "#2563EB", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Tinjau</button>
                     </div>
                   ))
                 )}
@@ -381,12 +454,13 @@ export default function AdminPlatformDashboard() {
           </main>
         )}
 
-        {activeMenu === "verifikasi" && <VerifikasiPeran pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} />}
+        {activeMenu === "umkm" && <DataUMKM entitasList={entitasList} pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} toggleSuspendEntitas={toggleSuspendEntitas} transaksiList={transaksiList} />}
+        {activeMenu === "produsen" && <DataProdusen entitasList={entitasList} pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} toggleSuspendEntitas={toggleSuspendEntitas} transaksiList={transaksiList} />}
+        {activeMenu === "pembeli" && <DataPembeli pembeliList={pembeliList} toggleSuspendPembeli={toggleSuspendPembeli} />}
         {activeMenu === "peta" && <PetaRantaiPasok entitasList={entitasList} transaksiList={transaksiList} />}
-        {activeMenu === "pengaduan" && <Pengaduan pengaduanList={pengaduanList} updateStatusPengaduan={updateStatusPengaduan} />}
+        {activeMenu === "pengaduan" && <PengaduanPage pengaduanList={pengaduanList} updateStatusPengaduan={updateStatusPengaduan} />}
         {activeMenu === "escrow" && <EscrowTransaksi transaksiList={transaksiList} salurkanDana={salurkanDana} tandaiSengketa={tandaiSengketa} selesaikanSengketa={selesaikanSengketa} />}
         {activeMenu === "laporan" && <LaporanDampak komoditasList={komoditasList} daerahProduktif={daerahProduktif} indeksHargaAdil={indeksHargaAdil} totalGMV={totalGMV} entitasList={entitasList} />}
-        {activeMenu === "profil" && <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} />}
       </div>
     </div>
   );
