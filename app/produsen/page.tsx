@@ -10,9 +10,6 @@ import Pengiriman from "./components/pengiriman";
 import Keuangan from "./components/keuangan";
 import ProfilUMKM from "./components/profil-umkm";
 
-// ============================================================================
-// TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
-// ============================================================================
 export interface Profil {
   nama: string;
   usaha: string;
@@ -107,7 +104,6 @@ const initialPengeluaran: Pengeluaran[] = [
   { id: "EXP-03", keterangan: "Ongkos kirim bahan baku", nominal: 150000, tanggal: "07 Jul 2026", kategori: "Logistik" },
 ];
 
-// Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
@@ -119,33 +115,36 @@ const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="non
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
 const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
-
-interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
-interface MenuGroupDef { title: string; items: MenuItemDef[] }
-
-const menuGroups: MenuGroupDef[] = [
-  { title: "Main", items: [{ key: "dashboard", label: "Dashboard", icon: IconDashboard }] },
-  { title: "Manajemen Stok", items: [{ key: "stok", label: "Stok Komoditas", icon: IconPackage }] },
-  { title: "Penjualan & Logistik", items: [
-    { key: "penjualan", label: "Penjualan B2B", icon: IconStore },
-    { key: "pengiriman", label: "Pengiriman", icon: IconTruck },
-  ] },
-  { title: "Operasional", items: [
-    { key: "keuangan", label: "Keuangan", icon: IconWallet },
-  ] },
+const menuGroups = [
+  {
+    title: "MAIN",
+    items: [
+      { key: "dashboard", label: "Dashboard", icon: IconDashboard },
+    ],
+  },
+  {
+    title: "OPERASIONAL",
+    items: [
+      { key: "stok", label: "Produk / Stok", icon: IconPackage },
+      { key: "penjualan", label: "Pesanan", icon: IconStore },
+      { key: "pengiriman", label: "Pengiriman", icon: IconTruck },
+      { key: "keuangan", label: "Keuangan", icon: IconWallet },
+    ],
+  },
 ];
-
-function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
-
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
-  stok: "Stok Komoditas",
-  penjualan: "Penjualan B2B",
+  stok: "Produk / Stok",
+  penjualan: "Pesanan",
   pengiriman: "Pengiriman",
   keuangan: "Keuangan",
 };
+function formatRupiah(n: number) {
+  if (n < 0) {
+    return "- Rp " + Math.abs(n).toLocaleString("id-ID");
+  }
+  return "Rp " + n.toLocaleString("id-ID");
+}
 
 export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
@@ -222,28 +221,89 @@ export default function ProdusenDashboard() {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{__html: `
         .pn-sidebar { width: 220px; }
         .pn-hamburger { display: none; }
         .pn-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .pn-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .pn-user-name { display: block; }
+        
         @media (max-width: 900px) {
-          .pn-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
+          .pn-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16 rgba(0,0,0,.1); }
           .pn-sidebar.open { transform: translateX(0); }
           .pn-hamburger { display: flex; }
-          .pn-stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .pn-panels-grid { grid-template-columns: 1fr; }
+        
+          .hero-banner-container {
+            padding: 0.85rem !important;
+            border-radius: 10px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.4rem !important;
+          }
+          .hero-banner-container span {
+            font-size: 0.55rem !important;
+            padding: 0.15rem 0.4rem !important;
+            margin-bottom: 0.2rem !important;
+          }
+          .hero-banner-container h2 {
+            font-size: 1.05rem !important;
+            line-height: 1.15 !important;
+          }
+          .hero-banner-container p {
+            font-size: 0.68rem !important;
+            margin-top: 0.1rem !important;
+            line-height: 1.2 !important;
+          }
+          .hero-banner-container button {
+              padding: 0.45rem 1rem !important;
+              font-size: 0.7rem !important;
+              border-radius: 6px !important;
+              width: fit-content !important;
+              margin: 0.25rem auto 0 auto !important;
+              display: flex !important;
+              align-items: center;
+              justify-content: center;
+          }
+
+          .pn-stats-grid { 
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 0.25rem !important; 
+            margin-bottom: 1rem !important;
+          }
+          .pn-stats-grid > div {
+            padding: 0.4rem 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .pn-stats-grid > div > div:first-child {
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .pn-stats-grid > div > div:nth-child(2) {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .pn-stats-grid > div > div:nth-child(2) span {
+            font-size: 0.45rem !important;
+          }
+          .pn-stats-grid > div > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
+          .pn-panels-grid { 
+            grid-template-columns: 1fr !important; 
+            gap: 0.75rem !important;
+          }
         }
         @media (max-width: 480px) {
-          .pn-stats-grid { grid-template-columns: 1fr; }
           .pn-user-name { display: none; }
         }
-      `}</style>
+      `}} />
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
-      {/* Sidebar */}
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -279,9 +339,7 @@ export default function ProdusenDashboard() {
         </div>
       </aside>
 
-      {/* Konten */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
@@ -328,31 +386,30 @@ export default function ProdusenDashboard() {
         {profilPopupOpen && (
           <div onClick={() => setProfilPopupOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "4.5rem 1rem 1rem", overflowY: "auto" }}>
             <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", width: "100%" }}>
-              <ProfilUMKM profil={profil} setProfil={setProfil} />
+              <ProfilUMKM profil={profil} onUpdateProfil={setProfil} />
             </div>
           </div>
         )}
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            {/* Hero */}
-            <div style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem clamp(1.25rem, 4vw, 2rem)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+            
+            <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
-                <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</div>
-                <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.85)", marginTop: "0.3rem", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</div>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</h2>
+                <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.85rem", color: "rgba(255,255,255,.85)", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</p>
               </div>
               <button onClick={() => selectMenu("pengiriman")} style={{ background: "#fff", color: "#059669", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
                 Lihat Riwayat Panen <IconArrowRight />
               </button>
             </div>
 
-            {/* Stat cards */}
             <div className="pn-stats-grid" style={{ marginBottom: "1.25rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
-                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }} onClick={() => selectMenu("stok")}>Kelola stok →</div>
+                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => selectMenu("stok")}>Kelola stok →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("penjualan")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
@@ -376,7 +433,6 @@ export default function ProdusenDashboard() {
               </div>
             </div>
 
-            {/* Panels */}
             <div className="pn-panels-grid">
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>

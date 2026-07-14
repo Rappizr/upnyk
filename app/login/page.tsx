@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 type Role = "pembeli" | "produsen" | "admin_toko" | "admin_platform";
 
@@ -27,8 +26,8 @@ const roleConfigs: Record<Role, RoleConfig> = {
         <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
       </svg>
     ),
-    color: "var(--color-primary)",
-    bgColor: "var(--color-primary-light)",
+    color: "#2563EB",
+    bgColor: "#EFF6FF",
     email: "arif.pembeli@lural.com",
     redirectUrl: "/pembeli",
   },
@@ -41,8 +40,8 @@ const roleConfigs: Record<Role, RoleConfig> = {
         <path d="m9 12 2 2 4-4" />
       </svg>
     ),
-    color: "var(--color-secondary)",
-    bgColor: "var(--color-secondary-light)",
+    color: "#10B981",
+    bgColor: "#ECFDF5",
     email: "budi.produsen@lural.com",
     redirectUrl: "/produsen",
   },
@@ -56,8 +55,8 @@ const roleConfigs: Record<Role, RoleConfig> = {
         <path d="M9 14h6" />
       </svg>
     ),
-    color: "var(--color-warning)",
-    bgColor: "var(--color-warning-light)",
+    color: "#F59E0B",
+    bgColor: "#FEF3C7",
     email: "citra.toko@lural.com",
     redirectUrl: "/admin-toko",
   },
@@ -70,16 +69,27 @@ const roleConfigs: Record<Role, RoleConfig> = {
         <path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
     ),
-    color: "var(--color-text)",
+    color: "#475569",
     bgColor: "#F1F5F9",
     email: "dharma.admin@lural.com",
     redirectUrl: "/admin-platform",
   },
 };
 
+interface UserEntry {
+  name: string;
+  phone: string;
+  email: string;
+  passwordHash: string;
+  role: Role;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<Role>("pembeli");
+
+  const activeConfig = roleConfigs[selectedRole];
+
   const [email, setEmail] = useState(roleConfigs.pembeli.email);
   const [password, setPassword] = useState("••••••••");
   const [isLoading, setIsLoading] = useState(false);
@@ -97,15 +107,13 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
 
-  // Helper to read localStorage users
-  const getRegisteredUsers = () => {
+  const getRegisteredUsers = (): UserEntry[] => {
     if (typeof window === "undefined") return [];
     const stored = localStorage.getItem("registered_users");
     return stored ? JSON.parse(stored) : [];
   };
 
-  // Helper to register a user
-  const registerUser = (user: { name: string; phone: string; email: string; passwordHash: string; role: Role }) => {
+  const registerUser = (user: UserEntry) => {
     if (typeof window === "undefined") return;
     const users = getRegisteredUsers();
     users.push(user);
@@ -119,13 +127,13 @@ export default function LoginPage() {
     if (isPreseeded) return true;
 
     const users = getRegisteredUsers();
-    return users.some((u: any) => u.email.toLowerCase() === emailToCheck.toLowerCase());
+    return users.some((u) => u.email.toLowerCase() === emailToCheck.toLowerCase());
   };
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setEmail(roleConfigs[role].email);
-    setPassword("12345678"); // Mock password
+    setPassword("12345678");
     setError("");
     setRegSuccess("");
     setRegName("");
@@ -146,7 +154,6 @@ export default function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
 
-      // Check preseeded first
       const preseededRole = (Object.keys(roleConfigs) as Role[]).find(
         (r) => roleConfigs[r].email.toLowerCase() === email.toLowerCase()
       );
@@ -160,18 +167,18 @@ export default function LoginPage() {
         return;
       }
 
-      // Check registered users
       const users = getRegisteredUsers();
-      const matchedUser = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      const matchedUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 
       if (matchedUser) {
         if (matchedUser.role === selectedRole) {
           router.push(roleConfigs[selectedRole].redirectUrl);
         } else {
-          setError(`Email terdaftar sebagai ${roleConfigs[matchedUser.role].title}. Silakan pilih peran yang sesuai.`);
+          const userRole = matchedUser.role as Role;
+          setError(`Email terdaftar sebagai ${roleConfigs[userRole].title}. Silakan pilih peran yang sesuai.`);
         }
       } else {
-        setError("Alamat email belum terdaftar?. Silakan klik 'Daftar disini'.");
+        setError("Alamat email belum terdaftar. Silakan klik 'Daftar disini'.");
       }
     }, 1200);
   };
@@ -204,24 +211,21 @@ export default function LoginPage() {
         name: regName,
         phone: regPhone,
         email: regEmail,
-        passwordHash: regPassword, // mock
+        passwordHash: regPassword,
         role: selectedRole
       });
 
       setRegSuccess(`Registrasi sebagai ${activeConfig.title} berhasil! Silakan masuk.`);
 
-      // Auto-prefill the login credentials
       setEmail(regEmail);
       setPassword(regPassword);
 
-      // Clear registration form
       setRegName("");
       setRegPhone("");
       setRegEmail("");
       setRegPassword("");
       setRegConfirmPassword("");
 
-      // Switch back to login mode after 2 seconds
       setTimeout(() => {
         setIsRegistering(false);
         setRegSuccess("");
@@ -254,21 +258,149 @@ export default function LoginPage() {
     }, 1500);
   };
 
-  const activeConfig = roleConfigs[selectedRole];
-
   return (
-    <div className="login-page-wrapper">
-      {/* Decorative Blur Orbs */}
+    <div className="login-page-wrapper" style={{ minHeight: "100vh", padding: "1.5rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", background: "#F8FAFC" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .login-container {
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
+          gap: 2.5rem;
+          width: 100%;
+          max-width: 1000px;
+          background: #ffffff;
+          border-radius: 1.5rem;
+          border: 1px solid rgba(226,232,240,0.8);
+          box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05);
+          padding: 2.5rem;
+          box-sizing: border-box;
+          z-index: 5;
+        }
+        .form-group {
+          display: flex;
+          flex-direction: column;
+        }
+        .form-label {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #475569;
+          margin-bottom: 0.4rem;
+        }
+        .form-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 1px solid #E2E8F0;
+          border-radius: 0.5rem;
+          font-size: 0.95rem;
+          outline: none;
+          box-sizing: border-box;
+          transition: all 0.2s;
+        }
+        .form-input:focus {
+          border-color: #2563EB;
+          box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+        }
+        .btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          border: none;
+          color: white;
+          font-weight: 700;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          opacity: 0.95;
+        }
+        .badge {
+          padding: 0.625rem;
+          border-radius: 0.35rem;
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-align: center;
+          box-sizing: border-box;
+        }
+        .badge-success { background: #DCFCE7; color: #166534; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+          .login-page-wrapper {
+            padding: 1rem 0.5rem !important;
+          }
+          .login-container {
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+            padding: 1.25rem 1rem !important;
+            border-radius: 1rem !important;
+          }
+          .login-left-panel h2 {
+            font-size: 1.35rem !important;
+          }
+          .login-left-panel p {
+            font-size: 0.8rem !important;
+            margin-bottom: 1.5rem !important;
+          }
+          .login-left-panel button {
+            padding: 0.75rem !important;
+            gap: 0.75rem !important;
+          }
+          .login-left-panel button span {
+            width: 36px !important;
+            height: 36px !important;
+          }
+          .login-left-panel button span svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .login-left-panel button div div:first-child {
+            font-size: 0.85rem !important;
+          }
+          .login-left-panel button div div:last-child {
+            font-size: 0.72rem !important;
+          }
+          .login-right-panel span:first-child {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          .login-right-panel span:first-child svg {
+            width: 20px !important;
+            height: 20px !important;
+          }
+          .login-right-panel h3 {
+            font-size: 1.1rem !important;
+          }
+          .login-right-panel p {
+            font-size: 0.75rem !important;
+          }
+          .form-input {
+            padding: 0.6rem 0.75rem !important;
+            font-size: 0.85rem !important;
+          }
+          .btn-primary {
+            padding: 0.65rem !important;
+            font-size: 0.85rem !important;
+          }
+        }
+      `}} />
+
       <div
         style={{
           position: "absolute",
           top: "10%",
           left: "15%",
-          width: "300px",
-          height: "300px",
+          width: "200px",
+          height: "200px",
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(40px)",
+          filter: "blur(30px)",
           zIndex: 0,
         }}
       />
@@ -277,42 +409,32 @@ export default function LoginPage() {
           position: "absolute",
           bottom: "10%",
           right: "15%",
-          width: "350px",
-          height: "350px",
+          width: "250px",
+          height: "250px",
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(50px)",
+          filter: "blur(40px)",
           zIndex: 0,
         }}
       />
 
-      {/* Back to Home Link */}
-      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "1rem", zIndex: 2 }}>
+      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "1rem", zIndex: 2, paddingLeft: "0.25rem" }}>
         <a
           href="/"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "0.5rem",
-            color: "var(--color-text-muted)",
+            color: "#64748B",
             textDecoration: "none",
             fontSize: "0.9rem",
             fontWeight: 600,
             transition: "color 0.15s ease",
           }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-primary)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-muted)"}
+          onMouseEnter={(e) => e.currentTarget.style.color = "#2563EB"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "#64748B"}
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
@@ -321,26 +443,24 @@ export default function LoginPage() {
       </div>
 
       <div className="login-container">
-        {/* Left Side: Role Selector & Branding */}
         <div className="login-left-panel">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
             <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
               <rect width="28" height="28" rx="8" fill="#2563EB" />
               <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
             </svg>
-            <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-primary)" }}>
-              Pasar<span style={{ color: "var(--color-secondary)" }}>Nusa</span>
+            <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "#2563EB" }}>
+              Pasar<span style={{ color: "#10B981" }}>Nusa</span>
             </span>
           </div>
 
-          <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "var(--color-text)", marginBottom: "0.5rem" }}>
+          <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.5rem" }}>
             Selamat Datang Kembali
           </h2>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem", marginBottom: "2rem" }}>
-            Pilih jenis akun Anda untuk masuk ke sistem PasarNusa & Supply Chain.
+          <p style={{ color: "#64748B", fontSize: "0.9rem", marginBottom: "2rem" }}>
+            Pilih jenis akun Anda untuk masuk ke sistem PasarNusa &amp; Supply Chain.
           </p>
 
-          {/* Role Grid */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {(Object.keys(roleConfigs) as Role[]).map((roleKey) => {
               const config = roleConfigs[roleKey];
@@ -354,14 +474,13 @@ export default function LoginPage() {
                     alignItems: "center",
                     gap: "1.25rem",
                     padding: "1.25rem",
-                    borderRadius: "var(--radius-md)",
-                    border: isSelected ? `2.5px solid ${config.color}` : "1.5px solid var(--color-border)",
+                    borderRadius: "0.75rem",
+                    border: isSelected ? `2.5px solid ${config.color}` : "1.5px solid #E2E8F0",
                     background: isSelected ? config.bgColor : "transparent",
                     cursor: "pointer",
                     textAlign: "left",
                     transition: "all 0.2s ease",
                     transform: isSelected ? "scale(1.02)" : "scale(1)",
-                    boxShadow: isSelected ? "var(--shadow-md)" : "none",
                   }}
                   id={`role-btn-${roleKey}`}
                 >
@@ -372,20 +491,19 @@ export default function LoginPage() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isSelected ? "#FFFFFF" : "var(--color-border-light)",
+                      background: isSelected ? "#FFFFFF" : "#F8FAFC",
                       borderRadius: "50%",
-                      boxShadow: "var(--shadow-sm)",
-                      color: isSelected ? config.color : "var(--color-text-muted)",
+                      color: isSelected ? config.color : "#94A3B8",
                       transition: "all 0.2s ease"
                     }}
                   >
                     {config.icon}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--color-text)" }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1E293B" }}>
                       {config.title}
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginTop: "0.15rem" }}>
+                    <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: "0.15rem" }}>
                       {config.description}
                     </div>
                   </div>
@@ -395,7 +513,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Side: Login/Register Form */}
         <div className="login-right-panel">
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
             <span
@@ -406,8 +523,8 @@ export default function LoginPage() {
                 width: "60px",
                 height: "60px",
                 borderRadius: "50%",
-                background: "var(--color-primary-light)",
-                color: "var(--color-primary)",
+                background: "#EFF6FF",
+                color: "#2563EB",
                 marginBottom: "1rem",
               }}
             >
@@ -429,10 +546,10 @@ export default function LoginPage() {
                 </svg>
               )}
             </span>
-            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--color-text)" }}>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
               {isForgotPassword ? "Atur Ulang Kata Sandi" : isRegistering ? `Registrasi ${activeConfig.title}` : `Autentikasi ${activeConfig.title}`}
             </h3>
-            <p style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginTop: "0.25rem" }}>
+            <p style={{ fontSize: "0.8rem", color: "#64748B", marginTop: "0.25rem" }}>
               {isForgotPassword ? "Masukkan email terdaftar Anda untuk instruksi pemulihan" : isRegistering ? "Buat akun baru untuk mengakses platform" : "Akses cepat telah dikonfigurasi secara otomatis"}
             </p>
           </div>
@@ -448,26 +565,19 @@ export default function LoginPage() {
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reset-email-input"
                     placeholder="nama@email.com"
                   />
                 </div>
 
                 {resetSuccess && (
-                  <div
-                    className="badge badge-success"
-                    style={{ width: "100%", padding: "0.625rem", marginBottom: "1rem", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "center" }}
-                  >
+                  <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
                     {resetSuccess}
                   </div>
                 )}
 
                 {error && (
-                  <div
-                    className="badge badge-danger"
-                    style={{ width: "100%", padding: "0.625rem", marginBottom: "1rem", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "center" }}
-                  >
+                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
                     {error}
                   </div>
                 )}
@@ -481,22 +591,13 @@ export default function LoginPage() {
                     padding: "0.75rem",
                     justifyContent: "center",
                     background: activeConfig.color,
-                    fontSize: "0.95rem",
-                    boxShadow: "var(--shadow-md)",
+                    fontSize: "0.95rem"
                   }}
                   id="btn-reset-submit"
                 >
                   {isLoading ? (
                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg
-                        style={{ animation: "spin 1s linear infinite" }}
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
+                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                         <path d="M4 12a8 8 0 0 1 8-8" />
                       </svg>
@@ -543,14 +644,13 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="login-email-input"
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: "1.5rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.375rem" }}>
-                    <label className="form-label" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ margin: "0px" }}>
                       Kata Sandi
                     </label>
                     <button
@@ -564,7 +664,7 @@ export default function LoginPage() {
                         border: "none",
                         padding: 0,
                         fontSize: "0.75rem",
-                        color: "var(--color-primary)",
+                        color: "#2563EB",
                         textDecoration: "underline",
                         cursor: "pointer",
                         fontWeight: 600
@@ -580,16 +680,12 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="login-password-input"
                   />
                 </div>
 
                 {error && (
-                  <div
-                    className="badge badge-danger"
-                    style={{ width: "100%", padding: "0.625rem", marginBottom: "1rem", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "center" }}
-                  >
+                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
                     {error}
                   </div>
                 )}
@@ -603,22 +699,13 @@ export default function LoginPage() {
                     padding: "0.75rem",
                     justifyContent: "center",
                     background: activeConfig.color,
-                    fontSize: "0.95rem",
-                    boxShadow: "var(--shadow-md)",
+                    fontSize: "0.95rem"
                   }}
                   id="btn-login-submit"
                 >
                   {isLoading ? (
                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg
-                        style={{ animation: "spin 1s linear infinite" }}
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
+                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                         <path d="M4 12a8 8 0 0 1 8-8" />
                       </svg>
@@ -631,7 +718,7 @@ export default function LoginPage() {
               </form>
 
               <div style={{ marginTop: "2rem", textAlign: "center" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--color-text-subtle)" }}>
+                <span style={{ fontSize: "0.8rem", color: "#64748B" }}>
                   Belum terdaftar di server?{" "}
                   <button
                     type="button"
@@ -643,7 +730,7 @@ export default function LoginPage() {
                       background: "none",
                       border: "none",
                       padding: 0,
-                      color: "var(--color-primary)",
+                      color: "#2563EB",
                       fontWeight: 600,
                       cursor: "pointer",
                       textDecoration: "underline",
@@ -667,7 +754,6 @@ export default function LoginPage() {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reg-name-input"
                     placeholder="Masukkan nama lengkap Anda"
                   />
@@ -681,7 +767,6 @@ export default function LoginPage() {
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reg-phone-input"
                     placeholder="Contoh: 081234567890"
                   />
@@ -695,7 +780,6 @@ export default function LoginPage() {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reg-email-input"
                     placeholder="nama@email.com"
                   />
@@ -709,7 +793,6 @@ export default function LoginPage() {
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reg-password-input"
                     placeholder="Minimal 8 karakter"
                   />
@@ -723,26 +806,19 @@ export default function LoginPage() {
                     value={regConfirmPassword}
                     onChange={(e) => setRegConfirmPassword(e.target.value)}
                     required
-                    style={{ background: "#FFFFFF" }}
                     id="reg-confirm-password-input"
                     placeholder="Ulangi kata sandi"
                   />
                 </div>
 
                 {regSuccess && (
-                  <div
-                    className="badge badge-success"
-                    style={{ width: "100%", padding: "0.625rem", marginBottom: "1rem", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "center" }}
-                  >
+                  <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
                     {regSuccess}
                   </div>
                 )}
 
                 {error && (
-                  <div
-                    className="badge badge-danger"
-                    style={{ width: "100%", padding: "0.625rem", marginBottom: "1rem", borderRadius: "var(--radius-sm)", display: "flex", justifyContent: "center" }}
-                  >
+                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
                     {error}
                   </div>
                 )}
@@ -756,22 +832,13 @@ export default function LoginPage() {
                     padding: "0.75rem",
                     justifyContent: "center",
                     background: activeConfig.color,
-                    fontSize: "0.95rem",
-                    boxShadow: "var(--shadow-md)",
+                    fontSize: "0.95rem"
                   }}
                   id="btn-register-submit"
                 >
                   {isLoading ? (
                     <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg
-                        style={{ animation: "spin 1s linear infinite" }}
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
+                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                         <path d="M4 12a8 8 0 0 1 8-8" />
                       </svg>
@@ -784,7 +851,7 @@ export default function LoginPage() {
               </form>
 
               <div style={{ marginTop: "2rem", textAlign: "center" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--color-text-subtle)" }}>
+                <span style={{ fontSize: "0.8rem", color: "#64748B" }}>
                   Sudah memiliki akun?{" "}
                   <button
                     type="button"

@@ -30,7 +30,6 @@ const IconMapPin = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="n
 const IconCopy = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
 const IconRoute = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="19" r="3"></circle><circle cx="18" cy="5" r="3"></circle><path d="M9 19h8a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1"></path></svg>;
 
-// ---- Lokasi kota untuk peta pelacakan (tanpa perlu API key — pakai OpenStreetMap) ----
 const cityCoords: Record<string, [number, number]> = {
   Malang: [-7.9666, 112.6326],
   Jombang: [-7.5460, 112.2384],
@@ -48,7 +47,6 @@ function coordFromAlamat(alamat: string): [number, number] {
   return cityCoords[extractCity(alamat)];
 }
 
-// ---- Tipe minimal untuk Leaflet (dimuat dari CDN, bukan lewat npm, jadi tidak ada @types) ----
 interface LeafletLayer {
   addTo: (map: LeafletMapInstance) => LeafletLayer;
   bindPopup: (html: string) => LeafletLayer;
@@ -131,21 +129,114 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .shipment-tabs-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .shipment-tab-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .shipment-tab-card div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .shipment-tab-card div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .shipment-tab-card div:last-child div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .shipment-tab-card div:last-child div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          .shipment-list-row {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+          }
+          .shipment-meta-info div:first-child {
+            font-size: 0.65rem !important;
+            gap: 0.3rem !important;
+          }
+          .shipment-meta-info div:nth-child(2) {
+            font-size: 0.6rem !important;
+            margin-bottom: 0.15rem !important;
+          }
+          .shipment-meta-info div:nth-child(3) {
+            font-size: 0.55rem !important;
+            gap: 3px !important;
+          }
+          .shipment-meta-info div:nth-child(3) svg {
+            width: 10px !important;
+            height: 10px !important;
+          }
+          .resi-badge {
+            margin-top: 0.35rem !important;
+            padding: 0.15rem 0.4rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+            gap: 3px !important;
+          }
+          .resi-badge svg {
+            width: 10px !important;
+            height: 10px !important;
+          }
+          .shipment-control-side {
+            align-items: flex-end !important;
+            gap: 0.25rem !important;
+            margin-top: 0.5rem !important;
+            width: 100% !important;
+          }
+          .shipment-control-side button {
+            padding: 0.35rem 0.6rem !important;
+            font-size: 0.55rem !important;
+            border-radius: 4px !important;
+            width: auto !important;
+          }
+          .shipment-control-side span {
+            font-size: 0.55rem !important;
+          }
+          .map-desc-text {
+            font-size: 0.48rem !important;
+            margin-top: 0.3rem !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Pengiriman</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau status pengemasan dan pengantaran pesanan ke pembeli.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div onClick={() => setTab("Diproses")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Diproses" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
+      <div className="shipment-tabs-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div onClick={() => setTab("Diproses")} className="shipment-tab-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Diproses" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconPackage /></div>
           <div><div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{diproses.length}</div><div style={{ fontSize: "0.8rem", color: "#64748B" }}>Siap Dikemas</div></div>
         </div>
-        <div onClick={() => setTab("Dikirim")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Dikirim" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
+        <div onClick={() => setTab("Dikirim")} className="shipment-tab-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Dikirim" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
           <div style={{ background: "#E0F2FE", color: "#0284C7", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconTruck /></div>
           <div><div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{dikirim.length}</div><div style={{ fontSize: "0.8rem", color: "#64748B" }}>Dalam Perjalanan</div></div>
         </div>
-        <div onClick={() => setTab("Selesai")} style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Selesai" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
+        <div onClick={() => setTab("Selesai")} className="shipment-tab-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: tab === "Selesai" ? "2px solid #10B981" : "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem", cursor: "pointer" }}>
           <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
           <div><div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{selesai.length}</div><div style={{ fontSize: "0.8rem", color: "#64748B" }}>Terkirim Sampai</div></div>
         </div>
@@ -153,12 +244,12 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {activeList.length === 0 && (
-          <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan di tahap ini.</div>
+          <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", padding: "1.25rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan di tahap ini.</div>
         )}
         {activeList.map((p) => (
-          <div key={p.id} style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", padding: "1.1rem 1.25rem" }}>
+          <div key={p.id} className="shipment-list-row" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", padding: "1.1rem 1.25rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
+              <div className="shipment-meta-info" style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.id}</span>
                   <span style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pembeli}</span>
@@ -166,12 +257,12 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
                 <div style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{p.item} — {p.jumlah} {p.satuan}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.78rem", color: "#94A3B8" }}><IconMapPin /> {p.alamatKirim}</div>
                 {p.noResi && (
-                  <div onClick={() => copyResi(p.noResi!)} style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "0.5rem", background: "#ECFDF5", color: "#10B981", fontSize: "0.78rem", fontWeight: 600, padding: "0.3rem 0.6rem", borderRadius: "6px", cursor: "pointer" }}>
+                  <div onClick={() => copyResi(p.noResi!)} className="resi-badge" style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "0.5rem", background: "#ECFDF5", color: "#10B981", fontSize: "0.78rem", fontWeight: 600, padding: "0.3rem 0.6rem", borderRadius: "6px", cursor: "pointer" }}>
                     <IconCopy /> {p.noResi}
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
+              <div className="shipment-control-side" style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
                 {p.status === "Diproses" && <button onClick={() => updatePesananStatus(p.id, "Dikirim")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Kirim Sekarang</button>}
                 {p.status === "Dikirim" && <button onClick={() => updatePesananStatus(p.id, "Selesai")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tandai Sampai</button>}
                 {p.status === "Selesai" && <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#10B981" }}>✓ Sudah sampai</span>}
@@ -188,7 +279,7 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
                     { lat: coordFromAlamat(p.alamatKirim)[0], lng: coordFromAlamat(p.alamatKirim)[1], label: `Tujuan: ${p.alamatKirim}`, color: "#2563EB" },
                   ]}
                 />
-                <p style={{ fontSize: "0.75rem", color: "#94A3B8", marginTop: "0.5rem" }}>Titik hijau = penjemputan dari gudang kamu • Titik biru = tujuan pengiriman ({extractCity(p.alamatKirim)})</p>
+                <p className="map-desc-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginTop: "0.5rem" }}>Titik hijau = penjemputan dari gudang kamu • Titik biru = tujuan pengiriman ({extractCity(p.alamatKirim)})</p>
               </div>
             )}
           </div>

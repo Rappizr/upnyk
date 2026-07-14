@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, FormEvent } from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 
 interface Pesanan {
   id: string;
@@ -28,9 +29,11 @@ const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const IconArrowUp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconArrowDown = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const IconBanknote = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>;
 
 function formatRupiah(n: number) {
+  if (n < 0) {
+    return "- Rp " + Math.abs(n).toLocaleString("id-ID");
+  }
   return "Rp " + n.toLocaleString("id-ID");
 }
 
@@ -78,36 +81,115 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          .finance-header-row {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+            width: 100% !important;
+            flex-wrap: nowrap !important;
+          }
+          .finance-title-block {
+            min-width: 0 !important;
+            flex: 1 !important;
+          }
+          .finance-title-block h1 {
+            font-size: 1.15rem !important;
+            margin: 0px !important;
+          }
+          .finance-title-block p {
+            font-size: 0.62rem !important;
+            margin: 0px !important;
+            line-height: 1.2 !important;
+          }
+          .finance-action-buttons {
+            display: flex !important;
+            gap: 0.25rem !important; /* Dirapatkan jarak antar tombolnya */
+            flex-shrink: 0 !important;
+          }
+          .finance-action-buttons button {
+            padding: 0.35rem 0.5rem !important; /* Dikecilkan ukurannya agar pas hulu ke hilir */
+            font-size: 0.62rem !important;
+            border-radius: 5px !important;
+            white-space: nowrap !important;
+          }
+          .finance-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .finance-stat-card {
+            padding: 0.4rem 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .finance-stat-card div:first-child {
+            gap: 0.25rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .finance-stat-card div:first-child div:first-child {
+            padding: 0.25rem !important;
+            border-radius: 4px !important;
+          }
+          .finance-stat-card div:first-child div:first-child svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .finance-stat-card span {
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+          }
+          .finance-stat-card div:last-child {
+            font-size: 0.62rem !important;
+            line-height: 1.1 !important;
+            white-space: nowrap !important;
+            letter-spacing: -0.02em !important;
+          }
+          .history-table-container th, .history-table-container td {
+            padding: 0.5rem 0.4rem !important;
+            font-size: 0.58rem !important;
+          }
+          .history-table-container table {
+            min-width: auto !important;
+            width: 100% !important;
+          }
+        }
+      `}} />
+
+      <div className="finance-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", width: "100%" }}>
+        <div className="finance-title-block">
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Keuangan</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau arus kas — pemasukan otomatis dari penjualan selesai, pengeluaran dicatat manual.</p>
         </div>
-        <div style={{ display: "flex", gap: "0.6rem" }}>
+        <div className="finance-action-buttons">
           <button onClick={() => setShowTarikModal(true)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem" }}>Tarik Tunai</button>
           <button onClick={() => setShowAddModal(true)} style={{ background: "#EF4444", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem" }}>+ Catat Pengeluaran</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "#10B981", padding: "1.25rem", borderRadius: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <div style={{ background: "rgba(255,255,255,.2)", color: "#fff", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconWallet /></div>
-              <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,.85)", fontWeight: 600 }}>Saldo Saat Ini</span>
-            </div>
-            <button onClick={() => setShowTarikModal(true)} style={{ display: "flex", alignItems: "center", gap: "4px", background: "rgba(255,255,255,.2)", border: "none", color: "white", fontSize: "0.72rem", fontWeight: 600, padding: "0.3rem 0.6rem", borderRadius: "6px", cursor: "pointer" }}><IconBanknote /> Tarik</button>
+      <div className="finance-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="finance-stat-card" style={{ background: "#10B981", padding: "1.25rem", borderRadius: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
+            <div style={{ background: "rgba(255,255,255,.2)", color: "#fff", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconWallet /></div>
+            <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,.85)", fontWeight: 600 }}>Saldo Saat Ini</span>
           </div>
           <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff" }}>{formatRupiah(saldo)}</div>
         </div>
-        <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div className="finance-stat-card" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
             <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowUp /></div>
             <span style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pemasukan</span>
           </div>
           <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalMasuk)}</div>
         </div>
-        <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div className="finance-stat-card" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
             <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowDown /></div>
             <span style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pengeluaran</span>
@@ -116,30 +198,30 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
         </div>
       </div>
 
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      <div className="history-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <h3 style={{ margin: 0, padding: "1.1rem 1.1rem 0.75rem", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Riwayat Transaksi</h3>
         <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "550px" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
-              <th style={{ padding: "0.85rem 1.1rem", color: "#475569" }}>Tanggal</th>
-              <th style={{ padding: "0.85rem 1.1rem", color: "#475569" }}>Keterangan</th>
-              <th style={{ padding: "0.85rem 1.1rem", color: "#475569", textAlign: "right" }}>Nominal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {riwayat.length === 0 && (
-              <tr><td colSpan={3} style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi.</td></tr>
-            )}
-            {riwayat.map((r) => (
-              <tr key={r.id + r.tipe} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                <td style={{ padding: "0.85rem 1.1rem", color: "#64748B" }}>{r.tanggal}</td>
-                <td style={{ padding: "0.85rem 1.1rem", color: "#1E293B", fontWeight: 500 }}>{r.keterangan}</td>
-                <td style={{ padding: "0.85rem 1.1rem", textAlign: "right", fontWeight: 700, color: r.tipe === "masuk" ? "#10B981" : "#EF4444" }}>{r.tipe === "masuk" ? "+ " : "− "}{formatRupiah(r.nominal)}</td>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "550px" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
+                <th style={{ padding: "0.85rem 1.1rem", color: "#475569" }}>Tanggal</th>
+                <th style={{ padding: "0.85rem 1.1rem", color: "#475569" }}>Keterangan</th>
+                <th style={{ padding: "0.85rem 1.1rem", color: "#475569", textAlign: "right" }}>Nominal</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {riwayat.length === 0 && (
+                <tr><td colSpan={3} style={{ padding: "1.25rem", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi.</td></tr>
+              )}
+              {riwayat.map((r, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                  <td style={{ padding: "0.85rem 1.1rem", color: "#64748B" }}>{r.tanggal}</td>
+                  <td style={{ padding: "0.85rem 1.1rem", color: "#1E293B", fontWeight: 500 }}>{r.keterangan}</td>
+                  <td style={{ padding: "0.85rem 1.1rem", textAlign: "right", fontWeight: 700, color: r.tipe === "masuk" ? "#10B981" : "#EF4444" }}>{r.tipe === "masuk" ? "+ " : "− "}{formatRupiah(r.nominal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -201,7 +283,7 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
               {tarikForm.metode === "Transfer Bank" && (
                 <div>
                   <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>No. Rekening Tujuan</label>
-                  <input value={tarikForm.rekening} onChange={(e) => setTarikForm({ ...tarikForm, rekening: e.target.value })} placeholder="Contoh: BCA 1234567890 a.n. Baihaqi" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+                  <input value={tarikForm.rekening} onChange={(e) => setTarikForm({ ...tarikForm, rekening: e.target.value })} placeholder="Contoh: BCA 1234567890 a.n. Budi" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
                 </div>
               )}
               {tarikError && <div style={{ background: "#FEE2E2", color: "#991B1B", fontSize: "0.8rem", padding: "0.6rem 0.8rem", borderRadius: "8px" }}>{tarikError}</div>}

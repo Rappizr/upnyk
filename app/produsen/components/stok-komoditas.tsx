@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useRef, FormEvent, ChangeEvent } from "react";
+import { useMemo, useState, useRef } from "react";
+import type { FormEvent, ChangeEvent } from "react";
 
 type StokStatus = "Aman" | "Menipis" | "Habis";
 
@@ -39,7 +40,7 @@ const IconAlert = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="no
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconCamera = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"></path><circle cx="12" cy="13" r="4"></circle></svg>;
 const IconStar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
-const IconPlus = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const IconPlus = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
@@ -100,12 +101,164 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          .header-row-stok {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: flex-end !important;
+            gap: 0.4rem !important;
+            margin-bottom: 1.25rem !important;
+            width: 100% !important;
+            flex-wrap: nowrap !important;
+          }
+          .header-text-block {
+            min-width: 0 !important;
+            flex: 1 !important;
+          }
+          .header-text-block h1 {
+            font-size: 1.05rem !important; /* Perkecil judul agar pas */
+            margin: 0px !important;
+            white-space: nowrap !important;
+          }
+          .header-text-block p {
+            font-size: 0.58rem !important; /* Perkecil deskripsi */
+            margin: 0px !important;
+            line-height: 1.2 !important;
+            white-space: normal !important; /* Mengizinkan teks melipat ke baris baru */
+            overflow: visible !important;
+            text-overflow: clip !important;
+          }
+          .btn-add-stok-mobile {
+            padding: 0.35rem 0.5rem !important; /* Perkecil ukuran tombol */
+            font-size: 0.62rem !important;
+            border-radius: 6px !important;
+            gap: 3px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            margin-top: 0px !important;
+            align-self: flex-end !important;
+          }
+          .btn-add-stok-mobile svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          main > div:nth-of-type(2) {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main > div:nth-of-type(2) > div {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          main > div:nth-of-type(2) > div > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          main > div:nth-of-type(2) > div > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          main > div:nth-of-type(2) > div > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          main > div:nth-of-type(2) > div > div:last-child > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          main > div:nth-of-type(3) {
+            padding: 0.4rem !important;
+            border-radius: 8px !important;
+            gap: 0.4rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main > div:nth-of-type(3) input {
+            padding: 0.35rem 0.5rem 0.35rem 1.75rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          main > div:nth-of-type(3) span {
+            left: 0.5rem !important;
+          }
+          main > div:nth-of-type(3) select {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          
+          .stok-cards-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+          }
+          .stok-main-card {
+            border-radius: 6px !important;
+          }
+          .stok-main-card > div:first-child {
+            height: 60px !important;
+          }
+          .stok-main-card > div:first-child svg {
+            width: 18px !important;
+            height: 18px !important;
+          }
+          .stok-main-card > div:last-child {
+            padding: 0.4rem 0.3rem !important;
+          }
+          .stok-title-container {
+            margin-bottom: 0.15rem !important;
+          }
+          .stok-title-container div:first-child {
+            font-size: 0.58rem !important;
+            line-height: 1.15 !important;
+          }
+          .stok-title-container span {
+            padding: 0.1rem 0.3rem !important;
+            border-radius: 4px !important;
+            font-size: 0.45rem !important;
+          }
+          .stok-meta-text {
+            font-size: 0.48rem !important;
+            margin-bottom: 0.2rem !important;
+          }
+          .stok-data-text {
+            font-size: 0.52rem !important;
+            line-height: 1.2 !important;
+            margin-bottom: 0.15rem !important;
+          }
+          .stok-rating-container {
+            font-size: 0.48rem !important;
+            gap: 2px !important;
+            margin-bottom: 0.4rem !important;
+          }
+          .stok-rating-container svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          .stok-actions-row {
+            gap: 0.2rem !important;
+          }
+          .stok-actions-row button {
+            padding: 0.25rem 0px !important;
+            font-size: 0.5rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
+      <div className="header-row-stok" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", width: "100%" }}>
+        <div className="header-text-block">
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Stok Komoditas</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Kelola persediaan produk dan bahan baku produksi kamu.</p>
         </div>
-        <button onClick={() => setShowAddModal(true)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.6rem 1.15rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "6px" }}><IconPlus /> Tambah Produk Baru</button>
+        <button className="btn-add-stok-mobile" onClick={() => setShowAddModal(true)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.6rem 1.15rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "4px" }}><IconPlus /> Tambah Produk Baru</button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -136,7 +289,7 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
         </select>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "1rem" }}>
+      <div className="stok-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "1rem" }}>
         {filtered.length === 0 && (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>Tidak ada stok yang cocok.</div>
         )}
@@ -144,21 +297,21 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
           const s = statusStyle[item.status];
           const rating = avgRating(item.ulasan);
           return (
-            <div key={item.id} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
+            <div key={item.id} className="stok-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
               <div style={{ height: "110px", background: item.fotoUrl ? undefined : "#F0FDF9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {item.fotoUrl ? <img src={item.fotoUrl} alt={item.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <IconPackage />}
               </div>
               <div style={{ padding: "0.9rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.3rem" }}>
+                <div className="stok-title-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.3rem" }}>
                   <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{item.nama}</div>
                   <span style={{ background: s.bg, color: s.color, padding: "0.15rem 0.5rem", borderRadius: "6px", fontSize: "0.68rem", fontWeight: 600, whiteSpace: "nowrap" }}>{item.status}</span>
                 </div>
-                <div style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id} • {item.kategori}</div>
-                <div style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{item.jumlah} {item.satuan} · {formatRupiah(item.hargaSatuan)}/{item.satuan}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#D97706", marginBottom: "0.75rem" }}>
-                  <IconStar /> {rating ? rating.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({item.ulasan.length} ulasan)</span>
+                <div className="stok-meta-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id} • {item.kategori}</div>
+                <div className="stok-data-text" style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{item.jumlah} {item.satuan} · {formatRupiah(item.hargaSatuan)}/{item.satuan}</div>
+                <div className="stok-rating-container" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#D97706", marginBottom: "0.75rem" }}>
+                  <IconStar /> {rating ? rating.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({item.ulasan.length})</span>
                 </div>
-                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                <div className="stok-actions-row" style={{ display: "flex", gap: "0.4rem" }}>
                   <button onClick={() => setDetailItem(item)} style={{ flex: 1, background: "#ECFDF5", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Detail</button>
                   <button onClick={() => { setRestockItem(item); setRestockJumlah(0); }} style={{ flex: 1, background: "#EFF6FF", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Restock</button>
                   <button onClick={() => handleDelete(item.id, item.nama)} style={{ background: "#FEE2E2", border: "none", padding: "0.4rem 0.6rem", borderRadius: "6px", fontSize: "0.76rem", color: "#991B1B", cursor: "pointer" }}>Hapus</button>
@@ -169,7 +322,6 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
         })}
       </div>
 
-      {/* Modal Tambah Produk */}
       {showAddModal && (
         <div onClick={() => setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", width: "440px", maxWidth: "100%", maxHeight: "88vh", overflowY: "auto" }}>
@@ -179,7 +331,7 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
             </div>
             <form onSubmit={handleAddSubmit} style={{ padding: "1.1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>FOTO PRODUK (MAKSIMAL 5)</label>
+                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>FOTO PRODUK</label>
                 <div onClick={() => fileRef.current?.click()} style={{ border: "1.5px dashed #A7F3D0", background: "#F0FDF9", borderRadius: "10px", height: "100px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}>
                   {addForm.fotoUrl ? (
                     <img src={addForm.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -245,7 +397,6 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
         </div>
       )}
 
-      {/* Modal Detail Produk */}
       {detailItem && (
         <div onClick={() => setDetailItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", width: "420px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
@@ -290,7 +441,6 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
         </div>
       )}
 
-      {/* Modal Restock */}
       {restockItem && (
         <div onClick={() => setRestockItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "360px", maxWidth: "100%" }}>

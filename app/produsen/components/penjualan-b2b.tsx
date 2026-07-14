@@ -75,6 +75,86 @@ export default function PenjualanB2B({ pesananList, deletePesanan, updatePesanan
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          main > div:nth-of-type(2) {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main > div:nth-of-type(2) > div {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          main > div:nth-of-type(2) > div > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          main > div:nth-of-type(2) > div > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          main > div:nth-of-type(2) > div > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          main > div:nth-of-type(2) > div > div:last-child > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          main > div:nth-of-type(3) {
+            padding: 0.4rem !important;
+            border-radius: 8px !important;
+            gap: 0.4rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main > div:nth-of-type(3) input {
+            padding: 0.35rem 0.5rem 0.35rem 1.75rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          main > div:nth-of-type(3) span {
+            left: 0.5rem !important;
+          }
+          main > div:nth-of-type(3) select {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          .b2b-table-container th, .b2b-table-container td {
+            padding: 0.5rem 0.4rem !important;
+            font-size: 0.58rem !important;
+          }
+          .b2b-table-container table {
+            min-width: auto !important;
+            width: 100% !important;
+          }
+          .b2b-table-container button {
+            padding: 0.2rem 0.4rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+          .b2b-table-container span {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Penjualan B2B</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Kelola pesanan grosir yang masuk dari Admin Toko, terhubung langsung dengan stok kamu.</p>
@@ -107,49 +187,49 @@ export default function PenjualanB2B({ pesananList, deletePesanan, updatePesanan
         </select>
       </div>
 
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      <div className="b2b-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-              <th style={{ padding: "1rem", color: "#475569" }}>ID</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Pembeli</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Produk</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Total</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
-              <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan yang cocok.</td></tr>
-            )}
-            {filtered.map((p) => {
-              const s = statusStyle[p.status];
-              return (
-                <tr key={p.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>
-                    <span onClick={() => setDetail(p)} style={{ cursor: "pointer", color: "#10B981", textDecoration: "underline", textDecorationColor: "#A7F3D0" }}>{p.id}</span>
-                  </td>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{p.pembeli}</td>
-                  <td style={{ padding: "1rem", color: "#334155" }}>{p.item} ({p.jumlah} {p.satuan})</td>
-                  <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</td>
-                  <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>
-                    {p.status === "Baru" ? (
-                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
-                        <button onClick={() => updatePesananStatus(p.id, "Diproses")} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Terima</button>
-                        <button onClick={() => handleTolak(p.id, p.pembeli)} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setDetail(p)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                <th style={{ padding: "1rem", color: "#475569" }}>ID</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Pembeli</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Produk</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Total</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
+                <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada pesanan yang cocok.</td></tr>
+              )}
+              {filtered.map((p) => {
+                const s = statusStyle[p.status];
+                return (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                    <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>
+                      <span onClick={() => setDetail(p)} style={{ cursor: "pointer", color: "#10B981", textDecoration: "underline", textDecorationColor: "#A7F3D0" }}>{p.id}</span>
+                    </td>
+                    <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{p.pembeli}</td>
+                    <td style={{ padding: "1rem", color: "#334155" }}>{p.item} ({p.jumlah} {p.satuan})</td>
+                    <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</td>
+                    <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
+                    <td style={{ padding: "1rem", textAlign: "center" }}>
+                      {p.status === "Baru" ? (
+                        <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                          <button onClick={() => updatePesananStatus(p.id, "Diproses")} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Terima</button>
+                          <button onClick={() => handleTolak(p.id, p.pembeli)} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDetail(p)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
