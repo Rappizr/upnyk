@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
+
+type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
 interface Produsen {
   id: string;
@@ -37,16 +40,16 @@ function urgensi(hari: number): { label: string; bg: string; color: string } {
   return { label: "Terjadwal", bg: "#F1F5F9", color: "#475569" };
 }
 
-export default function SmartRestock({ produsenList, stokList, updateStok, onPesan }: Props) {
+export default function SmartRestock({ produsenList = [], stokList = [], updateStok, onPesan }: Props) {
   const [threshold, setThreshold] = useState(14);
   const [editId, setEditId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState(0);
 
-  const terjadwal = useMemo(() => produsenList.filter((p) => p.estimasiPanenHari <= threshold).sort((a, b) => a.estimasiPanenHari - b.estimasiPanenHari), [produsenList, threshold]);
-  const sangatMendesak = produsenList.filter((p) => p.estimasiPanenHari <= 3).length;
-  const mendesak = produsenList.filter((p) => p.estimasiPanenHari > 3 && p.estimasiPanenHari <= 7).length;
+  const terjadwal = useMemo(() => (produsenList || []).filter((p) => p.estimasiPanenHari <= threshold).sort((a, b) => a.estimasiPanenHari - b.estimasiPanenHari), [produsenList, threshold]);
+  const sangatMendesak = useMemo(() => (produsenList || []).filter((p) => p.estimasiPanenHari <= 3).length, [produsenList]);
+  const mendesak = useMemo(() => (produsenList || []).filter((p) => p.estimasiPanenHari > 3 && p.estimasiPanenHari <= 7).length, [produsenList]);
 
-  const stokMenipis = stokList.filter((s) => s.jumlah <= s.batasMinimum);
+  const stokMenipis = useMemo(() => (stokList || []).filter((s) => s.jumlah <= s.batasMinimum), [stokList]);
 
   function mulaiEditBatas(s: StokToko) {
     setEditId(s.id);
@@ -59,14 +62,125 @@ export default function SmartRestock({ produsenList, stokList, updateStok, onPes
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .restock-warehouse-box {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            margin-bottom: 1rem !important;
+          }
+          .restock-warehouse-box h2 {
+            font-size: 0.95rem !important;
+          }
+          .restock-warehouse-item {
+            padding: 0.5rem 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .restock-warehouse-item div:first-child div:first-child {
+            font-size: 0.75rem !important;
+          }
+          .restock-warehouse-item div:first-child div:last-child {
+            font-size: 0.62rem !important;
+          }
+          .restock-warehouse-item button, .restock-warehouse-item input {
+            padding: 0.25rem 0.45rem !important;
+            font-size: 0.62rem !important;
+            border-radius: 4px !important;
+          }
+          
+          /* FORCE GRID KARTU METRIK 3 KOLOM MENYAMPING DI HP */
+          .restock-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .restock-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .restock-stat-card > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .restock-stat-card > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .restock-stat-card > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .restock-stat-card > div:last-child > div:last-child {
+            font-size: 0.48rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          .restock-filter-row {
+            gap: 0.4rem !important;
+            margin-bottom: 0.75rem !important;
+          }
+          .restock-filter-row label, .restock-filter-row select {
+            font-size: 0.75rem !important;
+          }
+          .restock-filter-row select {
+            padding: 0.3rem 0.5rem !important;
+            border-radius: 6px !important;
+          }
+          .producer-list-card {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            gap: 0.5rem !important;
+          }
+          .producer-meta-info span:first-child {
+            font-size: 0.75rem !important;
+          }
+          .producer-meta-info span:last-child {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+          .producer-meta-info div:nth-of-type(1) {
+            font-size: 0.68rem !important;
+            margin-bottom: 0.1rem !important;
+          }
+          .producer-meta-info div:nth-of-type(2) {
+            font-size: 0.62rem !important;
+            gap: 3px !important;
+          }
+          .producer-meta-info div:nth-of-type(2) svg {
+            width: 10px !important;
+            height: 10px !important;
+          }
+          .producer-list-card button {
+            padding: 0.4rem 0px !important;
+            font-size: 0.65rem !important;
+            border-radius: 5px !important;
+            width: 100% !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Smart Restock</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Dua sumber pengingat: stok gudang yang mau habis, dan produsen binaan yang mendekati waktu panen.</p>
       </div>
 
-      <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.75rem" }}>
+      <div className="restock-warehouse-box" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.75rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "0.2rem" }}>
-          <span style={{ color: "#EF4444" }}><IconBox /></span>
+          <span style={{ color: "#EF4444", display: "flex" }}><IconBox /></span>
           <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#1E293B" }}>Stok Gudang Mau Habis</h2>
         </div>
         <p style={{ margin: "0 0 1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>Atur sendiri batas minimum tiap barang (kg/karung/pcs/apapun satuannya) — kalau stok turun di bawah batas itu, muncul di sini.</p>
@@ -76,8 +190,8 @@ export default function SmartRestock({ produsenList, stokList, updateStok, onPes
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {stokMenipis.map((s) => (
-              <div key={s.id} style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.75rem 0.9rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-                <div>
+              <div key={s.id} className="restock-warehouse-item" style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.75rem 0.9rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</div>
                   <div style={{ fontSize: "0.72rem", color: "#DC2626" }}>Sisa {s.jumlah} {s.satuan} • dari {s.asalProdusen}</div>
                 </div>
@@ -102,22 +216,22 @@ export default function SmartRestock({ produsenList, stokList, updateStok, onPes
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+      <div className="restock-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="restock-stat-card" style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "white", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlert /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#991B1B" }}>{sangatMendesak}</div><div style={{ fontSize: "0.78rem", color: "#991B1B" }}>Panen Sangat Mendesak (≤3 hari)</div></div>
         </div>
-        <div style={{ background: "#FEF3C7", border: "1px solid #FDE68A", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="restock-stat-card" style={{ background: "#FEF3C7", border: "1px solid #FDE68A", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "white", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconRefresh /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#92400E" }}>{mendesak}</div><div style={{ fontSize: "0.78rem", color: "#92400E" }}>Panen Mendesak (4–7 hari)</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="restock-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{produsenList.length - sangatMendesak - mendesak}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Masih Terjadwal</div></div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+      <div className="restock-filter-row" style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>Tampilkan produsen dengan panen dalam:</label>
         <select value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} style={{ padding: "0.45rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white" }}>
           <option value={3}>3 hari</option>
@@ -134,8 +248,8 @@ export default function SmartRestock({ produsenList, stokList, updateStok, onPes
         {terjadwal.map((p) => {
           const u = urgensi(p.estimasiPanenHari);
           return (
-            <div key={p.id} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
+            <div key={p.id} className="producer-list-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+              <div className="producer-meta-info" style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.nama}</span>
                   <span style={{ background: u.bg, color: u.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.55rem", borderRadius: "999px" }}>{u.label}</span>

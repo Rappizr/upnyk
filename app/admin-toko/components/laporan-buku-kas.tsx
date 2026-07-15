@@ -33,19 +33,19 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function LaporanBukuKas({ pembelianList, penjualanList }: Props) {
+export default function LaporanBukuKas({ pembelianList = [], penjualanList = [] }: Props) {
   const [tab, setTab] = useState<"semua" | "masuk" | "keluar">("semua");
 
   const riwayat = useMemo(() => {
-    const masuk = penjualanList.map((p) => ({ id: p.id, keterangan: `Penjualan — ${p.pembeli} (${p.produk})`, nominal: p.total, tanggal: p.tanggal, tipe: "masuk" as const }));
-    const keluar = pembelianList.filter((p) => p.status === "Diterima").map((p) => ({ id: p.id, keterangan: `Belanja — ${p.produsen} (${p.item})`, nominal: p.total, tanggal: p.tanggal, tipe: "keluar" as const }));
+    const masuk = (penjualanList || []).map((p) => ({ id: p.id, keterangan: `Penjualan — ${p.pembeli} (${p.produk})`, nominal: p.total, tanggal: p.tanggal, tipe: "masuk" as const }));
+    const keluar = (pembelianList || []).filter((p) => p.status === "Diterima").map((p) => ({ id: p.id, keterangan: `Belanja — ${p.produsen} (${p.item})`, nominal: p.total, tanggal: p.tanggal, tipe: "keluar" as const }));
     return [...masuk, ...keluar].sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
   }, [pembelianList, penjualanList]);
 
   const filtered = riwayat.filter((r) => tab === "semua" || (tab === "masuk" && r.tipe === "masuk") || (tab === "keluar" && r.tipe === "keluar"));
 
-  const totalMasuk = penjualanList.reduce((s, p) => s + p.total, 0);
-  const totalKeluar = pembelianList.filter((p) => p.status === "Diterima").reduce((s, p) => s + p.total, 0);
+  const totalMasuk = (penjualanList || []).reduce((s, p) => s + p.total, 0);
+  const totalKeluar = (pembelianList || []).filter((p) => p.status === "Diterima").reduce((s, p) => s + p.total, 0);
   const labaBersih = totalMasuk - totalKeluar;
 
   function unduhPDF() {
@@ -78,70 +78,142 @@ export default function LaporanBukuKas({ pembelianList, penjualanList }: Props) 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main > div:first-child {
+            gap: 0.4rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .cashbook-action-buttons {
+            width: 100% !important;
+            justify-content: flex-end !important;
+          }
+          .cashbook-action-buttons button {
+            padding: 0.4rem 0.65rem !important;
+            font-size: 0.68rem !important;
+            border-radius: 6px !important;
+          }
+          .cashbook-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .cashbook-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+          }
+          .cashbook-stat-card > div:first-child {
+            gap: 0.25rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .cashbook-stat-card > div:first-child span:first-child {
+            display: flex !important;
+            align-items: center !important;
+          }
+          .cashbook-stat-card > div:first-child span:first-child svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .cashbook-stat-card > div:first-child span:last-child {
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+          }
+          .cashbook-stat-card > div:last-child {
+            font-size: 0.62rem !important;
+            line-height: 1.1 !important;
+            white-space: nowrap !important;
+            letter-spacing: -0.02em !important;
+          }
+          .cashbook-filter-tabs button {
+            padding: 0.35rem 0.65rem !important;
+            font-size: 0.68rem !important;
+          }
+          .cashbook-table-container th, .cashbook-table-container td {
+            padding: 0.5rem 0.4rem !important;
+            font-size: 0.58rem !important;
+          }
+          .cashbook-table-container table {
+            min-width: auto !important;
+            width: 100% !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Buku Kas</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Total belanja bahan baku ke produsen vs total omset penjualan ke pembeli kota, dalam satu buku kas digital.</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="cashbook-action-buttons" style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={unduhPDF} style={{ background: "#FEE2E2", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#991B1B", cursor: "pointer" }}>Unduh PDF</button>
           <button onClick={unduhWord} style={{ background: "#EFF6FF", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Unduh Word</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", padding: "1.1rem", borderRadius: "12px" }}>
+      <div className="cashbook-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="cashbook-stat-card" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", padding: "1.1rem", borderRadius: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-            <span style={{ color: "#D97706" }}><IconWallet /></span>
+            <span style={{ color: "#D97706", display: "flex" }}><IconWallet /></span>
             <span style={{ fontSize: "0.78rem", color: "#92400E", fontWeight: 600 }}>Laba Bersih</span>
           </div>
           <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#92400E" }}>{formatRupiah(labaBersih)}</div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div className="cashbook-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-            <span style={{ color: "#10B981" }}><IconArrowUp /></span>
-            <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>Total Omset (Masuk)</span>
+            <span style={{ color: "#10B981", display: "flex" }}><IconArrowUp /></span>
+            <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>Total Omset</span>
           </div>
           <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalMasuk)}</div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div className="cashbook-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-            <span style={{ color: "#EF4444" }}><IconArrowDown /></span>
-            <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>Total Belanja (Keluar)</span>
+            <span style={{ color: "#EF4444", display: "flex" }}><IconArrowDown /></span>
+            <span style={{ fontSize: "0.78rem", color: "#64748B", fontWeight: 600 }}>Total Belanja</span>
           </div>
           <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalKeluar)}</div>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}>
+      <div className="cashbook-filter-tabs" style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem" }}>
         {(["semua", "masuk", "keluar"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} style={{ background: tab === t ? "#F59E0B" : "white", color: tab === t ? "#fff" : "#334155", border: "1px solid " + (tab === t ? "#F59E0B" : "#E2E8F0"), padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>{t}</button>
         ))}
       </div>
 
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      <div className="cashbook-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "550px" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-              <th style={{ padding: "1rem", color: "#475569" }}>Tanggal</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Keterangan</th>
-              <th style={{ padding: "1rem", color: "#475569", textAlign: "right" }}>Nominal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={3} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi.</td></tr>
-            )}
-            {filtered.map((r) => (
-              <tr key={r.id + r.tipe} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                <td style={{ padding: "1rem", color: "#64748B", whiteSpace: "nowrap" }}>{r.tanggal}</td>
-                <td style={{ padding: "1rem", color: "#1E293B", fontWeight: 500 }}>{r.keterangan}</td>
-                <td style={{ padding: "1rem", textAlign: "right", fontWeight: 700, color: r.tipe === "masuk" ? "#10B981" : "#EF4444" }}>{r.tipe === "masuk" ? "+ " : "− "}{formatRupiah(r.nominal)}</td>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "550px" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                <th style={{ padding: "1rem", color: "#475569" }}>Tanggal</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Keterangan</th>
+                <th style={{ padding: "1rem", color: "#475569", textAlign: "right" }}>Nominal</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={3} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi.</td></tr>
+              )}
+              {filtered.map((r, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                  <td style={{ padding: "1rem", color: "#64748B", whiteSpace: "nowrap" }}>{r.tanggal}</td>
+                  <td style={{ padding: "1rem", color: "#1E293B", fontWeight: 500 }}>{r.keterangan}</td>
+                  <td style={{ padding: "1rem", textAlign: "right", fontWeight: 700, color: r.tipe === "masuk" ? "#10B981" : "#EF4444" }}>{r.tipe === "masuk" ? "+ " : "− "}{formatRupiah(r.nominal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, FormEvent } from "react";
+import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 
 interface Produsen {
   id: string;
@@ -60,39 +61,130 @@ export default function MarketplaceProdusen({ produsenList, pembelianList, belan
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .warn-banner-mobile {
+            padding: 0.4rem 0.6rem !important;
+            border-radius: 6px !important;
+            margin-bottom: 0.75rem !important;
+            gap: 0.4rem !important;
+          }
+          .warn-banner-mobile svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .warn-banner-mobile span {
+            font-size: 0.58rem !important;
+            line-height: 1.2 !important;
+          }
+          .search-wrapper-mobile {
+            max-width: 100% !important;
+            margin-bottom: 1rem !important;
+          }
+          .search-wrapper-mobile input {
+            padding: 0.35rem 0.5rem 0.35rem 1.75rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          .search-wrapper-mobile span {
+            left: 0.5rem !important;
+          }
+          
+          /* FORCE 3 KOLOM GRID MENYAMPING DI HP */
+          .marketplace-cards-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+          }
+          .marketplace-main-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+          }
+          .marketplace-main-card > div:first-child {
+            gap: 0.4rem !important;
+            margin-bottom: 0.4rem !important;
+          }
+          .marketplace-icon-box {
+            width: 26px !important;
+            height: 26px !important;
+            border-radius: 6px !important;
+          }
+          .marketplace-icon-box svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .marketplace-title-text {
+            font-size: 0.58rem !important;
+            line-height: 1.15 !important;
+          }
+          .marketplace-location-text {
+            font-size: 0.48rem !important;
+            gap: 2px !important;
+          }
+          .marketplace-location-text svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          .marketplace-commodity-text {
+            font-size: 0.52rem !important;
+            margin-bottom: 0.15rem !important;
+            line-height: 1.2 !important;
+          }
+          .marketplace-harvest-text {
+            font-size: 0.48rem !important;
+            margin-bottom: 0.4rem !important;
+          }
+          .marketplace-main-card button {
+            padding: 0.3rem 0px !important;
+            font-size: 0.55rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Marketplace Produsen</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Lihat produsen binaan, cek komoditas yang tersedia, dan beli bahan baku langsung lewat sistem.</p>
       </div>
 
       {pesananMenunggu > 0 && (
-        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "10px", padding: "0.8rem 1rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+        <div className="warn-banner-mobile" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "10px", padding: "0.8rem 1rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <span style={{ color: "#D97706" }}><IconClock /></span>
           <span style={{ fontSize: "0.85rem", color: "#92400E" }}><strong>{pesananMenunggu} pembelian</strong> menunggu konfirmasi penerimaan barang. Cek di menu Inventaris & Grading.</span>
         </div>
       )}
 
-      <div style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
+      <div className="search-wrapper-mobile" style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
         <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari produsen atau komoditas..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1rem" }}>
+      <div className="marketplace-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1rem" }}>
         {filtered.length === 0 && (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>Tidak ada produsen yang cocok.</div>
         )}
         {filtered.map((p) => (
-          <div key={p.id} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem" }}>
+          <div key={p.id} className="marketplace-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.7rem", marginBottom: "0.6rem" }}>
-              <div style={{ background: "#FEF3C7", color: "#D97706", width: "38px", height: "38px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}><IconStore /></div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{p.nama}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.72rem", color: "#94A3B8" }}><IconMapPin /> {p.lokasi}</div>
+              <div className="marketplace-icon-box" style={{ background: "#FEF3C7", color: "#D97706", width: "38px", height: "38px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}><IconStore /></div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="marketplace-title-text" style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{p.nama}</div>
+                <div className="marketplace-location-text" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.72rem", color: "#94A3B8" }}><IconMapPin /> {p.lokasi}</div>
               </div>
             </div>
-            <div style={{ fontSize: "0.82rem", color: "#334155", marginBottom: "0.4rem" }}>Komoditas: <strong>{p.komoditas}</strong></div>
-            <div style={{ fontSize: "0.75rem", color: p.estimasiPanenHari <= 7 ? "#D97706" : "#64748B", marginBottom: "0.9rem" }}>
-              {p.estimasiPanenHari <= 7 ? `⚡ Panen ${p.estimasiPanenHari} hari lagi` : `Estimasi panen ${p.estimasiPanenHari} hari lagi`}
+            <div className="marketplace-commodity-text" style={{ fontSize: "0.82rem", color: "#334155", marginBottom: "0.4rem" }}>Komoditas: <strong>{p.komoditas}</strong></div>
+            <div className="marketplace-harvest-text" style={{ fontSize: "0.75rem", color: p.estimasiPanenHari <= 7 ? "#D97706" : "#64748B", marginBottom: "0.9rem" }}>
+              {p.estimasiPanenHari <= 7 ? `⚡ Panen ${p.estimasiPanenHari} hari` : `Estimasi panen ${p.estimasiPanenHari} hari`}
             </div>
             <button onClick={() => setBeliItem(p)} style={{ width: "100%", background: "#F59E0B", color: "white", border: "none", padding: "0.55rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Beli Bahan Baku</button>
           </div>

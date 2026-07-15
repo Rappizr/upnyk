@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 
 type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -30,7 +31,6 @@ interface Pembelian {
 }
 interface Produsen { id: string; nama: string; lokasi: string; komoditas: string; estimasiPanenHari: number }
 
-// ---- Tipe minimal untuk Leaflet (dimuat dari CDN, bukan lewat npm, jadi tidak ada @types) ----
 interface LeafletLayer {
   addTo: (map: LeafletMapInstance) => LeafletLayer;
   bindPopup: (html: string) => LeafletLayer;
@@ -61,6 +61,10 @@ function coordFromLokasi(lokasi: string): [number, number] {
   const known = Object.keys(cityCoords);
   const found = known.find((c) => lokasi.toLowerCase().includes(c.toLowerCase()));
   return cityCoords[found || "Malang"];
+}
+
+function formatRupiah(n: number) {
+  return "Rp " + n.toLocaleString("id-ID");
 }
 
 function MiniMap({ markers, height = 200 }: { markers: { lat: number; lng: number; label: string; color?: string }[]; height?: number }) {
@@ -131,10 +135,6 @@ const IconTruckIn = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
-function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
-
 export default function InventarisGrading({ stokList, pembelianList, produsenList, terimaPembelian, updateStok }: Props) {
   const [search, setSearch] = useState("");
   const [gradingItem, setGradingItem] = useState<Pembelian | null>(null);
@@ -168,39 +168,125 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .grading-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .grading-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .grading-stat-card > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .grading-stat-card > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .grading-stat-card > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .grading-stat-card > div:last-child > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          .grading-warn-box {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            margin-bottom: 1rem !important;
+          }
+          .grading-warn-item > div:first-child {
+            font-size: 0.65rem !important;
+          }
+          .grading-warn-item > div:first-child div:last-child {
+            font-size: 0.55rem !important;
+          }
+          .grading-warn-item button {
+            padding: 0.25rem 0.45rem !important;
+            font-size: 0.55rem !important;
+            border-radius: 4px !important;
+          }
+          .search-wrapper-mobile {
+            max-width: 100% !important;
+            margin-bottom: 1rem !important;
+          }
+          .search-wrapper-mobile input {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          .grading-table-container th, .grading-table-container td {
+            padding: 0.5rem 0.4rem !important;
+            font-size: 0.58rem !important;
+          }
+          .grading-table-container table {
+            min-width: auto !important;
+            width: 100% !important;
+          }
+          .grading-table-container button {
+            padding: 0.25rem 0.4 ... !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+          .grading-table-container span {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Inventaris & Grading</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Kelola stok gudang dan nilai kualitas barang masuk dari produsen (Grade A/B/C).</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+      <div className="grading-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBox /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{stokList.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Jenis Produk Digudang</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{stokList.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Jenis Produk</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconWallet /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalNilaiStok)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Nilai Stok</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconTruckIn /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{menungguGrading.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Barang Menunggu Grading</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{menungguGrading.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Perlu Grading</div></div>
         </div>
       </div>
 
       {menungguGrading.length > 0 && (
-        <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.5rem" }}>
+        <div className="grading-warn-box" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.5rem" }}>
           <h3 style={{ margin: "0 0 0.9rem 0", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Barang Masuk — Perlu Grading</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {menungguGrading.map((p) => {
               const produsen = produsenList.find((pr) => pr.id === p.produsenId);
               const asal = produsen ? coordFromLokasi(produsen.lokasi) : gudangToko;
               return (
-                <div key={p.id} style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem" }}>
+                <div key={p.id} className="grading-warn-item" style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
                     <div><div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div><div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Dari {p.produsen} • {p.tanggal}</div></div>
                     <div style={{ display: "flex", gap: "0.4rem" }}>
-                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
+                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7()", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
                       <button onClick={() => { setGradingItem(p); setGradePilih("A"); }} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 600, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer" }}>Terima & Grading</button>
                     </div>
                   </div>
@@ -222,44 +308,44 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
         </div>
       )}
 
-      <div style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
+      <div className="search-wrapper-mobile" style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama produk atau produsen..." style={{ width: "100%", padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
       </div>
 
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      <div className="grading-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-              <th style={{ padding: "1rem", color: "#475569" }}>Nama Produk</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Asal Produsen</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Jumlah</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Harga Beli</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Grade</th>
-              <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada stok yang cocok.</td></tr>
-            )}
-            {filtered.map((s) => {
-              const g = gradeStyle[s.grade];
-              return (
-                <tr key={s.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</td>
-                  <td style={{ padding: "1rem", color: "#334155" }}>{s.asalProdusen}</td>
-                  <td style={{ padding: "1rem", color: "#334155" }}>{s.jumlah} {s.satuan}</td>
-                  <td style={{ padding: "1rem", color: "#475569" }}>{formatRupiah(s.hargaBeli)}</td>
-                  <td style={{ padding: "1rem" }}><span style={{ background: g.bg, color: g.color, padding: "0.2rem 0.55rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700 }}>Grade {s.grade}</span></td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>
-                    <button onClick={() => { setEditItem(s); setEditJumlah(s.jumlah); }} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Sesuaikan Stok</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                <th style={{ padding: "1rem", color: "#475569" }}>Nama Produk</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Asal Produsen</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Jumlah</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Harga Beli</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Grade</th>
+                <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada stok yang cocok.</td></tr>
+              )}
+              {filtered.map((s) => {
+                const g = gradeStyle[s.grade];
+                return (
+                  <tr key={s.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                    <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</td>
+                    <td style={{ padding: "1rem", color: "#334155" }}>{s.asalProdusen}</td>
+                    <td style={{ padding: "1rem", color: "#334155" }}>{s.jumlah} {s.satuan}</td>
+                    <td style={{ padding: "1rem", color: "#475569" }}>{formatRupiah(s.hargaBeli)}</td>
+                    <td style={{ padding: "1rem" }}><span style={{ background: g.bg, color: g.color, padding: "0.2rem 0.55rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 700 }}>Grade {s.grade}</span></td>
+                    <td style={{ padding: "1rem", textAlign: "center" }}>
+                      <button onClick={() => { setEditItem(s); setEditJumlah(s.jumlah); }} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Sesuaikan Stok</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

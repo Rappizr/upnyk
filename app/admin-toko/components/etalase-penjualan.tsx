@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 
 type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -40,7 +41,7 @@ function hargaSetelahDiskon(harga: number, diskon: number) {
   return Math.round(harga * (1 - diskon / 100));
 }
 
-export default function EtalasePenjualan({ stokList, updateStok }: Props) {
+export default function EtalasePenjualan({ stokList = [], updateStok }: Props) {
   const [editItem, setEditItem] = useState<StokToko | null>(null);
   const [form, setForm] = useState({ hargaJual: "", diskonPersen: "" });
 
@@ -61,38 +62,134 @@ export default function EtalasePenjualan({ stokList, updateStok }: Props) {
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .showcase-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .showcase-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .showcase-stat-card > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .showcase-stat-card > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .showcase-stat-card > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .showcase-stat-card > div:last-child > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
+          /* FORCE 3 KOLOM GRID MENYAMPING DI HP */
+          .showcase-cards-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+          }
+          .showcase-main-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+          }
+          .showcase-badge-container {
+            margin-bottom: 0.25rem !important;
+          }
+          .showcase-badge-container span {
+            padding: 0.1rem 0.3rem !important;
+            border-radius: 4px !important;
+            font-size: 0.45rem !important;
+          }
+          .showcase-title-text {
+            font-size: 0.58rem !important;
+            line-height: 1.15 !important;
+            margin-bottom: 0.1rem !important;
+          }
+          .showcase-stock-text {
+            font-size: 0.48rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .showcase-price-block {
+            margin-bottom: 0.4rem !important;
+            line-height: 1.1 !important;
+          }
+          .showcase-price-block span:nth-child(1) {
+            font-size: 0.45rem !important;
+            margin-right: 2px !important;
+          }
+          .showcase-price-block span:nth-child(2) {
+            font-size: 0.55rem !important;
+            font-weight: 700 !important;
+          }
+          .showcase-price-block span:nth-child(3) {
+            font-size: 0.42rem !important;
+            padding: 0.05rem 0.2rem !important;
+            border-radius: 2px !important;
+            margin-left: 2px !important;
+          }
+          .showcase-actions-row {
+            gap: 0.2rem !important;
+          }
+          .showcase-actions-row button {
+            padding: 0.25rem 0px !important;
+            font-size: 0.5rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Etalase Penjualan</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Atur harga jual, diskon, dan tampilkan produk ke pembeli — seperti etalase toko online.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+      <div className="showcase-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="showcase-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconEye /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{live.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Produk Tayang</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="showcase-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconTag /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{belumLive.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Belum Ditayangkan</div></div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "1rem" }}>
+      <div className="showcase-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "1rem" }}>
         {stokList.length === 0 && (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>Belum ada produk di gudang. Isi dulu lewat Inventaris & Grading.</div>
         )}
         {stokList.map((s) => {
-          const g = gradeStyle[s.grade];
+          const g = gradeStyle[s.grade || "Belum Dinilai"];
           const hargaFinal = hargaSetelahDiskon(s.hargaJual, s.diskonPersen);
           return (
-            <div key={s.id} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+            <div key={s.id} className="showcase-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem" }}>
+              <div className="showcase-badge-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                 <span style={{ background: g.bg, color: g.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>Grade {s.grade}</span>
                 <span style={{ background: s.live ? "#D1FAE5" : "#F1F5F9", color: s.live ? "#065F46" : "#64748B", fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.55rem", borderRadius: "999px" }}>{s.live ? "Tayang" : "Draft"}</span>
               </div>
-              <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.15rem" }}>{s.nama}</div>
-              <div style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.6rem" }}>Stok: {s.jumlah} {s.satuan}</div>
-              <div style={{ marginBottom: "0.9rem" }}>
+              <div className="showcase-title-text" style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.15rem" }}>{s.nama}</div>
+              <div className="showcase-stock-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.6rem" }}>Stok: {s.jumlah} {s.satuan}</div>
+              <div className="showcase-price-block" style={{ marginBottom: "0.9rem" }}>
                 {s.diskonPersen > 0 ? (
                   <>
                     <span style={{ fontSize: "0.75rem", color: "#94A3B8", textDecoration: "line-through", marginRight: "6px" }}>{formatRupiah(s.hargaJual)}</span>
@@ -103,7 +200,7 @@ export default function EtalasePenjualan({ stokList, updateStok }: Props) {
                   <span style={{ fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(s.hargaJual)}</span>
                 )}
               </div>
-              <div style={{ display: "flex", gap: "0.4rem" }}>
+              <div className="showcase-actions-row" style={{ display: "flex", gap: "0.4rem" }}>
                 <button onClick={() => openEdit(s)} style={{ flex: 1, background: "#FFFBEB", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#92400E", fontWeight: 600, cursor: "pointer" }}>Ubah Harga</button>
                 <button onClick={() => updateStok(s.id, { live: !s.live })} style={{ flex: 1, background: s.live ? "#F1F5F9" : "#10B981", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: s.live ? "#334155" : "white", fontWeight: 600, cursor: "pointer" }}>{s.live ? "Sembunyikan" : "Tayangkan"}</button>
               </div>
