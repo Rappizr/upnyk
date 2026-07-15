@@ -34,55 +34,130 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function DataUMKM({ entitasList, pendaftarList, approvePendaftar, rejectPendaftar, toggleSuspendEntitas, transaksiList }: Props) {
+export default function DataUMKM({ entitasList = [], pendaftarList = [], approvePendaftar, rejectPendaftar, toggleSuspendEntitas, transaksiList = [] }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Baris | null>(null);
 
   const gabungan: Baris[] = useMemo(() => {
-    const pending: Baris[] = pendaftarList.filter((p) => p.jenisAkun === "Admin Toko" && p.status === "Menunggu").map((p) => ({ id: p.id, nama: p.nama, pemilik: p.pemilik, lokasi: p.lokasi, status: "Menunggu Verifikasi", sumber: "pendaftar", tanggal: p.tanggal }));
-    const aktif: Baris[] = entitasList.filter((e) => e.tipe === "Toko").map((e) => ({ id: e.id, nama: e.nama, pemilik: e.pemilik, lokasi: e.lokasi, status: e.status === "Aktif" ? "Aktif" : "Suspended", sumber: "entitas" }));
+    const pending: Baris[] = (pendaftarList || []).filter((p) => p.jenisAkun === "Admin Toko" && p.status === "Menunggu").map((p) => ({ id: p.id, nama: p.nama, pemilik: p.pemilik, lokasi: p.lokasi, status: "Menunggu Verifikasi", sumber: "pendaftar", tanggal: p.tanggal }));
+    const aktif: Baris[] = (entitasList || []).filter((e) => e.tipe === "Toko").map((e) => ({ id: e.id, nama: e.nama, pemilik: e.pemilik, lokasi: e.lokasi, status: e.status === "Aktif" ? "Aktif" : "Suspended", sumber: "entitas" }));
     return [...pending, ...aktif];
   }, [entitasList, pendaftarList]);
 
   const filtered = useMemo(() => {
     return gabungan.filter((b) => {
       const q = search.trim().toLowerCase();
-      const matchSearch = !q || b.nama.toLowerCase().includes(q) || b.pemilik.toLowerCase().includes(q) || b.id.toLowerCase().includes(q);
+      const matchSearch = !q || b.nama?.toLowerCase().includes(q) || b.pemilik?.toLowerCase().includes(q) || b.id?.toLowerCase().includes(q);
       const matchStatus = !statusFilter || b.status === statusFilter;
       return matchSearch && matchStatus;
     });
   }, [gabungan, search, statusFilter]);
 
-  const totalMenunggu = gabungan.filter((b) => b.status === "Menunggu Verifikasi").length;
-  const totalAktif = gabungan.filter((b) => b.status === "Aktif").length;
-  const totalSuspended = gabungan.filter((b) => b.status === "Suspended").length;
+  const totalMenunggu = useMemo(() => gabungan.filter((b) => b.status === "Menunggu Verifikasi").length, [gabungan]);
+  const totalAktif = useMemo(() => gabungan.filter((b) => b.status === "Aktif").length, [gabungan]);
+  const totalSuspended = useMemo(() => gabungan.filter((b) => b.status === "Suspended").length, [gabungan]);
 
-  const relasiUntuk = (nama: string) => transaksiList.filter((t) => t.toko === nama);
+  const relasiUntuk = (nama: string) => (transaksiList || []).filter((t) => t.toko === nama);
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .umkm-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .umkm-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .umkm-stat-card > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .umkm-stat-card > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .umkm-stat-card > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .umkm-stat-card > div:last-child > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          .umkm-filter-wrapper {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .umkm-filter-wrapper input, .umkm-filter-wrapper select {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          .umkm-filter-wrapper input {
+            padding-left: 1.75rem !important;
+          }
+          .umkm-table-container th, .umkm-table-container td {
+            padding: 0.5rem 0.4rem !important;
+            font-size: 0.58rem !important;
+          }
+          .umkm-table-container table {
+            min-width: auto !important;
+            width: 100% !important;
+          }
+          .umkm-table-container button {
+            padding: 0.25rem 0.4rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+          .umkm-table-container span {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.52rem !important;
+            border-radius: 4px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Data UMKM</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Daftar Admin Toko/UMKM terdaftar — tinjau pendaftar baru dan kelola status akun yang sudah aktif.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+      <div className="umkm-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="umkm-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconClock /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalMenunggu}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Menunggu Verifikasi</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalMenunggu}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Verifikasi</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="umkm-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconStore /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Toko Aktif</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="umkm-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBan /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Ditangguhkan</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Suspended</div></div>
         </div>
       </div>
 
-      <div style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div className="umkm-filter-wrapper" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama toko, pemilik, atau ID..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
@@ -95,50 +170,50 @@ export default function DataUMKM({ entitasList, pendaftarList, approvePendaftar,
         </select>
       </div>
 
-      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      <div className="umkm-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-              <th style={{ padding: "1rem", color: "#475569" }}>ID</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Nama Toko/UMKM</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Nama Pemilik</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Lokasi</th>
-              <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
-              <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada data yang cocok.</td></tr>
-            )}
-            {filtered.map((b) => {
-              const s = statusStyle[b.status];
-              return (
-                <tr key={b.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>{b.id}</td>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{b.nama}</td>
-                  <td style={{ padding: "1rem", color: "#334155" }}>{b.pemilik}</td>
-                  <td style={{ padding: "1rem", color: "#475569" }}>{b.lokasi}</td>
-                  <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span></td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>
-                    {b.sumber === "pendaftar" ? (
-                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
-                        <button onClick={() => approvePendaftar(b.id)} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Setujui</button>
-                        <button onClick={() => rejectPendaftar(b.id)} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
-                        <button onClick={() => toggleSuspendEntitas(b.id)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
-                        <button onClick={() => setDetail(b)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Lihat Toko</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                <th style={{ padding: "1rem", color: "#475569" }}>ID</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Nama Toko/UMKM</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Nama Pemilik</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Lokasi</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
+                <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada data yang cocok.</td></tr>
+              )}
+              {filtered.map((b) => {
+                const s = statusStyle[b.status || "Menunggu Verifikasi"];
+                return (
+                  <tr key={b.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                    <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>{b.id}</td>
+                    <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{b.nama}</td>
+                    <td style={{ padding: "1rem", color: "#334155" }}>{b.pemilik}</td>
+                    <td style={{ padding: "1rem", color: "#475569" }}>{b.lokasi}</td>
+                    <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span></td>
+                    <td style={{ padding: "1rem", textAlign: "center" }}>
+                      {b.sumber === "pendaftar" ? (
+                        <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                          <button onClick={() => approvePendaftar(b.id)} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Setujui</button>
+                          <button onClick={() => rejectPendaftar(b.id)} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                          <button onClick={() => toggleSuspendEntitas(b.id)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
+                          <button onClick={() => setDetail(b)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Lihat Toko</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

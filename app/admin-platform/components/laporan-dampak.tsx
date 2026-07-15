@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface Komoditas {
   nama: string;
@@ -33,10 +33,11 @@ function formatRupiahRingkas(n: number) {
   return formatRupiah(n);
 }
 
-export default function LaporanDampak({ komoditasList, daerahProduktif, indeksHargaAdil, totalGMV }: Props) {
+export default function LaporanDampak({ komoditasList = [], daerahProduktif = [], indeksHargaAdil, totalGMV }: Props) {
   const [detail, setDetail] = useState<Komoditas | null>(null);
-  const maxVolume = Math.max(...komoditasList.map((k) => k.volumeTon), 1);
-  const maxDaerah = Math.max(...daerahProduktif.map((d) => d.jumlah), 1);
+
+  const maxVolume = useMemo(() => Math.max(...(komoditasList || []).map((k) => k.volumeTon), 1), [komoditasList]);
+  const maxDaerah = useMemo(() => Math.max(...(daerahProduktif || []).map((d) => d.jumlah), 1), [daerahProduktif]);
 
   function unduhPDF() {
     window.print();
@@ -75,48 +76,143 @@ export default function LaporanDampak({ komoditasList, daerahProduktif, indeksHa
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main > div:first-child {
+            gap: 0.4rem !important;
+            margin-bottom: 1rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .impact-action-buttons {
+            width: 100% !important;
+            justify-content: flex-end !important;
+          }
+          .impact-action-buttons button {
+            padding: 0.4rem 0.65rem !important;
+            font-size: 0.68rem !important;
+            border-radius: 6px !important;
+          }
+          
+          /* FORCE GRID KARTU STATISTIK ATAS 3 KOLOM MENYAMPING */
+          .impact-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .impact-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .impact-stat-card > div:first-child {
+            padding: 0.25rem !important;
+            border-radius: 6px !important;
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 0.15rem !important;
+          }
+          .impact-stat-card svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .impact-stat-card > div:last-child > div:first-child,
+          .impact-stat-card > div:nth-child(2) {
+            font-size: 0.62rem !important;
+            line-height: 1.1 !important;
+            white-space: nowrap !important;
+          }
+          .impact-stat-card > div:last-child > div:last-child,
+          .impact-stat-card > div:nth-child(3) {
+            font-size: 0.48rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
+          /* FORCE PANELS GRID 3 KOLOM MENYAMPING */
+          .impact-panels-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+          }
+          .impact-panel-box {
+            padding: 0.4rem !important;
+            border-radius: 8px !important;
+          }
+          .impact-panel-box h3 {
+            font-size: 0.58rem !important;
+            line-height: 1.2 !important;
+          }
+          .impact-panel-box p {
+            display: none !important; /* Sembunyikan sub-deskripsi panjang pada layar HP */
+          }
+          .impact-panel-box svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .impact-progress-item {
+            gap: 0.2rem !important;
+          }
+          .impact-progress-label {
+            font-size: 0.52rem !important;
+            line-height: 1.15 !important;
+          }
+          .impact-progress-bar-bg {
+            height: 6px !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Laporan Dampak</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Bukti kuantitatif dampak platform — indeks harga adil, komoditas terlaris, dan daerah paling produktif.</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="impact-action-buttons" style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={unduhPDF} style={{ background: "#FEE2E2", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#991B1B", cursor: "pointer" }}>Unduh PDF</button>
           <button onClick={unduhWord} style={{ background: "#EFF6FF", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Unduh Word</button>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "1.1rem", borderRadius: "12px" }}>
+      <div className="impact-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="impact-stat-card" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "1.1rem", borderRadius: "12px" }}>
           <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#065F46", letterSpacing: ".03em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
           <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.85rem", fontWeight: 400 }}>/100</span></div>
-          <div style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem" }}>Dibanding estimasi harga tengkulak</div>
+          <div style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem" }}>Banding tengkulak</div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="impact-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconWallet /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalGMV)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Perputaran Dana</div></div>
+          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalGMV)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Dana</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="impact-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconMapPin /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{daerahProduktif.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Wilayah Terjangkau</div></div>
+          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{daerahProduktif?.length || 0}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Wilayah Terjangkau</div></div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
-        <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+      <div className="impact-panels-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+        <div className="impact-panel-box" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "0.2rem" }}>
-            <span style={{ color: "#2563EB" }}><IconTrend /></span>
-            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Komoditas Terlaris Nasional</h3>
+            <span style={{ color: "#2563EB", display: "flex" }}><IconTrend /></span>
+            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Komoditas Terlaris</h3>
           </div>
           <p style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Klik komoditas untuk lihat perbandingan harga vs tengkulak</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {komoditasList.map((k) => (
               <div key={k.nama} onClick={() => setDetail(k)} style={{ cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                  <span style={{ color: "#334155", fontWeight: 500 }}>{k.nama}</span>
-                  <strong style={{ color: "#1E293B" }}>{k.volumeTon} ton</strong>
+                <div className="impact-progress-item" style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
+                  <span className="impact-progress-label" style={{ color: "#334155", fontWeight: 500 }}>{k.nama}</span>
+                  <strong className="impact-progress-label" style={{ color: "#1E293B" }}>{k.volumeTon} ton</strong>
                 </div>
-                <div style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
+                <div className="impact-progress-bar-bg" style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
                   <div style={{ width: `${(k.volumeTon / maxVolume) * 100}%`, height: "100%", background: "#2563EB" }} />
                 </div>
               </div>
@@ -124,20 +220,20 @@ export default function LaporanDampak({ komoditasList, daerahProduktif, indeksHa
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
+        <div className="impact-panel-box" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "0.2rem" }}>
-            <span style={{ color: "#D97706" }}><IconMapPin /></span>
-            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Daerah Paling Produktif</h3>
+            <span style={{ color: "#D97706", display: "flex" }}><IconMapPin /></span>
+            <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Daerah Produktif</h3>
           </div>
           <p style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Dihitung otomatis dari jumlah mitra terverifikasi per wilayah</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {daerahProduktif.map((d) => (
               <div key={d.lokasi}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                  <span style={{ color: "#334155", fontWeight: 500 }}>{d.lokasi}</span>
-                  <strong style={{ color: "#1E293B" }}>{d.jumlah} mitra</strong>
+                <div className="impact-progress-item" style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
+                  <span className="impact-progress-label" style={{ color: "#334155", fontWeight: 500 }}>{d.lokasi}</span>
+                  <strong className="impact-progress-label" style={{ color: "#1E293B" }}>{d.jumlah} mtr</strong>
                 </div>
-                <div style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
+                <div className="impact-progress-bar-bg" style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
                   <div style={{ width: `${(d.jumlah / maxDaerah) * 100}%`, height: "100%", background: "#F59E0B" }} />
                 </div>
               </div>

@@ -38,25 +38,25 @@ const IconFlag = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="non
 const IconAlertTriangle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const IconCheck = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 
-export default function PengaduanPage({ pengaduanList, updateStatusPengaduan }: Props) {
+export default function PengaduanPage({ pengaduanList = [], updateStatusPengaduan }: Props) {
   const [search, setSearch] = useState("");
   const [kategoriFilter, setKategoriFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pengaduan | null>(null);
 
   const filtered = useMemo(() => {
-    return pengaduanList.filter((p) => {
+    return (pengaduanList || []).filter((p) => {
       const q = search.trim().toLowerCase();
-      const matchSearch = !q || p.pelapor.toLowerCase().includes(q) || p.id.toLowerCase().includes(q) || p.deskripsi.toLowerCase().includes(q);
+      const matchSearch = !q || p.pelapor?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q) || p.deskripsi?.toLowerCase().includes(q);
       const matchKategori = !kategoriFilter || p.kategori === kategoriFilter;
       const matchStatus = !statusFilter || p.status === statusFilter;
       return matchSearch && matchKategori && matchStatus;
     });
   }, [pengaduanList, search, kategoriFilter, statusFilter]);
 
-  const totalBaru = pengaduanList.filter((p) => p.status === "Baru").length;
-  const totalManipulasiHarga = pengaduanList.filter((p) => p.kategori === "Manipulasi Harga" && p.status !== "Selesai").length;
-  const totalSelesai = pengaduanList.filter((p) => p.status === "Selesai").length;
+  const totalBaru = useMemo(() => (pengaduanList || []).filter((p) => p.status === "Baru").length, [pengaduanList]);
+  const totalManipulasiHarga = useMemo(() => (pengaduanList || []).filter((p) => p.kategori === "Manipulasi Harga" && p.status !== "Selesai").length, [pengaduanList]);
+  const totalSelesai = useMemo(() => (pengaduanList || []).filter((p) => p.status === "Selesai").length, [pengaduanList]);
 
   function updateDetail(id: string, status: Pengaduan["status"]) {
     setDetail((d) => (d && d.id === id ? { ...d, status } : d));
@@ -64,27 +64,110 @@ export default function PengaduanPage({ pengaduanList, updateStatusPengaduan }: 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          
+          /* FORCE GRID METRIK ATAS 3 KOLOM */
+          .ticket-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .ticket-stat-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+            gap: 0.4rem !important;
+          }
+          .ticket-stat-card > div:first-child {
+            padding: 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .ticket-stat-card > div:first-child svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .ticket-stat-card > div:last-child > div:first-child {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .ticket-stat-card > div:last-child > div:last-child {
+            font-size: 0.48rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
+          .ticket-filter-bar {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            gap: 0.5rem !important;
+            margin-bottom: 1rem !important;
+          }
+          .ticket-filter-bar input, .ticket-filter-bar select {
+            padding: 0.35rem 0.5rem !important;
+            font-size: 0.7rem !important;
+            border-radius: 6px !important;
+          }
+          .ticket-filter-bar input {
+            padding-left: 1.75rem !important;
+          }
+          
+          .ticket-row-card {
+            padding: 0.6rem 0.75rem !important;
+            border-radius: 8px !important;
+          }
+          .ticket-row-header span:nth-child(1) {
+            font-size: 0.75rem !important;
+          }
+          .ticket-row-header span:nth-child(2) {
+            font-size: 0.68rem !important;
+          }
+          .ticket-row-header span:nth-child(3) {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.52rem !important;
+          }
+          .ticket-row-card p {
+            font-size: 0.72rem !important;
+            line-height: 1.3 !important;
+          }
+          .ticket-status-badge-right {
+            padding: 0.15rem 0.4rem !important;
+            font-size: 0.55rem !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Pengaduan</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Tiket bantuan dari Pusat Bantuan pengguna — termasuk laporan indikasi manipulasi Indeks Harga Adil oleh Admin Toko.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+      <div className="ticket-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="ticket-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconFlag /></div>
           <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalBaru}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Tiket Baru</div></div>
         </div>
-        <div style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="ticket-stat-card" style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "white", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlertTriangle /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#991B1B" }}>{totalManipulasiHarga}</div><div style={{ fontSize: "0.78rem", color: "#991B1B" }}>Laporan Manipulasi Harga</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#991B1B" }}>{totalManipulasiHarga}</div><div style={{ fontSize: "0.78rem", color: "#991B1B" }}>Laporan Harga</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+        <div className="ticket-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSelesai}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Selesai Ditangani</div></div>
+          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSelesai}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Selesai</div></div>
         </div>
       </div>
 
-      <div style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div className="ticket-filter-bar" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari pelapor, ID, atau isi aduan..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
@@ -109,20 +192,20 @@ export default function PengaduanPage({ pengaduanList, updateStatusPengaduan }: 
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada tiket yang cocok.</div>
         )}
         {filtered.map((p) => {
-          const s = statusStyle[p.status];
-          const k = kategoriStyle[p.kategori];
+          const s = statusStyle[p.status || "Baru"];
+          const k = kategoriStyle[p.kategori || "Lainnya"];
           return (
-            <div key={p.id} onClick={() => setDetail(p)} style={{ background: "white", border: p.kategori === "Manipulasi Harga" ? "1px solid #FCA5A5" : "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem 1.25rem", cursor: "pointer" }}>
+            <div key={p.id} onClick={() => setDetail(p)} className="ticket-row-card" style={{ background: "white", border: p.kategori === "Manipulasi Harga" ? "1px solid #FCA5A5" : "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem 1.25rem", cursor: "pointer" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
+                  <div className="ticket-row-header" style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.9rem" }}>{p.id}</span>
                     <span style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pelapor} ({p.role})</span>
                     <span style={{ background: k.bg, color: k.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>{p.kategori}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: "0.82rem", color: "#334155", lineHeight: 1.5 }}>{p.deskripsi}</p>
                 </div>
-                <span style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
+                <span className="ticket-status-badge-right" style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
               </div>
             </div>
           );
@@ -139,8 +222,8 @@ export default function PengaduanPage({ pengaduanList, updateStatusPengaduan }: 
             <p style={{ margin: "0 0 1.1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>{detail.tanggal}</p>
 
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-              <span style={{ background: kategoriStyle[detail.kategori].bg, color: kategoriStyle[detail.kategori].color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>{detail.kategori}</span>
-              <span style={{ background: statusStyle[detail.status].bg, color: statusStyle[detail.status].color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>{detail.status}</span>
+              <span style={{ background: kategoriStyle[detail.kategori || "Lainnya"].bg, color: kategoriStyle[detail.kategori || "Lainnya"].color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>{detail.kategori}</span>
+              <span style={{ background: statusStyle[detail.status || "Baru"].bg, color: statusStyle[detail.status || "Baru"].color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>{detail.status}</span>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", marginBottom: "1rem" }}>

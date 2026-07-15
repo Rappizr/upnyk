@@ -13,9 +13,6 @@ import DataUMKM from "./components/data-umkm";
 import DataProdusen from "./components/data-produsen";
 import DataPembeli from "./components/data-pembeli";
 
-// ============================================================================
-// TIPE DATA BERSAMA — dipegang di sini, dioper ke semua halaman lewat props
-// ============================================================================
 export type JenisAkun = "Admin Toko" | "Produsen";
 export type TipeEntitas = "Toko" | "Produsen";
 
@@ -117,7 +114,6 @@ const initialPengaduan: Pengaduan[] = [
   { id: "TIK-503", pelapor: "Minimarket Sejahtera", role: "Pembeli", kontak: "0857-6677-8899", kategori: "Sengketa Transaksi", deskripsi: "Barang yang diterima tidak sesuai dengan yang dipesan, meminta peninjauan dana escrow transaksi TX-90213.", status: "Baru", tanggal: "10 Jul 2026" },
 ];
 
-// Komponen SVG Ikon Mandiri
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconMap = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon></svg>;
 const IconShieldLock = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><rect x="9" y="11" width="6" height="5" rx="1"></rect><path d="M10 11V9a2 2 0 0 1 4 0v2"></path></svg>;
@@ -137,9 +133,7 @@ interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
 interface MenuGroupDef { title: string; items: MenuItemDef[] }
 
 const menuGroups: MenuGroupDef[] = [
-  { title: "Main", items: [
-    { key: "dashboard", label: "Dashboard", icon: IconDashboard },
-  ] },
+  { title: "Main", items: [{ key: "dashboard", label: "Dashboard", icon: IconDashboard }] },
   { title: "Pengawasan", items: [
     { key: "umkm", label: "Data UMKM", icon: IconStore },
     { key: "produsen", label: "Data Produsen", icon: IconPackage },
@@ -225,7 +219,6 @@ export default function AdminPlatformDashboard() {
     setPengaduanList((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
   }
 
-  // ---- Angka turunan — semua saling terhubung dari 3 sumber data di atas ----
   const totalToko = entitasList.filter((e) => e.tipe === "Toko").length;
   const totalProdusen = entitasList.filter((e) => e.tipe === "Produsen").length;
   const pengaduanAktif = pengaduanList.filter((p) => p.status === "Baru" || p.status === "Diproses").length;
@@ -248,12 +241,13 @@ export default function AdminPlatformDashboard() {
     return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
   }, [entitasList]);
 
-  interface NotifItem { id: string; text: string; sub: string; tujuan: string }
-  const notifItems: NotifItem[] = [
-    ...pendaftarList.filter((p) => p.status === "Menunggu").map((p) => ({ id: `reg-${p.id}`, text: `Pendaftaran baru: ${p.nama}`, sub: `${p.jenisAkun} • ${p.lokasi}`, tujuan: p.jenisAkun === "Admin Toko" ? "umkm" : "produsen" })),
-    ...pengaduanList.filter((p) => p.status === "Baru").map((p) => ({ id: `adu-${p.id}`, text: `Aduan baru dari ${p.pelapor}`, sub: p.kategori, tujuan: "pengaduan" })),
-    ...transaksiList.filter((t) => t.status === "Disengketakan").map((t) => ({ id: `tx-${t.id}`, text: `Transaksi disengketakan: ${t.id}`, sub: `${t.toko} ↔ ${t.produsen}`, tujuan: "escrow" })),
-  ];
+  const 所有Notif = useMemo(() => {
+    const list: { id: string; text: string; sub: string; tujuan: string }[] = [];
+    pendaftarList.filter((p) => p.status === "Menunggu").forEach((p) => list.push({ id: `reg-${p.id}`, text: `Pendaftaran baru: ${p.nama}`, sub: `${p.jenisAkun} • ${p.lokasi}`, tujuan: p.jenisAkun === "Admin Toko" ? "umkm" : "produsen" }));
+    pengaduanList.filter((p) => p.status === "Baru").forEach((p) => list.push({ id: `adu-${p.id}`, text: `Aduan baru dari ${p.pelapor}`, sub: p.kategori, tujuan: "pengaduan" }));
+    transaksiList.filter((t) => t.status === "Disengketakan").forEach((t) => list.push({ id: `tx-${t.id}`, text: `Transaksi disengketakan: ${t.id}`, sub: `${t.toko} ↔ ${t.produsen}`, tujuan: "escrow" }));
+    return list;
+  }, [pendaftarList, pengaduanList, transaksiList]);
 
   function selectMenu(key: string) {
     setActiveMenu(key);
@@ -262,28 +256,81 @@ export default function AdminPlatformDashboard() {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{__html: `
         .ap-sidebar { width: 220px; }
         .ap-hamburger { display: none; }
         .ap-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .ap-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .ap-user-name { display: block; }
+        
         @media (max-width: 900px) {
           .ap-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
           .ap-sidebar.open { transform: translateX(0); }
           .ap-hamburger { display: flex; }
-          .ap-stats-grid { grid-template-columns: repeat(2, 1fr); }
+          
+          .admin-banner-hero-container {
+            padding: 0.85rem !important;
+            border-radius: 10px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.4rem !important;
+          }
+          .admin-banner-hero-container span {
+            font-size: 0.55rem !important;
+            padding: 0.15rem 0.4rem !important;
+            margin-bottom: 0.2rem !important;
+          }
+          .admin-banner-hero-container div:nth-of-type(1) {
+            font-size: 1.05rem !important;
+            line-height: 1.15 !important;
+          }
+          .admin-banner-hero-container div:nth-of-type(2) {
+            font-size: 0.68rem !important;
+            margin-top: 0.1rem !important;
+            line-height: 1.2 !important;
+          }
+          .admin-banner-hero-container button {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.68rem !important;
+            border-radius: 5px !important;
+            width: 100% !important;
+            justify-content: center !important;
+            margin-top: 0.2rem !important;
+          }
+
+          .ap-stats-grid { 
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 0.25rem !important; 
+            margin-bottom: 1rem !important;
+          }
+          .ap-stats-grid > div {
+            padding: 0.4rem 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .ap-stats-grid > div > div:first-child {
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .ap-stats-grid > div > div:nth-child(2) {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .ap-stats-grid > div > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
           .ap-panels-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
-          .ap-stats-grid { grid-template-columns: 1fr; }
           .ap-user-name { display: none; }
         }
-      `}</style>
+      `}} />
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
-      {/* Sidebar */}
       <aside className={`ap-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -321,9 +368,7 @@ export default function AdminPlatformDashboard() {
         </div>
       </aside>
 
-      {/* Konten */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
@@ -333,17 +378,17 @@ export default function AdminPlatformDashboard() {
             <div style={{ position: "relative" }}>
               <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: notifOpen ? "#F1F5F9" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <IconBell />
-                {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+                {所有Notif.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
               </div>
               {notifOpen && (
                 <>
                   <div onClick={() => setNotifOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
                   <div style={{ position: "absolute", top: "42px", right: 0, width: "320px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", zIndex: 60, maxHeight: "380px", overflowY: "auto" }}>
                     <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #F1F5F9", fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>Notifikasi</div>
-                    {notifItems.length === 0 ? (
+                    {所有Notif.length === 0 ? (
                       <div style={{ padding: "1.25rem 1rem", fontSize: "0.8rem", color: "#94A3B8", textAlign: "center" }}>Tidak ada notifikasi baru.</div>
                     ) : (
-                      notifItems.map((n) => (
+                      所有Notif.map((n) => (
                         <div key={n.id} onClick={() => { selectMenu(n.tujuan); setNotifOpen(false); }} style={{ padding: "0.7rem 1rem", borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}>
                           <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{n.text}</div>
                           <div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>{n.sub}</div>
@@ -377,8 +422,7 @@ export default function AdminPlatformDashboard() {
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            {/* Hero */}
-            <div style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", borderRadius: "16px", padding: "1.5rem clamp(1.25rem, 4vw, 2rem)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+            <div className="admin-banner-hero-container" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.1)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconShield /> Super Admin Console</span>
                 <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profilAdmin.nama.split(" ")[0]}!</div>
@@ -389,7 +433,6 @@ export default function AdminPlatformDashboard() {
               </button>
             </div>
 
-            {/* Stat cards */}
             <div className="ap-stats-grid" style={{ marginBottom: "1.25rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
@@ -418,7 +461,6 @@ export default function AdminPlatformDashboard() {
               </div>
             </div>
 
-            {/* Panels */}
             <div className="ap-panels-grid">
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>
