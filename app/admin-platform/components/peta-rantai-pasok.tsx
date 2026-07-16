@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type TipeEntitas = "Toko" | "Produsen" | "Supplier";
+type TipeEntitas = "Toko" | "Produsen";
 
 interface Entitas {
   id: string;
@@ -26,7 +26,6 @@ interface Props {
   transaksiList: EscrowTx[];
 }
 
-// ---- Tipe minimal untuk Leaflet (dimuat dari CDN, bukan lewat npm, jadi tidak ada @types) ----
 interface LeafletLayer {
   addTo: (map: LeafletMapInstance) => LeafletLayer;
   bindPopup: (html: string) => LeafletLayer;
@@ -57,11 +56,10 @@ function coordFromLokasi(lokasi: string): [number, number] {
   return cityCoords[found || "Malang"];
 }
 
-const tipeColor: Record<TipeEntitas, string> = { Toko: "#2563EB", Produsen: "#10B981", Supplier: "#F59E0B" };
+const tipeColor: Record<TipeEntitas, string> = { Toko: "#2563EB", Produsen: "#10B981" };
 const tipeBg: Record<TipeEntitas, { bg: string; color: string }> = {
   Toko: { bg: "#EFF6FF", color: "#2563EB" },
   Produsen: { bg: "#ECFDF5", color: "#059669" },
-  Supplier: { bg: "#FEF3C7", color: "#92400E" },
 };
 
 function MiniMap({ entitasList }: { entitasList: Entitas[] }) {
@@ -111,7 +109,7 @@ function MiniMap({ entitasList }: { entitasList: Entitas[] }) {
     };
   }, [entitasList]);
 
-  return <div ref={ref} style={{ height: 320, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
+  return <div ref={ref} className="map-height-mobile" style={{ height: 320, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
 }
 
 const IconBuilding = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="1"></rect><line x1="9" y1="7" x2="9" y2="7.01"></line><line x1="15" y1="7" x2="15" y2="7.01"></line></svg>;
@@ -121,40 +119,118 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function PetaRantaiPasok({ entitasList, transaksiList }: Props) {
+export default function PetaRantaiPasok({ entitasList = [], transaksiList = [] }: Props) {
   const [tipeFilter, setTipeFilter] = useState<TipeEntitas | "">("");
   const [detail, setDetail] = useState<Entitas | null>(null);
 
-  const filtered = useMemo(() => entitasList.filter((e) => !tipeFilter || e.tipe === tipeFilter), [entitasList, tipeFilter]);
+  const filtered = useMemo(() => {
+    return (entitasList || []).filter((e) => !tipeFilter || e.tipe === tipeFilter);
+  }, [entitasList, tipeFilter]);
 
-  const relasiUntuk = (nama: string) => transaksiList.filter((t) => t.toko === nama || t.produsen === nama);
+  const relasiUntuk = (nama: string) => (transaksiList || []).filter((t) => t.toko === nama || t.produsen === nama);
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .map-wrapper-contain {
+          position: relative !important;
+          z-index: 1 !important;
+        }
+        .map-wrapper-contain .leaflet-container,
+        .map-wrapper-contain .leaflet-pane,
+        .map-wrapper-contain .leaflet-top,
+        .map-wrapper-contain .leaflet-bottom {
+          z-index: 1 !important;
+        }
+        
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          main h1 {
+            font-size: 1.15rem !important;
+          }
+          main p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .map-filter-buttons button {
+            padding: 0.35rem 0.65rem !important;
+            font-size: 0.68rem !important;
+          }
+          .map-height-mobile {
+            height: 200px !important;
+          }
+          .map-legend-row {
+            font-size: 0.58rem !important;
+            margin-top: 0.5rem !important;
+            gap: 0.5rem !important;
+          }
+          .supply-cards-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.25rem !important;
+          }
+          .supply-main-card {
+            padding: 0.4rem !important;
+            border-radius: 6px !important;
+          }
+          .supply-main-card > div:first-child {
+            margin-bottom: 0.3rem !important;
+          }
+          .supply-main-card > div:first-child > div {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 5px !important;
+          }
+          .supply-main-card > div:first-child > div svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+          .supply-main-card > div:first-child > span {
+            padding: 0.1rem 0.3rem !important;
+            font-size: 0.48rem !important;
+          }
+          .supply-title-text {
+            font-size: 0.58rem !important;
+            line-height: 1.15 !important;
+          }
+          .supply-location-text {
+            font-size: 0.48rem !important;
+            margin-bottom: 0.25rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+          .supply-relation-text {
+            font-size: 0.48rem !important;
+          }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Peta Rantai Pasok</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Visualisasi jaringan Supplier, Admin Toko, dan Produsen yang sudah terverifikasi di ekosistem.</p>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Visualisasi jaringan Admin Toko dan Produsen yang sudah terverifikasi di ekosistem.</p>
       </div>
 
-      <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <button onClick={() => setTipeFilter("")} style={{ background: tipeFilter === "" ? "#1E293B" : "white", color: tipeFilter === "" ? "#fff" : "#334155", border: "1px solid #E2E8F0", padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>Semua ({entitasList.length})</button>
-        {(["Toko", "Produsen", "Supplier"] as TipeEntitas[]).map((t) => (
+      <div className="map-filter-buttons" style={{ display: "flex", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <button onClick={() => setTipeFilter("")} style={{ background: tipeFilter === "" ? "#1E293B" : "white", color: tipeFilter === "" ? "#fff" : "#334155", border: "1px solid #E2E8F0", padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>Semua ({entitasList?.length || 0})</button>
+        {(["Toko", "Produsen"] as TipeEntitas[]).map((t) => (
           <button key={t} onClick={() => setTipeFilter(t)} style={{ background: tipeFilter === t ? tipeColor[t] : "white", color: tipeFilter === t ? "#fff" : tipeColor[t], border: `1px solid ${tipeColor[t]}`, padding: "0.5rem 0.9rem", borderRadius: "999px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>
-            {t} ({entitasList.filter((e) => e.tipe === t).length})
+            {t} ({(entitasList || []).filter((e) => e.tipe === t).length})
           </button>
         ))}
       </div>
 
-      <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem" }}>
+      <div className="map-wrapper-contain" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", marginBottom: "1.25rem" }}>
         <MiniMap entitasList={filtered} />
-        <div style={{ display: "flex", gap: "1rem", marginTop: "0.75rem", fontSize: "0.75rem", color: "#64748B", flexWrap: "wrap" }}>
+        <div className="map-legend-row" style={{ display: "flex", gap: "1rem", marginTop: "0.75rem", fontSize: "0.75rem", color: "#64748B", flexWrap: "wrap" }}>
           <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Toko, marginRight: "5px" }} />Admin Toko</span>
           <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Produsen, marginRight: "5px" }} />Produsen</span>
-          <span><span style={{ display: "inline-block", width: "9px", height: "9px", borderRadius: "50%", background: tipeColor.Supplier, marginRight: "5px" }} />Supplier</span>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+      <div className="supply-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
         {filtered.length === 0 && (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>Belum ada entitas untuk filter ini.</div>
         )}
@@ -162,14 +238,14 @@ export default function PetaRantaiPasok({ entitasList, transaksiList }: Props) {
           const c = tipeBg[e.tipe];
           const jumlahRelasi = relasiUntuk(e.nama).length;
           return (
-            <div key={e.id} onClick={() => setDetail(e)} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }}>
+            <div key={e.id} onClick={() => setDetail(e)} className="supply-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                 <div style={{ background: c.bg, color: c.color, width: "36px", height: "36px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center" }}><IconBuilding /></div>
                 <span style={{ background: c.bg, color: c.color, fontSize: "0.68rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: "999px" }}>{e.tipe}</span>
               </div>
-              <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{e.nama}</div>
-              <div style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.5rem" }}>{e.lokasi}</div>
-              <div style={{ fontSize: "0.75rem", color: "#2563EB", fontWeight: 600 }}>{jumlahRelasi} transaksi terhubung</div>
+              <div className="supply-title-text" style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{e.nama}</div>
+              <div className="supply-location-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.5rem" }}>{e.lokasi}</div>
+              <div className="supply-relation-text" style={{ fontSize: "0.75rem", color: "#2563EB", fontWeight: 600 }}>{jumlahRelasi} transaksi</div>
             </div>
           );
         })}

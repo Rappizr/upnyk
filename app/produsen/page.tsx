@@ -109,45 +109,48 @@ const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
 const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconWallet = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
-const IconUser = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
 const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
-
-interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
-interface MenuGroupDef { title: string; items: MenuItemDef[] }
-
-const menuGroups: MenuGroupDef[] = [
-  { title: "Main", items: [{ key: "dashboard", label: "Dashboard", icon: IconDashboard }] },
-  { title: "Manajemen Stok", items: [{ key: "stok", label: "Stok Komoditas", icon: IconPackage }] },
-  { title: "Penjualan & Logistik", items: [
-    { key: "penjualan", label: "Penjualan B2B", icon: IconStore },
-    { key: "pengiriman", label: "Pengiriman", icon: IconTruck },
-  ] },
-  { title: "Operasional", items: [
-    { key: "keuangan", label: "Keuangan", icon: IconWallet },
-    { key: "profil", label: "Profil UMKM", icon: IconUser },
-  ] },
+const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
+const menuGroups = [
+  {
+    title: "MAIN",
+    items: [
+      { key: "dashboard", label: "Dashboard", icon: IconDashboard },
+    ],
+  },
+  {
+    title: "OPERASIONAL",
+    items: [
+      { key: "stok", label: "Produk / Stok", icon: IconPackage },
+      { key: "penjualan", label: "Pesanan", icon: IconStore },
+      { key: "pengiriman", label: "Pengiriman", icon: IconTruck },
+      { key: "keuangan", label: "Keuangan", icon: IconWallet },
+    ],
+  },
 ];
-
-function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
-}
-
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
-  stok: "Stok Komoditas",
-  penjualan: "Penjualan B2B",
+  stok: "Produk / Stok",
+  penjualan: "Pesanan",
   pengiriman: "Pengiriman",
   keuangan: "Keuangan",
-  profil: "Profil UMKM",
 };
+function formatRupiah(n: number) {
+  if (n < 0) {
+    return "- Rp " + Math.abs(n).toLocaleString("id-ID");
+  }
+  return "Rp " + n.toLocaleString("id-ID");
+}
 
 export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profilPopupOpen, setProfilPopupOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const [profil, setProfil] = useState<Profil>(initialProfil);
   const [stokList, setStokList] = useState<StokItem[]>(initialStok);
@@ -171,13 +174,13 @@ export default function ProdusenDashboard() {
     setStokList((prev) => prev.filter((s) => s.id !== id));
   }
 
-  function addPesanan(pembeli: string, itemId: string, jumlah: number, alamatKirim: string) {
-    const item = stokList.find((s) => s.id === itemId);
-    if (!item) return;
-    const id = `ORD-${2200 + pesananList.length + 1}`;
-    const total = item.hargaSatuan * jumlah;
-    setPesananList((prev) => [{ id, pembeli, itemId, item: item.nama, jumlah, satuan: item.satuan, total, status: "Baru", tanggal: todayLabel(), alamatKirim }, ...prev]);
-    updateStok(itemId, { jumlah: Math.max(0, item.jumlah - jumlah) });
+  function deletePesanan(id: string) {
+    const p = pesananList.find((x) => x.id === id);
+    if (p) {
+      const item = stokList.find((s) => s.id === p.itemId);
+      if (item) updateStok(p.itemId, { jumlah: item.jumlah + p.jumlah });
+    }
+    setPesananList((prev) => prev.filter((x) => x.id !== id));
   }
 
   function updatePesananStatus(id: string, status: Pesanan["status"]) {
@@ -204,6 +207,13 @@ export default function ProdusenDashboard() {
   const semuaUlasan = useMemo(() => stokList.flatMap((s) => s.ulasan.map((u) => ({ ...u, produk: s.nama }))), [stokList]);
   const ratingRata = useMemo(() => (semuaUlasan.length ? semuaUlasan.reduce((s, u) => s + u.rating, 0) / semuaUlasan.length : 0), [semuaUlasan]);
 
+  const pesananBaru = pesananList.filter((p) => p.status === "Baru");
+  interface NotifItem { id: string; text: string; sub: string; tujuan: string }
+  const notifItems: NotifItem[] = [
+    ...stokMenipis.map((s) => ({ id: `stok-${s.id}`, text: `Stok ${s.nama} ${s.status === "Habis" ? "habis" : "menipis"}`, sub: `Sisa ${s.jumlah} ${s.satuan}`, tujuan: "stok" })),
+    ...pesananBaru.map((p) => ({ id: `pesanan-${p.id}`, text: `Pesanan baru dari ${p.pembeli}`, sub: `${p.item} × ${p.jumlah} ${p.satuan}`, tujuan: "penjualan" })),
+  ];
+
   function selectMenu(key: string) {
     setActiveMenu(key);
     setSidebarOpen(false);
@@ -211,24 +221,86 @@ export default function ProdusenDashboard() {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
-      <style>{`
+      <style dangerouslySetInnerHTML={{__html: `
         .pn-sidebar { width: 220px; }
         .pn-hamburger { display: none; }
         .pn-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .pn-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .pn-user-name { display: block; }
+        
         @media (max-width: 900px) {
-          .pn-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
+          .pn-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16 rgba(0,0,0,.1); }
           .pn-sidebar.open { transform: translateX(0); }
           .pn-hamburger { display: flex; }
-          .pn-stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .pn-panels-grid { grid-template-columns: 1fr; }
+        
+          .hero-banner-container {
+            padding: 0.85rem !important;
+            border-radius: 10px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.4rem !important;
+          }
+          .hero-banner-container span {
+            font-size: 0.55rem !important;
+            padding: 0.15rem 0.4rem !important;
+            margin-bottom: 0.2rem !important;
+          }
+          .hero-banner-container h2 {
+            font-size: 1.05rem !important;
+            line-height: 1.15 !important;
+          }
+          .hero-banner-container p {
+            font-size: 0.68rem !important;
+            margin-top: 0.1rem !important;
+            line-height: 1.2 !important;
+          }
+          .hero-banner-container button {
+              padding: 0.45rem 1rem !important;
+              font-size: 0.7rem !important;
+              border-radius: 6px !important;
+              width: fit-content !important;
+              margin: 0.25rem auto 0 auto !important;
+              display: flex !important;
+              align-items: center;
+              justify-content: center;
+          }
+
+          .pn-stats-grid { 
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 0.25rem !important; 
+            margin-bottom: 1rem !important;
+          }
+          .pn-stats-grid > div {
+            padding: 0.4rem 0.3rem !important;
+            border-radius: 6px !important;
+          }
+          .pn-stats-grid > div > div:first-child {
+            font-size: 0.52rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 0.25rem !important;
+          }
+          .pn-stats-grid > div > div:nth-child(2) {
+            font-size: 0.65rem !important;
+            line-height: 1.1 !important;
+          }
+          .pn-stats-grid > div > div:nth-child(2) span {
+            font-size: 0.45rem !important;
+          }
+          .pn-stats-grid > div > div:last-child {
+            font-size: 0.5rem !important;
+            line-height: 1.1 !important;
+            margin-top: 0.1rem !important;
+          }
+          
+          .pn-panels-grid { 
+            grid-template-columns: 1fr !important; 
+            gap: 0.75rem !important;
+          }
         }
         @media (max-width: 480px) {
-          .pn-stats-grid { grid-template-columns: 1fr; }
           .pn-user-name { display: none; }
         }
-      `}</style>
+      `}} />
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
@@ -274,27 +346,59 @@ export default function ProdusenDashboard() {
             <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IconBell />
-              {stokMenipis.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+            <div style={{ position: "relative" }}>
+              <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: notifOpen ? "#ECFDF5" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <IconBell />
+                {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+              </div>
+              {notifOpen && (
+                <>
+                  <div onClick={() => setNotifOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
+                  <div style={{ position: "absolute", top: "42px", right: 0, width: "300px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", zIndex: 60, maxHeight: "360px", overflowY: "auto" }}>
+                    <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #F1F5F9", fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>Notifikasi</div>
+                    {notifItems.length === 0 ? (
+                      <div style={{ padding: "1.25rem 1rem", fontSize: "0.8rem", color: "#94A3B8", textAlign: "center" }}>Tidak ada notifikasi baru.</div>
+                    ) : (
+                      notifItems.map((n) => (
+                        <div key={n.id} onClick={() => { selectMenu(n.tujuan); setNotifOpen(false); }} style={{ padding: "0.7rem 1rem", borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{n.text}</div>
+                          <div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>{n.sub}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-              {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
-            </div>
-            <div className="pn-user-name">
-              <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profil.nama}</div>
-              <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>PasarNusa Produsen</div>
+            <div onClick={() => setProfilPopupOpen(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
+              </div>
+              <div className="pn-user-name">
+                <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profil.nama}</div>
+                <div style={{ fontSize: "10.5px", color: "#94A3B8" }}>PasarNusa Produsen</div>
+              </div>
+              <span className="pn-user-name" style={{ color: "#94A3B8" }}><IconChevronDown /></span>
             </div>
           </div>
         </div>
 
+        {profilPopupOpen && (
+          <div onClick={() => setProfilPopupOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "4.5rem 1rem 1rem", overflowY: "auto" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", width: "100%" }}>
+              <ProfilUMKM profil={profil} onUpdateProfil={setProfil} />
+            </div>
+          </div>
+        )}
+
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            <div style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem clamp(1.25rem, 4vw, 2rem)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+            
+            <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7 hydrodynamic-size", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
-                <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</div>
-                <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.85)", marginTop: "0.3rem", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</div>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
+                <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</h2>
+                <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.85rem", color: "rgba(255,255,255,.85)", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</p>
               </div>
               <button onClick={() => selectMenu("pengiriman")} style={{ background: "#fff", color: "#059669", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
                 Lihat Riwayat Panen <IconArrowRight />
@@ -368,42 +472,10 @@ export default function ProdusenDashboard() {
           </main>
         )}
 
-        {activeMenu === "stok" && (
-         <StokKomoditas
-  stokList={stokList}
-  addStok={addStok}
-  updateStok={updateStok}
-  deleteStok={deleteStok}
-/>
-        )}
-        {activeMenu === "penjualan" && (
-         <PenjualanB2B
-  pesananList={pesananList}
-  stokList={stokList}
-  addPesanan={addPesanan}
-  updatePesananStatus={updatePesananStatus}
-/>
-        )}
-        {activeMenu === "pengiriman" && (
-         <Pengiriman
-  pesananList={pesananList}
-  updatePesananStatus={updatePesananStatus}
-/>
-        )}
-        {activeMenu === "keuangan" && (
-         <Keuangan
-  pesananList={pesananList}
-  pengeluaranList={pengeluaranList}
-  addPengeluaran={addPengeluaran}
-/>
-        )}
-        {activeMenu === "profil" && (
-      <ProfilUMKM
-  profil={profil}
-  setProfil={setProfil}
-/>
-        )}
-
+        {activeMenu === "stok" && <StokKomoditas stokList={stokList} addStok={addStok} updateStok={updateStok} deleteStok={deleteStok} />}
+        {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} deletePesanan={deletePesanan} updatePesananStatus={updatePesananStatus} />}
+        {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={updatePesananStatus} />}
+        {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={addPengeluaran} />}
       </div>
     </div>
   );
