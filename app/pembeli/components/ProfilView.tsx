@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { getProfileAction, updateProfileAction, getOrdersAction } from "@/app/actions";
 function UserIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -63,6 +64,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [addresses, setAddresses] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,14 +72,19 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
   useEffect(() => {
     async function loadProfile() {
       try {
-        const res = await fetch("/api/profile");
-        const data = await res.json();
-        setName(data.name || "");
-        setEmail(data.email || "");
-        setPhone(data.phone || "");
-        setBio(data.bio || "");
-        setAvatarUrl(data.avatar_url || "");
-        setAddresses(data.addresses || []);
+        const [data, ordersData] = await Promise.all([
+          getProfileAction(),
+          getOrdersAction()
+        ]);
+        if (data) {
+          setName(data.name || "");
+          setEmail(data.email || "");
+          setPhone(data.phone || "");
+          setBio(data.bio || "");
+          setAvatarUrl(data.avatar_url || "");
+          setAddresses(data.addresses || []);
+        }
+        setOrders(ordersData || []);
       } catch (err) {
         console.error("Failed to load profile:", err);
       } finally {
@@ -89,12 +96,8 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
 
   const handleSave = async () => {
     try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, bio, avatar_url: avatarUrl })
-      });
-      if (res.ok) {
+      const updated = await updateProfileAction({ name, email, phone, bio, avatar_url: avatarUrl });
+      if (updated) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
         onProfileUpdated?.();
@@ -114,18 +117,14 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
       setAvatarUrl(base64String);
 
       try {
-        const res = await fetch("/api/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name,
-            email,
-            phone,
-            bio,
-            avatar_url: base64String
-          })
+        const updated = await updateProfileAction({
+          name,
+          email,
+          phone,
+          bio,
+          avatar_url: base64String
         });
-        if (res.ok) {
+        if (updated) {
           onProfileUpdated?.();
         }
       } catch (err) {
@@ -135,11 +134,19 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
     reader.readAsDataURL(file);
   };
 
+  const totalOrders = orders.length;
+  const totalSpent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const formattedSpent = totalSpent >= 1_000_000
+    ? `Rp ${(totalSpent / 1_000_000).toFixed(1).replace(".", ",")} Jt`
+    : `Rp ${totalSpent.toLocaleString("id-ID")}`;
+  const loyaltyPoints = Math.floor(totalSpent / 10000);
+  const memberLevel = loyaltyPoints >= 1000 ? "Platinum" : loyaltyPoints >= 500 ? "Gold" : loyaltyPoints >= 100 ? "Silver" : loyaltyPoints > 0 ? "Perunggu" : "-";
+
   const stats = [
-    { label: "Total Pesanan", value: "32" },
-    { label: "Pengeluaran", value: "Rp 4,2 Jt" },
-    { label: "Poin Loyalitas", value: "1.840" },
-    { label: "Level", value: "Gold" },
+    { label: "Total Pesanan", value: String(totalOrders) },
+    { label: "Pengeluaran", value: formattedSpent },
+    { label: "Poin Loyalitas", value: loyaltyPoints.toLocaleString("id-ID") },
+    { label: "Level", value: memberLevel },
   ];
 
   return (
@@ -178,7 +185,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
               <div className="font-bold text-lg">{name}</div>
               <div className="text-sm text-muted">{email}</div>
               <div className="badge badge-warning" style={{ marginTop: "0.625rem", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-                <StarIcon size={12} fill="currentColor" /> Gold Member
+                <StarIcon size={12} fill="currentColor" /> {memberLevel === "-" ? "Regular" : `${memberLevel}`} Member
               </div>
               <button 
                 className="btn-ghost" 

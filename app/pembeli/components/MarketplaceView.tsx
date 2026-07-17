@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { getProductsAction, getWishlistAction, addToWishlistAction, removeFromWishlistAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -319,16 +320,14 @@ export default function MarketplaceView({
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodRes, wlRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/wishlist")
+        const [prodData, wlData] = await Promise.all([
+          getProductsAction(),
+          getWishlistAction()
         ]);
-        const prodData = await prodRes.json();
-        const wlData = await wlRes.json();
 
-        setProducts(prodData);
-        setWishlistItems(wlData);
-        setWishlistedIds(wlData.map((w: any) => w.product_id));
+        setProducts(prodData || []);
+        setWishlistItems(wlData || []);
+        setWishlistedIds((wlData || []).map((w: any) => w.product_id));
       } catch (err) {
         console.error("Failed to load products:", err);
       } finally {
@@ -342,10 +341,8 @@ export default function MarketplaceView({
     const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
     if (existingItem) {
       try {
-        const res = await fetch(`/api/wishlist?id=${existingItem.id}`, {
-          method: "DELETE"
-        });
-        if (res.ok) {
+        const success = await removeFromWishlistAction(existingItem.id);
+        if (success) {
           setWishlistedIds(prev => prev.filter(id => id !== productId));
           setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
         }
@@ -356,18 +353,11 @@ export default function MarketplaceView({
     }
 
     try {
-      const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId })
-      });
-      if (res.ok) {
-        const newItem = await res.json();
-        if (res.status === 201) {
-          setWishlistedIds(prev => [...prev, productId]);
-          setWishlistItems(prev => [...prev, newItem]);
-          alert("Berhasil ditambahkan ke wishlist!");
-        }
+      const newItem = await addToWishlistAction(productId);
+      if (newItem) {
+        setWishlistedIds(prev => [...prev, productId]);
+        setWishlistItems(prev => [...prev, newItem]);
+        alert("Berhasil ditambahkan ke wishlist!");
       }
     } catch (err) {
       console.error(err);

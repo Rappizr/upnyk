@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { getWishlistAction, removeFromWishlistAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -155,9 +156,8 @@ export default function WishlistView({
   useEffect(() => {
     async function loadWishlist() {
       try {
-        const res = await fetch("/api/wishlist");
-        const data = await res.json();
-        setItems(data);
+        const data = await getWishlistAction();
+        setItems(data || []);
       } catch (err) {
         console.error("Failed to load wishlist:", err);
       } finally {
@@ -169,10 +169,8 @@ export default function WishlistView({
 
   const remove = async (id: number) => {
     try {
-      const res = await fetch(`/api/wishlist?id=${id}`, {
-        method: "DELETE"
-      });
-      if (res.ok) {
+      const success = await removeFromWishlistAction(id);
+      if (success) {
         setItems((prev) => prev.filter((i) => i.id !== id));
       }
     } catch (err) {

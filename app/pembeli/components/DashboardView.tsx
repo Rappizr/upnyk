@@ -140,6 +140,15 @@ function IconRenderer({ type, size = 24, className = "", ...props }: any) {
   }
 }
 
+import { 
+  getProductsAction, 
+  getOrdersAction, 
+  getWishlistAction, 
+  getProfileAction, 
+  addToWishlistAction, 
+  removeFromWishlistAction 
+} from "@/app/actions";
+
 // Mocking Rural Co-op Stores (Toko-Toko Koperasi Pelosok Pilihan)
 const coops = [
   { 
@@ -182,24 +191,24 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
   const [orders, setOrders] = useState<any[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const [profileName, setProfileName] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodRes, orderRes, wlRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/orders"),
-          fetch("/api/wishlist")
+        const [prodData, orderData, wlData, profileData] = await Promise.all([
+          getProductsAction(),
+          getOrdersAction(),
+          getWishlistAction(),
+          getProfileAction()
         ]);
-        const prodData = await prodRes.json();
-        const orderData = await orderRes.json();
-        const wlData = await wlRes.json();
 
         setProducts(prodData.slice(0, 4)); // Show top 4
-        setOrders(orderData);
-        setWishlistItems(wlData);
-        setWishlistCount(wlData.length);
+        setOrders(orderData || []);
+        setWishlistItems(wlData || []);
+        setWishlistCount(wlData ? wlData.length : 0);
+        setProfileName(profileData ? (profileData.name || "Pengguna") : "Pengguna");
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -213,10 +222,8 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
     const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
     if (existingItem) {
       try {
-        const res = await fetch(`/api/wishlist?id=${existingItem.id}`, {
-          method: "DELETE"
-        });
-        if (res.ok) {
+        const success = await removeFromWishlistAction(existingItem.id);
+        if (success) {
           setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
           setWishlistCount(prev => Math.max(0, prev - 1));
         }
@@ -227,18 +234,11 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
     }
 
     try {
-      const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId })
-      });
-      if (res.ok) {
-        const newItem = await res.json();
-        if (res.status === 201) {
-          setWishlistItems(prev => [...prev, newItem]);
-          setWishlistCount(prev => prev + 1);
-          alert("Produk berhasil ditambahkan ke wishlist!");
-        }
+      const newItem = await addToWishlistAction(productId);
+      if (newItem) {
+        setWishlistItems(prev => [...prev, newItem]);
+        setWishlistCount(prev => prev + 1);
+        alert("Produk berhasil ditambahkan ke wishlist!");
       }
     } catch (err) {
       console.error(err);
@@ -287,7 +287,7 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
             <StarIcon size={14} fill="currentColor" /> Platform UMKM #1 Indonesia
           </div>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 800, marginBottom: "0.5rem", lineHeight: 1.3 }}>
-            Selamat Datang, Arif!
+            Selamat Datang, {loading ? "..." : profileName}!
           </h1>
           <p style={{ opacity: 0.85, maxWidth: "460px", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
             Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { getProfileAction } from "@/app/actions";
 import DashboardView from "./components/DashboardView";
 import MarketplaceView from "./components/MarketplaceView";
 import WishlistView from "./components/WishlistView";
@@ -15,7 +16,7 @@ export default function PembeliMasterPage() {
   const [selectedStoreFilter, setSelectedStoreFilter] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [userName, setUserName] = useState("Arif Kurniawan");
+  const [userName, setUserName] = useState("");
 
   const updateCartCount = () => {
     if (typeof window !== "undefined") {
@@ -36,9 +37,8 @@ export default function PembeliMasterPage() {
 
   const loadProfile = async () => {
     try {
-      const res = await fetch("/api/profile");
-      if (res.ok) {
-        const data = await res.json();
+      const data = await getProfileAction();
+      if (data) {
         setUserName(data.name || "");
         setAvatarUrl(data.avatar_url || "");
       }
@@ -172,7 +172,7 @@ export default function PembeliMasterPage() {
             {avatarUrl ? (
               <img src={avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
-              userName ? userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "AK"
+              userName ? userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "P"
             )}
           </button>
         </div>

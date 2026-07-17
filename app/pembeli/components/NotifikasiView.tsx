@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { getNotificationsAction, markNotificationsAsReadAction, updateOrderStatusAction } from "@/app/actions";
 function BellIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -92,8 +93,7 @@ export default function NotifikasiView() {
 
   async function loadNotifications() {
     try {
-      const res = await fetch("/api/notifications");
-      const data = await res.json();
+      const data = await getNotificationsAction();
       
       // Let's prepend interactive reminders if not already present
       const interactiveNotifs = [
@@ -121,7 +121,7 @@ export default function NotifikasiView() {
           orderId: "ORD-20250620-003",
           amount: 135000
         },
-        ...data
+        ...(data || [])
       ];
       setNotifs(interactiveNotifs);
     } catch (err) {
@@ -137,10 +137,8 @@ export default function NotifikasiView() {
 
   const markAllRead = async () => {
     try {
-      const res = await fetch("/api/notifications", {
-        method: "POST"
-      });
-      if (res.ok) {
+      const success = await markNotificationsAsReadAction();
+      if (success) {
         setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
       }
     } catch (err) {
@@ -150,12 +148,8 @@ export default function NotifikasiView() {
 
   const handlePayReminder = async (orderId: string) => {
     try {
-      const res = await fetch("/api/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: orderId, status: "Diproses" })
-      });
-      if (res.ok) {
+      const success = await updateOrderStatusAction(orderId, "Diproses");
+      if (success) {
         // Remove the payment reminder or update it
         setNotifs(prev => prev.filter(n => n.id !== 102));
         alert("Pembayaran berhasil dikonfirmasi! Pesanan Anda sedang diproses oleh Koperasi.");

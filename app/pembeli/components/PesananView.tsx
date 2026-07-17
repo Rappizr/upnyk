@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { getOrdersAction, updateOrderStatusAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -142,10 +143,9 @@ export default function PesananView() {
 
   async function loadOrders() {
     try {
-      const res = await fetch("/api/orders");
-      const data = await res.json();
-      setOrders(data);
-      if (data.length > 0 && !expanded) {
+      const data = await getOrdersAction();
+      setOrders(data || []);
+      if (data && data.length > 0 && !expanded) {
         setExpanded(data[0].id);
       }
     } catch (err) {
@@ -161,12 +161,8 @@ export default function PesananView() {
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
     try {
-      const res = await fetch("/api/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: orderId, status })
-      });
-      if (res.ok) {
+      const success = await updateOrderStatusAction(orderId, status);
+      if (success) {
         await loadOrders();
         alert(`Status pesanan berhasil diupdate menjadi: ${status}`);
       }
