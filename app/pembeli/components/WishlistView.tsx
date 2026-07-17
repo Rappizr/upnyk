@@ -142,7 +142,13 @@ const productStoreMap: Record<number, string> = {
   8: "Koperasi Madu Borneo"
 };
 
-export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => void }) {
+export default function WishlistView({ 
+  onCartUpdated, 
+  onNavigateMarketplace 
+}: { 
+  onCartUpdated?: () => void;
+  onNavigateMarketplace?: () => void;
+}) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -241,7 +247,7 @@ export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => 
             const storeName = productStoreMap[p.id] || "Supplier Koperasi";
             return (
               <div key={item.id} className="wishlist-card" id={`wishlist-item-${item.id}`}>
-                <div style={{ width: 100, height: 100, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div className="wishlist-img-wrapper">
                   <IconRenderer type={p.icon_type} size={44} className="text-amber-500" />
                 </div>
                 <div className="wishlist-card-body">
@@ -312,8 +318,26 @@ export default function WishlistView({ onCartUpdated }: { onCartUpdated?: () => 
             );
           })}
           {items.length === 0 && (
-            <div className="card" style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-subtle)" }}>
-              Tidak ada produk di wishlist Anda.
+            <div className="wishlist-empty-state">
+              <div className="wishlist-empty-icon">
+                <HeartIcon size={40} fill="none" />
+              </div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--color-text)", marginBottom: "0.5rem" }}>
+                Wishlist Anda Kosong
+              </h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--color-text-muted)", maxWidth: "400px", marginBottom: "1.5rem" }}>
+                Jelajahi berbagai komoditas terbaik dari koperasi pelosok Indonesia dan tambahkan ke wishlist Anda.
+              </p>
+              {onNavigateMarketplace && (
+                <button 
+                  className="btn-primary" 
+                  onClick={onNavigateMarketplace}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}
+                  id="btn-wishlist-explore"
+                >
+                  <CartIcon size={16} /> Mulai Belanja
+                </button>
+              )}
             </div>
           )}
         </div>

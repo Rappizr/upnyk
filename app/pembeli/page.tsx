@@ -243,7 +243,12 @@ export default function PembeliMasterPage() {
               clearInitialStoreFilter={() => setSelectedStoreFilter("")}
             />
           )}
-          {activeTab === "Wishlist" && <WishlistView onCartUpdated={updateCartCount} />}
+          {activeTab === "Wishlist" && (
+            <WishlistView 
+              onCartUpdated={updateCartCount} 
+              onNavigateMarketplace={() => setActiveTab("Marketplace")}
+            />
+          )}
           {activeTab === "Pesanan" && <PesananView />}
           {activeTab === "Notifikasi" && <NotifikasiView />}
           {activeTab === "Profil" && <ProfilView />}

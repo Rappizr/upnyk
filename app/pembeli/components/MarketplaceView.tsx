@@ -293,6 +293,7 @@ export default function MarketplaceView({
   const [sortBy, setSortBy] = useState("terlaris");
   const [loading, setLoading] = useState(true);
   const [wishlistedIds, setWishlistedIds] = useState<number[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [detailQty, setDetailQty] = useState(1);
   const [showAddedToCartPopup, setShowAddedToCartPopup] = useState(false);
@@ -325,6 +326,7 @@ export default function MarketplaceView({
         const wlData = await wlRes.json();
 
         setProducts(prodData);
+        setWishlistItems(wlData);
         setWishlistedIds(wlData.map((w: any) => w.product_id));
       } catch (err) {
         console.error("Failed to load products:", err);
@@ -336,10 +338,22 @@ export default function MarketplaceView({
   }, []);
 
   const handleAddToWishlist = async (productId: number) => {
-    if (wishlistedIds.includes(productId)) {
-      alert("Produk sudah ada di wishlist!");
+    const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
+    if (existingItem) {
+      try {
+        const res = await fetch(`/api/wishlist?id=${existingItem.id}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          setWishlistedIds(prev => prev.filter(id => id !== productId));
+          setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
+        }
+      } catch (err) {
+        console.error(err);
+      }
       return;
     }
+
     try {
       const res = await fetch("/api/wishlist", {
         method: "POST",
@@ -347,8 +361,12 @@ export default function MarketplaceView({
         body: JSON.stringify({ product_id: productId })
       });
       if (res.ok) {
-        setWishlistedIds([...wishlistedIds, productId]);
-        alert("Berhasil ditambahkan ke wishlist!");
+        const newItem = await res.json();
+        if (res.status === 201) {
+          setWishlistedIds(prev => [...prev, productId]);
+          setWishlistItems(prev => [...prev, newItem]);
+          alert("Berhasil ditambahkan ke wishlist!");
+        }
       }
     } catch (err) {
       console.error(err);

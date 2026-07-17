@@ -1025,20 +1025,7 @@
       "timeline": []
     }
   ],
-  "wishlist": [
-    {
-      "id": 1,
-      "product_id": 1,
-      "saved_at": "Baru saja",
-      "price_dropped": false
-    },
-    {
-      "id": 2,
-      "product_id": 2,
-      "saved_at": "Baru saja",
-      "price_dropped": false
-    }
-  ],
+  "wishlist": [],
   "notifications": [
     {
       "id": 1,
