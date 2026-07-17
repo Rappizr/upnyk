@@ -273,6 +273,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           grouped[storeName] = [];
         }
         grouped[storeName].push({
+          // Include produk_id for Supabase detail_pesanan
+          produk_id: item.product.id,
+          id: item.product.id,
           icon_type: item.product.icon_type,
           name: item.product.name,
           qty: item.qty,

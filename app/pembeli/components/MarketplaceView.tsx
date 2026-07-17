@@ -280,6 +280,20 @@ interface MarketplaceViewProps {
   clearInitialStoreFilter?: () => void;
 }
 
+// Helper: map icon_type -> category label untuk filter UI
+function iconTypeToCategory(iconType: string): string {
+  switch (iconType) {
+    case 'rice': return 'Beras';
+    case 'coffee': return 'Kopi';
+    case 'spice': return 'Rempah';
+    case 'oil': return 'Minyak';
+    case 'honey': return 'Madu';
+    case 'grain': return 'Biji-bijian';
+    case 'leaf': return 'Sayuran';
+    default: return 'Lainnya';
+  }
+}
+
 export default function MarketplaceView({ 
   onCartUpdated, 
   onNavigateToCart,
@@ -294,7 +308,7 @@ export default function MarketplaceView({
   const [selectedStore, setSelectedStore] = useState("");
   const [sortBy, setSortBy] = useState("terlaris");
   const [loading, setLoading] = useState(true);
-  const [wishlistedIds, setWishlistedIds] = useState<number[]>([]);
+  const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [detailQty, setDetailQty] = useState(1);
@@ -337,26 +351,36 @@ export default function MarketplaceView({
     loadData();
   }, []);
 
-  const handleAddToWishlist = async (productId: number) => {
-    const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
-    if (existingItem) {
-      try {
-        const success = await removeFromWishlistAction(existingItem.id);
-        if (success) {
-          setWishlistedIds(prev => prev.filter(id => id !== productId));
-          setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      return;
-    }
-
+  // Load wishlist dari localStorage (karena tabel keranjang Supabase tidak mendukung produk_id)
+  useEffect(() => {
     try {
-      const newItem = await addToWishlistAction(productId);
-      if (newItem) {
-        setWishlistedIds(prev => [...prev, productId]);
-        setWishlistItems(prev => [...prev, newItem]);
+      const saved = localStorage.getItem("wishlistIds");
+      if (saved) {
+        const ids = JSON.parse(saved);
+        setWishlistedIds(ids);
+        setWishlistItems(ids.map((id: string) => ({ id: id + '-wl', product_id: id })));
+      }
+    } catch (e) {
+      console.error("Failed to load wishlist from localStorage:", e);
+    }
+  }, []);
+
+  const handleAddToWishlist = (productId: string) => {
+    // Wishlist disimpan di localStorage karena tabel keranjang Supabase tidak memiliki produk_id
+    try {
+      const savedIds: string[] = wishlistedIds;
+      if (savedIds.includes(productId)) {
+        // Hapus dari wishlist
+        const newIds = savedIds.filter(id => id !== productId);
+        setWishlistedIds(newIds);
+        setWishlistItems(prev => prev.filter((w: any) => w.product_id !== productId));
+        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
+      } else {
+        // Tambah ke wishlist
+        const newIds = [...savedIds, productId];
+        setWishlistedIds(newIds);
+        setWishlistItems(prev => [...prev, { id: productId + '-wl', product_id: productId }]);
+        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
         alert("Berhasil ditambahkan ke wishlist!");
       }
     } catch (err) {
@@ -396,30 +420,34 @@ export default function MarketplaceView({
     }
   };
 
-  // Filtering Logic
+  // Filtering Logic — produk dari Supabase menggunakan UUID, tidak ada field 'category'/'store' langsung
   let filtered = products.map(p => ({
     ...p,
-    store: productStoreMap[p.id] || "Koperasi Pelosok Pilihan"
+    // Derive category label from icon_type for filtering
+    category: p.category || iconTypeToCategory(p.icon_type),
+    // Store mapping: for Supabase products, use supplier field or fallback
+    store: p.supplier || "Koperasi Pelosok Pilihan"
   }));
 
   // Filter by search query
   if (searchQuery.trim() !== "") {
     const q = searchQuery.toLowerCase();
     filtered = filtered.filter(p => 
-      p.name.toLowerCase().includes(q) || 
-      p.category.toLowerCase().includes(q) ||
-      p.store.toLowerCase().includes(q)
+      (p.name || "").toLowerCase().includes(q) || 
+      (p.category || "").toLowerCase().includes(q) ||
+      (p.store || "").toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q)
     );
   }
 
   // Filter by category
   if (activeCategory !== "Semua") {
-    filtered = filtered.filter(p => p.category === activeCategory);
+    filtered = filtered.filter(p => (p.category || "") === activeCategory);
   }
 
   // Filter by location
   if (activeLocation !== "Semua Wilayah") {
-    filtered = filtered.filter(p => p.origin.toLowerCase().includes(activeLocation.toLowerCase()));
+    filtered = filtered.filter(p => (p.origin || "").toLowerCase().includes(activeLocation.toLowerCase()));
   }
 
   // Filter by selected co-op store profile
@@ -433,7 +461,7 @@ export default function MarketplaceView({
   } else if (sortBy === "termahal") {
     filtered.sort((a, b) => b.price - a.price);
   } else if (sortBy === "rating") {
-    filtered.sort((a, b) => b.rating - a.rating);
+    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
   }
 
   const activeCoop = coopProfiles[selectedStore];

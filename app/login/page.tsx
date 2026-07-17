@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/db";
 
 type Role = "pembeli" | "produsen" | "admin_toko" | "admin_platform";
 
@@ -28,7 +29,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     ),
     color: "#2563EB",
     bgColor: "#EFF6FF",
-    email: "arif.pembeli@lural.com",
+    email: "  ",
     redirectUrl: "/pembeli",
   },
   produsen: {
@@ -42,7 +43,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     ),
     color: "#10B981",
     bgColor: "#ECFDF5",
-    email: "budi.produsen@lural.com",
+    email: "",
     redirectUrl: "/produsen",
   },
   admin_toko: {
@@ -57,7 +58,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     ),
     color: "#F59E0B",
     bgColor: "#FEF3C7",
-    email: "citra.toko@lural.com",
+    email: "",
     redirectUrl: "/admin-toko",
   },
   admin_platform: {
@@ -71,7 +72,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     ),
     color: "#475569",
     bgColor: "#F1F5F9",
-    email: "dharma.admin@lural.com",
+    email: "",
     redirectUrl: "/admin-platform",
   },
 };
@@ -91,7 +92,7 @@ export default function LoginPage() {
   const activeConfig = roleConfigs[selectedRole];
 
   const [email, setEmail] = useState(roleConfigs.pembeli.email);
-  const [password, setPassword] = useState("••••••••");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -102,6 +103,7 @@ export default function LoginPage() {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regSuccess, setRegSuccess] = useState("");
+  const [regAvatarUrl, setRegAvatarUrl] = useState("https://api.dicebear.com/7.x/adventurer/svg?seed=Felix");
 
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -133,7 +135,7 @@ export default function LoginPage() {
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setEmail(roleConfigs[role].email);
-    setPassword("12345678");
+    setPassword("");
     setError("");
     setRegSuccess("");
     setRegName("");
@@ -146,44 +148,78 @@ export default function LoginPage() {
     setResetSuccess("");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    setTimeout(() => {
-      setIsLoading(false);
-
+    try {
+      // Cek apakah email adalah salah satu akun demo (pre-seeded)
       const preseededRole = (Object.keys(roleConfigs) as Role[]).find(
         (r) => roleConfigs[r].email.toLowerCase() === email.toLowerCase()
       );
 
-      if (preseededRole) {
-        if (preseededRole === selectedRole) {
-          router.push(roleConfigs[selectedRole].redirectUrl);
-        } else {
-          setError(`Email terdaftar sebagai ${roleConfigs[preseededRole].title}. Silakan pilih peran yang sesuai.`);
-        }
+      if (preseededRole && preseededRole !== selectedRole) {
+        setError(`Email terdaftar sebagai ${roleConfigs[preseededRole].title}. Silakan pilih peran yang sesuai.`);
+        setIsLoading(false);
         return;
       }
 
-      const users = getRegisteredUsers();
-      const matchedUser = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      // Coba login via Supabase Auth secara ketat
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
+      });
 
-      if (matchedUser) {
-        if (matchedUser.role === selectedRole) {
-          router.push(roleConfigs[selectedRole].redirectUrl);
+      if (authError) {
+        if (authError.status === 400 || authError.message.toLowerCase().includes("invalid grant")) {
+          setError("Email atau kata sandi salah. Silakan periksa kembali.");
         } else {
-          const userRole = matchedUser.role as Role;
-          setError(`Email terdaftar sebagai ${roleConfigs[userRole].title}. Silakan pilih peran yang sesuai.`);
+          setError(authError.message);
         }
-      } else {
-        setError("Alamat email belum terdaftar. Silakan klik 'Daftar disini'.");
+        setIsLoading(false);
+        return;
       }
-    }, 1200);
+
+      // Login Supabase berhasil
+      if (authData.user) {
+        // Ambil profil dari database public.profiles untuk mencocokkan peran (role)
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+
+        if (profileErr) {
+          console.error("Gagal mengambil data profil:", profileErr.message);
+        }
+
+        // Validasi kecocokan role antara pilihan UI dengan database
+        if (profile && profile.role) {
+          if (profile.role !== selectedRole) {
+            const roleTitle = roleConfigs[profile.role as Role]?.title || profile.role;
+            setError(`Akun Anda terdaftar sebagai ${roleTitle}. Silakan pilih peran yang sesuai.`);
+            // Logout kembali agar sesi tidak tertinggal
+            await supabase.auth.signOut();
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        localStorage.setItem('user_role', selectedRole);
+        localStorage.setItem('supabase_user_id', authData.user.id);
+        localStorage.setItem('supabase_user_email', authData.user.email || '');
+      }
+      router.push(roleConfigs[selectedRole].redirectUrl);
+    } catch (e) {
+      console.error('Login error:', e);
+      setError('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setRegSuccess("");
@@ -198,28 +234,72 @@ export default function LoginPage() {
       return;
     }
 
-    if (isEmailRegistered(regEmail)) {
-      setError("Email sudah terdaftar. Silakan gunakan email lain atau langsung login.");
-      return;
-    }
-
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      registerUser({
-        name: regName,
-        phone: regPhone,
-        email: regEmail,
-        passwordHash: regPassword,
-        role: selectedRole
+    try {
+      // Daftar via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: regEmail.trim(),
+        password: regPassword.trim(),
+        options: {
+          data: {
+            name: regName.trim(),
+            phone: regPhone.trim(),
+            role: selectedRole,
+            avatar_url: regAvatarUrl
+          }
+        }
       });
 
-      setRegSuccess(`Registrasi sebagai ${activeConfig.title} berhasil! Silakan masuk.`);
+      if (authError) {
+        setError(authError.message);
+        setIsLoading(false);
+        return;
+      }
 
+      if (authData.user) {
+        // Berhasil daftar di Supabase — simpan profil ke tabel profiles
+        const { error: profileError } = await supabase.from('profiles').upsert({
+          id: authData.user.id,
+          nama: regName.trim(),
+          email: regEmail.trim(),
+          phone: regPhone.trim(),
+          role: selectedRole,
+          avatar_url: regAvatarUrl
+        }).select();
+
+        if (profileError) {
+          console.error('Client-side profiles upsert failed:', profileError.message);
+        }
+
+        // Simpan juga ke tabel role-specific jika tidak ditangani oleh trigger (upsert aman)
+        if (selectedRole === 'pembeli') {
+          const { error: roleErr } = await supabase.from('pembeli').upsert({
+            id: authData.user.id,
+            nama: regName.trim()
+          });
+          if (roleErr) console.warn('Client-side pembeli upsert info (trigger might have handled it):', roleErr.message);
+        } else if (selectedRole === 'produsen') {
+          const { error: roleErr } = await supabase.from('produsen').upsert({
+            id: authData.user.id,
+            nama: regName.trim()
+          });
+          if (roleErr) console.warn('Client-side produsen upsert info (trigger might have handled it):', roleErr.message);
+        } else if (selectedRole === 'admin_toko') {
+          const { error: roleErr } = await supabase.from('admin_toko').upsert({
+            id: authData.user.id,
+            nama: regName.trim()
+          });
+          if (roleErr) console.warn('Client-side admin_toko upsert info (trigger might have handled it):', roleErr.message);
+        }
+
+        localStorage.setItem('supabase_user_id', authData.user.id);
+        localStorage.setItem('supabase_user_email', authData.user.email || '');
+      }
+
+      setRegSuccess(`Registrasi sebagai ${activeConfig.title} berhasil! Silakan masuk.`);
       setEmail(regEmail);
       setPassword(regPassword);
-
       setRegName("");
       setRegPhone("");
       setRegEmail("");
@@ -231,7 +311,12 @@ export default function LoginPage() {
         setRegSuccess("");
       }, 2000);
 
-    }, 1500);
+    } catch (e) {
+      console.error('Register error:', e);
+      setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -260,8 +345,9 @@ export default function LoginPage() {
 
   return (
     <div className="login-page-wrapper" style={{ minHeight: "100vh", padding: "1.5rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", background: "#F8FAFC" }}>
-      
-      <style dangerouslySetInnerHTML={{__html: `
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .login-container {
           display: grid;
           grid-template-columns: 1.1fr 1fr;
@@ -746,6 +832,68 @@ export default function LoginPage() {
           ) : (
             <>
               <form onSubmit={handleRegister}>
+                {/* PILIH AVATAR (PROFILE PICTURE) */}
+                <div className="form-group" style={{ marginBottom: "1.25rem", alignItems: "center" }}>
+                  <label className="form-label" style={{ width: "100%", textAlign: "left" }}>Foto Profil / Avatar</label>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", width: "100%", marginTop: "0.25rem" }}>
+                    <div 
+                      style={{ 
+                        width: "56px", 
+                        height: "56px", 
+                        borderRadius: "50%", 
+                        border: "2px solid #E2E8F0", 
+                        overflow: "hidden", 
+                        background: "#F1F5F9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}
+                    >
+                      {regAvatarUrl ? (
+                        <img src={regAvatarUrl} alt="Preview Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "#94A3B8" }}>?</span>
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                      <div style={{ display: "flex", gap: "0.35rem" }}>
+                        {[
+                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
+                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka",
+                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack",
+                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Bella",
+                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Lily"
+                        ].map((url, index) => {
+                          const isSelected = regAvatarUrl === url;
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setRegAvatarUrl(url)}
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                borderRadius: "50%",
+                                overflow: "hidden",
+                                border: isSelected ? "2px solid #2563EB" : "1px solid #E2E8F0",
+                                padding: 0,
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                                transform: isSelected ? "scale(1.1)" : "scale(1)",
+                              }}
+                            >
+                              <img src={url} alt={`Avatar option ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="form-group" style={{ marginBottom: "1.25rem" }}>
                   <label className="form-label">Nama Lengkap</label>
                   <input

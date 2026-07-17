@@ -197,18 +197,21 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodData, orderData, wlData, profileData] = await Promise.all([
+        const [prodData, orderData, profileData] = await Promise.all([
           getProductsAction(),
           getOrdersAction(),
-          getWishlistAction(),
           getProfileAction()
         ]);
 
         setProducts(prodData.slice(0, 4)); // Show top 4
         setOrders(orderData || []);
-        setWishlistItems(wlData || []);
-        setWishlistCount(wlData ? wlData.length : 0);
         setProfileName(profileData ? (profileData.name || "Pengguna") : "Pengguna");
+
+        // Load wishlist from localStorage
+        const saved = localStorage.getItem("wishlistIds");
+        const wishIds = saved ? JSON.parse(saved) : [];
+        setWishlistItems(wishIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
+        setWishlistCount(wishIds.length);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -218,26 +221,23 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
     loadData();
   }, []);
 
-  const handleAddToWishlist = async (productId: number) => {
-    const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
-    if (existingItem) {
-      try {
-        const success = await removeFromWishlistAction(existingItem.id);
-        if (success) {
-          setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
-          setWishlistCount(prev => Math.max(0, prev - 1));
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      return;
-    }
-
+  const handleAddToWishlist = (productId: string) => {
     try {
-      const newItem = await addToWishlistAction(productId);
-      if (newItem) {
-        setWishlistItems(prev => [...prev, newItem]);
-        setWishlistCount(prev => prev + 1);
+      const saved = localStorage.getItem("wishlistIds");
+      const wishIds: string[] = saved ? JSON.parse(saved) : [];
+      
+      if (wishIds.includes(productId)) {
+        // Hapus dari wishlist
+        const newIds = wishIds.filter(id => id !== productId);
+        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
+        setWishlistItems(newIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
+        setWishlistCount(newIds.length);
+      } else {
+        // Tambah ke wishlist
+        const newIds = [...wishIds, productId];
+        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
+        setWishlistItems(newIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
+        setWishlistCount(newIds.length);
         alert("Produk berhasil ditambahkan ke wishlist!");
       }
     } catch (err) {
