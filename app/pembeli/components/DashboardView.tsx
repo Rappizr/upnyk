@@ -292,7 +292,7 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
           <p style={{ opacity: 0.85, maxWidth: "460px", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
             Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.
           </p>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div className="hero-actions" style={{ display: "flex", gap: "0.75rem" }}>
             <button 
               onClick={() => onNavigate?.("Marketplace")} 
               className="btn-primary" 

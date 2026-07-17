@@ -55,7 +55,7 @@ function BarChartIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
-export default function ProfilView() {
+export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: () => void }) {
   const [tab, setTab] = useState("biodata");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -68,7 +68,6 @@ export default function ProfilView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-
     async function loadProfile() {
       try {
         const res = await fetch("/api/profile");
@@ -98,6 +97,7 @@ export default function ProfilView() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
+        onProfileUpdated?.();
       }
     } catch (err) {
       console.error(err);
@@ -114,7 +114,7 @@ export default function ProfilView() {
       setAvatarUrl(base64String);
 
       try {
-        await fetch("/api/profile", {
+        const res = await fetch("/api/profile", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -125,6 +125,9 @@ export default function ProfilView() {
             avatar_url: base64String
           })
         });
+        if (res.ok) {
+          onProfileUpdated?.();
+        }
       } catch (err) {
         console.error("Failed to upload avatar:", err);
       }
@@ -152,7 +155,7 @@ export default function ProfilView() {
         <div className="profile-layout">
           {/* Left Panel */}
           <div>
-            <div className="card" style={{ textAlign: "center", marginBottom: "1rem" }}>
+            <div className="card profile-avatar-card" style={{ textAlign: "center", marginBottom: "1rem" }}>
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -188,13 +191,13 @@ export default function ProfilView() {
             </div>
 
             {/* Stats */}
-            <div className="card">
+            <div className="card profile-stats-card">
               <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                 <BarChartIcon size={16} /> Statistik Saya
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div className="profile-stats-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 {stats.map((s, i) => (
-                  <div key={i} style={{ background: "var(--color-bg)", borderRadius: "var(--radius-sm)", padding: "0.75rem", textAlign: "center" }}>
+                  <div key={i} className="profile-stat-box" style={{ background: "var(--color-bg)", borderRadius: "var(--radius-sm)", padding: "0.75rem", textAlign: "center" }}>
                     <div className="font-bold" style={{ fontSize: "1.1rem", color: "var(--color-primary)" }}>{s.value}</div>
                     <div className="text-xs text-muted">{s.label}</div>
                   </div>
