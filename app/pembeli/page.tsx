@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
+import { getProfileAction } from "@/app/actions";
 import DashboardView from "./components/DashboardView";
 import MarketplaceView from "./components/MarketplaceView";
 import WishlistView from "./components/WishlistView";
@@ -14,6 +15,8 @@ export default function PembeliMasterPage() {
   const [activeTab, setActiveTab] = useState("Beranda");
   const [selectedStoreFilter, setSelectedStoreFilter] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [userName, setUserName] = useState("");
 
   const updateCartCount = () => {
     if (typeof window !== "undefined") {
@@ -32,8 +35,21 @@ export default function PembeliMasterPage() {
     }
   };
 
+  const loadProfile = async () => {
+    try {
+      const data = await getProfileAction();
+      if (data) {
+        setUserName(data.name || "");
+        setAvatarUrl(data.avatar_url || "");
+      }
+    } catch (err) {
+      console.error("Failed to load profile in layout:", err);
+    }
+  };
+
   useEffect(() => {
     updateCartCount();
+    loadProfile();
     // Periodically sync or listen to storage changes
     window.addEventListener("storage", updateCartCount);
     return () => window.removeEventListener("storage", updateCartCount);
@@ -141,8 +157,23 @@ export default function PembeliMasterPage() {
             <span className="badge-dot" />
           </button>
 
-          <button className="avatar-btn" onClick={() => setActiveTab("Profil")} title="Profil Saya" style={{ border: "none", cursor: "pointer" }}>
-            AK
+          <button 
+            className="avatar-btn" 
+            onClick={() => setActiveTab("Profil")} 
+            title="Profil Saya" 
+            style={{ 
+              border: "none", 
+              cursor: "pointer",
+              overflow: "hidden",
+              padding: 0,
+              background: avatarUrl ? "transparent" : undefined
+            }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              userName ? userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "P"
+            )}
           </button>
         </div>
       </header>
@@ -251,7 +282,7 @@ export default function PembeliMasterPage() {
           )}
           {activeTab === "Pesanan" && <PesananView />}
           {activeTab === "Notifikasi" && <NotifikasiView />}
-          {activeTab === "Profil" && <ProfilView />}
+          {activeTab === "Profil" && <ProfilView onProfileUpdated={loadProfile} />}
           {activeTab === "Keranjang" && <CartView onCartUpdated={updateCartCount} onNavigateToOrders={() => setActiveTab("Pesanan")} />}
         </main>
       </div>

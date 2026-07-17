@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createOrderAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -282,20 +283,15 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
         const supplierTotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
         // Distribute discount and shipping proportionally (simplification)
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supplier,
-            items,
-            total: supplierTotal,
-            payment_method: selectedPayment.toUpperCase(),
-            status: "Belum Dibayar",
-            proof_uploaded: true,
-            proof_filename: paymentProof
-          })
+        return await createOrderAction({
+          supplier,
+          items,
+          total: supplierTotal,
+          payment_method: selectedPayment.toUpperCase(),
+          status: "Belum Dibayar",
+          proof_uploaded: true,
+          proof_filename: paymentProof
         });
-        return res.json();
       });
 
       await Promise.all(orderPromises);

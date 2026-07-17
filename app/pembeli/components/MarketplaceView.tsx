@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { getProductsAction, getWishlistAction, addToWishlistAction, removeFromWishlistAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -288,6 +289,7 @@ export default function MarketplaceView({
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeLocation, setActiveLocation] = useState("Semua Wilayah");
   const [selectedStore, setSelectedStore] = useState("");
   const [sortBy, setSortBy] = useState("terlaris");
@@ -318,16 +320,14 @@ export default function MarketplaceView({
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodRes, wlRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/wishlist")
+        const [prodData, wlData] = await Promise.all([
+          getProductsAction(),
+          getWishlistAction()
         ]);
-        const prodData = await prodRes.json();
-        const wlData = await wlRes.json();
 
-        setProducts(prodData);
-        setWishlistItems(wlData);
-        setWishlistedIds(wlData.map((w: any) => w.product_id));
+        setProducts(prodData || []);
+        setWishlistItems(wlData || []);
+        setWishlistedIds((wlData || []).map((w: any) => w.product_id));
       } catch (err) {
         console.error("Failed to load products:", err);
       } finally {
@@ -341,10 +341,8 @@ export default function MarketplaceView({
     const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
     if (existingItem) {
       try {
-        const res = await fetch(`/api/wishlist?id=${existingItem.id}`, {
-          method: "DELETE"
-        });
-        if (res.ok) {
+        const success = await removeFromWishlistAction(existingItem.id);
+        if (success) {
           setWishlistedIds(prev => prev.filter(id => id !== productId));
           setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
         }
@@ -355,18 +353,11 @@ export default function MarketplaceView({
     }
 
     try {
-      const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id: productId })
-      });
-      if (res.ok) {
-        const newItem = await res.json();
-        if (res.status === 201) {
-          setWishlistedIds(prev => [...prev, productId]);
-          setWishlistItems(prev => [...prev, newItem]);
-          alert("Berhasil ditambahkan ke wishlist!");
-        }
+      const newItem = await addToWishlistAction(productId);
+      if (newItem) {
+        setWishlistedIds(prev => [...prev, productId]);
+        setWishlistItems(prev => [...prev, newItem]);
+        alert("Berhasil ditambahkan ke wishlist!");
       }
     } catch (err) {
       console.error(err);
@@ -410,6 +401,16 @@ export default function MarketplaceView({
     ...p,
     store: productStoreMap[p.id] || "Koperasi Pelosok Pilihan"
   }));
+
+  // Filter by search query
+  if (searchQuery.trim() !== "") {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.category.toLowerCase().includes(q) ||
+      p.store.toLowerCase().includes(q)
+    );
+  }
 
   // Filter by category
   if (activeCategory !== "Semua") {
@@ -487,9 +488,65 @@ export default function MarketplaceView({
         </>
       )}
 
-      {/* Filter and Search Bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
+      {/* Search Bar */}
+      <div style={{ marginBottom: "1rem", position: "relative", width: "100%" }}>
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Cari produk berdasarkan nama, kategori, atau koperasi..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          id="marketplace-search-input"
+          style={{
+            width: "100%",
+            padding: "0.625rem 2.5rem 0.625rem 2.75rem",
+            fontSize: "0.9rem",
+            borderRadius: "var(--radius-md)",
+            border: "1.5px solid var(--color-border)",
+            height: "44px",
+            boxSizing: "border-box"
+          }}
+        />
+        <svg 
+          style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} 
+          width="16" 
+          height="16" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            style={{
+              position: "absolute",
+              right: "1rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--color-text-muted)",
+              fontSize: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0
+            }}
+          >
+            ×
+          </button>
+        )}
+      </div>
 
+      {/* Filter and Search Bar Controls */}
+      <div className="marketplace-controls">
         {/* Categories Chips */}
         <div className="category-scroll-strip" style={{ display: "flex", gap: "0.5rem" }}>
           {categories.map((cat) => (
@@ -505,8 +562,8 @@ export default function MarketplaceView({
         </div>
 
         {/* Location Dropdown and Sorting */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+        <div className="filter-row">
+          <div className="filter-select-group">
             <label className="text-xs text-muted" style={{ fontWeight: 600 }}>Wilayah:</label>
             <select
               className="form-input"
@@ -521,7 +578,7 @@ export default function MarketplaceView({
             </select>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <div className="filter-select-group">
             <label className="text-xs text-muted" style={{ fontWeight: 600 }}>Urutkan:</label>
             <select
               className="form-input"
@@ -653,7 +710,7 @@ export default function MarketplaceView({
                 </div>
                 <div className="product-price">Rp {p.price.toLocaleString("id-ID")}</div>
                 
-                <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.75rem" }}>
+                <div className="product-actions" style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.75rem" }}>
                   <button 
                     className="btn-secondary" 
                     onClick={(e) => {
