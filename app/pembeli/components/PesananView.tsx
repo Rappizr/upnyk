@@ -282,7 +282,7 @@ export default function PesananView() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
-                  {order.status === "Belum Dibayar" && (
+                  {order.status === "Belum Dibayar" && !order.proof_uploaded && (
                     <button onClick={() => handleUpdateStatus(order.id, "Diproses")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-bayar-${order.id}`}>
                       Bayar Sekarang
                     </button>
@@ -300,7 +300,7 @@ export default function PesananView() {
                   <button className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
                     Invoice
                   </button>
-                  {order.status !== "Belum Dibayar" && order.status !== "Dibatalkan" && (
+                  {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
                     <button 
                       onClick={() => setReceiptOrder(order)} 
                       className="btn-secondary" 
