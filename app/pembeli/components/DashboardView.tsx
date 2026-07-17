@@ -177,10 +177,11 @@ const coops = [
   },
 ];
 
-export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () => void }) {
+export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpdated?: () => void, onNavigate?: (tab: string, storeName?: string) => void }) {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -197,6 +198,7 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
 
         setProducts(prodData.slice(0, 4)); // Show top 4
         setOrders(orderData);
+        setWishlistItems(wlData);
         setWishlistCount(wlData.length);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -208,6 +210,22 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
   }, []);
 
   const handleAddToWishlist = async (productId: number) => {
+    const existingItem = wishlistItems.find((w: any) => w.product_id === productId);
+    if (existingItem) {
+      try {
+        const res = await fetch(`/api/wishlist?id=${existingItem.id}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          setWishlistItems(prev => prev.filter((w: any) => w.id !== existingItem.id));
+          setWishlistCount(prev => Math.max(0, prev - 1));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/wishlist", {
         method: "POST",
@@ -215,10 +233,12 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
         body: JSON.stringify({ product_id: productId })
       });
       if (res.ok) {
-        setWishlistCount(prev => prev + 1);
-        alert("Produk berhasil ditambahkan ke wishlist!");
-      } else {
-        alert("Produk sudah ada di wishlist!");
+        const newItem = await res.json();
+        if (res.status === 201) {
+          setWishlistItems(prev => [...prev, newItem]);
+          setWishlistCount(prev => prev + 1);
+          alert("Produk berhasil ditambahkan ke wishlist!");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -273,12 +293,22 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
             Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.
           </p>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <a href="/pembeli/marketplace" className="btn-primary" style={{ background: "white", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-explore-marketplace">
+            <button 
+              onClick={() => onNavigate?.("Marketplace")} 
+              className="btn-primary" 
+              style={{ background: "white", color: "var(--color-primary)", display: "inline-flex", alignItems: "center", gap: "0.5rem", border: "none", cursor: "pointer" }} 
+              id="btn-explore-marketplace"
+            >
               <CartIcon size={16} /> Jelajahi Marketplace
-            </a>
-            <a href="/pembeli/pesanan" className="btn-ghost" style={{ borderColor: "rgba(255,255,255,0.4)", color: "white", display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-lihat-pesanan">
+            </button>
+            <button 
+              onClick={() => onNavigate?.("Pesanan")} 
+              className="btn-ghost" 
+              style={{ borderColor: "rgba(255,255,255,0.4)", color: "white", display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "transparent", cursor: "pointer" }} 
+              id="btn-lihat-pesanan"
+            >
               <PackageIcon size={16} /> Lihat Pesanan Saya
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -345,9 +375,13 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
               <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.15rem" }}>
                 <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {c.rating} ({c.reviews} ulasan)
               </span>
-              <a href={`/pembeli/marketplace?store=${encodeURIComponent(c.name)}`} className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem", textDecoration: "none" }}>
+              <button 
+                onClick={() => onNavigate?.("Marketplace", c.name)} 
+                className="btn-secondary" 
+                style={{ fontSize: "0.75rem", padding: "0.35rem 0.75rem", border: "none", cursor: "pointer" }}
+              >
                 Kunjungi Toko
-              </a>
+              </button>
             </div>
           </div>
         ))}
@@ -361,45 +395,65 @@ export default function DashboardView({ onCartUpdated }: { onCartUpdated?: () =>
           </div>
           <div className="text-sm text-muted">Produk segar dan olahan unggulan langsung dari desa</div>
         </div>
-        <a href="/pembeli/marketplace" className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id="btn-lihat-semua-produk">
+        <button 
+          onClick={() => onNavigate?.("Marketplace")} 
+          className="btn-ghost" 
+          style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", cursor: "pointer", background: "transparent" }} 
+          id="btn-lihat-semua-produk"
+        >
           Lihat Semua →
-        </a>
+        </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "2rem", color: "var(--color-text-muted)" }}>Memuat produk rekomendasi...</div>
       ) : (
         <div className="product-grid" style={{ marginBottom: "1.75rem" }}>
-          {products.map((p) => (
-            <div key={p.id} className="product-card card-hover" id={`product-card-${p.id}`}>
-              <div className="product-img" style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IconRenderer type={p.icon_type} size={32} className="text-amber-600" />
+          {products.map((p) => {
+            const isWishlisted = wishlistItems.some((w: any) => w.product_id === p.id);
+            return (
+              <div key={p.id} className="product-card card-hover" id={`product-card-${p.id}`}>
+                <div className="product-img" style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IconRenderer type={p.icon_type} size={32} className="text-amber-600" />
+                </div>
+                <div className="product-body">
+                  <div className="product-name">{p.name}</div>
+                  <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
+                    <LocationIcon size={14} /> {p.origin}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
+                    <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
+                      {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
+                    </span>
+                    <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
+                      <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
+                    </span>
+                  </div>
+                  <div className="product-price">Rp {p.price.toLocaleString("id-ID")}/unit</div>
+                  <div className="product-footer">
+                    <button className="btn-primary" onClick={() => handleAddOrder(p)} style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-add-cart-${p.id}`}>
+                      <CartIcon size={14} /> + Beli
+                    </button>
+                    <button 
+                      className="icon-btn" 
+                      onClick={() => handleAddToWishlist(p.id)} 
+                      id={`btn-wishlist-${p.id}`} 
+                      title={isWishlisted ? "Hapus dari Wishlist" : "Tambah Wishlist"} 
+                      style={{ 
+                        display: "inline-flex", 
+                        alignItems: "center", 
+                        justifyContent: "center",
+                        color: isWishlisted ? "var(--color-alert)" : "var(--color-text-subtle)",
+                        background: isWishlisted ? "rgba(239, 68, 68, 0.08)" : "transparent"
+                      }}
+                    >
+                      <HeartIcon size={16} fill={isWishlisted ? "currentColor" : "none"} />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="product-body">
-                <div className="product-name">{p.name}</div>
-                <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
-                  <LocationIcon size={14} /> {p.origin}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
-                  <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
-                    {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
-                  </span>
-                  <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
-                    <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
-                  </span>
-                </div>
-                <div className="product-price">Rp {p.price.toLocaleString("id-ID")}/unit</div>
-                <div className="product-footer">
-                  <button className="btn-primary" onClick={() => handleAddOrder(p)} style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-add-cart-${p.id}`}>
-                    <CartIcon size={14} /> + Beli
-                  </button>
-                  <button className="icon-btn" onClick={() => handleAddToWishlist(p.id)} id={`btn-wishlist-${p.id}`} title="Tambah Wishlist" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                    <HeartIcon size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>

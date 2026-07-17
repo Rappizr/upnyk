@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 function UserIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -61,9 +61,11 @@ export default function ProfilView() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
 
@@ -75,6 +77,7 @@ export default function ProfilView() {
         setEmail(data.email || "");
         setPhone(data.phone || "");
         setBio(data.bio || "");
+        setAvatarUrl(data.avatar_url || "");
         setAddresses(data.addresses || []);
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -90,7 +93,7 @@ export default function ProfilView() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, bio })
+        body: JSON.stringify({ name, email, phone, bio, avatar_url: avatarUrl })
       });
       if (res.ok) {
         setSaved(true);
@@ -99,6 +102,34 @@ export default function ProfilView() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+      setAvatarUrl(base64String);
+
+      try {
+        await fetch("/api/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            bio,
+            avatar_url: base64String
+          })
+        });
+      } catch (err) {
+        console.error("Failed to upload avatar:", err);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const stats = [
@@ -122,15 +153,36 @@ export default function ProfilView() {
           {/* Left Panel */}
           <div>
             <div className="card" style={{ textAlign: "center", marginBottom: "1rem" }}>
-              <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.875rem", fontSize: "2rem", color: "white", fontWeight: 800 }}>
-                {name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "U"}
-              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarChange} 
+                accept="image/*" 
+                style={{ display: "none" }} 
+                id="file-ubah-foto"
+              />
+              {avatarUrl ? (
+                <img 
+                  src={avatarUrl} 
+                  alt="Foto Profil" 
+                  style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", margin: "0 auto 0.875rem", border: "2px solid var(--color-primary-light)" }} 
+                />
+              ) : (
+                <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.875rem", fontSize: "2rem", color: "white", fontWeight: 800 }}>
+                  {name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "U"}
+                </div>
+              )}
               <div className="font-bold text-lg">{name}</div>
               <div className="text-sm text-muted">{email}</div>
               <div className="badge badge-warning" style={{ marginTop: "0.625rem", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
                 <StarIcon size={12} fill="currentColor" /> Gold Member
               </div>
-              <button className="btn-ghost" style={{ width: "100%", marginTop: "1rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.35rem" }} id="btn-ubah-foto">
+              <button 
+                className="btn-ghost" 
+                onClick={() => fileInputRef.current?.click()} 
+                style={{ width: "100%", marginTop: "1rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.35rem" }} 
+                id="btn-ubah-foto"
+              >
                 <CameraIcon size={14} /> Ubah Foto
               </button>
             </div>
