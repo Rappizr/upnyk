@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getWishlistAction, removeFromWishlistAction } from "@/app/actions";
+import { getProductsAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -132,7 +132,7 @@ function IconRenderer({ type, size = 24, className = "", ...props }: any) {
 }
 
 // Product Store Mapping
-const productStoreMap: Record<number, string> = {
+const productStoreMap: Record<string, string> = {
   1: "Koperasi Tani Maju",
   2: "Koperasi Gayo Indah",
   3: "Koperasi Brebes Jaya",
@@ -156,8 +156,20 @@ export default function WishlistView({
   useEffect(() => {
     async function loadWishlist() {
       try {
-        const data = await getWishlistAction();
-        setItems(data || []);
+        const saved = localStorage.getItem("wishlistIds");
+        const wishIds: string[] = saved ? JSON.parse(saved) : [];
+
+        const products = await getProductsAction();
+        const wishlistProducts = products.filter((p: any) => wishIds.includes(p.id.toString()));
+
+        const formattedItems = wishlistProducts.map((p: any) => ({
+          id: p.id,
+          product: p,
+          price_dropped: false,
+          saved_at: "Baru saja"
+        }));
+
+        setItems(formattedItems);
       } catch (err) {
         console.error("Failed to load wishlist:", err);
       } finally {
@@ -167,12 +179,13 @@ export default function WishlistView({
     loadWishlist();
   }, []);
 
-  const remove = async (id: number) => {
+  const remove = (id: string) => {
     try {
-      const success = await removeFromWishlistAction(id);
-      if (success) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
-      }
+      const saved = localStorage.getItem("wishlistIds");
+      const wishIds: string[] = saved ? JSON.parse(saved) : [];
+      const updatedIds = wishIds.filter(itemId => itemId !== id.toString());
+      localStorage.setItem("wishlistIds", JSON.stringify(updatedIds));
+      setItems((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -202,10 +215,10 @@ export default function WishlistView({
             qty: 1
           });
         }
-        await fetch(`/api/wishlist?id=${item.id}`, { method: "DELETE" });
       }
 
       localStorage.setItem("cartItems", JSON.stringify(currentItems));
+      localStorage.setItem("wishlistIds", JSON.stringify([]));
       setItems([]);
       if (onCartUpdated) onCartUpdated();
     } catch (err) {
