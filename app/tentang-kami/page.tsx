@@ -195,7 +195,6 @@ export default function TentangKamiPage() {
             line-height: 1.3 !important;
           }
 
-          /* --- ULTRA MICRO VISION & MISSION SECTION FOR MOBILE --- */
           .vision-section {
             padding-left: 0.35rem !important;
             padding-right: 0.35rem !important;
@@ -207,25 +206,25 @@ export default function TentangKamiPage() {
             gap: 0.35rem !important;
           }
           .vision-grid .modern-card {
-            padding: 0.5rem !important; /* Memperkecil padding dalam agar teks tidak melipat berlebih */
+            padding: 0.5rem !important;
             border-radius: 0.5rem !important;
           }
           .vision-grid .modern-card div {
-            width: 26px !important; /* Perkecil pembungkus ikon */
+            width: 26px !important;
             height: 26px !important;
             border-radius: 6px !important;
             margin-bottom: 0.4rem !important;
           }
           .vision-grid .modern-card div svg {
-            width: 14px !important; /* Perkecil ikon Lucide */
+            width: 14px !important;
             height: 14px !important;
           }
           .vision-grid .modern-card h3 {
-            font-size: 0.65rem !important; /* Memperkecil judul "Visi Kami" & "Misi Kami" */
+            font-size: 0.65rem !important;
             margin-bottom: 0.3rem !important;
           }
           .vision-grid .modern-card p, .vision-grid .modern-card ul {
-            font-size: 0.45rem !important; /* Memperkecil teks deskripsi secara ekstrem agar pas */
+            font-size: 0.45rem !important;
             line-height: 1.3 !important;
           }
           .vision-grid .modern-card ul {
@@ -369,13 +368,13 @@ export default function TentangKamiPage() {
       }}>
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
           <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Konsep &amp; Infrastruktur Kepercayaan
+            Infrastruktur Kepercayaan Rantai Pasok
           </div>
           <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
-            Menyambungkan Potensi Rural <br />Lewat <span className="gradient-text">Rantai Pasok Adil</span>
+            Memutus Rantai Tengkulak, <br />Membangun <span className="gradient-text">Harga yang Adil</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.25rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "720px", marginLeft: "auto", marginRight: "auto", marginBottom: "4rem" }}>
-            PasarNusa mentransformasi peran perantara informal konvensional menjadi entitas koperasi digital transparan yang margin keuntungan dan sistem transaksinya dapat diaudit penuh oleh sistem.
+            PasarNusa mengubah peran perantara informal yang selama ini tidak transparan menjadi koperasi digital yang setiap margin, harga, dan transaksinya tercatat sistem dan dapat diaudit — dibuktikan lewat Indeks Harga Adil yang terukur, bukan sekadar janji.
           </p>
         </div>
 
@@ -397,29 +396,29 @@ export default function TentangKamiPage() {
             <span style={{ color: "#EF4444", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Akar Permasalahan</span>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em", lineHeight: 1.2 }}>Mengapa PasarNusa Harus Ada?</h2>
             <p style={{ color: "#64748B", fontSize: "1.05rem", lineHeight: 1.7, marginTop: "1rem" }}>
-              Tata niaga komoditas hulu di daerah pelosok masih terjebak dalam lingkaran rantai pasok informal yang merugikan para pelaku usaha lokal.
+              Empat kesenjangan berikut saling mengunci satu sama lain di lapangan — menjebak produsen pelosok dalam siklus ketergantungan pada tengkulak selama puluhan tahun.
             </p>
           </div>
           <div className="problem-grid-cards" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
             <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
               <AlertCircle size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
-              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Monopoli Tengkulak</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Produsen pelosok bergantung penuh pada tengkulak dengan harga sepihak yang tidak transparan.</p>
+              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Monopoli Harga Sepihak</h4>
+              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Produsen pelosok tidak tahu harga wajar komoditasnya, sehingga harga jual ditentukan sepihak oleh pembeli pertama yang datang ke lahan.</p>
             </div>
             <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
               <Layers size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
               <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Buta Rantai Pasok</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Pembeli akhir di kota tidak memiliki visibilitas asal-usul komoditas and kondisi asli produsen.</p>
+              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Pembeli di kota tidak memiliki visibilitas terhadap asal-usul komoditas dan kondisi nyata produsen di baliknya.</p>
             </div>
             <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
               <BarChart3 size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
               <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Nir-Jejak Transaksi</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Ketiadaan riwayat digital membuat produsen hulu kesulitan mengakses lembaga permodalan resmi.</p>
+              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Transaksi tunai tanpa catatan membuat produsen hulu tidak memiliki riwayat kredit untuk mengakses permodalan resmi.</p>
             </div>
             <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
               <MapPin size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
               <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Isolasi Geografis</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Keterbatasan informasi logistik menghambat intervensi kebijakan publik yang produktif.</p>
+              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Jarak ke pasar besar membuat biaya distribusi mandiri sering lebih mahal daripada selisih harga yang bisa diperoleh.</p>
             </div>
           </div>
         </div>
@@ -435,7 +434,7 @@ export default function TentangKamiPage() {
             </div>
             <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1.25rem", letterSpacing: "-0.02em" }}>Visi Kami</h3>
             <p style={{ color: "#475569", lineHeight: 1.8, fontSize: "1.1rem", marginTop: "0px", marginBottom: "0px" }}>
-              Menjadi pionir utama arsitektur digital rantai pasok rural di Indonesia yang andal, mewujudkan pemerataan ekonomi daerah, dan mempercepat kedaulatan digital komoditas lokal.
+              Menjadi infrastruktur rantai pasok rural paling dipercaya di Indonesia — tempat harga yang adil bukan lagi janji pemasaran, melainkan angka yang bisa dibuktikan setiap hari oleh sistemnya sendiri.
             </p>
           </div>
 
@@ -445,9 +444,9 @@ export default function TentangKamiPage() {
             </div>
             <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1.25rem", letterSpacing: "-0.02em" }}>Misi Kami</h3>
             <ul style={{ color: "#475569", lineHeight: 1.8, fontSize: "1.05rem", paddingLeft: "1.25rem", marginTop: "0px", marginBottom: "0px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <li>Memangkas rantai distribusi panjang demi mendongkrak margin pendapatan produsen hulu.</li>
-              <li>Menyediakan pengolahan data inventaris cerdas (*intelligent automated restocking*).</li>
-              <li>Membangun jalur logistik terintegrasi berbiaya rendah antar-klaster pedesaan.</li>
+              <li>Memangkas rantai distribusi tengkulak agar margin keuntungan kembali ke tangan produsen hulu, bukan perantara.</li>
+              <li>Menjadikan setiap transaksi sebagai jejak digital yang membuka akses produsen ke layanan keuangan formal.</li>
+              <li>Membangun jaringan logistik desa yang terpetakan dan dapat dilacak, memangkas biaya distribusi yang selama ini membebani produsen kecil.</li>
             </ul>
           </div>
 
@@ -457,25 +456,25 @@ export default function TentangKamiPage() {
       {/* SEKSI 3: CORE VALUES */}
       <section className="values-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "7rem", paddingBottom: "7rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         <div className="values-header" style={{ textAlign: "center", marginBottom: "5rem" }}>
-          <span style={{ color: "#2563EB", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Prinsip Kerja Produk</span>
-          <h2 style={{ fontSize: "2.75rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Pilar Nilai Tambah PasarNusa</h2>
+          <span style={{ color: "#2563EB", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Bukan Klaim, Tapi Sistem</span>
+          <h2 style={{ fontSize: "2.75rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Tiga Pilar yang Membuat Dampak Ini Nyata</h2>
         </div>
 
         <div className="values-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
           <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
             <div style={{ color: "#2563EB", marginBottom: "1.25rem" }}><Scale size={32} /></div>
             <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Indeks Harga Adil</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Indikator kuantitatif sistem penilai selisih harga platform terhadap tengkulak konvensional guna menjamin transparansi absolut.</p>
+            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Metrik kuantitatif yang membandingkan harga platform terhadap estimasi harga tengkulak — mengubah "harga adil" dari slogan menjadi angka yang bisa diverifikasi siapa pun.</p>
           </div>
           <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
             <div style={{ color: "#10B981", marginBottom: "1.25rem" }}><Zap size={32} /></div>
             <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Smart Restock Proaktif</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Sistem otomasi pengingat berkala berbasis siklus panen riil, memicu Admin Toko menjemput komoditas tepat waktu.</p>
+            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Sistem pengingat otomatis berbasis jadwal panen riil, memungkinkan koperasi digital menjemput hasil panen lebih dulu daripada tengkulak konvensional.</p>
           </div>
           <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
             <div style={{ color: "#818CF8", marginBottom: "1.25rem" }}><Globe2 size={32} /></div>
-            <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Escrow System Terbagi</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Sistem penahanan dana aman yang membagi hasil penjualan secara otomatis ke wallet dompet digital produsen hulu.</p>
+            <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Escrow System Terjamin</h4>
+            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Dana pembeli ditahan aman hingga barang diterima, baru dibagi otomatis ke dompet digital produsen dan toko — menghilangkan risiko gagal bayar sepenuhnya.</p>
           </div>
         </div>
       </section>
@@ -486,14 +485,14 @@ export default function TentangKamiPage() {
           <div className="team-header" style={{ textAlign: "center", marginBottom: "5rem" }}>
             <span style={{ color: "#38BDF8", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Di Balik Sistem</span>
             <h2 style={{ fontSize: "2.75rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Arsitek Platform</h2>
-            <p style={{ color: "#64748B", marginTop: "0.75rem", fontSize: "1.1rem" }}>Dikembangkan secara solid oleh tim berdedikasi tinggi demi kemajuan ekonomi digital nasional.</p>
+            <p style={{ color: "#64748B", marginTop: "0.75rem", fontSize: "1.1rem" }}>Tim kecil dengan target besar: membuktikan bahwa teknologi bisa memihak produsen kecil, bukan hanya pemain besar.</p>
           </div>
 
           <div className="team-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2.5rem", paddingLeft: "1rem", paddingRight: "1rem" }}>
             
             <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/raffi.jpeg" alt="Mukhammad Raffi Zabra" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
+                <img src="/raffi.png" alt="Mukhammad Raffi Zabra" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
                 <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #38BDF8, #2563EB)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
               </div>
               <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Mukhammad Raffi Zabra</h3>
@@ -506,7 +505,7 @@ export default function TentangKamiPage() {
 
             <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/ringga.jpg" alt="Ringga Budi Utama" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
+                <img src="/ringga.png" alt="Ringga Budi Utama" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
                 <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #10B981, #059669)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
               </div>
               <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Ringga Budi Utama</h3>
@@ -519,7 +518,7 @@ export default function TentangKamiPage() {
 
             <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
               <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/rizal.jpeg" alt="Afrizal Rafli Kusuma Wardana" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
+                <img src="/rizal.png" alt="Afrizal Rafli Kusuma Wardana" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
                 <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #F59E0B, #D97706)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
               </div>
               <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Afrizal Rafli Kusuma Wardana</h3>
