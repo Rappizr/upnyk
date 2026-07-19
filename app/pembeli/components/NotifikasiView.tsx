@@ -83,7 +83,11 @@ const typeColors: Record<string, string> = {
   Keamanan: "badge-danger",
 };
 
-export default function NotifikasiView() {
+interface NotifikasiViewProps {
+  onUpdateCount?: (count: number) => void;
+}
+
+export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
   const [activeTab, setActiveTab] = useState("Semua");
   const [notifs, setNotifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,34 +99,36 @@ export default function NotifikasiView() {
     try {
       const data = await getNotificationsAction();
       
-      // Let's prepend interactive reminders if not already present
-      const interactiveNotifs = [
-        {
-          id: 101,
-          type: "Transaksi",
-          icon_type: "star",
-          title: "Beri Ulasan Barang!",
-          body: "Pesanan Beras Merah Organik Anda dari Koperasi Tani Maju telah sampai. Berikan ulasan bintang dan bantu petani lokal pelosok!",
-          time: "10 menit lalu",
-          unread: true,
-          interactive: "review",
-          productName: "Beras Merah Organik",
-          supplier: "Koperasi Tani Maju"
-        },
-        {
-          id: 102,
-          type: "Transaksi",
-          icon_type: "package",
-          title: "Segera Bayar Pesanan Anda",
-          body: "Pesanan ORD-20250620-003 sebesar Rp 135.000 menunggu pembayaran Anda. Batas waktu pembayaran tinggal 2 jam lagi.",
-          time: "1 jam lalu",
-          unread: true,
-          interactive: "payment",
-          orderId: "ORD-20250620-003",
-          amount: 135000
-        },
-        ...(data || [])
-      ];
+      let interactiveNotifs: any[] = [];
+      if (data && data.length > 0) {
+        interactiveNotifs = [
+          {
+            id: 101,
+            type: "Transaksi",
+            icon_type: "star",
+            title: "Beri Ulasan Barang!",
+            body: "Pesanan Beras Merah Organik Anda dari Koperasi Tani Maju telah sampai. Berikan ulasan bintang dan bantu petani lokal pelosok!",
+            time: "10 menit lalu",
+            unread: true,
+            interactive: "review",
+            productName: "Beras Merah Organik",
+            supplier: "Koperasi Tani Maju"
+          },
+          {
+            id: 102,
+            type: "Transaksi",
+            icon_type: "package",
+            title: "Segera Bayar Pesanan Anda",
+            body: "Pesanan ORD-20250620-003 sebesar Rp 135.000 menunggu pembayaran Anda. Batas waktu pembayaran tinggal 2 jam lagi.",
+            time: "1 jam lalu",
+            unread: true,
+            interactive: "payment",
+            orderId: "ORD-20250620-003",
+            amount: 135000
+          },
+          ...data
+        ];
+      }
       setNotifs(interactiveNotifs);
     } catch (err) {
       console.error("Failed to load notifications:", err);
@@ -172,6 +178,10 @@ export default function NotifikasiView() {
 
   const filtered = activeTab === "Semua" ? notifs : notifs.filter((n) => n.type === activeTab);
   const unreadCount = notifs.filter((n) => n.unread).length;
+
+  useEffect(() => {
+    onUpdateCount?.(unreadCount);
+  }, [unreadCount, onUpdateCount]);
 
   return (
     <>

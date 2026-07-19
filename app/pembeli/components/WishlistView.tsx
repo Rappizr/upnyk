@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getProductsAction } from "@/app/actions";
+import { getWishlistAction, removeFromWishlistAction, addToCartAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -156,15 +156,10 @@ export default function WishlistView({
   useEffect(() => {
     async function loadWishlist() {
       try {
-        const saved = localStorage.getItem("wishlistIds");
-        const wishIds: string[] = saved ? JSON.parse(saved) : [];
-
-        const products = await getProductsAction();
-        const wishlistProducts = products.filter((p: any) => wishIds.includes(p.id.toString()));
-
-        const formattedItems = wishlistProducts.map((p: any) => ({
-          id: p.id,
-          product: p,
+        const wishData = await getWishlistAction();
+        const formattedItems = (wishData || []).map((w: any) => ({
+          id: w.product_id,
+          product: w.product,
           price_dropped: false,
           saved_at: "Baru saja"
         }));
@@ -179,13 +174,14 @@ export default function WishlistView({
     loadWishlist();
   }, []);
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     try {
-      const saved = localStorage.getItem("wishlistIds");
-      const wishIds: string[] = saved ? JSON.parse(saved) : [];
-      const updatedIds = wishIds.filter(itemId => itemId !== id.toString());
-      localStorage.setItem("wishlistIds", JSON.stringify(updatedIds));
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      const success = await removeFromWishlistAction(id);
+      if (success) {
+        setItems((prev) => prev.filter((i) => i.id !== id));
+      } else {
+        alert("Gagal menghapus dari wishlist.");
+      }
     } catch (err) {
       console.error(err);
     }
@@ -193,32 +189,13 @@ export default function WishlistView({
 
   const handleCheckoutAll = async () => {
     try {
-      const saved = localStorage.getItem("cartItems");
-      let currentItems = [];
-      if (saved) {
-        try {
-          currentItems = JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
       for (const item of items) {
         const p = item.product;
-        const existingIdx = currentItems.findIndex((ci: any) => ci.product.id === p.id);
-        if (existingIdx > -1) {
-          currentItems[existingIdx].qty += 1;
-        } else {
-          currentItems.push({
-            id: Date.now() + Math.random(),
-            product: p,
-            qty: 1
-          });
-        }
+        if (!p) continue;
+        await addToCartAction(p.id, 1);
+        await removeFromWishlistAction(item.product_id || p.id);
       }
 
-      localStorage.setItem("cartItems", JSON.stringify(currentItems));
-      localStorage.setItem("wishlistIds", JSON.stringify([]));
       setItems([]);
       if (onCartUpdated) onCartUpdated();
     } catch (err) {
@@ -290,28 +267,7 @@ export default function WishlistView({
                     <button 
                       className="btn-secondary" 
                       onClick={async () => {
-                        const saved = localStorage.getItem("cartItems");
-                        let currentItems = [];
-                        if (saved) {
-                          try {
-                            currentItems = JSON.parse(saved);
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }
-
-                        const existingIdx = currentItems.findIndex((ci: any) => ci.product.id === p.id);
-                        if (existingIdx > -1) {
-                          currentItems[existingIdx].qty += 1;
-                        } else {
-                          currentItems.push({
-                            id: Date.now() + Math.random(),
-                            product: p,
-                            qty: 1
-                          });
-                        }
-
-                        localStorage.setItem("cartItems", JSON.stringify(currentItems));
+                        await addToCartAction(p.id, 1);
                         await remove(item.id);
                         if (onCartUpdated) onCartUpdated();
                       }}

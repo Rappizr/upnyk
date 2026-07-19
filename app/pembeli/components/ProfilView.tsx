@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/lib/db";
 import { getProfileAction, updateProfileAction, getOrdersAction } from "@/app/actions";
 function UserIcon({ size = 24, className = "", ...props }: any) {
   return (
@@ -61,8 +62,9 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [alamat, setAlamat] = useState("");
+  const [tanggalLahir, setTanggalLahir] = useState("");
   const [addresses, setAddresses] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,16 +74,23 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
   useEffect(() => {
     async function loadProfile() {
       try {
+        let userId = typeof window !== "undefined" ? localStorage.getItem('supabase_user_id') : null;
+        if (!userId) {
+          const { data: { user } } = await supabase.auth.getUser();
+          userId = user?.id || null;
+        }
+
         const [data, ordersData] = await Promise.all([
-          getProfileAction(),
+          getProfileAction(userId || undefined),
           getOrdersAction()
         ]);
         if (data) {
           setName(data.name || "");
           setEmail(data.email || "");
           setPhone(data.phone || "");
-          setBio(data.bio || "");
           setAvatarUrl(data.avatar_url || "");
+          setAlamat(data.alamat || "");
+          setTanggalLahir(data.tanggal_lahir || "");
           setAddresses(data.addresses || []);
         }
         setOrders(ordersData || []);
@@ -96,14 +105,26 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
 
   const handleSave = async () => {
     try {
-      const updated = await updateProfileAction({ name, email, phone, bio, avatar_url: avatarUrl });
-      if (updated) {
+      let userId = typeof window !== "undefined" ? localStorage.getItem('supabase_user_id') : null;
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || null;
+      }
+
+      const updated = await updateProfileAction({
+        id: userId || undefined,
+        name, email, phone, avatar_url: avatarUrl, alamat, tanggal_lahir: tanggalLahir
+      });
+      if (updated?.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
         onProfileUpdated?.();
+      } else {
+        alert(updated?.error || "Gagal menyimpan perubahan. Silakan coba lagi.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert("Terjadi kesalahan: " + (err?.message || String(err)));
     }
   };
 
@@ -117,18 +138,29 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
       setAvatarUrl(base64String);
 
       try {
+        let userId = typeof window !== "undefined" ? localStorage.getItem('supabase_user_id') : null;
+        if (!userId) {
+          const { data: { user } } = await supabase.auth.getUser();
+          userId = user?.id || null;
+        }
+
         const updated = await updateProfileAction({
+          id: userId || undefined,
           name,
           email,
           phone,
-          bio,
-          avatar_url: base64String
+          avatar_url: base64String,
+          alamat,
+          tanggal_lahir: tanggalLahir
         });
-        if (updated) {
+        if (updated?.success) {
           onProfileUpdated?.();
+        } else {
+          alert(updated?.error || "Gagal memperbarui foto profil.");
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to upload avatar:", err);
+        alert("Gagal mengunggah foto profil: " + (err?.message || String(err)));
       }
     };
     reader.readAsDataURL(file);
@@ -246,12 +278,19 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
                   </div>
                   <div className="form-group">
                     <label className="form-label">Tanggal Lahir</label>
-                    <input className="form-input" type="date" defaultValue="1995-08-17" id="input-dob" />
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={tanggalLahir}
+                      onChange={(e) => setTanggalLahir(e.target.value)}
+                      id="input-dob"
+                    />
                   </div>
                 </div>
+
                 <div className="form-group">
-                  <label className="form-label">Tentang Saya</label>
-                  <textarea className="form-input" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} id="input-bio" style={{ resize: "vertical" }} />
+                  <label className="form-label">Alamat Lengkap</label>
+                  <textarea className="form-input" rows={3} value={alamat} onChange={(e) => setAlamat(e.target.value)} id="input-alamat" placeholder="Masukkan alamat lengkap Anda untuk pengiriman..." style={{ resize: "vertical" }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                   <button className="btn-primary" onClick={handleSave} id="btn-simpan-biodata" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
@@ -265,26 +304,31 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
             {/* Alamat */}
             {tab === "alamat" && (
               <div>
-                {addresses.map((addr) => (
-                  <div key={addr.id} className="card" style={{ marginBottom: "0.875rem", borderLeft: addr.default ? "3px solid var(--color-primary)" : undefined }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                          <span className="font-semibold text-sm">{addr.label}</span>
-                          {addr.default && <span className="badge badge-info">Utama</span>}
+                {addresses.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "2rem", color: "var(--color-text-muted)", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", marginBottom: "0.875rem" }}>
+                    Belum ada alamat terdaftar. Silakan isi alamat utama Anda di tab <strong>Biodata</strong>.
+                  </div>
+                ) : (
+                  addresses.map((addr) => (
+                    <div key={addr.id} className="card" style={{ marginBottom: "0.875rem", borderLeft: addr.default ? "3px solid var(--color-primary)" : undefined }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                            <span className="font-semibold text-sm">{addr.label}</span>
+                            {addr.default && <span className="badge badge-info">Utama</span>}
+                          </div>
+                          <div className="text-sm">{addr.address}</div>
+                          <div className="text-sm text-muted">{addr.city}</div>
                         </div>
-                        <div className="text-sm">{addr.address}</div>
-                        <div className="text-sm text-muted">{addr.city}</div>
-                      </div>
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.3rem 0.625rem" }} id={`btn-edit-addr-${addr.id}`}>Edit</button>
-                        {!addr.default && <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.3rem 0.625rem", color: "var(--color-alert)" }} id={`btn-del-addr-${addr.id}`}>Hapus</button>}
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button className="btn-ghost" style={{ fontSize: "0.75rem", padding: "0.3rem 0.625rem" }} id={`btn-edit-addr-${addr.id}`} onClick={() => setTab("biodata")}>Edit di Biodata</button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <button className="btn-ghost" style={{ width: "100%" }} id="btn-tambah-alamat">
-                  + Tambah Alamat Baru
+                  ))
+                )}
+                <button className="btn-ghost" style={{ width: "100%" }} id="btn-tambah-alamat" onClick={() => setTab("biodata")}>
+                  + Tambah / Ubah Alamat Utama
                 </button>
               </div>
             )}

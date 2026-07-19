@@ -186,32 +186,36 @@ const coops = [
   },
 ];
 
-export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpdated?: () => void, onNavigate?: (tab: string, storeName?: string) => void }) {
+export default function DashboardView({ onCartUpdated, onNavigate, currentUserName }: { onCartUpdated?: () => void, onNavigate?: (tab: string, storeName?: string) => void, currentUserName?: string }) {
   const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
-  const [profileName, setProfileName] = useState("");
+  const [profileName, setProfileName] = useState(currentUserName || "");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (currentUserName) {
+      setProfileName(currentUserName);
+    }
+  }, [currentUserName]);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodData, orderData, profileData] = await Promise.all([
+        const [prodData, orderData, profileData, wlData] = await Promise.all([
           getProductsAction(),
           getOrdersAction(),
-          getProfileAction()
+          getProfileAction(),
+          getWishlistAction()
         ]);
 
         setProducts(prodData.slice(0, 4)); // Show top 4
         setOrders(orderData || []);
-        setProfileName(profileData ? (profileData.name || "Pengguna") : "Pengguna");
+        setProfileName(currentUserName || (profileData ? (profileData.name || "Pengguna") : "Pengguna"));
 
-        // Load wishlist from localStorage
-        const saved = localStorage.getItem("wishlistIds");
-        const wishIds = saved ? JSON.parse(saved) : [];
-        setWishlistItems(wishIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
-        setWishlistCount(wishIds.length);
+        setWishlistItems(wlData || []);
+        setWishlistCount(wlData ? wlData.length : 0);
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -221,24 +225,29 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
     loadData();
   }, []);
 
-  const handleAddToWishlist = (productId: string) => {
+  const handleAddToWishlist = async (productId: string) => {
     try {
-      const saved = localStorage.getItem("wishlistIds");
-      const wishIds: string[] = saved ? JSON.parse(saved) : [];
+      const isWishlisted = wishlistItems.some((w: any) => w.product_id === productId);
       
-      if (wishIds.includes(productId)) {
-        // Hapus dari wishlist
-        const newIds = wishIds.filter(id => id !== productId);
-        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
-        setWishlistItems(newIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
-        setWishlistCount(newIds.length);
+      if (isWishlisted) {
+        // Hapus dari wishlist database
+        const success = await removeFromWishlistAction(productId);
+        if (success) {
+          setWishlistItems(prev => prev.filter((w: any) => w.product_id !== productId));
+          setWishlistCount(prev => prev - 1);
+        } else {
+          alert("Gagal menghapus dari wishlist.");
+        }
       } else {
-        // Tambah ke wishlist
-        const newIds = [...wishIds, productId];
-        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
-        setWishlistItems(newIds.map((id: string) => ({ id: id + '-wl', product_id: id })));
-        setWishlistCount(newIds.length);
-        alert("Produk berhasil ditambahkan ke wishlist!");
+        // Tambah ke wishlist database
+        const res = await addToWishlistAction(productId);
+        if (res) {
+          setWishlistItems(prev => [...prev, { id: res.id, product_id: productId }]);
+          setWishlistCount(prev => prev + 1);
+          alert("Produk berhasil ditambahkan ke wishlist!");
+        } else {
+          alert("Gagal menambahkan ke wishlist.");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -287,7 +296,7 @@ export default function DashboardView({ onCartUpdated, onNavigate }: { onCartUpd
             <StarIcon size={14} fill="currentColor" /> Platform UMKM #1 Indonesia
           </div>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 800, marginBottom: "0.5rem", lineHeight: 1.3 }}>
-            Selamat Datang, {loading ? "..." : profileName}!
+            Selamat Datang, {profileName || (loading ? "..." : "Pengguna")}!
           </h1>
           <p style={{ opacity: 0.85, maxWidth: "460px", marginBottom: "1.25rem", fontSize: "0.9375rem" }}>
             Temukan produk unggulan dari ribuan UMKM lokal terpercaya dan nikmati transparansi rantai pasok dari hulu ke hilir.

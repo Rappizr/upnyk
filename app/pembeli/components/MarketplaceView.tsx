@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { getProductsAction, getWishlistAction, addToWishlistAction, removeFromWishlistAction } from "@/app/actions";
+import { getProductsAction, getWishlistAction, addToWishlistAction, removeFromWishlistAction, addToCartAction } from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -351,37 +351,28 @@ export default function MarketplaceView({
     loadData();
   }, []);
 
-  // Load wishlist dari localStorage (karena tabel keranjang Supabase tidak mendukung produk_id)
-  useEffect(() => {
+  const handleAddToWishlist = async (productId: string) => {
     try {
-      const saved = localStorage.getItem("wishlistIds");
-      if (saved) {
-        const ids = JSON.parse(saved);
-        setWishlistedIds(ids);
-        setWishlistItems(ids.map((id: string) => ({ id: id + '-wl', product_id: id })));
-      }
-    } catch (e) {
-      console.error("Failed to load wishlist from localStorage:", e);
-    }
-  }, []);
-
-  const handleAddToWishlist = (productId: string) => {
-    // Wishlist disimpan di localStorage karena tabel keranjang Supabase tidak memiliki produk_id
-    try {
-      const savedIds: string[] = wishlistedIds;
+      const savedIds = wishlistedIds;
       if (savedIds.includes(productId)) {
-        // Hapus dari wishlist
-        const newIds = savedIds.filter(id => id !== productId);
-        setWishlistedIds(newIds);
-        setWishlistItems(prev => prev.filter((w: any) => w.product_id !== productId));
-        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
+        // Hapus dari wishlist database
+        const success = await removeFromWishlistAction(productId);
+        if (success) {
+          setWishlistedIds(prev => prev.filter(id => id !== productId));
+          setWishlistItems(prev => prev.filter((w: any) => w.product_id !== productId));
+        } else {
+          alert("Gagal menghapus dari wishlist.");
+        }
       } else {
-        // Tambah ke wishlist
-        const newIds = [...savedIds, productId];
-        setWishlistedIds(newIds);
-        setWishlistItems(prev => [...prev, { id: productId + '-wl', product_id: productId }]);
-        localStorage.setItem("wishlistIds", JSON.stringify(newIds));
-        alert("Berhasil ditambahkan ke wishlist!");
+        // Tambah ke wishlist database
+        const res = await addToWishlistAction(productId);
+        if (res) {
+          setWishlistedIds(prev => [...prev, productId]);
+          setWishlistItems(prev => [...prev, { id: res.id, product_id: productId }]);
+          alert("Berhasil ditambahkan ke wishlist!");
+        } else {
+          alert("Gagal menambahkan ke wishlist.");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -390,30 +381,9 @@ export default function MarketplaceView({
 
 
 
-  const handleAddOrder = (p: any, qty = 1) => {
+  const handleAddOrder = async (p: any, qty = 1) => {
     try {
-      const saved = localStorage.getItem("cartItems");
-      let currentItems = [];
-      if (saved) {
-        try {
-          currentItems = JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      const existingIdx = currentItems.findIndex((item: any) => item.product.id === p.id);
-      if (existingIdx > -1) {
-        currentItems[existingIdx].qty += qty;
-      } else {
-        currentItems.push({
-          id: Date.now() + Math.random(),
-          product: p,
-          qty: qty
-        });
-      }
-
-      localStorage.setItem("cartItems", JSON.stringify(currentItems));
+      await addToCartAction(p.id, qty);
       if (onCartUpdated) onCartUpdated();
     } catch (err) {
       console.error(err);

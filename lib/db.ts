@@ -43,7 +43,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // ─────────────────────────────────────────────
 export async function getProducts(): Promise<any[]> {
   const { data, error } = await supabase
-    .from('produk')
+    .from('marketplace')
     .select(`
       id,
       nama,
@@ -54,7 +54,8 @@ export async function getProducts(): Promise<any[]> {
       foto,
       produsen_id,
       kategori_id,
-      kategori:kategori_id ( nama )
+      kategori:kategori_id ( nama ),
+      produsen:produsen_id ( nama_usaha, desa, kabupaten )
     `)
     .order('created_at', { ascending: false });
 
@@ -73,11 +74,11 @@ export async function getProducts(): Promise<any[]> {
     image: p.foto || null,
     kategori_id: p.kategori_id,
     produsen_id: p.produsen_id,
-    origin: 'Indonesia',
+    origin: p.produsen ? `${p.produsen.desa || ''}, ${p.produsen.kabupaten || ''}`.replace(/^,\s*/, '') : 'Indonesia',
     rating: 4.5,
     stock: 'Tersedia',
     icon_type: resolveIconType(p.kategori?.nama || null, p.nama || ''),
-    supplier: 'Koperasi Lokal',
+    supplier: p.produsen?.nama_usaha || 'Koperasi Lokal',
   }));
 }
 
@@ -95,7 +96,7 @@ export async function saveProduct(product: any): Promise<any> {
 
   if (product.id) {
     const { data, error } = await supabase
-      .from('produk')
+      .from('marketplace')
       .update(payload)
       .eq('id', product.id)
       .select()
@@ -104,7 +105,7 @@ export async function saveProduct(product: any): Promise<any> {
     return data;
   } else {
     const { data, error } = await supabase
-      .from('produk')
+      .from('marketplace')
       .insert(payload)
       .select()
       .single();
@@ -117,19 +118,16 @@ export async function saveProduct(product: any): Promise<any> {
 // PROFILE PEMBELI (tabel: profiles)
 // Auth: Gunakan user ID dari Supabase session
 // ─────────────────────────────────────────────
-export async function getProfile(): Promise<any> {
-  const userId = await getCurrentUserId();
+export async function getProfile(userIdParam?: string): Promise<any> {
+  const userId = userIdParam || await getCurrentUserId();
+  if (!userId) return null;
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('profiles')
-    .select('id, nama, email, phone, avatar_url, created_at, updated_at');
-
-  // Jika ada user yang login, ambil profil miliknya
-  if (userId) {
-    query = query.eq('id', userId);
-  }
-
-  const { data, error } = await query.limit(1).maybeSingle();
+    .select('id, nama, email, phone, avatar_url, role, created_at, updated_at')
+    .eq('id', userId)
+    .limit(1)
+    .maybeSingle();
 
   if (error) {
     console.error('getProfile error:', error.message);
@@ -138,19 +136,54 @@ export async function getProfile(): Promise<any> {
 
   if (!data) return null;
 
+  let alamat = '';
+  let no_hp = data.phone || '';
+
+  if (data.role === 'pembeli') {
+    const { data: pembeliData, error: pembeliError } = await supabase
+      .from('pembeli')
+      .select('alamat, no_hp, email, tanggal_lahir')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!pembeliError && pembeliData) {
+      alamat = pembeliData.alamat || '';
+      if (pembeliData.no_hp) no_hp = pembeliData.no_hp;
+
+      return {
+        id: data.id,
+        name: data.nama || '',
+        email: pembeliData.email || data.email || '',
+        phone: no_hp,
+        alamat: alamat,
+        role: data.role || '',
+        avatar_url: data.avatar_url || '',
+        bio: '',
+        tanggal_lahir: pembeliData.tanggal_lahir || '',
+        addresses: alamat ? [{ id: 'main', label: 'Alamat Utama', address: alamat, city: '', default: true }] : [],
+      };
+    }
+  }
+
   return {
     id: data.id,
     name: data.nama || '',
     email: data.email || '',
-    phone: data.phone || '',
+    phone: no_hp,
+    alamat: alamat,
+    role: data.role || '',
     avatar_url: data.avatar_url || '',
     bio: '',
-    addresses: [],
+    tanggal_lahir: '',
+    addresses: alamat ? [{ id: 'main', label: 'Alamat Utama', address: alamat, city: '', default: true }] : [],
   };
 }
 
-export async function updateProfile(profileData: any): Promise<any> {
+export async function updateProfile(profileData: any): Promise<{ success: boolean; error?: string; profile?: any }> {
   const userId = await getCurrentUserId();
+  const targetId = profileData.id || userId;
+
+  if (!targetId) return { success: false, error: 'User ID tidak ditemukan (belum login)' };
 
   const payload: any = {};
   if (profileData.name !== undefined) payload.nama = profileData.name;
@@ -158,32 +191,48 @@ export async function updateProfile(profileData: any): Promise<any> {
   if (profileData.phone !== undefined) payload.phone = profileData.phone;
   if (profileData.avatar_url !== undefined) payload.avatar_url = profileData.avatar_url;
 
-  const targetId = profileData.id || userId;
-
-  if (targetId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({ id: targetId, ...payload })
-      .select()
-      .single();
-    if (error) { console.error('updateProfile error:', error.message); return null; }
-    return data;
-  }
-
-  // Fallback: insert new row
-  const { data, error } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
-    .insert(payload)
+    .upsert({ id: targetId, ...payload })
     .select()
     .single();
-  if (error) { console.error('updateProfile insert error:', error.message); return null; }
-  return data;
+
+  if (error) {
+    console.error('updateProfile error:', error.message);
+    return { success: false, error: 'Gagal memperbarui tabel profiles: ' + error.message };
+  }
+
+  // Jika profile role-nya pembeli, upsert ke tabel pembeli
+  if (profile && profile.role === 'pembeli') {
+    const pembeliPayload: any = {
+      id: targetId,
+      profile_id: targetId,
+      nama: profileData.name || profile.nama
+    };
+
+    if (profileData.alamat !== undefined) pembeliPayload.alamat = profileData.alamat || null;
+    if (profileData.phone !== undefined)  pembeliPayload.no_hp  = profileData.phone || null;
+    if (profileData.email !== undefined) pembeliPayload.email = profileData.email || null;
+    
+    if (profileData.tanggal_lahir !== undefined) {
+      pembeliPayload.tanggal_lahir = profileData.tanggal_lahir && profileData.tanggal_lahir.trim() !== ""
+        ? profileData.tanggal_lahir
+        : null;
+    }
+
+    const { error: pembeliErr } = await supabase
+      .from('pembeli')
+      .upsert(pembeliPayload);
+
+    if (pembeliErr) {
+      console.error('updateProfile pembeli upsert error:', pembeliErr.message);
+      return { success: false, error: 'Gagal memperbarui data pembeli: ' + pembeliErr.message };
+    }
+  }
+
+  return { success: true, profile };
 }
 
-// ─────────────────────────────────────────────
-// PESANAN (tabel: pesanan + detail_pesanan)
-// Auth: Filter by pembeli_id (user ID dari session)
-// ─────────────────────────────────────────────
 export async function getOrders(): Promise<any[]> {
   const userId = await getCurrentUserId();
 
@@ -196,6 +245,9 @@ export async function getOrders(): Promise<any[]> {
       total,
       kode_pesanan,
       alamat_pengiriman,
+      supplier,
+      metode_pembayaran,
+      bukti_pembayaran,
       created_at,
       detail_pesanan (
         id,
@@ -203,7 +255,7 @@ export async function getOrders(): Promise<any[]> {
         jumlah,
         harga,
         subtotal,
-        produk:produk_id ( id, nama, foto, kategori_id, kategori:kategori_id(nama) )
+        marketplace:produk_id ( id, nama, foto, kategori_id, kategori:kategori_id(nama) )
       )
     `)
     .order('created_at', { ascending: false });
@@ -226,16 +278,17 @@ export async function getOrders(): Promise<any[]> {
     date: new Date(o.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
     status: o.status || 'Belum Dibayar',
     total: o.total || 0,
-    supplier: 'Koperasi Lokal',
-    payment_method: 'QRIS',
-    proof_uploaded: false,
+    supplier: o.supplier || 'Koperasi Lokal',
+    payment_method: o.metode_pembayaran || 'QRIS',
+    proof_uploaded: !!o.bukti_pembayaran,
+    proof_filename: o.bukti_pembayaran || '',
     items: (o.detail_pesanan || []).map((d: any) => ({
       id: d.id,
       produk_id: d.produk_id,
-      name: d.produk?.nama || 'Produk',
+      name: d.marketplace?.nama || 'Produk',
       qty: d.jumlah || 1,
       price: d.harga || 0,
-      icon_type: resolveIconType(d.produk?.kategori?.nama || null, d.produk?.nama || ''),
+      icon_type: resolveIconType(d.marketplace?.kategori?.nama || null, d.marketplace?.nama || ''),
     })),
   }));
 }
@@ -252,6 +305,9 @@ export async function createOrder(orderData: any): Promise<any> {
       total: orderData.total || 0,
       kode_pesanan: `ORD-${Date.now()}`,
       alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
+      supplier: orderData.supplier || null,
+      metode_pembayaran: orderData.payment_method || null,
+      bukti_pembayaran: orderData.proof_filename || null,
     })
     .select()
     .single();
@@ -281,6 +337,18 @@ export async function createOrder(orderData: any): Promise<any> {
     }
   }
 
+  // 3. Insert notifikasi ke database jika user terautentikasi
+  if (userId || orderData.pembeli_id) {
+    const targetUserId = userId || orderData.pembeli_id;
+    await supabase.from('notifikasi').insert({
+      pembeli_id: targetUserId,
+      judul: 'Pesanan Baru Dibuat',
+      isi: `Pesanan ${pesanan.kode_pesanan} sebesar Rp ${pesanan.total.toLocaleString('id-ID')} telah berhasil dibuat. Silakan lakukan pembayaran.`,
+      tipe: 'Transaksi',
+      dibaca: false
+    });
+  }
+
   return pesanan;
 }
 
@@ -288,9 +356,11 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
   // Coba update via kode_pesanan dulu
   const { data: byKode } = await supabase
     .from('pesanan')
-    .select('id')
+    .select('id, pembeli_id, kode_pesanan, total')
     .eq('kode_pesanan', orderId)
     .maybeSingle();
+
+  let targetOrder = byKode;
 
   if (byKode) {
     const { error } = await supabase
@@ -298,15 +368,50 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
       .update({ status })
       .eq('kode_pesanan', orderId);
     if (error) { console.error('updateOrderStatus error:', error.message); return false; }
-    return true;
+  } else {
+    // Fallback: update via id UUID
+    const { data: byId } = await supabase
+      .from('pesanan')
+      .select('id, pembeli_id, kode_pesanan, total')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    targetOrder = byId;
+
+    if (byId) {
+      const { error } = await supabase
+        .from('pesanan')
+        .update({ status })
+        .eq('id', orderId);
+      if (error) { console.error('updateOrderStatus fallback error:', error.message); return false; }
+    }
   }
 
-  // Fallback: update via id UUID
-  const { error } = await supabase
-    .from('pesanan')
-    .update({ status })
-    .eq('id', orderId);
-  if (error) { console.error('updateOrderStatus fallback error:', error.message); return false; }
+  // Kirim notifikasi pembaruan status
+  if (targetOrder && targetOrder.pembeli_id) {
+    let judul = 'Status Pesanan Diperbarui';
+    let isi = `Status pesanan ${targetOrder.kode_pesanan} Anda telah diperbarui menjadi ${status}.`;
+
+    if (status === 'Diproses') {
+      judul = 'Pembayaran Diterima';
+      isi = `Pembayaran untuk pesanan ${targetOrder.kode_pesanan} telah kami terima dan sedang diproses.`;
+    } else if (status === 'Dikirim') {
+      judul = 'Pesanan Dikirim';
+      isi = `Pesanan ${targetOrder.kode_pesanan} Anda sedang dalam perjalanan oleh kurir.`;
+    } else if (status === 'Selesai') {
+      judul = 'Pesanan Selesai';
+      isi = `Pesanan ${targetOrder.kode_pesanan} telah selesai diterima. Terima kasih telah mendukung produk koperasi pelosok!`;
+    }
+
+    await supabase.from('notifikasi').insert({
+      pembeli_id: targetOrder.pembeli_id,
+      judul,
+      isi,
+      tipe: 'Transaksi',
+      dibaca: false
+    });
+  }
+
   return true;
 }
 
@@ -314,34 +419,117 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 // WISHLIST (localStorage — tabel keranjang tidak memiliki produk_id)
 // ─────────────────────────────────────────────
 export async function getWishlist(): Promise<any[]> {
-  // Wishlist disimpan di localStorage oleh client component
-  // Fungsi ini mengembalikan array kosong — state dikelola di komponen
-  return [];
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('wishlist')
+    .select(`
+      id,
+      produk_id,
+      marketplace:produk_id (
+        id,
+        nama,
+        harga,
+        deskripsi,
+        satuan,
+        berat,
+        foto,
+        produsen_id,
+        kategori_id,
+        kategori:kategori_id ( nama )
+      )
+    `)
+    .eq('pembeli_id', userId);
+
+  if (error) {
+    console.error('getWishlist error:', error.message);
+    return [];
+  }
+
+  return (data || []).map((w: any) => ({
+    id: w.id,
+    product_id: w.produk_id,
+    product: w.marketplace ? {
+      id: w.marketplace.id,
+      name: w.marketplace.nama || '',
+      price: w.marketplace.harga || 0,
+      description: w.marketplace.deskripsi || '',
+      unit: w.marketplace.satuan || 'kg',
+      weight: w.marketplace.berat || 0,
+      image: w.marketplace.foto || null,
+      kategori_id: w.marketplace.kategori_id,
+      produsen_id: w.marketplace.produsen_id,
+      origin: 'Indonesia',
+      rating: 4.5,
+      stock: 'Tersedia',
+      icon_type: resolveIconType(w.marketplace.kategori?.nama || null, w.marketplace.nama || ''),
+      supplier: 'Koperasi Lokal',
+    } : null
+  })).filter((w: any) => w.product !== null);
 }
 
-export async function addToWishlist(productId: number): Promise<any> {
-  return { id: Date.now(), product_id: productId };
+export async function addToWishlist(productId: string): Promise<any> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const { data, error } = await supabase
+    .from('wishlist')
+    .insert({
+      pembeli_id: userId,
+      produk_id: productId
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('addToWishlist error:', error.message);
+    return null;
+  }
+  return data;
 }
 
-export async function removeFromWishlist(id: number): Promise<boolean> {
+export async function removeFromWishlist(productId: string): Promise<boolean> {
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+
+  const { error } = await supabase
+    .from('wishlist')
+    .delete()
+    .eq('pembeli_id', userId)
+    .eq('produk_id', productId);
+
+  if (error) {
+    console.error('removeFromWishlist error:', error.message);
+    return false;
+  }
   return true;
+}
+
+function resolveNotificationIcon(tipe: string): string {
+  const t = tipe.toLowerCase();
+  if (t === 'promo') return 'dollar';
+  if (t === 'keamanan') return 'lock';
+  if (t === 'ulasan' || t === 'rating') return 'star';
+  return 'bell';
 }
 
 // ─────────────────────────────────────────────
 // NOTIFIKASI (tabel: notifikasi)
-// Auth: Filter by pembeli_id jika ada session
 // ─────────────────────────────────────────────
 export async function getNotifications(): Promise<any[]> {
   const userId = await getCurrentUserId();
 
   let query = supabase
     .from('notifikasi')
-    .select('id, judul, isi, dibaca, created_at')
+    .select('id, judul, isi, dibaca, tipe, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
 
-  // Jika ada kolom pembeli_id di notifikasi, filter by user (saat ini tidak ada)
-  // if (userId) query = query.eq('pembeli_id', userId);
+  // Filter notifikasi milik user aktif
+  if (userId) {
+    query = query.eq('pembeli_id', userId);
+  }
 
   const { data, error } = await query;
 
@@ -352,8 +540,8 @@ export async function getNotifications(): Promise<any[]> {
 
   return (data || []).map((n: any) => ({
     id: n.id,
-    type: 'Transaksi',
-    icon_type: 'bell',
+    type: n.tipe || 'Transaksi',
+    icon_type: resolveNotificationIcon(n.tipe || 'Transaksi'),
     title: n.judul || 'Notifikasi',
     body: n.isi || '',
     time: new Date(n.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
@@ -362,13 +550,193 @@ export async function getNotifications(): Promise<any[]> {
 }
 
 export async function markNotificationsAsRead(): Promise<boolean> {
-  const { error } = await supabase
+  const userId = await getCurrentUserId();
+  
+  let query = supabase
     .from('notifikasi')
     .update({ dibaca: true })
     .eq('dibaca', false);
 
+  if (userId) {
+    query = query.eq('pembeli_id', userId);
+  }
+
+  const { error } = await query;
+
   if (error) {
     console.error('markNotificationsAsRead error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// KERANJANG (tabel: keranjang)
+// ─────────────────────────────────────────────
+export async function getCart(): Promise<any[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from('keranjang')
+    .select(`
+      id,
+      produk_id,
+      jumlah,
+      marketplace:produk_id (
+        id,
+        nama,
+        harga,
+        deskripsi,
+        satuan,
+        berat,
+        foto,
+        produsen_id,
+        kategori_id,
+        kategori:kategori_id ( nama ),
+        produsen:produsen_id ( nama_usaha, desa, kabupaten )
+      )
+    `)
+    .eq('pembeli_id', userId);
+
+  if (error) {
+    console.error('getCart error:', error.message);
+    return [];
+  }
+
+  return (data || []).map((item: any) => {
+    const p = item.marketplace;
+    let supplierName = 'Koperasi Lokal';
+    if (p?.produsen) {
+      const u = p.produsen;
+      const parts = [];
+      if (u.nama_usaha) parts.push(u.nama_usaha);
+      else {
+        if (u.desa) parts.push(`Koperasi ${u.desa}`);
+        if (u.kabupaten) parts.push(u.kabupaten);
+      }
+      if (parts.length > 0) {
+        supplierName = parts.join(' - ');
+      }
+    }
+
+    return {
+      id: item.id,
+      produk_id: item.produk_id,
+      qty: item.jumlah || 1,
+      product: p ? {
+        id: p.id,
+        name: p.nama || '',
+        price: p.harga || 0,
+        description: p.deskripsi || '',
+        unit: p.satuan || 'kg',
+        weight: p.berat || 0,
+        image: p.foto || null,
+        kategori_id: p.kategori_id,
+        produsen_id: p.produsen_id,
+        origin: p.produsen?.kabupaten || 'Indonesia',
+        rating: 4.5,
+        stock: 'Tersedia',
+        icon_type: resolveIconType(p.kategori?.nama || null, p.nama || ''),
+        supplier: supplierName,
+      } : null
+    };
+  }).filter((item: any) => item.product !== null);
+}
+
+export async function addToCart(productId: string, qty: number = 1): Promise<any> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const { data: existing, error: checkErr } = await supabase
+    .from('keranjang')
+    .select('id, jumlah')
+    .eq('pembeli_id', userId)
+    .eq('produk_id', productId)
+    .maybeSingle();
+
+  if (checkErr) {
+    console.error('addToCart check error:', checkErr.message);
+  }
+
+  if (existing) {
+    const newQty = (existing.jumlah || 0) + qty;
+    const { data, error } = await supabase
+      .from('keranjang')
+      .update({ jumlah: newQty })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('addToCart update error:', error.message);
+      return null;
+    }
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('keranjang')
+      .insert({
+        pembeli_id: userId,
+        produk_id: productId,
+        jumlah: qty
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('addToCart insert error:', error.message);
+      return null;
+    }
+    return data;
+  }
+}
+
+export async function updateCartQty(cartItemId: string, qty: number): Promise<boolean> {
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+
+  const { error } = await supabase
+    .from('keranjang')
+    .update({ jumlah: qty })
+    .eq('id', cartItemId)
+    .eq('pembeli_id', userId);
+
+  if (error) {
+    console.error('updateCartQty error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function removeFromCart(cartItemId: string): Promise<boolean> {
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+
+  const { error } = await supabase
+    .from('keranjang')
+    .delete()
+    .eq('id', cartItemId)
+    .eq('pembeli_id', userId);
+
+  if (error) {
+    console.error('removeFromCart error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function clearCart(): Promise<boolean> {
+  const userId = await getCurrentUserId();
+  if (!userId) return false;
+
+  const { error } = await supabase
+    .from('keranjang')
+    .delete()
+    .eq('pembeli_id', userId); // delete all rows where pembeli_id = userId
+
+  if (error) {
+    console.error('clearCart error:', error.message);
     return false;
   }
   return true;

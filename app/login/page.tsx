@@ -276,6 +276,7 @@ export default function LoginPage() {
         if (selectedRole === 'pembeli') {
           const { error: roleErr } = await supabase.from('pembeli').upsert({
             id: authData.user.id,
+            profile_id: authData.user.id,
             nama: regName.trim()
           });
           if (roleErr) console.warn('Client-side pembeli upsert info (trigger might have handled it):', roleErr.message);

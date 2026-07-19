@@ -12,7 +12,12 @@ import {
   addToWishlist, 
   removeFromWishlist, 
   getNotifications, 
-  markNotificationsAsRead 
+  markNotificationsAsRead,
+  getCart,
+  addToCart,
+  updateCartQty,
+  removeFromCart,
+  clearCart
 } from "@/lib/db";
 
 // ─────────────────────────────────────────────
@@ -39,9 +44,9 @@ export async function saveProductAction(product: any) {
 // ─────────────────────────────────────────────
 // PROFIL PEMBELI
 // ─────────────────────────────────────────────
-export async function getProfileAction() {
+export async function getProfileAction(userId?: string) {
   try {
-    return await getProfile();
+    return await getProfile(userId);
   } catch (e) {
     console.error("getProfileAction:", e);
     return null;
@@ -56,12 +61,14 @@ export async function updateProfileAction(profileData: {
   bio?: string;
   avatar_url?: string;
   addresses?: any[];
+  alamat?: string;
+  tanggal_lahir?: string;
 }) {
   try {
     return await updateProfile(profileData);
-  } catch (e) {
+  } catch (e: any) {
     console.error("updateProfileAction:", e);
-    return null;
+    return { success: false, error: e?.message || String(e) };
   }
 }
 
@@ -117,7 +124,7 @@ export async function getWishlistAction() {
   }
 }
 
-export async function addToWishlistAction(productId: number) {
+export async function addToWishlistAction(productId: string) {
   try {
     return await addToWishlist(productId);
   } catch (e) {
@@ -126,7 +133,7 @@ export async function addToWishlistAction(productId: number) {
   }
 }
 
-export async function removeFromWishlistAction(id: number) {
+export async function removeFromWishlistAction(id: string) {
   try {
     return await removeFromWishlist(id);
   } catch (e) {
@@ -152,6 +159,54 @@ export async function markNotificationsAsReadAction() {
     return await markNotificationsAsRead();
   } catch (e) {
     console.error("markNotificationsAsReadAction:", e);
+    return false;
+  }
+}
+
+// ─────────────────────────────────────────────
+// KERANJANG
+// ─────────────────────────────────────────────
+export async function getCartAction() {
+  try {
+    return await getCart();
+  } catch (e) {
+    console.error("getCartAction:", e);
+    return [];
+  }
+}
+
+export async function addToCartAction(productId: string, qty: number = 1) {
+  try {
+    return await addToCart(productId, qty);
+  } catch (e) {
+    console.error("addToCartAction:", e);
+    return null;
+  }
+}
+
+export async function updateCartQtyAction(cartItemId: string, qty: number) {
+  try {
+    return await updateCartQty(cartItemId, qty);
+  } catch (e) {
+    console.error("updateCartQtyAction:", e);
+    return false;
+  }
+}
+
+export async function removeFromCartAction(cartItemId: string) {
+  try {
+    return await removeFromCart(cartItemId);
+  } catch (e) {
+    console.error("removeFromCartAction:", e);
+    return false;
+  }
+}
+
+export async function clearCartAction() {
+  try {
+    return await clearCart();
+  } catch (e) {
+    console.error("clearCartAction:", e);
     return false;
   }
 }

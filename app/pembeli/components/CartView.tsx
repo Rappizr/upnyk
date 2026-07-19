@@ -1,6 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { createOrderAction } from "@/app/actions";
+import { 
+  createOrderAction,
+  getCartAction,
+  updateCartQtyAction,
+  removeFromCartAction,
+  clearCartAction
+} from "@/app/actions";
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -168,38 +174,11 @@ function IconRenderer({ type, size = 24, className = "", ...props }: any) {
   }
 }
 
-const productStoreMap: Record<number, string> = {
-  1: "Koperasi Tani Maju",
-  2: "Koperasi Gayo Indah",
-  3: "Koperasi Brebes Jaya",
-  4: "Koperasi Sulawesi Makmur",
-  5: "Koperasi Brebes Jaya",
-  6: "Koperasi Sulawesi Makmur",
-  7: "Koperasi Sulawesi Makmur",
-  8: "Koperasi Madu Borneo"
-};
-
-
-
 interface CartViewProps {
   onCartUpdated: () => void;
   onNavigateToOrders: () => void;
   onUpdateCartCount?: (count: number) => void;
 }
-
-const getProductWeight = (productId: number): number => {
-  const weightMap: Record<number, number> = {
-    1: 1.0,
-    2: 0.5,
-    3: 1.0,
-    4: 0.5,
-    5: 0.25,
-    6: 0.25,
-    7: 0.5,
-    8: 0.5
-  };
-  return weightMap[productId] || 1.0;
-};
 
 export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCartCount }: CartViewProps) {
   const [cartItems, setCartItems] = useState<any[]>([]);
@@ -214,39 +193,48 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
     loadCart();
   }, []);
 
-  const loadCart = () => {
-    const saved = localStorage.getItem("cartItems");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCartItems(parsed);
-        onUpdateCartCount?.(parsed.length);
-      } catch (e) {
-        console.error(e);
-      }
+  const loadCart = async () => {
+    try {
+      const items = await getCartAction();
+      setCartItems(items);
+      onUpdateCartCount?.(items.length);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const updateQty = (id: number, newQty: number) => {
+  const updateQty = async (id: any, newQty: number) => {
     if (newQty < 1) return;
-    const updated = cartItems.map((item) => {
-      if (item.id === id) {
-        return { ...item, qty: newQty };
+    try {
+      const ok = await updateCartQtyAction(id, newQty);
+      if (ok) {
+        const updated = cartItems.map((item) => {
+          if (item.id === id) {
+            return { ...item, qty: newQty };
+          }
+          return item;
+        });
+        setCartItems(updated);
+        onCartUpdated();
+        onUpdateCartCount?.(updated.length);
       }
-      return item;
-    });
-    setCartItems(updated);
-    localStorage.setItem("cartItems", JSON.stringify(updated));
-    onCartUpdated();
-    onUpdateCartCount?.(updated.length);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const removeItem = (id: number) => {
-    const updated = cartItems.filter((item) => item.id !== id);
-    setCartItems(updated);
-    localStorage.setItem("cartItems", JSON.stringify(updated));
-    onCartUpdated();
-    onUpdateCartCount?.(updated.length);
+  const removeItem = async (id: any) => {
+    try {
+      const ok = await removeFromCartAction(id);
+      if (ok) {
+        const updated = cartItems.filter((item) => item.id !== id);
+        setCartItems(updated);
+        onCartUpdated();
+        onUpdateCartCount?.(updated.length);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   // Calculations
@@ -254,7 +242,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const shippingFee = subtotal > 0 ? 10000 : 0;
   const discount = 0;
   const grandTotal = Math.max(0, subtotal + shippingFee - discount);
-  const totalWeight = cartItems.reduce((sum, item) => sum + (getProductWeight(item.product?.id) * item.qty), 0);
+  const totalWeight = cartItems.reduce((sum, item) => sum + ((item.product?.weight || 0) * item.qty), 0);
 
   // Group items by supplier for multi-supplier orders
   const handleConfirmOrder = () => {
@@ -268,7 +256,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       // Group items by supplier so we create separate orders per supplier store
       const grouped: Record<string, any[]> = {};
       cartItems.forEach((item) => {
-        const storeName = productStoreMap[item.product.id] || "Koperasi Pelosok Pilihan";
+        const storeName = item.product.supplier || "Koperasi Pelosok Pilihan";
         if (!grouped[storeName]) {
           grouped[storeName] = [];
         }
@@ -312,13 +300,13 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           name: item.product?.name,
           qty: item.qty,
           price: item.product?.price,
-          weight: getProductWeight(item.product?.id) * item.qty,
+          weight: (item.product?.weight || 0) * item.qty,
           icon_type: item.product?.icon_type
         }))
       });
 
       // Clear Cart
-      localStorage.removeItem("cartItems");
+      await clearCartAction();
       setCartItems([]);
       onCartUpdated();
       setStep("success");
@@ -707,7 +695,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {cartItems.map((item) => {
               const p = item.product;
-              const storeName = productStoreMap[p.id] || "Koperasi Pelosok Pilihan";
+              const storeName = p.supplier || "Koperasi Pelosok Pilihan";
               return (
                 <div key={item.id} className="cart-item-card">
                   <div className="cart-item-info" style={{ display: "flex", gap: "1rem", flex: 1, alignItems: "center" }}>
