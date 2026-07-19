@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import type { FormEvent, ChangeEvent } from "react";
+import { supabase } from "@/lib/db";
 
 type StokStatus = "Aman" | "Menipis" | "Habis";
 
@@ -16,13 +17,6 @@ interface StokItem {
   kategori: string;
   fotoUrl?: string;
   ulasan: Ulasan[];
-}
-
-interface Props {
-  stokList: StokItem[];
-  addStok: (item: Omit<StokItem, "id" | "status" | "ulasan">) => void;
-  updateStok: (id: string, patch: Partial<StokItem>) => void;
-  deleteStok: (id: string) => void;
 }
 
 const statusStyle: Record<StokStatus, { bg: string; color: string }> = {
@@ -41,23 +35,96 @@ const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const IconCamera = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"></path><circle cx="12" cy="13" r="4"></circle></svg>;
 const IconStar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
 const IconPlus = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const IconCheckCircle = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
 
 function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
+
+function formatNumber(value: string) {
+  const number = value.replace(/\D/g, "");
+  return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
 function avgRating(ulasan: Ulasan[]) {
   return ulasan.length ? ulasan.reduce((s, u) => s + u.rating, 0) / ulasan.length : 0;
 }
 
-export default function StokKomoditas({ stokList, addStok, updateStok, deleteStok }: Props) {
+export default function StokKomoditas() {
+  const [stokList, setStokList] = useState<StokItem[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  
+  const [prosesLoading, setProsesLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailItem, setDetailItem] = useState<StokItem | null>(null);
   const [restockItem, setRestockItem] = useState<StokItem | null>(null);
   const [restockJumlah, setRestockJumlah] = useState(0);
-  const [addForm, setAddForm] = useState({ nama: "", jumlah: "", satuan: "kg", hargaSatuan: "", kategori: kategoriOptions[0], deskripsi: "", fotoUrl: "" });
+  const [deleteItem, setDeleteItem] = useState<{ id: string; nama: string } | null>(null);
+
+  const [addForm, setAddForm] = useState({ nama: "", jumlah: "", satuan: "pcs", hargaSatuan: "", kategori: kategoriOptions[0], deskripsi: "", fotoUrl: "" });
+  const [fileFoto, setFileFoto] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [toast, setToast] = useState<{ tampil: boolean; pesan: string; tipe: "sukses" | "gagal" }>({
+    tampil: false, pesan: "", tipe: "sukses"
+  });
+
+  function pemicuToast(pesan: string, tipe: "sukses" | "gagal" = "sukses") {
+    setToast({ tampil: true, pesan, tipe });
+    setTimeout(() => setToast((t) => ({ ...t, tampil: false })), 3500);
+  }
+
+  async function muatStok() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: produsen } = await supabase.from("produsen").select("id").eq("profile_id", user.id).maybeSingle();
+    if (!produsen) return;
+
+    const { data: produkData, error: prodError } = await supabase
+      .from("produk")
+      .select(`
+        id, nama, satuan, harga, foto, stok, deskripsi,
+        kategori ( nama ),
+        review ( rating, komentar, pembeli ( nama ) )
+      `)
+      .eq("produsen_id", produsen.id);
+
+    if (prodError) return console.error(prodError);
+
+    const mapped: StokItem[] = (produkData || []).map((p: any) => {
+      const stokMurni = Number(p.stok) || 0; 
+      
+      let status: StokStatus = "Aman";
+      if (stokMurni <= 0) status = "Habis";
+      else if (stokMurni <= 10) status = "Menipis";
+
+      const ulasanMapped: Ulasan[] = (p.review || []).map((r: any) => ({
+        pembeli: r.pembeli?.nama ?? "Pembeli Anonim",
+        rating: r.rating,
+        komentar: r.komentar
+      }));
+
+      return {
+        id: p.id,
+        nama: p.nama,
+        jumlah: stokMurni,
+        satuan: p.satuan ?? "pcs",
+        hargaSatuan: Number(p.harga),
+        status,
+        kategori: p.kategori?.nama ?? "Lainnya",
+        fotoUrl: p.foto ?? undefined,
+        ulasan: ulasanMapped
+      };
+    });
+
+    setStokList(mapped);
+  }
+
+  useEffect(() => {
+    muatStok();
+  }, []);
 
   const filtered = useMemo(() => {
     return stokList.filter((s) => {
@@ -68,188 +135,158 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
     });
   }, [stokList, search, statusFilter]);
 
-  const totalNilaiStok = stokList.reduce((s, x) => s + x.jumlah * x.hargaSatuan, 0);
-  const totalMenipis = stokList.filter((s) => s.status !== "Aman").length;
+  const totalNilaiStok = useMemo(() => stokList.reduce((s, x) => s + x.jumlah * x.hargaSatuan, 0), [stokList]);
+  const totalMenipis = useMemo(() => stokList.filter((s) => s.status !== "Aman").length, [stokList]);
 
   function handleFotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileFoto(file);
     const reader = new FileReader();
-    reader.onload = () => setAddForm((f) => ({ ...f, fotoUrl: reader.result as string }));
+    reader.onload = () => setAddForm((prev) => ({ ...prev, fotoUrl: reader.result as string }));
     reader.readAsDataURL(file);
   }
 
-  function handleAddSubmit(e: FormEvent) {
+  async function handleAddSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!addForm.nama || !addForm.jumlah) return;
-    addStok({ nama: addForm.nama, jumlah: Number(addForm.jumlah), satuan: addForm.satuan, hargaSatuan: Number(addForm.hargaSatuan) || 0, kategori: addForm.kategori, fotoUrl: addForm.fotoUrl || undefined });
-    setAddForm({ nama: "", jumlah: "", satuan: "kg", hargaSatuan: "", kategori: kategoriOptions[0], deskripsi: "", fotoUrl: "" });
+    if (!addForm.nama || !addForm.jumlah || prosesLoading) return;
+
+    setProsesLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setProsesLoading(false); return; }
+
+    const { data: produsen } = await supabase.from("produsen").select("id").eq("profile_id", user.id).maybeSingle();
+    if (!produsen) {
+      pemicuToast("Gagal mengidentifikasi data toko produsen!", "gagal");
+      setProsesLoading(false);
+      return;
+    }
+
+    let finalFotoUrl = "";
+    if (fileFoto) {
+      const fileExt = fileFoto.name.split('.').pop();
+      const fileName = `produk-${user.id}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("produk").upload(fileName, fileFoto, { cacheControl: '3600', upsert: true });
+      if (uploadError) { pemicuToast("Gagal unggah foto produk!", "gagal"); setProsesLoading(false); return; }
+      const { data: publicUrlData } = supabase.storage.from("produk").getPublicUrl(fileName);
+      finalFotoUrl = publicUrlData.publicUrl;
+    }
+
+    const kataKunciKategori = addForm.kategori ? addForm.kategori.split(" ")[0] : "Lainnya";
+    let { data: katData } = await supabase.from("kategori").select("id").ilike("nama", `%${kataKunciKategori}%`).limit(1).maybeSingle();
+    if (!katData) {
+      const { data: ambilKategoriSembarang } = await supabase.from("kategori").select("id").limit(1);
+      if (ambilKategoriSembarang && ambilKategoriSembarang.length > 0) katData = ambilKategoriSembarang[0];
+    }
+
+    const hargaMurni = Number(addForm.hargaSatuan.replace(/\D/g, "")) || 0;
+    
+    const { error: prodError } = await supabase.from("produk").insert({
+      produsen_id: produsen.id,
+      nama: addForm.nama,
+      satuan: addForm.satuan,
+      harga: hargaMurni,
+      stok: Number(addForm.jumlah), 
+      kategori_id: katData?.id ?? null,
+      foto: finalFotoUrl || null,
+      deskripsi: addForm.deskripsi || null
+    });
+
+    if (prodError) {
+      console.error(prodError.message || prodError);
+      pemicuToast("Gagal menayangkan produk!", "gagal");
+      setProsesLoading(false);
+      return;
+    }
+
+    pemicuToast("Produk baru berhasil ditayangkan live!", "sukses");
+    setAddForm({ nama: "", jumlah: "", satuan: "pcs", hargaSatuan: "", kategori: kategoriOptions[0], deskripsi: "", fotoUrl: "" });
+    setFileFoto(null);
     setShowAddModal(false);
+    setProsesLoading(false);
+    muatStok();
   }
 
-  function handleRestockSubmit(e: FormEvent) {
+  async function handleRestockSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!restockItem || restockJumlah <= 0) return;
-    updateStok(restockItem.id, { jumlah: restockItem.jumlah + restockJumlah });
-    setRestockItem(null);
-    setRestockJumlah(0);
+    if (!restockItem || restockJumlah <= 0 || prosesLoading) return;
+
+    setProsesLoading(true);
+    
+    const { error } = await supabase
+      .from("produk")
+      .update({ stok: restockItem.jumlah + restockJumlah })
+      .eq("id", restockItem.id);
+
+    if (error) {
+      pemicuToast("Gagal memperbarui stok!", "gagal");
+    } else {
+      pemicuToast("Stok komoditas berhasil ditambahkan!", "sukses");
+      setRestockItem(null);
+      setRestockJumlah(0);
+      muatStok();
+    }
+    setProsesLoading(false);
   }
 
-  function handleDelete(id: string, nama: string) {
-    if (confirm(`Hapus stok "${nama}"?`)) deleteStok(id);
+  async function eksekusiHapusProduk() {
+    if (!deleteItem || prosesLoading) return;
+    setProsesLoading(true);
+
+    const { error: produkError } = await supabase.from("produk").delete().eq("id", deleteItem.id);
+
+    if (produkError) {
+      pemicuToast("Gagal menghapus produk!", "gagal");
+    } else {
+      pemicuToast("Produk komoditas berhasil dihapus total!", "sukses");
+      setDeleteItem(null);
+      muatStok();
+    }
+    setProsesLoading(false);
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", position: "relative" }}>
       
+      {toast.tampil && (
+        <div style={{ position: "fixed", top: "24px", right: "24px", background: toast.tipe === "sukses" ? "#10B981" : "#EF4444", color: "white", padding: "0.8rem 1.5rem", borderRadius: "10px", fontWeight: 600, fontSize: "0.88rem", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)", zIndex: 9999, display: "flex", alignItems: "center", gap: "8px" }}>
+          <IconCheckCircle /> {toast.pesan}
+        </div>
+      )}
+
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          .header-row-stok {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: flex-end !important;
-            gap: 0.4rem !important;
-            margin-bottom: 1.25rem !important;
-            width: 100% !important;
-            flex-wrap: nowrap !important;
-          }
-          .header-text-block {
-            min-width: 0 !important;
-            flex: 1 !important;
-          }
-          .header-text-block h1 {
-            font-size: 1.05rem !important; /* Perkecil judul agar pas */
-            margin: 0px !important;
-            white-space: nowrap !important;
-          }
-          .header-text-block p {
-            font-size: 0.58rem !important; /* Perkecil deskripsi */
-            margin: 0px !important;
-            line-height: 1.2 !important;
-            white-space: normal !important; /* Mengizinkan teks melipat ke baris baru */
-            overflow: visible !important;
-            text-overflow: clip !important;
-          }
-          .btn-add-stok-mobile {
-            padding: 0.35rem 0.5rem !important; /* Perkecil ukuran tombol */
-            font-size: 0.62rem !important;
-            border-radius: 6px !important;
-            gap: 3px !important;
-            white-space: nowrap !important;
-            flex-shrink: 0 !important;
-            margin-top: 0px !important;
-            align-self: flex-end !important;
-          }
-          .btn-add-stok-mobile svg {
-            width: 8px !important;
-            height: 8px !important;
-          }
-          main > div:nth-of-type(2) {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          main > div:nth-of-type(2) > div {
-            padding: 0.4rem !important;
-            border-radius: 6px !important;
-            gap: 0.4rem !important;
-          }
-          main > div:nth-of-type(2) > div > div:first-child {
-            padding: 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          main > div:nth-of-type(2) > div > div:first-child svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          main > div:nth-of-type(2) > div > div:last-child > div:first-child {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          main > div:nth-of-type(2) > div > div:last-child > div:last-child {
-            font-size: 0.5rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          main > div:nth-of-type(3) {
-            padding: 0.4rem !important;
-            border-radius: 8px !important;
-            gap: 0.4rem !important;
-            margin-bottom: 1rem !important;
-          }
-          main > div:nth-of-type(3) input {
-            padding: 0.35rem 0.5rem 0.35rem 1.75rem !important;
-            font-size: 0.7rem !important;
-            border-radius: 6px !important;
-          }
-          main > div:nth-of-type(3) span {
-            left: 0.5rem !important;
-          }
-          main > div:nth-of-type(3) select {
-            padding: 0.35rem 0.5rem !important;
-            font-size: 0.7rem !important;
-            border-radius: 6px !important;
-          }
-          
-          .stok-cards-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-          }
-          .stok-main-card {
-            border-radius: 6px !important;
-          }
-          .stok-main-card > div:first-child {
-            height: 60px !important;
-          }
-          .stok-main-card > div:first-child svg {
-            width: 18px !important;
-            height: 18px !important;
-          }
-          .stok-main-card > div:last-child {
-            padding: 0.4rem 0.3rem !important;
-          }
-          .stok-title-container {
-            margin-bottom: 0.15rem !important;
-          }
-          .stok-title-container div:first-child {
-            font-size: 0.58rem !important;
-            line-height: 1.15 !important;
-          }
-          .stok-title-container span {
-            padding: 0.1rem 0.3rem !important;
-            border-radius: 4px !important;
-            font-size: 0.45rem !important;
-          }
-          .stok-meta-text {
-            font-size: 0.48rem !important;
-            margin-bottom: 0.2rem !important;
-          }
-          .stok-data-text {
-            font-size: 0.52rem !important;
-            line-height: 1.2 !important;
-            margin-bottom: 0.15rem !important;
-          }
-          .stok-rating-container {
-            font-size: 0.48rem !important;
-            gap: 2px !important;
-            margin-bottom: 0.4rem !important;
-          }
-          .stok-rating-container svg {
-            width: 8px !important;
-            height: 8px !important;
-          }
-          .stok-actions-row {
-            gap: 0.2rem !important;
-          }
-          .stok-actions-row button {
-            padding: 0.25rem 0px !important;
-            font-size: 0.5rem !important;
-            border-radius: 4px !important;
-          }
+          main { padding: 0.5rem 0.25rem !important; }
+          .header-row-stok { display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: flex-end !important; gap: 0.4rem !important; margin-bottom: 1.25rem !important; width: 100% !important; flex-wrap: nowrap !important; }
+          .header-text-block { min-width: 0 !important; flex: 1 !important; }
+          .header-text-block h1 { font-size: 1.05rem !important; margin: 0px !important; white-space: nowrap !important; }
+          .header-text-block p { font-size: 0.58rem !important; margin: 0px !important; line-height: 1.2 !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+          .btn-add-stok-mobile { padding: 0.35rem 0.5rem !important; font-size: 0.62rem !important; border-radius: 6px !important; gap: 3px !important; white-space: nowrap !important; flex-shrink: 0 !important; margin-top: 0px !important; align-self: flex-end !important; }
+          .btn-add-stok-mobile svg { width: 8px !important; height: 8px !important; }
+          main > div:nth-of-type(2) { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
+          main > div:nth-of-type(2) > div { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
+          main > div:nth-of-type(2) > div > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
+          main > div:nth-of-type(2) > div > div:first-child svg { width: 14px !important; height: 14px !important; }
+          main > div:nth-of-type(2) > div > div:last-child > div:first-child { font-size: 0.65rem !important; line-height: 1.1 !important; }
+          main > div:nth-of-type(2) > div > div:last-child > div:last-child { font-size: 0.5rem !important; line-height: 1.1 !important; margin-top: 0.1rem !important; }
+          main > div:nth-of-type(3) { padding: 0.4rem !important; border-radius: 8px !important; gap: 0.4rem !important; margin-bottom: 1rem !important; }
+          main > div:nth-of-type(3) input { padding: 0.35rem 0.5rem 0.35rem 1.75rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
+          main > div:nth-of-type(3) span { left: 0.5rem !important; }
+          main > div:nth-of-type(3) select { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
+          .stok-cards-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; }
+          .stok-main-card { border-radius: 6px !important; }
+          .stok-main-card > div:first-child { height: 60px !important; }
+          .stok-main-card > div:first-child svg { width: 18px !important; height: 18px !important; }
+          .stok-main-card > div:last-child { padding: 0.4rem 0.3rem !important; }
+          .stok-title-container { margin-bottom: 0.15rem !important; }
+          .stok-title-container div:first-child { font-size: 0.58rem !important; line-height: 1.15 !important; }
+          .stok-title-container span { padding: 0.1rem 0.3rem !important; border-radius: 4px !important; font-size: 0.45rem !important; }
+          .stok-meta-text { font-size: 0.48rem !important; margin-bottom: 0.2rem !important; }
+          .stok-data-text { font-size: 0.52rem !important; line-height: 1.2 !important; margin-bottom: 0.15rem !important; }
+          .stok-rating-container { font-size: 0.48rem !important; gap: 2px !important; margin-bottom: 0.4rem !important; }
+          .stok-rating-container svg { width: 8px !important; height: 8px !important; }
+          .stok-actions-row { gap: 0.2rem !important; }
+          .stok-actions-row button { padding: 0.25rem 0px !important; font-size: 0.5rem !important; border-radius: 4px !important; }
         }
       `}} />
 
@@ -306,7 +343,7 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
                   <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B" }}>{item.nama}</div>
                   <span style={{ background: s.bg, color: s.color, padding: "0.15rem 0.5rem", borderRadius: "6px", fontSize: "0.68rem", fontWeight: 600, whiteSpace: "nowrap" }}>{item.status}</span>
                 </div>
-                <div className="stok-meta-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id} • {item.kategori}</div>
+                <div className="stok-meta-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id.slice(0, 8)}... • {item.kategori}</div>
                 <div className="stok-data-text" style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{item.jumlah} {item.satuan} · {formatRupiah(item.hargaSatuan)}/{item.satuan}</div>
                 <div className="stok-rating-container" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#D97706", marginBottom: "0.75rem" }}>
                   <IconStar /> {rating ? rating.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({item.ulasan.length})</span>
@@ -314,7 +351,7 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
                 <div className="stok-actions-row" style={{ display: "flex", gap: "0.4rem" }}>
                   <button onClick={() => setDetailItem(item)} style={{ flex: 1, background: "#ECFDF5", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Detail</button>
                   <button onClick={() => { setRestockItem(item); setRestockJumlah(0); }} style={{ flex: 1, background: "#EFF6FF", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Restock</button>
-                  <button onClick={() => handleDelete(item.id, item.nama)} style={{ background: "#FEE2E2", border: "none", padding: "0.4rem 0.6rem", borderRadius: "6px", fontSize: "0.76rem", color: "#991B1B", cursor: "pointer" }}>Hapus</button>
+                  <button onClick={() => setDeleteItem({ id: item.id, nama: item.nama })} style={{ background: "#FEE2E2", border: "none", padding: "0.4rem 0.6rem", borderRadius: "6px", fontSize: "0.76rem", color: "#991B1B", cursor: "pointer" }}>Hapus</button>
                 </div>
               </div>
             </div>
@@ -323,16 +360,16 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
       </div>
 
       {showAddModal && (
-        <div onClick={() => setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+        <div onClick={() => !prosesLoading && setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", width: "440px", maxWidth: "100%", maxHeight: "88vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid #F1F5F9" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}><IconPackage /> Form Tambah Produk Baru</div>
-              <button onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
+              <button disabled={prosesLoading} onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <form onSubmit={handleAddSubmit} style={{ padding: "1.1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>FOTO PRODUK</label>
-                <div onClick={() => fileRef.current?.click()} style={{ border: "1.5px dashed #A7F3D0", background: "#F0FDF9", borderRadius: "10px", height: "100px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}>
+                <div onClick={() => !prosesLoading && fileRef.current?.click()} style={{ border: "1.5px dashed #A7F3D0", background: "#F0FDF9", borderRadius: "10px", height: "100px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden" }}>
                   {addForm.fotoUrl ? (
                     <img src={addForm.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
@@ -347,19 +384,19 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
 
               <div>
                 <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>NAMA PRODUK *</label>
-                <input required value={addForm.nama} onChange={(e) => setAddForm({ ...addForm, nama: e.target.value })} placeholder="Contoh: Keripik Tempe Original" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
+                <input required disabled={prosesLoading} value={addForm.nama} onChange={(e) => setAddForm({ ...addForm, nama: e.target.value })} placeholder="Contoh: Keripik Tempe Original" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
               </div>
 
               <div style={{ display: "flex", gap: "0.6rem" }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>HARGA JUAL (RP) *</label>
-                  <input required type="number" min="0" value={addForm.hargaSatuan} onChange={(e) => setAddForm({ ...addForm, hargaSatuan: e.target.value })} placeholder="45000" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
+                  <input required disabled={prosesLoading} type="text" inputMode="numeric" value={formatNumber(addForm.hargaSatuan)} onChange={(e) => setAddForm({ ...addForm, hargaSatuan: e.target.value.replace(/\D/g, "") })} placeholder="45.000" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>KUANTITAS STOK *</label>
                   <div style={{ display: "flex", gap: "6px" }}>
-                    <input required type="number" min="0" value={addForm.jumlah} onChange={(e) => setAddForm({ ...addForm, jumlah: e.target.value })} placeholder="100" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
-                    <select value={addForm.satuan} onChange={(e) => setAddForm({ ...addForm, satuan: e.target.value })} style={{ padding: "0.55rem 0.4rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white" }}>
+                    <input required disabled={prosesLoading} type="number" min="0" value={addForm.jumlah} onChange={(e) => setAddForm({ ...addForm, jumlah: e.target.value })} placeholder="100" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
+                    <select disabled={prosesLoading} value={addForm.satuan} onChange={(e) => setAddForm({ ...addForm, satuan: e.target.value })} style={{ padding: "0.55rem 0.4rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white" }}>
                       <option value="kg">kg</option>
                       <option value="pcs">pcs</option>
                       <option value="liter">liter</option>
@@ -370,27 +407,21 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
 
               <div>
                 <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>KATEGORI KOMODITAS</label>
-                <select value={addForm.kategori} onChange={(e) => setAddForm({ ...addForm, kategori: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", background: "white" }}>
+                <select disabled={prosesLoading} value={addForm.kategori} onChange={(e) => setAddForm({ ...addForm, kategori: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", background: "white" }}>
                   {kategoriOptions.map((k) => <option key={k} value={k}>{k}</option>)}
                 </select>
               </div>
 
-              <div style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.65rem 0.8rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                  <span style={{ color: "#D97706" }}><IconStar /></span>
-                  <div><div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B" }}>0.0</div><div style={{ fontSize: "0.68rem", color: "#94A3B8" }}>Belum ada ulasan</div></div>
-                </div>
-                <span style={{ background: "#ECFDF5", color: "#059669", fontSize: "0.68rem", fontWeight: 600, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>Otomatis dari pembeli</span>
-              </div>
-
               <div>
                 <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>DESKRIPSI & CATATAN</label>
-                <textarea value={addForm.deskripsi} onChange={(e) => setAddForm({ ...addForm, deskripsi: e.target.value })} placeholder="Tuliskan spesifikasi produk di sini..." rows={3} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", fontFamily: "inherit", resize: "vertical" }} />
+                <textarea disabled={prosesLoading} value={addForm.deskripsi} onChange={(e) => setAddForm({ ...addForm, deskripsi: e.target.value })} placeholder="Tuliskan spesifikasi produk di sini..." rows={3} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", fontFamily: "inherit", resize: "vertical" }} />
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.3rem" }}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Batal</button>
-                <button type="submit" style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tayangkan Produk (Live)</button>
+                <button type="button" disabled={prosesLoading} onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Batal</button>
+                <button type="submit" disabled={prosesLoading} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: prosesLoading ? "#A7F3D0" : "#10B981", color: "white", fontWeight: 600, cursor: prosesLoading ? "not-allowed" : "pointer" }}>
+                  {prosesLoading ? "Memproses..." : "Tayangkan Produk (Live)"}
+                </button>
               </div>
             </form>
           </div>
@@ -442,21 +473,40 @@ export default function StokKomoditas({ stokList, addStok, updateStok, deleteSto
       )}
 
       {restockItem && (
-        <div onClick={() => setRestockItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+        <div onClick={() => !prosesLoading && setRestockItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "360px", maxWidth: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "#1E293B" }}>Restock {restockItem.nama}</h2>
-              <button onClick={() => setRestockItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
+              <button disabled={prosesLoading} onClick={() => setRestockItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <p style={{ margin: "0 0 1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>Stok saat ini: {restockItem.jumlah} {restockItem.satuan}</p>
             <form onSubmit={handleRestockSubmit}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Jumlah tambahan ({restockItem.satuan})</label>
-              <input required type="number" min="1" value={restockJumlah || ""} onChange={(e) => setRestockJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", marginBottom: "1rem" }} />
-              <button type="submit" style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tambahkan ke Stok</button>
+              <input required disabled={prosesLoading} type="number" min="1" value={restockJumlah || ""} onChange={(e) => setRestockJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", marginBottom: "1rem" }} />
+              <button type="submit" disabled={prosesLoading} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: prosesLoading ? "#A7F3D0" : "#10B981", color: "white", fontWeight: 600, cursor: prosesLoading ? "not-allowed" : "pointer" }}>
+                {prosesLoading ? "Memproses..." : "Tambahkan ke Stok"}
+              </button>
             </form>
           </div>
         </div>
       )}
+
+      {deleteItem && (
+        <div onClick={() => !prosesLoading && setDeleteItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "1rem" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "360px", maxWidth: "100%", textAlign: "center" }}>
+            <div style={{ color: "#EF4444", marginBottom: "0.5rem" }}><IconAlert /></div>
+            <h2 style={{ margin: "0 0 0.5rem 0", fontSize: "1.05rem", fontWeight: 700, color: "#1E293B" }}>Konfirmasi Hapus Produk</h2>
+            <p style={{ margin: "0 0 1.25rem 0", fontSize: "0.85rem", color: "#64748B", lineHeight: "1.4" }}>Apakah Anda yakin ingin menghapus stok produk <strong style={{ color: "#1E293B" }}>"{deleteItem.nama}"</strong>? Aksi ini akan menghapus data permanen dari database PasarNusa.</p>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button type="button" disabled={prosesLoading} onClick={() => setDeleteItem(null)} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Batal</button>
+              <button type="button" disabled={prosesLoading} onClick={eksekusiHapusProduk} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: prosesLoading ? "#FCA5A5" : "#EF4444", color: "white", fontWeight: 600, cursor: prosesLoading ? "not-allowed" : "pointer", fontSize: "0.85rem" }}>
+                {prosesLoading ? "Menghapus..." : "Ya, Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
