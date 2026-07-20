@@ -2,212 +2,195 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, User, Store, ShieldAlert, ArrowRight, Activity } from "lucide-react";
+import { ArrowLeft, Sprout, Warehouse, ShoppingCart, Check } from "lucide-react";
 
 export default function EkosistemPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<'alur' | 'roles'>('alur');
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    const handleScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const alurLangkah = [
-    { no: "01", judul: "Input Komoditas", sub: "Produsen (Hulu)", desc: "Petani/Peternak memasukkan data kuantitas stok hasil panen dan patokan harga harian langsung dari lahan melalui aplikasi." },
-    { no: "02", judul: "Smart Restock & Borongan", sub: "Admin Toko / Koperasi", desc: "Sistem AI mengingatkan jadwal panen, memicu Admin Toko membuat pesanan borongan secara proaktif sebelum tengkulak konvensional datang." },
-    { no: "03", judul: "Quality Grading & Etalase", sub: "Standardisasi Mutu", desc: "Komoditas disetor ke gudang digital, diperiksa kualitasnya (Grade A/B/C) oleh Admin Toko, and otomatis masuk ke etalase publik." },
-    { no: "04", judul: "Transaksi & Escrow System", sub: "Pembeli (Hilir)", desc: "Pembeli memesan produk melalui marketplace. Dana ditahan dengan aman oleh sistem Escrow PasarNusa demi proteksi transaksi." },
-    { no: "05", judul: "Otomatisasi Split Wallet", sub: "Pencarian & Inklusi", desc: "Ketika pesanan dikonfirmasi sampai, Escrow membagi dana secara otomatis: persentase keuntungan ke Admin Toko, dan margin utama langsung masuk ke Wallet Produsen." }
+    { no: "01", judul: "Input Komoditas", sub: "Produsen · Hulu", desc: "Petani dan peternak memasukkan data kuantitas stok hasil panen serta patokan harga harian langsung dari lahan melalui aplikasi." },
+    { no: "02", judul: "Smart Restock & Borongan", sub: "Admin Toko · Koperasi", desc: "Sistem AI mengingatkan jadwal panen dan memicu Admin Toko membuat pesanan borongan secara proaktif, sebelum tengkulak konvensional datang." },
+    { no: "03", judul: "Quality Grading & Etalase", sub: "Standardisasi Mutu", desc: "Komoditas disetor ke gudang digital, diperiksa kualitasnya (Grade A/B/C) oleh Admin Toko, lalu otomatis masuk ke etalase publik." },
+    { no: "04", judul: "Transaksi & Escrow System", sub: "Pembeli · Hilir", desc: "Pembeli memesan produk melalui marketplace. Dana ditahan aman oleh sistem Escrow PasarNusa demi proteksi kedua belah pihak." },
+    { no: "05", judul: "Otomatisasi Split Wallet", sub: "Distribusi Adil", desc: "Saat pesanan dikonfirmasi sampai, Escrow membagi dana otomatis: persentase keuntungan ke Admin Toko, dan margin utama langsung ke Wallet Produsen." }
+  ];
+
+  const roles = [
+    {
+      layer: "Hulu",
+      title: "Produsen",
+      icon: Sprout,
+      accent: "#12864E",
+      soft: "rgba(18,134,78,0.10)",
+      desc: "Pelaku utama — petani, peternak, dan pengrajin — yang mengelola pasokan hasil panen mentah asli dari lahan.",
+      fitur: ["Input komoditas lahan & stok", "Pemantauan Indeks Harga Adil", "Pencairan saldo Wallet"]
+    },
+    {
+      layer: "Tengah",
+      title: "Admin Toko / Koperasi",
+      icon: Warehouse,
+      accent: "#D98A2B",
+      soft: "rgba(217,138,43,0.12)",
+      desc: "Entitas perantara transparan, penanggung jawab logistik gudang desa dan kontrol standardisasi kualitas komoditas.",
+      fitur: ["Fitur proaktif Smart Restock", "Penilaian kualitas (Grading A/B/C)", "Buku kas digital & audit margin"]
+    },
+    {
+      layer: "Hilir",
+      title: "Pembeli (B2B / B2C)",
+      icon: ShoppingCart,
+      accent: "#0E7490",
+      soft: "rgba(14,116,144,0.10)",
+      desc: "Konsumen akhir maupun korporasi yang membeli produk hulu pelosok dengan visibilitas asal-usul yang jelas.",
+      fitur: ["Modul kisah produsen asli", "Proteksi keamanan sistem Escrow", "Pelacakan kurir real-time"]
+    }
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
-      
-      {/* INJEKSI CSS MODERN & RESPONSIVE ULTRA-COMPACT */}
+    <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden" }}>
+
       <style dangerouslySetInnerHTML={{__html: `
-        .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
+        .pn-root {
+          --ink: #0C1F17;
+          --paper: #F6F7F4;
+          --card: #FFFFFF;
+          --line: #E6E8E2;
+          --muted: #5B6B60;
+          --forest-1: #0A2018;
+          --forest-2: #103726;
+          --emerald: #12864E;
+          --emerald-bright: #34D399;
+          --harvest: #E1A140;
+          --mono: 'SF Mono', ui-monospace, 'JetBrains Mono', 'Fira Code', monospace;
         }
-        .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+
+        .glass-nav {
+          background: ${isScrolled ? 'rgba(246, 247, 244, 0.82)' : 'rgba(10, 32, 24, 0.15)'};
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.06)' : 'rgba(255,255,255,0.10)'};
+          box-shadow: ${isScrolled ? '0 6px 34px rgba(10,32,24,0.05)' : 'none'};
+        }
+
+        .grad-text {
+          background: linear-gradient(120deg, #6EE7B7 0%, #34D399 55%, #E1A140 130%);
           -webkit-background-clip: text;
+          background-clip: text;
           -webkit-text-fill-color: transparent;
         }
-        .node-card {
-          background: #ffffff;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .node-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.1);
-          border-color: rgba(56, 189, 248, 0.4);
+
+        .tab-switch {
+          display: inline-flex;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.14);
+          padding: 0.3rem;
+          border-radius: 999px;
+          backdrop-filter: blur(8px);
         }
         .tab-btn {
-          padding: 0.75rem 2rem;
-          font-size: 0.95rem;
+          padding: 0.7rem 1.9rem;
+          font-size: 0.9rem;
           font-weight: 700;
-          border-radius: 99px;
+          letter-spacing: -0.01em;
+          border-radius: 999px;
           border: none;
           cursor: pointer;
-          transition: all 0.3s ease;
+          color: #E7EFE9;
+          background: transparent;
+          transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
+        }
+        .tab-btn.active {
+          background: #F6F7F4;
+          color: var(--forest-1);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.22);
         }
 
+        /* TIMELINE ALUR */
+        .timeline { position: relative; max-width: 780px; margin: 0 auto; padding-left: 2.4rem; }
+        .timeline::before {
+          content: ""; position: absolute; left: 11px; top: 12px; bottom: 12px; width: 2px;
+          background: linear-gradient(180deg, var(--emerald), var(--harvest));
+          opacity: 0.35;
+        }
+        .step { position: relative; padding: 0 0 1.4rem 0; }
+        .step:last-child { padding-bottom: 0; }
+        .step-dot {
+          position: absolute; left: -2.4rem; top: 6px; width: 24px; height: 24px; border-radius: 50%;
+          background: var(--card); border: 2px solid var(--emerald);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 0 5px var(--paper);
+        }
+        .step-dot span { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); }
+        .step-card {
+          background: var(--card); border: 1px solid var(--line); border-radius: 1rem;
+          padding: 1.35rem 1.5rem; transition: all 0.32s cubic-bezier(0.4,0,0.2,1);
+        }
+        .step-card:hover { transform: translateX(4px); border-color: rgba(18,134,78,0.4); box-shadow: 0 16px 34px -18px rgba(10,32,24,0.22); }
+        .step-no { font-family: var(--mono); font-size: 0.75rem; font-weight: 700; color: var(--harvest); letter-spacing: 0.14em; }
+
+        /* ROLE CARDS */
+        .roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .role-card {
+          position: relative; background: var(--card); border: 1px solid var(--line);
+          border-radius: 1.5rem; padding: 2.2rem 1.9rem; overflow: hidden;
+          transition: all 0.36s cubic-bezier(0.4,0,0.2,1);
+        }
+        .role-card::before {
+          content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+          background: var(--role-accent);
+        }
+        .role-card:hover { transform: translateY(-7px); box-shadow: 0 26px 50px -24px rgba(10,32,24,0.28); }
+
+        .fade-in { animation: fadeUp 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
         @media (max-width: 768px) {
-          .header-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 0.5rem !important;
-            padding-bottom: 0.5rem !important;
-          }
-          .nav-logo-text {
-            font-size: 0.85rem !important;
-          }
-          .nav-logo-img {
-            height: 20px !important;
-          }
-          .btn-back {
-            padding-top: 0.25rem !important;
-            padding-bottom: 0.25rem !important;
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            font-size: 0.55rem !important;
-            gap: 0.2rem !important;
-          }
-          .btn-back svg {
-            width: 10px !important;
-            height: 10px !important;
-          }
-          .hero-section {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 6rem !important;
-            padding-bottom: 3rem !important;
-          }
-          .hero-badge {
-            font-size: 0.65rem !important;
-            padding: 0.35rem 0.85rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .hero-title {
-            font-size: 1.85rem !important;
-            line-height: 1.25 !important;
-          }
-          .hero-desc {
-            font-size: 0.85rem !important;
-            margin-bottom: 2rem !important;
-          }
-          .tab-btn {
-            padding: 0.5rem 1rem !important;
-            font-size: 0.75rem !important;
-          }
-          .main-content {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
-            padding-top: 2.5rem !important;
-            padding-bottom: 2.5rem !important;
-          }
-          .section-title span {
-            font-size: 0.75rem !important;
-          }
-          .section-title h2 {
-            font-size: 1.35rem !important;
-            margin-top: 0.25rem !important;
-          }
-          .node-card {
-            padding: 0.75rem !important;
-            border-radius: 0.75rem !important;
-            gap: 0.75rem !important;
-          }
-          .node-card div:first-child {
-            font-size: 1.5rem !important;
-            min-width: auto !important;
-          }
-          .node-card h4 {
-            font-size: 0.85rem !important;
-          }
-          .node-card span {
-            padding: 0.15rem 0.5rem !important;
-            font-size: 0.55rem !important;
-          }
-          .node-card p {
-            font-size: 0.75rem !important;
-            line-height: 1.4 !important;
-            margin-top: 0.35rem !important;
-          }
+          .header-container { padding: 0.55rem 0.9rem !important; }
+          .nav-logo-text { font-size: 1.05rem !important; }
+          .nav-logo-img { height: 26px !important; }
+          .btn-back { padding: 0.45rem 0.9rem !important; font-size: 0.72rem !important; gap: 0.3rem !important; }
+          .btn-back svg { width: 14px !important; height: 14px !important; }
 
-          /* --- PERBAIKAN UTAMA: BERJEJER HORIZONTAL / 2 KOLOM MINI --- */
-          .roles-grid {
-            grid-template-columns: repeat(2, 1fr) !important; /* Dipaksa berjejer berkembar kesamping */
-            gap: 0.35rem !important; /* Dipersempit agar tidak luber */
-          }
-          .role-card {
-            padding: 0.5rem !important; /* Dipadatkan secara mikro */
-            border-radius: 0.6rem !important;
-          }
-          .role-card div:first-child {
-            width: 32px !important; /* Perkecil pembungkus ikon bulat */
-            height: 32px !important;
-            border-radius: 8px !important;
-            margin-bottom: 0.5rem !important;
-          }
-          .role-card div:first-child svg {
-            width: 18px !important;
-            height: 18px !important;
-          }
-          .role-card h3 {
-            font-size: 0.75rem !important; /* Perkecil judul role */
-            margin-bottom: 0.25rem !important;
-          }
-          .role-card p {
-            font-size: 0.52rem !important; /* Perkecil deskripsi */
-            line-height: 1.3 !important;
-            margin-bottom: 0.75rem !important;
-          }
-          .role-card div:last-child {
-            gap: 0.3rem !important;
-            font-size: 0.48rem !important; /* Perkecil list fitur bulatan poin */
-            line-height: 1.2 !important;
-            padding-top: 0.5rem !important;
-          }
+          .hero-section { padding: 6.5rem 1.2rem 3.2rem !important; }
+          .hero-badge { font-size: 0.66rem !important; padding: 0.35rem 0.9rem !important; margin-bottom: 1.1rem !important; }
+          .hero-title { font-size: 2.05rem !important; line-height: 1.15 !important; }
+          .hero-desc { font-size: 0.9rem !important; margin-bottom: 2rem !important; }
+          .tab-btn { padding: 0.55rem 1.05rem !important; font-size: 0.78rem !important; }
 
-          .footer-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 1.5rem !important;
-            padding-bottom: 1.5rem !important;
-          }
-          .footer-wrapper {
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0px !important;
-          }
-          .footer-wrapper span {
-            font-size: 0.42rem !important;
-            line-height: 1.2 !important;
-          }
+          .main-content { padding: 3rem 1.1rem !important; }
+          .section-title span { font-size: 0.72rem !important; }
+          .section-title h2 { font-size: 1.55rem !important; }
+
+          .timeline { padding-left: 2.1rem !important; }
+          .step-card { padding: 1.05rem 1.1rem !important; border-radius: 0.85rem !important; }
+          .step-dot { left: -2.1rem !important; width: 20px !important; height: 20px !important; }
+
+          .roles-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+          .role-card { padding: 1.6rem 1.4rem !important; border-radius: 1.1rem !important; }
+
+          .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
+          .footer-wrapper span { font-size: 0.7rem !important; }
         }
       `}} />
 
       {/* NAVBAR */}
-      <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
+      <header className="glass-nav header-container" style={{ padding: "0.9rem 3.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+          <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
+          <span className="nav-logo-text" style={{ fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? "var(--ink)" : "#FFFFFF", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: isScrolled ? "var(--emerald)" : "var(--emerald-bright)" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
-          <Link href="/" className="btn-back" style={{ 
-            paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+          <Link href="/" className="btn-back" style={{
+            padding: "0.6rem 1.35rem", fontSize: "0.88rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
+            backgroundColor: isScrolled ? "var(--emerald)" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "var(--emerald)", borderRadius: "999px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -215,62 +198,59 @@ export default function EkosistemPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION EKOSISTEM */}
-      <section className="hero-section" style={{ 
-        paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
-        textAlign: "center", 
-        position: "relative", 
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.98)), url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=1920')`,
-        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
+      {/* HERO */}
+      <section className="hero-section" style={{
+        padding: "12rem 2rem 5.5rem", textAlign: "center", position: "relative",
+        backgroundImage: `linear-gradient(180deg, rgba(10,32,24,0.78) 0%, rgba(10,32,24,0.94) 60%, rgba(10,32,24,0.99) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundSize: "cover", backgroundPosition: "center"
       }}>
-        <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#10B981", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Ecosystem Architecture
+        {/* ambient glow */}
+        <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "560px", height: "560px", background: "radial-gradient(circle, rgba(52,211,153,0.18) 0%, transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
+
+        <div style={{ maxWidth: "860px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div className="hero-badge fade-in" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 1.2rem", borderRadius: "999px", background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.28)", color: "var(--emerald-bright)", fontWeight: 700, fontSize: "0.78rem", letterSpacing: "0.14em", marginBottom: "1.6rem", textTransform: "uppercase" }}>
+            Arsitektur Ekosistem
           </div>
-          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
-            Infrastruktur Rantai Pasok <br /><span className="gradient-text">End-to-End</span>
+          <h1 className="hero-title fade-in" style={{ fontSize: "4rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.08, marginBottom: "1.4rem", letterSpacing: "-0.035em" }}>
+            Infrastruktur Rantai Pasok<br /><span className="grad-text">End-to-End</span>
           </h1>
-          <p className="hero-desc" style={{ fontSize: "1.25rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
-            Visualisasi pemetaan jaringan logistik hulu, tata kelola koperasi digital, transparansi distribusi, hingga audit Indeks Harga Adil nasional PasarNusa.
+          <p className="hero-desc fade-in" style={{ fontSize: "1.2rem", color: "#C7D6CC", lineHeight: 1.7, fontWeight: 400, maxWidth: "660px", margin: "0 auto 2.8rem" }}>
+            Pemetaan jaringan logistik hulu, tata kelola koperasi digital, transparansi distribusi, hingga audit Indeks Harga Adil nasional PasarNusa.
           </p>
 
-          <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.08)", padding: "0.35rem", borderRadius: "99px", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <button onClick={() => setActiveTab('alur')} className="tab-btn" style={{ background: activeTab === 'alur' ? '#38BDF8' : 'transparent', color: activeTab === 'alur' ? '#0F172A' : '#FFFFFF' }}>
-              Alur Bisnis Utama
+          <div className="tab-switch fade-in">
+            <button onClick={() => setActiveTab('alur')} className={`tab-btn ${activeTab === 'alur' ? 'active' : ''}`}>
+              Alur Bisnis
             </button>
-            <button onClick={() => setActiveTab('roles')} className="tab-btn" style={{ background: activeTab === 'roles' ? '#38BDF8' : 'transparent', color: activeTab === 'roles' ? '#0F172A' : '#FFFFFF' }}>
-              Peran 4 Role Inti
+            <button onClick={() => setActiveTab('roles')} className={`tab-btn ${activeTab === 'roles' ? 'active' : ''}`}>
+              3 Peran Inti
             </button>
           </div>
         </div>
       </section>
 
-      {/* KONTEN UTAMA */}
-      <main className="main-content" style={{ paddingTop: "6rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
-        
+      {/* KONTEN */}
+      <main className="main-content" style={{ padding: "5.5rem 2rem", maxWidth: "1180px", margin: "0 auto" }}>
+
         {activeTab === 'alur' && (
-          <div>
-            <div className="section-title" style={{ textAlign: "center", marginBottom: "4rem" }}>
-              <span style={{ color: "#2563EB", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Siklus Transaksi</span>
-              <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Aliran Komoditas &amp; Finansial</h2>
+          <div className="fade-in">
+            <div className="section-title" style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+              <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Siklus Transaksi</span>
+              <h2 style={{ fontSize: "2.6rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.6rem", letterSpacing: "-0.03em" }}>Aliran Komoditas &amp; Finansial</h2>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "850px", marginLeft: "auto", marginRight: "auto" }}>
+            <div className="timeline">
               {alurLangkah.map((langkah, index) => (
-                <div key={index} className="node-card" style={{ padding: "2rem", borderRadius: "1.5rem", display: "flex", gap: "2rem", alignItems: "center" }}>
-                  <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "#E2E8F0", fontFamily: "monospace", minWidth: "60px" }}>
-                    {langkah.no}
-                  </div>
-                  <div style={{ flexGrow: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-                      <h4 style={{ margin: "0px", fontSize: "1.25rem", fontWeight: 800, color: "#0F172A" }}>{langkah.judul}</h4>
-                      <span style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.2rem 0.75rem", borderRadius: "99px", fontSize: "0.75rem", fontWeight: 700 }}>{langkah.sub}</span>
+                <div key={index} className="step">
+                  <div className="step-dot"><span /></div>
+                  <div className="step-card">
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.9rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+                      <span className="step-no">{langkah.no}</span>
+                      <h4 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.01em" }}>{langkah.judul}</h4>
+                      <span style={{ background: "rgba(18,134,78,0.08)", color: "var(--emerald)", padding: "0.2rem 0.7rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 700 }}>{langkah.sub}</span>
                     </div>
-                    <p style={{ color: "#64748B", marginTop: "0.5rem", marginBottom: "0px", fontSize: "0.95rem", lineHeight: 1.6 }}>{langkah.desc}</p>
+                    <p style={{ color: "var(--muted)", margin: 0, fontSize: "0.94rem", lineHeight: 1.65 }}>{langkah.desc}</p>
                   </div>
-                  {index < alurLangkah.length - 1 && (
-                    <div style={{ color: "#94A3B8", display: "none" }}><ArrowRight size={24} /></div>
-                  )}
                 </div>
               ))}
             </div>
@@ -278,58 +258,36 @@ export default function EkosistemPage() {
         )}
 
         {activeTab === 'roles' && (
-          <div>
-            <div className="section-title" style={{ textAlign: "center", marginBottom: "5rem" }}>
-              <span style={{ color: "#10B981", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Hak Akses</span>
-              <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Matriks Hak Akses &amp; Fitur Sistem</h2>
+          <div className="fade-in">
+            <div className="section-title" style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+              <span style={{ color: "var(--harvest)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Hak Akses</span>
+              <h2 style={{ fontSize: "2.6rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.6rem", letterSpacing: "-0.03em" }}>Tiga Peran, Satu Rantai Pasok</h2>
             </div>
 
-            <div className="roles-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "2rem" }}>
-              
-              <div className="node-card role-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.75rem" }}>
-                <div style={{ color: "#38BDF8", background: "rgba(56,189,248,0.1)", width: "50px", height: "50px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}><ShieldAlert size={28} /></div>
-                <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0.5rem" }}>Super Admin</h3>
-                <p style={{ color: "#64748B", fontSize: "0.9rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "1.5rem" }}>Memegang kendali pengawasan ekosistem pasar, audit, dan intervensi data makro perdagangan.</p>
-                <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
-                  <span>• Monitor GMV &amp; Perputaran Dana</span>
-                  <span>• Analitik Peta Rantai Pasok</span>
-                  <span>• Kontrol Laporan Dampak Sosial</span>
-                </div>
-              </div>
-
-              <div className="node-card role-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.75rem" }}>
-                <div style={{ color: "#2563EB", background: "rgba(37,99,235,0.1)", width: "50px", height: "50px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}><User size={28} /></div>
-                <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0.5rem" }}>Produsen Hulu</h3>
-                <p style={{ color: "#64748B", fontSize: "0.9rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "1.5rem" }}>Pelaku utama (petani, peternak, pengrajin) yang mengelola pasokan hasil panen mentah asli.</p>
-                <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
-                  <span>• Pemantauan Indeks Harga Adil</span>
-                  <span>• Input Komoditas Lahan (Stok)</span>
-                  <span>• Manajemen Pencairan Saldo Wallet</span>
-                </div>
-              </div>
-
-              <div className="node-card role-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.75rem" }}>
-                <div style={{ color: "#10B981", background: "rgba(16,185,129,0.1)", width: "50px", height: "50px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}><Store size={28} /></div>
-                <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0.5rem" }}>Admin Toko / Koperasi</h3>
-                <p style={{ color: "#64748B", fontSize: "0.9rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "1.5rem" }}>Entitas perantara transparan penanggung jawab logistik gudang desa dan kontrol standarisasi kualitas.</p>
-                <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
-                  <span>• Fitur Proaktif Smart Restock</span>
-                  <span>• Buku Kas Digital &amp; Audit Margin</span>
-                  <span>• Penilaian Kualitas (Grading A/B/C)</span>
-                </div>
-              </div>
-
-              <div className="node-card role-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.75rem" }}>
-                <div style={{ color: "#F59E0B", background: "rgba(245,158,11,0.1)", width: "50px", height: "50px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem" }}><Activity size={28} /></div>
-                <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0.5rem" }}>Pembeli (B2B / B2C)</h3>
-                <p style={{ color: "#64748B", fontSize: "0.9rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "1.5rem" }}>Konsumen akhir/korporasi yang membeli produk hulu pelosok dengan visibilitas asal usul cerita yang jelas.</p>
-                <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem", color: "#475569", fontWeight: 500 }}>
-                  <span>• Modul Kisah Produsen Asli</span>
-                  <span>• Proteksi Keamanan Sistem Escrow</span>
-                  <span>• Pelacakan Kurir Real-time Map</span>
-                </div>
-              </div>
-
+            <div className="roles-grid">
+              {roles.map((role, i) => {
+                const Icon = role.icon;
+                return (
+                  <div key={i} className="role-card" style={{ ["--role-accent" as any]: role.accent }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                      <div style={{ color: role.accent, background: role.soft, width: "54px", height: "54px", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon size={28} />
+                      </div>
+                      <span style={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: role.accent, background: role.soft, padding: "0.3rem 0.7rem", borderRadius: "999px" }}>{role.layer}</span>
+                    </div>
+                    <h3 style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--ink)", margin: "0 0 0.6rem", letterSpacing: "-0.02em" }}>{role.title}</h3>
+                    <p style={{ color: "var(--muted)", fontSize: "0.92rem", lineHeight: 1.65, margin: "0 0 1.6rem" }}>{role.desc}</p>
+                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.1rem", display: "flex", flexDirection: "column", gap: "0.7rem" }}>
+                      {role.fitur.map((f, j) => (
+                        <div key={j} style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.86rem", color: "#334339", fontWeight: 500 }}>
+                          <span style={{ color: role.accent, display: "flex", flexShrink: 0 }}><Check size={16} strokeWidth={3} /></span>
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -337,10 +295,10 @@ export default function EkosistemPage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-        <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
-          <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
+      <footer className="footer-container" style={{ padding: "2.6rem 3.5rem", background: "var(--forest-1)", color: "#7C8C81", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="footer-wrapper" style={{ maxWidth: "1180px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.88rem" }}>
+          <span style={{ color: "#9AA99F" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
+          <span>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
         </div>
       </footer>
     </div>
