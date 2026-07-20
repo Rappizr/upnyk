@@ -8,13 +8,25 @@ import { FaInstagram, FaGithub } from "react-icons/fa";
 export default function TentangKamiPage() {
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const marqueeImages = [
-    "/1.png",
-    "/2.png",
-    "/3.png",
-    "/4.png",
-    "/5.png",
-    "/6.png"
+  const galleryImages = ["/1.png", "/2.png", "/3.png", "/4.png", "/5.png", "/6.png"];
+
+  const masalah = [
+    { icon: AlertCircle, title: "Monopoli Harga Sepihak", desc: "Produsen pelosok tidak tahu harga wajar komoditasnya, sehingga harga jual ditentukan sepihak oleh pembeli pertama yang datang ke lahan." },
+    { icon: Layers, title: "Buta Rantai Pasok", desc: "Pembeli di kota tidak memiliki visibilitas terhadap asal-usul komoditas dan kondisi nyata produsen di baliknya." },
+    { icon: BarChart3, title: "Nir-Jejak Transaksi", desc: "Transaksi tunai tanpa catatan membuat produsen hulu tidak memiliki riwayat kredit untuk mengakses permodalan resmi." },
+    { icon: MapPin, title: "Isolasi Geografis", desc: "Jarak ke pasar besar membuat biaya distribusi mandiri sering lebih mahal daripada selisih harga yang bisa diperoleh." }
+  ];
+
+  const pilar = [
+    { icon: Scale, accent: "#12864E", soft: "#E7F3EC", title: "Indeks Harga Adil", desc: "Metrik kuantitatif yang membandingkan harga platform terhadap estimasi harga tengkulak — mengubah \u201charga adil\u201d dari slogan menjadi angka yang bisa diverifikasi siapa pun." },
+    { icon: Zap, accent: "#D98A2B", soft: "#FBF0DF", title: "Smart Restock Proaktif", desc: "Sistem pengingat otomatis berbasis jadwal panen riil, memungkinkan koperasi digital menjemput hasil panen lebih dulu daripada tengkulak konvensional." },
+    { icon: Globe2, accent: "#0E7490", soft: "#E1F1F4", title: "Escrow System Terjamin", desc: "Dana pembeli ditahan aman hingga barang diterima, baru dibagi otomatis ke dompet digital produsen dan toko — menghilangkan risiko gagal bayar sepenuhnya." }
+  ];
+
+  const tim = [
+    { img: "/raffi.png", nama: "Mukhammad Raffi Zabra", peran: "Lead Developer & Full Stack Developer", warna: "#12864E", ig: "https://www.instagram.com/rappizr/", git: "https://github.com/Rappizr", pos: "center" },
+    { img: "/ringga.png", nama: "Ringga Budi Utama", peran: "Frontend Engineer & System Analysis", warna: "#0E7490", ig: "https://www.instagram.com/ringgabdy.___", git: "https://github.com/ringgabudiutama", pos: "center top" },
+    { img: "/rizal.png", nama: "Afrizal Rafli Kusuma Wardana", peran: "Full Stack Developer", warna: "#D98A2B", ig: "https://www.instagram.com/afrzalrfli", git: "https://github.com/rizalrfli", pos: "center top" }
   ];
 
   useEffect(() => {
@@ -24,333 +36,138 @@ export default function TentangKamiPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
-      
+    <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden" }}>
+
       <style dangerouslySetInnerHTML={{__html: `
-        .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
+        .pn-root {
+          --ink: #0C1F17;
+          --paper: #F6F7F4;
+          --card: #FFFFFF;
+          --line: #E6E8E2;
+          --muted: #5B6B60;
+          --forest-1: #0A2018;
+          --emerald: #12864E;
+          --emerald-bright: #34D399;
+          --harvest: #E1A140;
+          --teal: #0E7490;
+          --rust: #C0492F;
         }
-        .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+
+        .glass-nav {
+          background: ${isScrolled ? 'rgba(246, 247, 244, 0.85)' : 'rgba(10, 32, 24, 0.12)'};
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.06)' : 'rgba(255,255,255,0.10)'};
+          box-shadow: ${isScrolled ? '0 6px 34px rgba(10,32,24,0.06)' : 'none'};
+        }
+        .grad-text {
+          background: linear-gradient(120deg, #6EE7B7 0%, #34D399 55%, #E1A140 130%);
+          -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
         .modern-card {
-          background: #ffffff;
+          background: var(--card); border: 1px solid var(--line);
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.03);
+          box-shadow: 0 10px 30px -14px rgba(10,32,24,0.06);
         }
         .modern-card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 30px 60px -15px rgba(37, 99, 235, 0.12);
-          border-color: rgba(56, 189, 248, 0.4);
+          box-shadow: 0 30px 56px -22px rgba(10,32,24,0.24);
+          border-color: rgba(18,134,78,0.3);
         }
-        .social-icon {
-          color: #94A3B8;
-          transition: all 0.3s ease;
-          cursor: pointer;
-        }
+        .social-icon { color: #94A3B8; transition: all 0.3s ease; cursor: pointer; }
         .social-icon.ig:hover { color: #E1306C; transform: scale(1.15) translateY(-2px); }
         .social-icon.git:hover { color: #181717; transform: scale(1.15) translateY(-2px); }
-        
-        @keyframes scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-50% - 1rem)); }
+
+        .gallery-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+          max-width: 1200px; margin: 0 auto;
         }
-        .marquee-wrapper {
-          display: flex;
-          overflow: hidden;
-          padding-top: 0px;
-          padding-bottom: 4rem;
-          width: 100vw;
-          position: relative;
-          left: 50%;
-          right: 50%;
-          margin-left: -50vw;
-          margin-right: -50vw;
-          -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-          mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        .gallery-card {
+          position: relative; border-radius: 1.25rem; overflow: hidden; aspect-ratio: 16 / 10;
+          border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 18px 40px -22px rgba(0,0,0,0.5);
+          transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), box-shadow 0.4s ease;
         }
-        .marquee-content {
-          display: flex;
-          gap: 2rem;
-          width: max-content;
-          animation: scroll 35s linear infinite;
+        .gallery-card::after {
+          content: ""; position: absolute; inset: 0;
+          background: linear-gradient(180deg, transparent 55%, rgba(10,32,24,0.55));
+          opacity: 0; transition: opacity 0.4s ease;
         }
-        .marquee-content:hover { animation-play-state: paused; }
-        .marquee-img-card {
-          width: 320px;
-          height: 200px;
-          border-radius: 1.25rem;
-          overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(4px);
+        .gallery-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1); }
+        .gallery-card:hover { transform: translateY(-6px); box-shadow: 0 30px 60px -24px rgba(0,0,0,0.6); }
+        .gallery-card:hover img { transform: scale(1.06); }
+        .gallery-card:hover::after { opacity: 1; }
+        .gallery-tag {
+          position: absolute; left: 0.9rem; bottom: 0.9rem; z-index: 2;
+          color: #fff; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+          opacity: 0; transform: translateY(6px); transition: all 0.4s ease;
         }
-        .marquee-img-card img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transform: scale(1.18); 
-          transition: transform .4s ease;
-        }
+        .gallery-card:hover .gallery-tag { opacity: 1; transform: translateY(0); }
+
+        .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
-          .header-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 0.5rem !important;
-            padding-bottom: 0.5rem !important;
-          }
-          .nav-logo-text {
-            font-size: 0.85rem !important;
-          }
-          .nav-logo-img {
-            height: 20px !important;
-          }
-          .btn-back {
-            padding-top: 0.25rem !important;
-            padding-bottom: 0.25rem !important;
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            font-size: 0.55rem !important;
-            gap: 0.2rem !important;
-          }
-          .btn-back svg {
-            width: 10px !important;
-            height: 10px !important;
-          }
-          .hero-section {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 6rem !important;
-            padding-bottom: 0px !important;
-          }
-          .hero-badge {
-            font-size: 0.65rem !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 0.35rem !important;
-            padding-bottom: 0.35rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .hero-title {
-            font-size: 1.85rem !important;
-            line-height: 1.25 !important;
-          }
-          .hero-desc {
-            font-size: 0.85rem !important;
-            margin-bottom: 2rem !important;
-          }
-          .marquee-wrapper {
-            padding-bottom: 2rem !important;
-          }
-          .marquee-img-card {
-            width: 160px !important;
-            height: 100px !important;
-            border-radius: 0.6rem !important;
-          }
+          .header-container { padding: 0.55rem 0.9rem !important; }
+          .nav-logo-text { font-size: 1rem !important; }
+          .nav-logo-img { height: 24px !important; }
+          .btn-back { padding: 0.42rem 0.9rem !important; font-size: 0.72rem !important; gap: 0.3rem !important; }
+          .btn-back svg { width: 13px !important; height: 13px !important; }
 
-          .problem-section {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 3.5rem !important;
-            padding-bottom: 3.5rem !important;
-          }
-          .problem-grid-main {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-          }
-          .problem-left-heading h2 {
-            font-size: 1.6rem !important;
-          }
-          .problem-left-heading p {
-            font-size: 0.85rem !important;
-          }
-          .problem-grid-cards {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 0.4rem !important;
-          }
-          .problem-mini-card {
-            padding: 0.6rem !important;
-            border-radius: 0.6rem !important;
-          }
-          .problem-mini-card svg {
-            width: 18px !important;
-            height: 18px !important;
-            margin-bottom: 0.4rem !important;
-          }
-          .problem-mini-card h4 {
-            font-size: 0.65rem !important;
-            margin-bottom: 0.25rem !important;
-          }
-          .problem-mini-card p {
-            font-size: 0.5rem !important;
-            line-height: 1.3 !important;
-          }
+          .hero-section { padding: 7rem 1.2rem 3rem !important; }
+          .hero-badge { font-size: 0.66rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.1rem !important; }
+          .hero-title { font-size: 1.95rem !important; line-height: 1.18 !important; }
+          .hero-desc { font-size: 0.9rem !important; margin-bottom: 0 !important; }
 
-          .vision-section {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
-            padding-top: 2.5rem !important;
-            padding-bottom: 2.5rem !important;
-          }
-          .vision-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 0.35rem !important;
-          }
-          .vision-grid .modern-card {
-            padding: 0.5rem !important;
-            border-radius: 0.5rem !important;
-          }
-          .vision-grid .modern-card div {
-            width: 26px !important;
-            height: 26px !important;
-            border-radius: 6px !important;
-            margin-bottom: 0.4rem !important;
-          }
-          .vision-grid .modern-card div svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .vision-grid .modern-card h3 {
-            font-size: 0.65rem !important;
-            margin-bottom: 0.3rem !important;
-          }
-          .vision-grid .modern-card p, .vision-grid .modern-card ul {
-            font-size: 0.45rem !important;
-            line-height: 1.3 !important;
-          }
-          .vision-grid .modern-card ul {
-            padding-left: 0.6rem !important;
-            gap: 0.25rem !important;
-          }
+          .gallery-section { padding: 2.5rem 1.1rem 3rem !important; }
+          .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.6rem !important; }
+          .gallery-card { border-radius: 0.8rem !important; }
 
-          .values-section {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
-            padding-top: 3rem !important;
-            padding-bottom: 3rem !important;
-          }
-          .values-header {
-            margin-bottom: 2rem !important;
-          }
-          .values-header h2 {
-            font-size: 1.35rem !important;
-          }
-          .values-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-          }
-          .values-card {
-            padding: 0.4rem 0.25rem !important;
-            border-radius: 0.6rem !important;
-          }
-          .values-card div {
-            margin-bottom: 0.4rem !important;
-          }
-          .values-card div svg {
-            width: 16px !important;
-            height: 16px !important;
-          }
-          .values-card h4 {
-            font-size: 0.6rem !important;
-            line-height: 1.1 !important;
-            margin-bottom: 0.25rem !important;
-          }
-          .values-card p {
-            font-size: 0.42rem !important;
-            line-height: 1.2 !important;
-          }
+          .problem-section { padding: 3.5rem 1.1rem !important; }
+          .problem-grid-main { grid-template-columns: 1fr !important; gap: 2rem !important; }
+          .problem-left-heading h2 { font-size: 1.6rem !important; }
+          .problem-left-heading p { font-size: 0.88rem !important; }
+          .problem-grid-cards { grid-template-columns: 1fr !important; gap: 0.8rem !important; }
+          .problem-mini-card { padding: 1.1rem !important; border-radius: 0.9rem !important; }
+          .problem-mini-card h4 { font-size: 0.98rem !important; }
+          .problem-mini-card p { font-size: 0.82rem !important; }
 
-          .team-section {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
-            padding-top: 3rem !important;
-            padding-bottom: 3rem !important;
-          }
-          .team-header {
-            margin-bottom: 2rem !important;
-          }
-          .team-header h2 {
-            font-size: 1.35rem !important;
-          }
-          .team-header p {
-            font-size: 0.7rem !important;
-          }
-          .team-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            padding-left: 0px !important;
-            padding-right: 0px !important;
-          }
-          .team-card {
-            padding: 0.8rem 0.25rem !important;
-            border-radius: 0.6rem !important;
-          }
-          .team-card div:first-child {
-            margin-bottom: 0.6rem !important;
-          }
-          .team-card img {
-            width: 44px !important;
-            height: 44px !important;
-            border-width: 2px !important;
-          }
-          .team-card h3 {
-            font-size: 0.52rem !important;
-            line-height: 1.1 !important;
-          }
-          .team-card p {
-            font-size: 0.42rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.2rem !important;
-          }
-          .team-card div:last-child {
-            gap: 0.5rem !important;
-            margin-top: 0.5rem !important;
-          }
-          .team-card div:last-child svg {
-            width: 12px !important;
-            height: 12px !important;
-          }
+          .vision-section { padding: 3rem 1.1rem !important; }
+          .vision-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+          .vision-grid .modern-card { padding: 1.8rem 1.5rem !important; border-radius: 1.2rem !important; }
+          .vision-grid .modern-card h3 { font-size: 1.35rem !important; }
+          .vision-grid .modern-card p, .vision-grid .modern-card ul { font-size: 0.9rem !important; }
 
-          .footer-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 1.5rem !important;
-            padding-bottom: 1.5rem !important;
-          }
-          .footer-wrapper {
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0px !important;
-          }
-          .footer-wrapper span {
-            font-size: 0.42rem !important;
-            line-height: 1.2 !important;
-          }
+          .values-section { padding: 3.5rem 1.1rem !important; }
+          .values-header { margin-bottom: 2.5rem !important; }
+          .values-header h2 { font-size: 1.6rem !important; }
+          .values-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+          .values-card { padding: 1.7rem 1.5rem !important; border-radius: 1.1rem !important; }
+
+          .team-section { padding: 3.5rem 1.1rem !important; }
+          .team-header { margin-bottom: 2.5rem !important; }
+          .team-header h2 { font-size: 1.6rem !important; }
+          .team-header p { font-size: 0.9rem !important; }
+          .team-grid { grid-template-columns: 1fr !important; gap: 1rem !important; padding: 0 !important; }
+          .team-card { padding: 2rem 1.5rem !important; border-radius: 1.3rem !important; }
+
+          .footer-container { padding: 2.2rem 1.2rem !important; }
+          .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
+          .footer-wrapper span { font-size: 0.72rem !important; }
         }
       `}} />
 
       {/* NAVBAR */}
-      <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
+      <header className="glass-nav header-container" style={{ padding: "0.9rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+          <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
+          <span className="nav-logo-text" style={{ fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? "var(--ink)" : "#FFFFFF", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: isScrolled ? "var(--emerald)" : "var(--emerald-bright)" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
-          <Link href="/" className="btn-back" style={{ 
-            paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+          <Link href="/" className="btn-back" style={{
+            padding: "0.6rem 1.35rem", fontSize: "0.88rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
+            backgroundColor: isScrolled ? "var(--emerald)" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "var(--emerald)", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -358,186 +175,153 @@ export default function TentangKamiPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION */}
-      <section className="hero-section" style={{ 
-        paddingLeft: "2rem", paddingRight: "2rem", paddingTop: "20rem", paddingBottom: "0px",
-        textAlign: "center", 
-        position: "relative", 
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.95)), url('/logoTentangKami.png')`,
-        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
+      {/* HERO */}
+      <section className="hero-section" style={{
+        padding: "13rem 2rem 5rem", textAlign: "center", position: "relative",
+        backgroundImage: `linear-gradient(180deg, rgba(10,32,24,0.62), rgba(10,32,24,0.95)), url('/logoTentangKami.png')`,
+        backgroundSize: "cover", backgroundPosition: "center"
       }}>
-        <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
+        <div className="fade-in" style={{ maxWidth: "860px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 1.2rem", borderRadius: "99px", background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.28)", color: "var(--emerald-bright)", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.12em", marginBottom: "1.6rem", textTransform: "uppercase" }}>
             Infrastruktur Kepercayaan Rantai Pasok
           </div>
-          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
-            Memutus Rantai Tengkulak, <br />Membangun <span className="gradient-text">Harga yang Adil</span>
+          <h1 className="hero-title" style={{ fontSize: "4rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.4rem", letterSpacing: "-0.035em" }}>
+            Memutus Rantai Tengkulak,<br />Membangun <span className="grad-text">Harga yang Adil</span>
           </h1>
-          <p className="hero-desc" style={{ fontSize: "1.25rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "720px", marginLeft: "auto", marginRight: "auto", marginBottom: "4rem" }}>
-            PasarNusa mengubah peran perantara informal yang selama ini tidak transparan menjadi koperasi digital yang setiap margin, harga, dan transaksinya tercatat sistem dan dapat diaudit — dibuktikan lewat Indeks Harga Adil yang terukur, bukan sekadar janji.
+          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#C7D6CC", lineHeight: 1.7, fontWeight: 400, maxWidth: "720px", margin: "0 auto" }}>
+            PasarNusa mengubah peran perantara informal yang tidak transparan menjadi koperasi digital yang setiap margin, harga, dan transaksinya tercatat sistem dan dapat diaudit — dibuktikan lewat Indeks Harga Adil yang terukur, bukan sekadar janji.
           </p>
         </div>
+      </section>
 
-        <div className="marquee-wrapper" style={{ zIndex: 2 }}>
-          <div className="marquee-content">
-            {[...marqueeImages, ...marqueeImages].map((img, index) => (
-              <div key={index} className="marquee-img-card">
-                <img src={img} alt={`Dokumentasi Komoditas Hulu ${index}`} />
-              </div>
-            ))}
-          </div>
+      {/* GALERI DOKUMENTASI (pengganti marquee) */}
+      <section className="gallery-section" style={{ padding: "5rem 3rem 6rem", maxWidth: "1280px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "2.6rem" }}>
+          <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Dari Lapangan</span>
+          <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Dokumentasi Komoditas Hulu</h2>
+        </div>
+        <div className="gallery-grid">
+          {galleryImages.map((img, i) => (
+            <div key={i} className="gallery-card">
+              <img src={img} alt={`Dokumentasi komoditas hulu ${i + 1}`} />
+              <span className="gallery-tag">Komoditas Hulu · 0{i + 1}</span>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* SEKSI 1: AKAR PERMASALAHAN */}
-      <section className="problem-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "7rem", paddingBottom: "7rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
+      <section className="problem-section" style={{ padding: "6rem 3rem", maxWidth: "1200px", margin: "0 auto" }}>
         <div className="problem-grid-main" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "4rem", alignItems: "center" }}>
           <div className="problem-left-heading">
-            <span style={{ color: "#EF4444", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Akar Permasalahan</span>
-            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em", lineHeight: 1.2 }}>Mengapa PasarNusa Harus Ada?</h2>
-            <p style={{ color: "#64748B", fontSize: "1.05rem", lineHeight: 1.7, marginTop: "1rem" }}>
+            <span style={{ color: "var(--rust)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>Akar Permasalahan</span>
+            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.5rem", letterSpacing: "-0.03em", lineHeight: 1.18 }}>Mengapa PasarNusa Harus Ada?</h2>
+            <p style={{ color: "var(--muted)", fontSize: "1.05rem", lineHeight: 1.7, marginTop: "1rem" }}>
               Empat kesenjangan berikut saling mengunci satu sama lain di lapangan — menjebak produsen pelosok dalam siklus ketergantungan pada tengkulak selama puluhan tahun.
             </p>
           </div>
-          <div className="problem-grid-cards" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
-              <AlertCircle size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
-              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Monopoli Harga Sepihak</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Produsen pelosok tidak tahu harga wajar komoditasnya, sehingga harga jual ditentukan sepihak oleh pembeli pertama yang datang ke lahan.</p>
-            </div>
-            <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
-              <Layers size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
-              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Buta Rantai Pasok</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Pembeli di kota tidak memiliki visibilitas terhadap asal-usul komoditas dan kondisi nyata produsen di baliknya.</p>
-            </div>
-            <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
-              <BarChart3 size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
-              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Nir-Jejak Transaksi</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Transaksi tunai tanpa catatan membuat produsen hulu tidak memiliki riwayat kredit untuk mengakses permodalan resmi.</p>
-            </div>
-            <div className="problem-mini-card" style={{ padding: "1.5rem", background: "#ffffff", borderRadius: "1rem", border: "1px solid #F1F5F9" }}>
-              <MapPin size={24} color="#EF4444" style={{ marginBottom: "0.75rem" }} />
-              <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.35rem" }}>Isolasi Geografis</h4>
-              <p style={{ color: "#64748B", fontSize: "0.85rem", lineHeight: 1.5, marginTop: "0px", marginBottom: "0px" }}>Jarak ke pasar besar membuat biaya distribusi mandiri sering lebih mahal daripada selisih harga yang bisa diperoleh.</p>
-            </div>
+          <div className="problem-grid-cards" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+            {masalah.map((m, i) => {
+              const Icon = m.icon;
+              return (
+                <div key={i} className="problem-mini-card" style={{ padding: "1.5rem", background: "var(--card)", borderRadius: "1rem", border: "1px solid var(--line)", transition: "all 0.3s ease" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(192,73,47,0.10)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.9rem" }}>
+                    <Icon size={20} color="var(--rust)" />
+                  </div>
+                  <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--ink)", marginBottom: "0.35rem" }}>{m.title}</h4>
+                  <p style={{ color: "var(--muted)", fontSize: "0.85rem", lineHeight: 1.55, margin: 0 }}>{m.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* SEKSI 2: VISI MISI */}
-      <section className="vision-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "6rem", paddingBottom: "6rem", backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
-        <div className="vision-grid" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
-          
-          <div className="modern-card" style={{ padding: "3.5rem", borderRadius: "2rem" }}>
-            <div style={{ background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)", width: "64px", height: "64px", borderRadius: "20px", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", marginBottom: "2rem", boxShadow: "0 10px 20px -5px rgba(37,99,235,0.15)" }}>
-              <Eye size={32} />
+      <section className="vision-section" style={{ padding: "6rem 3rem", backgroundColor: "var(--card)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
+        <div className="vision-grid" style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
+
+          <div className="modern-card" style={{ padding: "3.2rem", borderRadius: "1.75rem" }}>
+            <div style={{ background: "#E7F3EC", width: "64px", height: "64px", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--emerald)", marginBottom: "1.75rem" }}>
+              <Eye size={30} />
             </div>
-            <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1.25rem", letterSpacing: "-0.02em" }}>Visi Kami</h3>
-            <p style={{ color: "#475569", lineHeight: 1.8, fontSize: "1.1rem", marginTop: "0px", marginBottom: "0px" }}>
+            <h3 style={{ fontSize: "1.7rem", fontWeight: 800, color: "var(--ink)", marginBottom: "1.1rem", letterSpacing: "-0.02em" }}>Visi Kami</h3>
+            <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: "1.08rem", margin: 0 }}>
               Menjadi infrastruktur rantai pasok rural paling dipercaya di Indonesia — tempat harga yang adil bukan lagi janji pemasaran, melainkan angka yang bisa dibuktikan setiap hari oleh sistemnya sendiri.
             </p>
           </div>
 
-          <div className="modern-card" style={{ padding: "3.5rem", borderRadius: "2rem" }}>
-            <div style={{ background: "linear-gradient(135deg, #ECFDF5, #D1FAE5)", width: "64px", height: "64px", borderRadius: "20px", display: "flex", alignItems: "center", justifyContent: "center", color: "#10B981", marginBottom: "2rem", boxShadow: "0 10px 20px -5px rgba(16,185,129,0.15)" }}>
-              <Target size={32} />
+          <div className="modern-card" style={{ padding: "3.2rem", borderRadius: "1.75rem" }}>
+            <div style={{ background: "#E1F1F4", width: "64px", height: "64px", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--teal)", marginBottom: "1.75rem" }}>
+              <Target size={30} />
             </div>
-            <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1.25rem", letterSpacing: "-0.02em" }}>Misi Kami</h3>
-            <ul style={{ color: "#475569", lineHeight: 1.8, fontSize: "1.05rem", paddingLeft: "1.25rem", marginTop: "0px", marginBottom: "0px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h3 style={{ fontSize: "1.7rem", fontWeight: 800, color: "var(--ink)", marginBottom: "1.1rem", letterSpacing: "-0.02em" }}>Misi Kami</h3>
+            <ul style={{ color: "var(--muted)", lineHeight: 1.75, fontSize: "1.02rem", paddingLeft: "1.2rem", margin: 0, display: "flex", flexDirection: "column", gap: "0.7rem" }}>
               <li>Memangkas rantai distribusi tengkulak agar margin keuntungan kembali ke tangan produsen hulu, bukan perantara.</li>
               <li>Menjadikan setiap transaksi sebagai jejak digital yang membuka akses produsen ke layanan keuangan formal.</li>
-              <li>Membangun jaringan logistik desa yang terpetakan dan dapat dilacak, memangkas biaya distribusi yang selama ini membebani produsen kecil.</li>
+              <li>Membangun jaringan logistik desa yang terpetakan dan dapat dilacak, memangkas biaya distribusi yang membebani produsen kecil.</li>
             </ul>
           </div>
 
         </div>
       </section>
 
-      {/* SEKSI 3: CORE VALUES */}
-      <section className="values-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "7rem", paddingBottom: "7rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
-        <div className="values-header" style={{ textAlign: "center", marginBottom: "5rem" }}>
-          <span style={{ color: "#2563EB", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Bukan Klaim, Tapi Sistem</span>
-          <h2 style={{ fontSize: "2.75rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Tiga Pilar yang Membuat Dampak Ini Nyata</h2>
+      {/* SEKSI 3: TIGA PILAR */}
+      <section className="values-section" style={{ padding: "7rem 3rem", maxWidth: "1200px", margin: "0 auto" }}>
+        <div className="values-header" style={{ textAlign: "center", marginBottom: "4rem" }}>
+          <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Bukan Klaim, Tapi Sistem</span>
+          <h2 style={{ fontSize: "2.6rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.5rem", letterSpacing: "-0.03em" }}>Tiga Pilar yang Membuat Dampak Ini Nyata</h2>
         </div>
 
-        <div className="values-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem" }}>
-          <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
-            <div style={{ color: "#2563EB", marginBottom: "1.25rem" }}><Scale size={32} /></div>
-            <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Indeks Harga Adil</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Metrik kuantitatif yang membandingkan harga platform terhadap estimasi harga tengkulak — mengubah "harga adil" dari slogan menjadi angka yang bisa diverifikasi siapa pun.</p>
-          </div>
-          <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
-            <div style={{ color: "#10B981", marginBottom: "1.25rem" }}><Zap size={32} /></div>
-            <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Smart Restock Proaktif</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Sistem pengingat otomatis berbasis jadwal panen riil, memungkinkan koperasi digital menjemput hasil panen lebih dulu daripada tengkulak konvensional.</p>
-          </div>
-          <div className="values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem", border: "1px solid #E2E8F0", background: "#ffffff" }}>
-            <div style={{ color: "#818CF8", marginBottom: "1.25rem" }}><Globe2 size={32} /></div>
-            <h4 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.5rem" }}>Escrow System Terjamin</h4>
-            <p style={{ color: "#64748B", fontSize: "0.95rem", lineHeight: 1.6, marginTop: "0px", marginBottom: "0px" }}>Dana pembeli ditahan aman hingga barang diterima, baru dibagi otomatis ke dompet digital produsen dan toko — menghilangkan risiko gagal bayar sepenuhnya.</p>
-          </div>
+        <div className="values-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.75rem" }}>
+          {pilar.map((p, i) => {
+            const Icon = p.icon;
+            return (
+              <div key={i} className="modern-card values-card" style={{ padding: "2.5rem 2rem", borderRadius: "1.5rem" }}>
+                <div style={{ color: p.accent, background: p.soft, width: "58px", height: "58px", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.4rem" }}>
+                  <Icon size={28} />
+                </div>
+                <h4 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--ink)", marginBottom: "0.6rem", letterSpacing: "-0.02em" }}>{p.title}</h4>
+                <p style={{ color: "var(--muted)", fontSize: "0.95rem", lineHeight: 1.65, margin: 0 }}>{p.desc}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       {/* TIM PENGEMBANG */}
-      <section className="team-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "8rem", paddingBottom: "8rem", background: "#F8FAFC", borderTop: "1px solid #E2E8F0" }}>
-        <div style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
-          <div className="team-header" style={{ textAlign: "center", marginBottom: "5rem" }}>
-            <span style={{ color: "#38BDF8", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Di Balik Sistem</span>
-            <h2 style={{ fontSize: "2.75rem", fontWeight: 800, color: "#0F172A", marginTop: "0.5rem", letterSpacing: "-0.02em" }}>Arsitek Platform</h2>
-            <p style={{ color: "#64748B", marginTop: "0.75rem", fontSize: "1.1rem" }}>Tim kecil dengan target besar: membuktikan bahwa teknologi bisa memihak produsen kecil, bukan hanya pemain besar.</p>
+      <section className="team-section" style={{ padding: "7rem 3rem", background: "var(--paper)", borderTop: "1px solid var(--line)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div className="team-header" style={{ textAlign: "center", marginBottom: "4rem" }}>
+            <span style={{ color: "var(--harvest)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Di Balik Sistem</span>
+            <h2 style={{ fontSize: "2.6rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.5rem", letterSpacing: "-0.03em" }}>Arsitek Platform</h2>
+            <p style={{ color: "var(--muted)", marginTop: "0.75rem", fontSize: "1.08rem", maxWidth: "620px", marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>Tim kecil dengan target besar: membuktikan bahwa teknologi bisa memihak produsen kecil, bukan hanya pemain besar.</p>
           </div>
 
-          <div className="team-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2.5rem", paddingLeft: "1rem", paddingRight: "1rem" }}>
-            
-            <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/raffi.png" alt="Mukhammad Raffi Zabra" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
-                <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #38BDF8, #2563EB)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
+          <div className="team-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2.2rem" }}>
+            {tim.map((t, i) => (
+              <div key={i} className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "1.75rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ position: "relative", marginBottom: "1.5rem" }}>
+                  <img src={t.img} alt={t.nama} style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: t.pos, border: "4px solid var(--paper)", zIndex: 2, position: "relative" }} />
+                  <div style={{ position: "absolute", inset: "-5px", borderRadius: "50%", background: t.warna, zIndex: 1, opacity: 0.35, filter: "blur(10px)" }} />
+                </div>
+                <h3 style={{ fontSize: "1.28rem", fontWeight: 800, color: "var(--ink)", margin: 0 }}>{t.nama}</h3>
+                <p style={{ color: t.warna, fontWeight: 700, fontSize: "0.9rem", marginTop: "0.35rem", marginBottom: 0 }}>{t.peran}</p>
+                <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem" }}>
+                  <a href={t.ig} target="_blank" rel="noopener noreferrer" className="social-icon ig"><FaInstagram size={22} /></a>
+                  <a href={t.git} target="_blank" rel="noopener noreferrer" className="social-icon git"><FaGithub size={22} /></a>
+                </div>
               </div>
-              <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Mukhammad Raffi Zabra</h3>
-              <p style={{ color: "#2563EB", fontWeight: 700, fontSize: "0.9rem", marginTop: "0.35rem", marginBottom: "0px" }}>Lead Developer &amp; Full Stack Developer</p>
-              <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem" }}>
-                <a href="https://www.instagram.com/rappizr/" target="_blank" rel="noopener noreferrer" className="social-icon ig"><FaInstagram size={22} /></a>
-                <a href="https://github.com/Rappizr" target="_blank" rel="noopener noreferrer" className="social-icon git"><FaGithub size={22} /></a>
-              </div>
-            </div>
-
-            <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/ringga.png" alt="Ringga Budi Utama" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
-                <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #10B981, #059669)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
-              </div>
-              <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Ringga Budi Utama</h3>
-              <p style={{ color: "#10B981", fontWeight: 700, fontSize: "0.9rem", marginTop: "0.35rem", marginBottom: "0px" }}>Frontend Engineer &amp; System Analysis</p>
-              <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem" }}>
-                <a href="https://www.instagram.com/ringgabdy.___" target="_blank" rel="noopener noreferrer" className="social-icon ig"><FaInstagram size={22} /></a>
-                <a href="https://github.com/ringgabudiutama" target="_blank" rel="noopener noreferrer" className="social-icon git"><FaGithub size={22} /></a>
-              </div>
-            </div>
-
-            <div className="modern-card team-card" style={{ padding: "3rem 2rem", borderRadius: "2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ position: "relative", marginBottom: "1.5rem" }}>
-                <img src="/rizal.png" alt="Afrizal Rafli Kusuma Wardana" style={{ width: "110px", height: "110px", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: "4px solid #F1F5F9", zIndex: 2, position: "relative" }} />
-                <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "linear-gradient(135deg, #F59E0B, #D97706)", zIndex: 1, opacity: 0.3, filter: "blur(8px)" }} />
-              </div>
-              <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0F172A", marginTop: "0px", marginBottom: "0px" }}>Afrizal Rafli Kusuma Wardana</h3>
-              <p style={{ color: "#F59E0B", fontWeight: 700, fontSize: "0.9rem", marginTop: "0.35rem", marginBottom: "0px" }}>Full Stack Developer</p>
-              <div style={{ display: "flex", gap: "1.25rem", marginTop: "1.5rem" }}>
-                <a href="https://www.instagram.com/afrzalrfli" target="_blank" rel="noopener noreferrer" className="social-icon ig"><FaInstagram size={22} /></a>
-                <a href="https://github.com/rizalrfli" target="_blank" rel="noopener noreferrer" className="social-icon git"><FaGithub size={22} /></a>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-        <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
-          <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
+      <footer className="footer-container" style={{ padding: "3rem 4rem", background: "var(--forest-1)", color: "#8D9C91", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="footer-wrapper" style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.88rem" }}>
+          <span style={{ color: "#9AA99F" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
+          <span>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
         </div>
       </footer>
     </div>

@@ -24,8 +24,8 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
 export default function LandingPage() {
   const bgImages = [
     "/logo1.png",
-    "/logo2.png", 
-    "/logo3.png", 
+    "/logo2.png",
+    "/logo3.png",
   ];
 
   const [currentBg, setCurrentBg] = useState(0);
@@ -36,6 +36,7 @@ export default function LandingPage() {
 
   const mitraCount = useCountUp(2400, 1800, statsVisible);
   const indeksCount = useCountUp(82, 1800, statsVisible);
+  const desaCount = useCountUp(140, 1800, statsVisible);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -92,317 +93,190 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
+  const fitur = [
+    {
+      layer: "Hulu",
+      accent: "#12864E",
+      soft: "#E7F3EC",
+      title: "Wallet & Kendali Produsen",
+      desc: "Petani, peternak, dan pengrajin memantau Indeks Harga Adil harian, mengelola stok dari lahan sendiri, dan menarik saldo Wallet kapan pun dibutuhkan.",
+      icon: (
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+      )
+    },
+    {
+      layer: "Tengah",
+      accent: "#D98A2B",
+      soft: "#FBF0DF",
+      title: "Dashboard Admin Toko",
+      desc: "Smart Restock mengingatkan jadwal panen sebelum tengkulak datang, buku kas digital tercatat otomatis, dan katalog harga tersinkron langsung ke pembeli.",
+      icon: (
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.44-4A2 2 0 0 1 7.18 4h9.64a2 2 0 0 1 1.74 1L21 9"/><path d="M9 14h6"/></svg>
+      )
+    },
+    {
+      layer: "Hilir",
+      accent: "#0E7490",
+      soft: "#E1F1F4",
+      title: "Portal Pembeli Cerdas",
+      desc: "Jelajahi komoditas pelosok lengkap dengan kisah asli produsennya, pelacakan pengiriman real-time di peta, dan dana yang aman lewat sistem Escrow.",
+      icon: (
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+      )
+    }
+  ];
+
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden", scrollBehavior: "smooth" }}>
-      
+    <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden", scrollBehavior: "smooth" }}>
+
       <audio ref={audioRef} src="/bgm.mp3" loop autoPlay style={{ display: "none" }} />
-      
+
       <style dangerouslySetInnerHTML={{__html: `
+        .pn-root {
+          --ink: #0C1F17;
+          --paper: #F6F7F4;
+          --card: #FFFFFF;
+          --line: #E6E8E2;
+          --muted: #5B6B60;
+          --forest-1: #0A2018;
+          --forest-2: #103726;
+          --emerald: #12864E;
+          --emerald-bright: #34D399;
+          --harvest: #E1A140;
+          --teal: #0E7490;
+        }
+
         .glass-nav {
-          background: ${isScrolled ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.15)'};
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.2)' : 'none'};
+          background: ${isScrolled ? 'rgba(246, 247, 244, 0.85)' : 'rgba(10, 32, 24, 0.12)'};
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.06)' : 'rgba(255,255,255,0.08)'};
+          box-shadow: ${isScrolled ? '0 6px 34px rgba(10,32,24,0.06)' : 'none'};
         }
         .nav-link {
-          color: rgba(255, 255, 255, 0.8);
+          color: ${isScrolled ? 'var(--ink)' : 'rgba(231, 239, 233, 0.82)'};
           transition: all 0.3s ease;
           cursor: pointer;
         }
-        .nav-link:hover { color: #FFFFFF; transform: translateY(-1px); }
-        
+        .nav-link:hover { color: ${isScrolled ? 'var(--emerald)' : '#FFFFFF'}; transform: translateY(-1px); }
+
         .footer-link {
-          color: #94A3B8;
+          color: #8D9C91;
           text-decoration: none;
           transition: color 0.3s ease;
           cursor: pointer;
+          font-weight: 600;
         }
         .footer-link:hover { color: #FFFFFF; }
-        
-        .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+
+        .grad-text {
+          background: linear-gradient(120deg, #6EE7B7 0%, #34D399 55%, #E1A140 130%);
           -webkit-background-clip: text;
+          background-clip: text;
           -webkit-text-fill-color: transparent;
         }
+
         .modern-card {
-          background: #ffffff;
+          position: relative;
+          background: var(--card);
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid rgba(226, 232, 240, 0.8);
+          border: 1px solid var(--line);
+          overflow: hidden;
+        }
+        .modern-card::before {
+          content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+          background: var(--card-accent);
         }
         .modern-card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
-          border-color: rgba(56, 189, 248, 0.3);
+          box-shadow: 0 26px 50px -24px rgba(10,32,24,0.26);
+          border-color: rgba(18,134,78,0.28);
         }
+
         .glass-stat {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.5);
-          transition: all 0.3s ease;
+          background: var(--card);
+          border: 1px solid var(--line);
+          transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
         }
-        .glass-stat:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1); }
-        
+        .glass-stat:hover { transform: translateY(-6px); box-shadow: 0 22px 40px -22px rgba(10,32,24,0.28); }
+
         .btn-glow {
           transition: all 0.3s ease;
-          box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+          box-shadow: 0 12px 28px -8px rgba(18, 134, 78, 0.5);
         }
-        .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 15px 35px -5px rgba(37, 99, 235, 0.6); }
+        .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 18px 38px -8px rgba(18, 134, 78, 0.65); }
 
-        /* --- ELEMEN DEKORATIF BERGERAK DI HERO --- */
-        @keyframes floatSlow {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(12px, -22px) rotate(6deg); }
-        }
-        @keyframes floatSlower {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(-16px, 18px) rotate(-5deg); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.35; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.08); }
-        }
-        @keyframes drift {
-          0% { transform: translateX(0) translateY(0); }
-          100% { transform: translateX(30px) translateY(-40px); }
-        }
-        .float-icon-1 { animation: floatSlow 7s ease-in-out infinite; }
-        .float-icon-2 { animation: floatSlower 9s ease-in-out infinite; }
-        .float-icon-3 { animation: floatSlow 8s ease-in-out infinite 1.5s; }
-        .float-icon-4 { animation: floatSlower 6.5s ease-in-out infinite 0.8s; }
+        .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes pulseGlow { 0%,100% { opacity: 0.32; transform: scale(1); } 50% { opacity: 0.55; transform: scale(1.08); } }
         .glow-orb-1 { animation: pulseGlow 6s ease-in-out infinite; }
         .glow-orb-2 { animation: pulseGlow 7s ease-in-out infinite 1s; }
 
+        @media (prefers-reduced-motion: reduce) {
+          .glow-orb-1,.glow-orb-2 { animation: none !important; }
+        }
+
         @media (max-width: 768px) {
-          .header-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 0.5rem !important;
-            padding-bottom: 0.5rem !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0px !important;
-          }
-          .nav-logo-text {
-            font-size: 0.85rem !important;
-          }
-          .nav-logo-img {
-            height: 20px !important;
-          }
-          .nav-container {
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            gap: 0.3rem !important;
-          }
-          .nav-link {
-            font-size: 0.5rem !important;
-            font-weight: 700 !important;
-          }
-          .btn-masuk-portal {
-            padding-top: 0.2rem !important;
-            padding-bottom: 0.2rem !important;
-            padding-left: 0.4rem !important;
-            padding-right: 0.4rem !important;
-            font-size: 0.5rem !important;
-            gap: 0.2rem !important;
-          }
-          .btn-masuk-portal svg {
-            width: 8px !important;
-            height: 8px !important;
-          }
-          .hero-section {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 6rem !important;
-            padding-bottom: 5rem !important;
-            min-height: auto !important;
-          }
-          .hero-wrapper {
-            margin-top: 0px !important;
-          }
-          .hero-badge {
-            font-size: 0.65rem !important;
-            padding: 0.35rem 0.85rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .hero-title {
-            font-size: 1.85rem !important;
-            line-height: 1.2 !important;
-          }
-          .hero-desc {
-            font-size: 0.85rem !important;
-            margin-bottom: 1.75rem !important;
-          }
-          .hero-btn-group {
-            flex-direction: row !important;
-            justify-content: center !important;
-            gap: 8px !important;
-          }
-          .hero-btn-group a {
-            padding: 0.6rem 1rem !important;
-            font-size: 0.8rem !important;
-            flex: none !important;
-            width: auto !important;
-          }
-          .float-icon-1, .float-icon-2, .float-icon-3, .float-icon-4 { display: none !important; }
-          
-          .stats-section {
-            padding-left: 0.35rem !important;
-            padding-right: 0.35rem !important;
-            margin-top: -2.5rem !important;
-          }
-          .stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-          }
-          .glass-stat {
-            padding: 0.35rem 0.25rem !important;
-            gap: 0.2rem !important;
-            flex-direction: column !important;
-            text-align: center !important;
-            border-radius: 0.6rem !important;
-          }
-          .glass-stat .icon-box {
-            padding: 0.3rem !important;
-            border-radius: 0.4rem !important;
-            margin: 0px !important;
-          }
-          .glass-stat svg {
-            width: 12px !important;
-            height: 12px !important;
-          }
-          .glass-stat .stat-number {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          .glass-stat .stat-label {
-            font-size: 0.42rem !important;
-            line-height: 1.1 !important;
-            white-space: nowrap !important;
-          }
+          .header-container { padding: 0.55rem 0.9rem !important; }
+          .nav-logo-text { font-size: 1rem !important; }
+          .nav-logo-img { height: 24px !important; }
+          .nav-container { gap: 0.9rem !important; }
+          .nav-link-desktop { display: none !important; }
+          .btn-masuk-portal { padding: 0.42rem 0.9rem !important; font-size: 0.72rem !important; gap: 0.3rem !important; }
+          .btn-masuk-portal svg { width: 13px !important; height: 13px !important; }
 
-          .features-section {
-            padding-left: 0.25rem !important;
-            padding-right: 0.25rem !important;
-            padding-top: 3rem !important;
-            padding-bottom: 3rem !important;
-          }
-          .features-section h2 {
-            font-size: 1.35rem !important;
-          }
-          .features-section p {
-            font-size: 0.7rem !important;
-            margin-top: 0.4rem !important;
-            margin-bottom: 1.75rem !important;
-          }
-          .features-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-          }
-          .modern-card {
-            padding: 0.4rem 0.3rem !important;
-            border-radius: 0.5rem !important;
-          }
-          .modern-card div {
-            width: 26px !important;
-            height: 26px !important;
-            border-radius: 6px !important;
-            margin-bottom: 0.4rem !important;
-          }
-          .modern-card div svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .modern-card h3 {
-            font-size: 0.52rem !important;
-            line-height: 1.1 !important;
-            margin-bottom: 0.25rem !important;
-          }
-          .modern-card p {
-            font-size: 0.42rem !important;
-            line-height: 1.3 !important;
-          }
+          .hero-section { padding: 6.5rem 1.2rem 4rem !important; min-height: auto !important; }
+          .hero-wrapper { margin-top: 0 !important; }
+          .hero-badge { font-size: 0.66rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.2rem !important; }
+          .hero-title { font-size: 2.05rem !important; line-height: 1.16 !important; }
+          .hero-desc { font-size: 0.9rem !important; margin-bottom: 2rem !important; }
+          .hero-btn-group { flex-direction: column !important; gap: 0.7rem !important; }
+          .hero-btn-group a { padding: 0.75rem 1.3rem !important; font-size: 0.9rem !important; justify-content: center; }
 
-          .cta-section {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 4rem !important;
-            padding-bottom: 4rem !important;
-          }
-          .cta-section h2 {
-            font-size: 1.45rem !important;
-            line-height: 1.2 !important;
-          }
-          .cta-section p {
-            font-size: 0.8rem !important;
-            margin-bottom: 2rem !important;
-          }
-          .cta-section a {
-            padding: 0.65rem 1.5rem !important;
-            font-size: 0.85rem !important;
-          }
+          .stats-section { padding: 0 1.1rem !important; margin-top: -3rem !important; }
+          .stats-grid { grid-template-columns: 1fr !important; gap: 0.85rem !important; }
+          .glass-stat { padding: 1.15rem 1.25rem !important; border-radius: 1rem !important; }
+          .glass-stat .stat-number { font-size: 1.45rem !important; }
+          .glass-stat .stat-label { font-size: 0.8rem !important; }
 
-          .footer-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-          }
-          .footer-top {
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0px !important;
-            margin-bottom: 1.5rem !important;
-          }
-          .footer-logo-img {
-            height: 22px !important;
-          }
-          .footer-logo-text {
-            font-size: 0.85rem !important;
-          }
-          .footer-grid-links {
-            grid-template-columns: repeat(3, auto) !important;
-            column-gap: 0.45rem !important;
-            margin-left: auto !important;
-            align-items: center !important;
-          }
-          .footer-link {
-            font-size: 0.52rem !important;
-            font-weight: 700 !important;
-          }
-          .footer-bottom {
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0px !important;
-            padding-top: 1.25rem !important;
-          }
-          .footer-bottom span {
-            font-size: 0.42rem !important;
-            line-height: 1.2 !important;
-          }
+          .features-section { padding: 3.5rem 1.1rem !important; }
+          .features-section h2 { font-size: 1.55rem !important; }
+          .features-section .sec-sub { font-size: 0.88rem !important; margin-top: 0.6rem !important; margin-bottom: 2rem !important; }
+          .features-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+          .modern-card { padding: 1.6rem 1.4rem !important; border-radius: 1.1rem !important; }
+
+          .cta-section { padding: 4rem 1.2rem !important; }
+          .cta-section h2 { font-size: 1.7rem !important; line-height: 1.18 !important; }
+          .cta-section p { font-size: 0.9rem !important; margin-bottom: 2rem !important; }
+          .cta-section a { padding: 0.75rem 1.6rem !important; font-size: 0.92rem !important; }
+
+          .footer-container { padding: 2.2rem 1.2rem !important; }
+          .footer-top { flex-direction: column !important; align-items: flex-start !important; gap: 1.4rem !important; margin-bottom: 2rem !important; }
+          .footer-grid-links { grid-template-columns: repeat(3, auto) !important; column-gap: 1.4rem !important; margin-left: 0 !important; }
+          .footer-link { font-size: 0.78rem !important; }
+          .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
+          .footer-bottom span { font-size: 0.72rem !important; }
         }
       `}} />
 
-      <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
-          <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "6px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.35rem", fontWeight: 800, color: "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: "#38BDF8" }}>Nusa</span>
+      {/* NAVBAR */}
+      <header className="glass-nav header-container" style={{ padding: "0.9rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem", flexShrink: 0 }}>
+          <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "34px", width: "auto", objectFit: "contain", borderRadius: "6px" }} />
+          <span className="nav-logo-text" style={{ fontSize: "1.35rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? "var(--ink)" : "#FFFFFF", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: isScrolled ? "var(--emerald)" : "var(--emerald-bright)" }}>Nusa</span>
           </span>
         </div>
-        
-        <nav className="nav-container" style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
-          <a href="#fitur" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Fitur Utama</a>
-          <a href="/rantai-pasok" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Rantai Pasok</a>
-          <a href="/mitra-umkm" className="nav-link" style={{ textDecoration: "none", fontSize: "0.95rem", fontWeight: 600 }}>Mitra UMKM</a>
-          
-          <Link href="/login" className="btn-glow btn-masuk-portal" style={{ 
-            paddingTop: "0.55rem", paddingBottom: "0.55rem", paddingLeft: "1.25rem", paddingRight: "1.25rem", fontSize: "0.85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.4rem",
-            backgroundColor: "#FFFFFF", color: "#0F172A", borderRadius: "99px", textDecoration: "none"
+
+        <nav className="nav-container" style={{ display: "flex", alignItems: "center", gap: "2.4rem" }}>
+          <a href="#fitur" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Fitur Utama</a>
+          <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Rantai Pasok</a>
+          <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Mitra UMKM</a>
+
+          <Link href="/login" className="btn-masuk-portal" style={{
+            padding: "0.55rem 1.3rem", fontSize: "0.85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.45rem",
+            backgroundColor: isScrolled ? "var(--emerald)" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "var(--emerald)", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -414,147 +288,125 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <section className="hero-section" style={{ minHeight: "95vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", paddingLeft: "2rem", paddingRight: "2rem", paddingTop: "6rem", paddingBottom: "4rem" }}>
+      {/* HERO */}
+      <section className="hero-section" style={{ minHeight: "96vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "6rem 2rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} style={{
             position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.85)), url('${img}')`,
+            backgroundImage: `linear-gradient(180deg, rgba(10,32,24,0.55), rgba(10,32,24,0.92)), url('${img}')`,
             backgroundSize: "cover",
-            backgroundPosition: "center", 
+            backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-            backgroundAttachment: "scroll",
             opacity: currentBg === index ? 1 : 0,
             transform: currentBg === index ? "scale(1.03)" : "scale(1.08)",
             transition: "opacity 2s ease-in-out, transform 6s ease",
           }} />
         ))}
 
-        {/* Glow orbs bergerak halus di latar */}
-        <div className="glow-orb-1" style={{ position: "absolute", top: "12%", left: "8%", width: "220px", height: "220px", borderRadius: "50%", background: "radial-gradient(circle, rgba(56,189,248,0.35), transparent 70%)", filter: "blur(10px)", zIndex: 1 }} />
-        <div className="glow-orb-2" style={{ position: "absolute", bottom: "10%", right: "10%", width: "260px", height: "260px", borderRadius: "50%", background: "radial-gradient(circle, rgba(129,140,248,0.3), transparent 70%)", filter: "blur(10px)", zIndex: 1 }} />
+        {/* Glow orbs */}
+        <div className="glow-orb-1" style={{ position: "absolute", top: "12%", left: "8%", width: "230px", height: "230px", borderRadius: "50%", background: "radial-gradient(circle, rgba(52,211,153,0.35), transparent 70%)", filter: "blur(12px)", zIndex: 1 }} />
+        <div className="glow-orb-2" style={{ position: "absolute", bottom: "10%", right: "10%", width: "270px", height: "270px", borderRadius: "50%", background: "radial-gradient(circle, rgba(225,161,64,0.28), transparent 70%)", filter: "blur(12px)", zIndex: 1 }} />
 
-        {/* Ikon-ikon melayang: menyiratkan komoditas & rantai pasok bergerak */}
-        <div className="float-icon-1" style={{ position: "absolute", top: "20%", left: "12%", zIndex: 1, opacity: 0.55 }}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div className="float-icon-2" style={{ position: "absolute", top: "30%", right: "14%", zIndex: 1, opacity: 0.5 }}>
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        </div>
-        <div className="float-icon-3" style={{ position: "absolute", bottom: "24%", left: "16%", zIndex: 1, opacity: 0.5 }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" strokeWidth="1.8"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <div className="float-icon-4" style={{ position: "absolute", bottom: "32%", right: "18%", zIndex: 1, opacity: 0.5 }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="1.8"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"/></svg>
-        </div>
-   
-        <div className="hero-wrapper" style={{ maxWidth: "900px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 2, marginTop: "2rem", marginBottom: "0px" }}>
-          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", paddingLeft: "1.25rem", paddingRight: "1.25rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(255, 255, 255, 0.12)", backdropFilter: "blur(10px)", border: "1px solid rgba(255, 255, 255, 0.2)", color: "#E0F2FE", fontSize: "0.85rem", fontWeight: 600, marginBottom: "2rem", letterSpacing: "0.05em" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#38BDF8", boxShadow: "0 0 10px #38BDF8" }} />
-            RURAL COMMERCE &amp; SUPPLY CHAIN
+        <div className="hero-wrapper fade-in" style={{ maxWidth: "920px", margin: "2rem auto 0", position: "relative", zIndex: 2 }}>
+          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.55rem", padding: "0.5rem 1.25rem", borderRadius: "99px", background: "rgba(52,211,153,0.12)", backdropFilter: "blur(10px)", border: "1px solid rgba(52,211,153,0.28)", color: "#D1FAE5", fontSize: "0.82rem", fontWeight: 700, marginBottom: "2rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--emerald-bright)", boxShadow: "0 0 10px var(--emerald-bright)" }} />
+            Rural Commerce &amp; Supply Chain
           </div>
-          
-          <h1 className="hero-title" style={{ fontSize: "4.25rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.15, marginBottom: "1.5rem", letterSpacing: "-0.02em" }}>
-            Harga Adil untuk Produsen, <br /><span className="gradient-text">Terukur Sampai ke Angka</span>
+
+          <h1 className="hero-title" style={{ fontSize: "4.25rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.12, marginBottom: "1.5rem", letterSpacing: "-0.035em" }}>
+            Harga Adil untuk Produsen,<br /><span className="grad-text">Terukur Sampai ke Angka</span>
           </h1>
-          
-          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem", lineHeight: 1.6, fontWeight: 400 }}>
+
+          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#C7D6CC", maxWidth: "700px", margin: "0 auto 3rem", lineHeight: 1.65, fontWeight: 400 }}>
             PasarNusa memutus rantai tengkulak dan mengubah perantara informal menjadi koperasi digital yang transparan — setiap harga, transaksi, dan margin bisa diaudit sistem, bukan sekadar dijanjikan.
           </p>
-          
+
           <div className="hero-btn-group" style={{ display: "flex", justifyContent: "center", gap: "14px" }}>
-            <Link href="/login" className="btn-glow" style={{ paddingLeft: "2.25rem", paddingRight: "2.25rem", paddingTop: "0.85rem", paddingBottom: "0.85rem", fontSize: "1rem", fontWeight: 600, borderRadius: "99px", backgroundColor: "#38BDF8", color: "#0F172A", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+            <Link href="/login" className="btn-glow" style={{ padding: "0.85rem 2.25rem", fontSize: "1rem", fontWeight: 700, borderRadius: "99px", backgroundColor: "var(--emerald)", color: "#FFFFFF", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
               Mulai Akses
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </Link>
-            <a href="#fitur" style={{ paddingLeft: "2.25rem", paddingRight: "2.25rem", paddingTop: "0.85rem", paddingBottom: "0.85rem", fontSize: "1rem", fontWeight: 600, borderRadius: "99px", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.3)", backgroundColor: "rgba(255,255,255,0.05)", backdropFilter: "blur(10px)", textDecoration: "none", transition: "all 0.3s ease" }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}>
+            <a href="#fitur" style={{ padding: "0.85rem 2.25rem", fontSize: "1rem", fontWeight: 600, borderRadius: "99px", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.28)", backgroundColor: "rgba(255,255,255,0.06)", backdropFilter: "blur(10px)", textDecoration: "none", transition: "all 0.3s ease" }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"}>
               Pelajari Fitur
             </a>
           </div>
         </div>
       </section>
 
-      <section className="stats-section" ref={statsRef} style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "0px", paddingBottom: "0px", marginTop: "-5rem", position: "relative", zIndex: 10 }}>
-        <div className="stats-grid" style={{ maxWidth: "1100px", marginLeft: "auto", marginRight: "auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
-          
+      {/* STATISTIK */}
+      <section className="stats-section" ref={statsRef} style={{ padding: "0 3rem", marginTop: "-5rem", position: "relative", zIndex: 10 }}>
+        <div className="stats-grid" style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
+
           <div className="glass-stat" style={{ padding: "1.75rem", borderRadius: "1.25rem", display: "flex", alignItems: "center", gap: "1.25rem" }}>
-            <div className="icon-box" style={{ background: "#EFF6FF", padding: "0.85rem", borderRadius: "0.85rem", color: "#2563EB", flexShrink: 0 }}>
+            <div className="icon-box" style={{ background: "#E7F3EC", padding: "0.85rem", borderRadius: "0.85rem", color: "var(--emerald)", flexShrink: 0 }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <div>
-              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", lineHeight: 1.2 }}>{mitraCount.toLocaleString("id-ID")}+</div>
-              <div className="stat-label" style={{ fontSize: "0.85rem", color: "#64748B", fontWeight: 500 }}>Mitra Produsen Terverifikasi</div>
+              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--ink)", lineHeight: 1.2 }}>{mitraCount.toLocaleString("id-ID")}+</div>
+              <div className="stat-label" style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500 }}>Mitra Produsen Terverifikasi</div>
             </div>
           </div>
-          
+
           <div className="glass-stat" style={{ padding: "1.75rem", borderRadius: "1.25rem", display: "flex", alignItems: "center", gap: "1.25rem" }}>
-            <div className="icon-box" style={{ background: "#ECFDF5", padding: "0.85rem", borderRadius: "0.85rem", color: "#10B981", flexShrink: 0 }}>
+            <div className="icon-box" style={{ background: "#FBF0DF", padding: "0.85rem", borderRadius: "0.85rem", color: "var(--harvest)", flexShrink: 0 }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
             </div>
             <div>
-              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", lineHeight: 1.2 }}>{indeksCount}/100</div>
-              <div className="stat-label" style={{ fontSize: "0.85rem", color: "#64748B", fontWeight: 500 }}>Rata-rata Indeks Harga Adil</div>
+              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--ink)", lineHeight: 1.2 }}>{indeksCount}/100</div>
+              <div className="stat-label" style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500 }}>Rata-rata Indeks Harga Adil</div>
             </div>
           </div>
-          
+
           <div className="glass-stat" style={{ padding: "1.75rem", borderRadius: "1.25rem", display: "flex", alignItems: "center", gap: "1.25rem" }}>
-            <div className="icon-box" style={{ background: "#FEF2F2", padding: "0.85rem", borderRadius: "0.85rem", color: "#EF4444", flexShrink: 0 }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div className="icon-box" style={{ background: "#E1F1F4", padding: "0.85rem", borderRadius: "0.85rem", color: "var(--teal)", flexShrink: 0 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
             </div>
             <div>
-              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0F172A", lineHeight: 1.2 }}>Escrow Aktif</div>
-              <div className="stat-label" style={{ fontSize: "0.85rem", color: "#64748B", fontWeight: 500 }}>Dana Aman Sampai Barang Diterima</div>
+              <div className="stat-number" style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--ink)", lineHeight: 1.2 }}>{desaCount}+ Desa</div>
+              <div className="stat-label" style={{ fontSize: "0.85rem", color: "var(--muted)", fontWeight: 500 }}>Terjangkau Escrow Aman</div>
             </div>
           </div>
 
         </div>
       </section>
 
-      <section id="fitur" className="features-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "8rem", paddingBottom: "8rem", background: "#F8FAFC" }}>
-        <div style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#0F172A", letterSpacing: "-0.02em" }}>Satu Ekosistem, Empat Peran Saling Terhubung</h2>
-            <p style={{ color: "#64748B", fontSize: "1.1rem", marginTop: "1rem", maxWidth: "600px", marginLeft: "auto", marginRight: "auto" }}>
+      {/* FITUR */}
+      <section id="fitur" className="features-section" style={{ padding: "8rem 3rem", background: "var(--paper)" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+            <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Satu Ekosistem</span>
+            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "0.6rem" }}>Tiga Peran, Satu Rantai Pasok</h2>
+            <p className="sec-sub" style={{ color: "var(--muted)", fontSize: "1.08rem", marginTop: "1rem", maxWidth: "620px", margin: "1rem auto 0", lineHeight: 1.65 }}>
               Setiap portal dirancang untuk perannya masing-masing, tapi datanya mengalir satu sama lain — dari lahan produsen sampai ke tangan pembeli.
             </p>
           </div>
 
-          <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))", gap: "2rem" }}>
-            
-            <div className="modern-card" style={{ padding: "2.5rem", borderRadius: "1.5rem" }}>
-              <div style={{ background: "#EFF6FF", width: "64px", height: "64px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", marginBottom: "1.5rem" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "2rem" }}>
+            {fitur.map((f, i) => (
+              <div key={i} className="modern-card" style={{ padding: "2.4rem 2.1rem", borderRadius: "1.5rem", ["--card-accent" as any]: f.accent }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.4rem" }}>
+                  <div style={{ background: f.soft, width: "60px", height: "60px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: f.accent }}>
+                    {f.icon}
+                  </div>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: f.accent, background: f.soft, padding: "0.3rem 0.7rem", borderRadius: "999px" }}>{f.layer}</span>
+                </div>
+                <h3 style={{ fontSize: "1.28rem", fontWeight: 800, color: "var(--ink)", marginBottom: "0.7rem", letterSpacing: "-0.02em" }}>{f.title}</h3>
+                <p style={{ color: "var(--muted)", lineHeight: 1.7, fontSize: "0.95rem", margin: 0 }}>{f.desc}</p>
               </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.75rem" }}>Portal Pembeli Cerdas</h3>
-              <p style={{ color: "#64748B", lineHeight: 1.7, fontSize: "0.95rem" }}>Jelajahi komoditas pelosok lengkap dengan kisah asli produsennya, pelacakan pengiriman real-time di peta, dan dana yang aman lewat sistem Escrow.</p>
-            </div>
-
-            <div className="modern-card" style={{ padding: "2.5rem", borderRadius: "1.5rem" }}>
-              <div style={{ background: "#ECFDF5", width: "64px", height: "64px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#10B981", marginBottom: "1.5rem" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-              </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.75rem" }}>Wallet &amp; Kendali Produsen</h3>
-              <p style={{ color: "#64748B", lineHeight: 1.7, fontSize: "0.95rem" }}>Petani, peternak, dan pengrajin memantau Indeks Harga Adil harian, mengelola stok dari lahan sendiri, dan menarik saldo Wallet kapan pun dibutuhkan.</p>
-            </div>
-
-            <div className="modern-card" style={{ padding: "2.5rem", borderRadius: "1.5rem" }}>
-              <div style={{ background: "#FFFBEB", width: "64px", height: "64px", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", color: "#D97706", marginBottom: "1.5rem" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.44-4A2 2 0 0 1 7.18 4h9.64a2 2 0 0 1 1.74 1L21 9"/><path d="M9 14h6"/></svg>
-              </div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0F172A", marginBottom: "0.75rem" }}>Dashboard Admin Toko</h3>
-              <p style={{ color: "#64748B", lineHeight: 1.7, fontSize: "0.95rem" }}>Smart Restock mengingatkan jadwal panen sebelum tengkulak datang, buku kas digital tercatat otomatis, dan katalog harga tersinkron langsung ke pembeli.</p>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="cta-section" style={{ paddingLeft: "3rem", paddingRight: "3rem", paddingTop: "6rem", paddingBottom: "6rem", position: "relative", overflow: "hidden", backgroundImage: `linear-gradient(rgba(15,23,42,.85), rgba(15,23,42,.95)), url("https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&w=1920&q=80")`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll", color: "#fff", textAlign: "center" }}>
-        <div style={{ maxWidth: "650px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 2 }}>
-          <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1.5rem", letterSpacing: "-0.03em", lineHeight: 1.1 }}>Jadi Bagian dari Rantai Pasok yang Adil</h2>
-          <p style={{ color: "#CBD5E1", marginBottom: "3rem", fontSize: "1.15rem", lineHeight: 1.6 }}>
+      {/* CTA */}
+      <section className="cta-section" style={{ padding: "6.5rem 3rem", position: "relative", overflow: "hidden", backgroundImage: `linear-gradient(rgba(10,32,24,.82), rgba(10,32,24,.95)), url("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1920&q=80")`, backgroundSize: "cover", backgroundPosition: "center", color: "#fff", textAlign: "center" }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "520px", height: "520px", background: "radial-gradient(circle, rgba(52,211,153,0.16), transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
+        <div style={{ maxWidth: "660px", margin: "0 auto", position: "relative", zIndex: 2 }}>
+          <h2 style={{ fontSize: "3rem", fontWeight: 800, marginBottom: "1.4rem", letterSpacing: "-0.035em", lineHeight: 1.1 }}>Jadi Bagian dari Rantai Pasok yang Adil</h2>
+          <p style={{ color: "#C7D6CC", marginBottom: "2.8rem", fontSize: "1.14rem", lineHeight: 1.65 }}>
             Bergabung dengan ekosistem digitalisasi rantai pasok paling transparan untuk pelaku UMKM dan produsen pelosok di Indonesia. Pilih peran Anda dan mulai berdampak hari ini.
           </p>
-          <Link href="/login" className="btn-glow" style={{ background: "#38BDF8", color: "#0F172A", paddingLeft: "2.5rem", paddingRight: "2.5rem", paddingTop: "1rem", paddingBottom: "1rem", fontSize: "1.1rem", fontWeight: 700, borderRadius: "99px", border: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+          <Link href="/login" className="btn-glow" style={{ background: "var(--emerald)", color: "#FFFFFF", padding: "1rem 2.5rem", fontSize: "1.1rem", fontWeight: 700, borderRadius: "99px", border: "none", display: "inline-flex", alignItems: "center", gap: "0.55rem", textDecoration: "none" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
               <polyline points="10 17 15 12 10 7"/>
@@ -565,45 +417,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "4rem", paddingBottom: "4rem", background: "#0B1120", color: "#94A3B8" }}>
-        <div style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
-          
-          <div className="footer-top" style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            flexWrap: "wrap", 
-            gap: "2rem", 
-            marginBottom: "3rem" 
-          }}>
-            
+      {/* FOOTER */}
+      <footer className="footer-container" style={{ padding: "4rem", background: "var(--forest-1)", color: "#8D9C91" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+
+          <div className="footer-top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "2rem", marginBottom: "3rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <img className="footer-logo-img" src="/logo.png" alt="Logo" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
-              <span className="footer-logo-text" style={{ fontSize: "1.3rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span style={{ color: "#38BDF8" }}>Nusa</span></span>
+              <img className="footer-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "34px", width: "auto", objectFit: "contain" }} />
+              <span className="footer-logo-text" style={{ fontSize: "1.3rem", fontWeight: 800, color: "#FFFFFF" }}>Pasar<span style={{ color: "var(--emerald-bright)" }}>Nusa</span></span>
             </div>
 
-            <div className="footer-grid-links"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, auto)",
-                columnGap: "4rem",
-                marginLeft: "auto",
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <a href="/tentang-kami" className="footer-link">Tentang Kami</a>
-              </div>
-              <div>
-                <a href="/pusat-bantuan" className="footer-link">Pusat Bantuan</a>
-              </div>
-              <div>
-                <a href="/privasi" className="footer-link">Privasi</a>
-              </div>
+            <div className="footer-grid-links" style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", columnGap: "4rem", marginLeft: "auto", alignItems: "center" }}>
+              <a href="/tentang-kami" className="footer-link">Tentang Kami</a>
+              <a href="/pusat-bantuan" className="footer-link">Pusat Bantuan</a>
+              <a href="/privasi" className="footer-link">Privasi</a>
             </div>
           </div>
-          
-          <div className="footer-bottom" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "2rem", fontSize: "0.85rem", color: "#475569", display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
+
+          <div className="footer-bottom" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "2rem", fontSize: "0.85rem", color: "#6B7A70", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
             <span>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
             <span>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
           </div>
