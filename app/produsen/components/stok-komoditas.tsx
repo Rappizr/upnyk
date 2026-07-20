@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { supabase } from "@/lib/db";
 
@@ -38,7 +38,7 @@ const IconPlus = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="non
 const IconCheckCircle = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
 function formatNumber(value: string) {
@@ -70,28 +70,40 @@ export default function StokKomoditas() {
     tampil: false, pesan: "", tipe: "sukses"
   });
 
-  function pemicuToast(pesan: string, tipe: "sukses" | "gagal" = "sukses") {
+  const pemicuToast = useCallback((pesan: string, tipe: "sukses" | "gagal" = "sukses") => {
     setToast({ tampil: true, pesan, tipe });
-    setTimeout(() => setToast((t) => ({ ...t, tampil: false })), 3500);
-  }
+  }, []);
 
-  async function muatStok() {
+  useEffect(() => {
+    if (!toast.tampil) return;
+    const timer = setTimeout(() => setToast((t) => ({ ...t, tampil: false })), 3500);
+    return () => clearTimeout(timer);
+  }, [toast.tampil]);
+
+  const muatStok = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: produsen } = await supabase.from("produsen").select("id").eq("profile_id", user.id).maybeSingle();
+    const { data: produsen } = await supabase
+      .from("produsen")
+      .select("id")
+      .or(`profile_id.eq.${user.id},id.eq.${user.id}`)
+      .maybeSingle();
+
     if (!produsen) return;
 
     const { data: produkData, error: prodError } = await supabase
       .from("produk")
       .select(`
         id, nama, satuan, harga, foto, stok, deskripsi,
-        kategori ( nama ),
-        review ( rating, komentar, pembeli ( nama ) )
+        kategori ( nama )
       `)
       .eq("produsen_id", produsen.id);
 
-    if (prodError) return console.error(prodError);
+    if (prodError) {
+      console.error("Error muat stok:", prodError);
+      return;
+    }
 
     const mapped: StokItem[] = (produkData || []).map((p: any) => {
       const stokMurni = Number(p.stok) || 0; 
@@ -100,31 +112,25 @@ export default function StokKomoditas() {
       if (stokMurni <= 0) status = "Habis";
       else if (stokMurni <= 10) status = "Menipis";
 
-      const ulasanMapped: Ulasan[] = (p.review || []).map((r: any) => ({
-        pembeli: r.pembeli?.nama ?? "Pembeli Anonim",
-        rating: r.rating,
-        komentar: r.komentar
-      }));
-
       return {
         id: p.id,
         nama: p.nama,
         jumlah: stokMurni,
         satuan: p.satuan ?? "pcs",
-        hargaSatuan: Number(p.harga),
+        hargaSatuan: Number(p.harga) || 0,
         status,
         kategori: p.kategori?.nama ?? "Lainnya",
         fotoUrl: p.foto ?? undefined,
-        ulasan: ulasanMapped
+        ulasan: []
       };
     });
 
     setStokList(mapped);
-  }
+  }, []);
 
   useEffect(() => {
     muatStok();
-  }, []);
+  }, [muatStok]);
 
   const filtered = useMemo(() => {
     return stokList.filter((s) => {
@@ -155,7 +161,12 @@ export default function StokKomoditas() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setProsesLoading(false); return; }
 
-    const { data: produsen } = await supabase.from("produsen").select("id").eq("profile_id", user.id).maybeSingle();
+    const { data: produsen } = await supabase
+      .from("produsen")
+      .select("id")
+      .or(`profile_id.eq.${user.id},id.eq.${user.id}`)
+      .maybeSingle();
+
     if (!produsen) {
       pemicuToast("Gagal mengidentifikasi data toko produsen!", "gagal");
       setProsesLoading(false);
@@ -193,8 +204,8 @@ export default function StokKomoditas() {
     });
 
     if (prodError) {
-      console.error(prodError.message || prodError);
-      pemicuToast("Gagal menayangkan produk!", "gagal");
+      console.error("Gagal tambah produk:", prodError);
+      pemicuToast(`Gagal menayangkan produk: ${prodError.message}`, "gagal");
       setProsesLoading(false);
       return;
     }
@@ -438,7 +449,7 @@ export default function StokKomoditas() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#1E293B" }}>{detailItem.nama}</div>
-                  <div style={{ fontSize: "0.78rem", color: "#94A3B8" }}>{detailItem.id} • {detailItem.kategori}</div>
+                  <div style={{ fontSize: "0.78rem", color: "#94A3B8" }}>{detailItem.id.slice(0, 8)} • {detailItem.kategori}</div>
                 </div>
                 <button onClick={() => setDetailItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
               </div>

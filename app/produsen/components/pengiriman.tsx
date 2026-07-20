@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { supabase } from "@/lib/db";
 
 type PesananStatus = "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
 
@@ -15,12 +16,8 @@ interface Pesanan {
   status: PesananStatus;
   tanggal: string;
   alamatKirim: string;
+  rawId: string;
   noResi?: string;
-}
-
-interface Props {
-  pesananList: Pesanan[];
-  updatePesananStatus: (id: string, status: PesananStatus) => void;
 }
 
 const IconTruck = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
@@ -47,15 +44,15 @@ function coordFromAlamat(alamat: string): [number, number] {
   return cityCoords[extractCity(alamat)];
 }
 
-interface LeafletLayer {
-  addTo: (map: LeafletMapInstance) => LeafletLayer;
-  bindPopup: (html: string) => LeafletLayer;
-  getBounds: () => unknown;
-}
 interface LeafletMapInstance {
   setView: (center: [number, number], zoom: number) => LeafletMapInstance;
   remove: () => void;
   fitBounds: (bounds: unknown, options?: { padding?: [number, number] }) => void;
+}
+interface LeafletLayer {
+  addTo: (map: LeafletMapInstance) => LeafletLayer;
+  bindPopup: (html: string) => LeafletLayer;
+  getBounds: () => unknown;
 }
 interface LeafletStatic {
   map: (el: HTMLElement, opts?: { scrollWheelZoom?: boolean }) => LeafletMapInstance;
@@ -113,9 +110,83 @@ function MiniMap({ markers, height = 200 }: { markers: { lat: number; lng: numbe
   return <div ref={ref} style={{ height, borderRadius: "10px", overflow: "hidden", background: "#F1F5F9" }} />;
 }
 
-export default function Pengiriman({ pesananList, updatePesananStatus }: Props) {
+export default function Pengiriman() {
+  const [pesananList, setPesananList] = useState<Pesanan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"Diproses" | "Dikirim" | "Selesai">("Diproses");
   const [petaId, setPetaId] = useState<string | null>(null);
+
+  // MUAT PESANAN DARI DATABASE SUPABASE
+  const muatPengiriman = useCallback(async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: produsen } = await supabase
+      .from("produsen")
+      .select("id")
+      .or(`profile_id.eq.${user.id},id.eq.${user.id}`)
+      .maybeSingle();
+
+    if (!produsen) { setLoading(false); return; }
+
+    const { data: pesananData, error } = await supabase
+      .from("pesanan")
+      .select(`
+        id, jumlah, total_harga, status, created_at, admin_toko_id,
+        produk ( id, nama, satuan )
+      `)
+      .eq("produsen_id", produsen.id)
+      .in("status", ["Diproses", "Dikirim", "Selesai"])
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Gagal muat pengiriman:", error);
+      setLoading(false);
+      return;
+    }
+
+    const { data: adminList } = await supabase.from("admin_toko").select("id, nama_toko, alamat, kabupaten");
+    const adminMap = new Map((adminList || []).map((a) => [a.id, a]));
+
+    const mapped: Pesanan[] = (pesananData || []).map((p: any) => {
+      const adminObj = adminMap.get(p.admin_toko_id);
+      const lokasiKirim = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Malang, Jawa Timur";
+      const shortId = p.id.slice(0, 8).toUpperCase();
+
+      return {
+        id: `#${shortId}`,
+        rawId: p.id,
+        pembeli: adminObj?.nama_toko || "Admin Toko PasarNusa",
+        itemId: p.produk?.id || "",
+        item: p.produk?.nama || "Komoditas",
+        jumlah: Number(p.jumlah) || 1,
+        satuan: p.produk?.satuan || "pcs",
+        total: Number(p.total_harga) || 0,
+        status: p.status as PesananStatus,
+        tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
+        alamatKirim: lokasiKirim,
+        noResi: p.status === "Dikirim" || p.status === "Selesai" ? `JNT-${shortId}` : undefined
+      };
+    });
+
+    setPesananList(mapped);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    muatPengiriman();
+  }, [muatPengiriman]);
+
+  // UPDATE STATUS DI DATABASE
+  async function updatePesananStatus(rawId: string, statusBaru: PesananStatus) {
+    const { error } = await supabase.from("pesanan").update({ status: statusBaru }).eq("id", rawId);
+    if (!error) {
+      muatPengiriman();
+    } else {
+      console.error("Gagal update status pengiriman:", error);
+    }
+  }
 
   const diproses = pesananList.filter((p) => p.status === "Diproses");
   const dikirim = pesananList.filter((p) => p.status === "Dikirim");
@@ -127,101 +198,12 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
     navigator.clipboard?.writeText(resi);
   }
 
+  if (loading) {
+    return <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>Memuat Data Pengiriman...</div>;
+  }
+
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          main h1 {
-            font-size: 1.15rem !important;
-          }
-          main p {
-            font-size: 0.62rem !important;
-            line-height: 1.2 !important;
-          }
-          .shipment-tabs-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .shipment-tab-card {
-            padding: 0.4rem !important;
-            border-radius: 6px !important;
-            gap: 0.4rem !important;
-          }
-          .shipment-tab-card div:first-child {
-            padding: 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .shipment-tab-card div:first-child svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .shipment-tab-card div:last-child div:first-child {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          .shipment-tab-card div:last-child div:last-child {
-            font-size: 0.5rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          .shipment-list-row {
-            padding: 0.6rem !important;
-            border-radius: 8px !important;
-          }
-          .shipment-meta-info div:first-child {
-            font-size: 0.65rem !important;
-            gap: 0.3rem !important;
-          }
-          .shipment-meta-info div:nth-child(2) {
-            font-size: 0.6rem !important;
-            margin-bottom: 0.15rem !important;
-          }
-          .shipment-meta-info div:nth-child(3) {
-            font-size: 0.55rem !important;
-            gap: 3px !important;
-          }
-          .shipment-meta-info div:nth-child(3) svg {
-            width: 10px !important;
-            height: 10px !important;
-          }
-          .resi-badge {
-            margin-top: 0.35rem !important;
-            padding: 0.15rem 0.4rem !important;
-            font-size: 0.52rem !important;
-            border-radius: 4px !important;
-            gap: 3px !important;
-          }
-          .resi-badge svg {
-            width: 10px !important;
-            height: 10px !important;
-          }
-          .shipment-control-side {
-            align-items: flex-end !important;
-            gap: 0.25rem !important;
-            margin-top: 0.5rem !important;
-            width: 100% !important;
-          }
-          .shipment-control-side button {
-            padding: 0.35rem 0.6rem !important;
-            font-size: 0.55rem !important;
-            border-radius: 4px !important;
-            width: auto !important;
-          }
-          .shipment-control-side span {
-            font-size: 0.55rem !important;
-          }
-          .map-desc-text {
-            font-size: 0.48rem !important;
-            margin-top: 0.3rem !important;
-          }
-        }
-      `}} />
-
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Pengiriman</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau status pengemasan dan pengantaran pesanan ke pembeli.</p>
@@ -263,8 +245,8 @@ export default function Pengiriman({ pesananList, updatePesananStatus }: Props) 
                 )}
               </div>
               <div className="shipment-control-side" style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
-                {p.status === "Diproses" && <button onClick={() => updatePesananStatus(p.id, "Dikirim")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Kirim Sekarang</button>}
-                {p.status === "Dikirim" && <button onClick={() => updatePesananStatus(p.id, "Selesai")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tandai Sampai</button>}
+                {p.status === "Diproses" && <button onClick={() => updatePesananStatus(p.rawId, "Dikirim")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Kirim Sekarang</button>}
+                {p.status === "Dikirim" && <button onClick={() => updatePesananStatus(p.rawId, "Selesai")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tandai Sampai</button>}
                 {p.status === "Selesai" && <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#10B981" }}>✓ Sudah sampai</span>}
                 <button onClick={() => setPetaId(petaId === p.id ? null : p.id)} style={{ display: "flex", alignItems: "center", gap: "5px", background: "none", border: "1px solid #CBD5E1", padding: "0.4rem 0.7rem", borderRadius: "8px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>
                   <IconRoute /> {petaId === p.id ? "Tutup peta" : "Lacak di peta"}
