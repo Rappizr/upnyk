@@ -288,7 +288,7 @@ export default function MitraUmkmPage() {
             {filtered.map((m, i) => (
               <Reveal key={m.id} delay={i * 60}>
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+           6       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
                     {/* AVATAR / FOTO PROFIL TOKO */}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
                       <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

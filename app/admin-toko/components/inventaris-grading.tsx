@@ -17,6 +17,7 @@ interface StokToko {
   asalProdusen: string;
   live: boolean;
 }
+
 interface Pembelian {
   id: string;
   produsenId: string;
@@ -26,10 +27,23 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-  status: "Menunggu" | "Diterima";
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  lokasiProdusen?: string;
 }
-interface Produsen { id: string; nama: string; lokasi: string; komoditas: string; estimasiPanenHari: number }
+
+interface Produsen { 
+  id: string; 
+  nama: string; 
+  lokasi: string; 
+  komoditas: string; 
+  estimasiPanenHari: number; 
+}
 
 interface LeafletLayer {
   addTo: (map: LeafletMapInstance) => LeafletLayer;
@@ -57,6 +71,7 @@ const cityCoords: Record<string, [number, number]> = {
   Sumbawa: [-8.4869, 117.4256],
 };
 const gudangToko: [number, number] = cityCoords.Malang;
+
 function coordFromLokasi(lokasi: string): [number, number] {
   const known = Object.keys(cityCoords);
   const found = known.find((c) => lokasi.toLowerCase().includes(c.toLowerCase()));
@@ -64,7 +79,7 @@ function coordFromLokasi(lokasi: string): [number, number] {
 }
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
 function MiniMap({ markers, height = 200 }: { markers: { lat: number; lng: number; label: string; color?: string }[]; height?: number }) {
@@ -143,7 +158,8 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
   const [editJumlah, setEditJumlah] = useState(0);
   const [lacakId, setLacakId] = useState<string | null>(null);
 
-  const menungguGrading = pembelianList.filter((p) => p.status === "Menunggu");
+  const menungguGrading = pembelianList.filter((p) => p.status === "Menunggu" || p.status === "Dikirim" || p.status === "Diproses");
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return stokList.filter((s) => !q || s.nama.toLowerCase().includes(q) || s.asalProdusen.toLowerCase().includes(q));
@@ -171,86 +187,25 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
       
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          main h1 {
-            font-size: 1.15rem !important;
-          }
-          main p {
-            font-size: 0.62rem !important;
-            line-height: 1.2 !important;
-          }
-          .grading-stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .grading-stat-card {
-            padding: 0.4rem !important;
-            border-radius: 6px !important;
-            gap: 0.4rem !important;
-          }
-          .grading-stat-card > div:first-child {
-            padding: 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .grading-stat-card > div:first-child svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .grading-stat-card > div:last-child > div:first-child {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          .grading-stat-card > div:last-child > div:last-child {
-            font-size: 0.5rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          .grading-warn-box {
-            padding: 0.6rem !important;
-            border-radius: 8px !important;
-            margin-bottom: 1rem !important;
-          }
-          .grading-warn-item > div:first-child {
-            font-size: 0.65rem !important;
-          }
-          .grading-warn-item > div:first-child div:last-child {
-            font-size: 0.55rem !important;
-          }
-          .grading-warn-item button {
-            padding: 0.25rem 0.45rem !important;
-            font-size: 0.55rem !important;
-            border-radius: 4px !important;
-          }
-          .search-wrapper-mobile {
-            max-width: 100% !important;
-            margin-bottom: 1rem !important;
-          }
-          .search-wrapper-mobile input {
-            padding: 0.35rem 0.5rem !important;
-            font-size: 0.7rem !important;
-            border-radius: 6px !important;
-          }
-          .grading-table-container th, .grading-table-container td {
-            padding: 0.5rem 0.4rem !important;
-            font-size: 0.58rem !important;
-          }
-          .grading-table-container table {
-            min-width: auto !important;
-            width: 100% !important;
-          }
-          .grading-table-container button {
-            padding: 0.25rem 0.4 ... !important;
-            font-size: 0.52rem !important;
-            border-radius: 4px !important;
-          }
-          .grading-table-container span {
-            padding: 0.1rem 0.3rem !important;
-            font-size: 0.52rem !important;
-            border-radius: 4px !important;
-          }
+          main { padding: 0.5rem 0.25rem !important; }
+          main h1 { font-size: 1.15rem !important; }
+          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
+          .grading-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
+          .grading-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
+          .grading-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
+          .grading-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
+          .grading-stat-card > div:last-child > div:first-child { font-size: 0.65rem !important; line-height: 1.1 !important; }
+          .grading-stat-card > div:last-child > div:last-child { font-size: 0.5rem !important; line-height: 1.1 !important; margin-top: 0.1rem !important; }
+          .grading-warn-box { padding: 0.6rem !important; border-radius: 8px !important; margin-bottom: 1rem !important; }
+          .grading-warn-item > div:first-child { font-size: 0.65rem !important; }
+          .grading-warn-item > div:first-child div:last-child { font-size: 0.55rem !important; }
+          .grading-warn-item button { padding: 0.25rem 0.45rem !important; font-size: 0.55rem !important; border-radius: 4px !important; }
+          .search-wrapper-mobile { max-width: 100% !important; margin-bottom: 1rem !important; }
+          .search-wrapper-mobile input { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
+          .grading-table-container th, .grading-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
+          .grading-table-container table { min-width: auto !important; width: 100% !important; }
+          .grading-table-container button { padding: 0.25rem 0.4rem !important; font-size: 0.52rem !important; border-radius: 4px !important; }
+          .grading-table-container span { padding: 0.1rem 0.3rem !important; font-size: 0.52rem !important; border-radius: 4px !important; }
         }
       `}} />
 
@@ -286,7 +241,7 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
                     <div><div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div><div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Dari {p.produsen} • {p.tanggal}</div></div>
                     <div style={{ display: "flex", gap: "0.4rem" }}>
-                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7()", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
+                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
                       <button onClick={() => { setGradingItem(p); setGradePilih("A"); }} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 600, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer" }}>Terima & Grading</button>
                     </div>
                   </div>

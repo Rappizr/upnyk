@@ -34,8 +34,14 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-  status: "Menunggu" | "Diterima";
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  lokasiProdusen?: string;
 }
 
 interface Props {
@@ -182,7 +188,7 @@ export default function MarketplaceProdusen({
     [pembelianList]
   );
 
-async function handleOrderSubmit(e: FormEvent) {
+  async function handleOrderSubmit(e: FormEvent) {
     e.preventDefault();
     const qty = Number(jumlahOrder);
 
@@ -220,7 +226,6 @@ async function handleOrderSubmit(e: FormEvent) {
         status: "Menunggu"
       };
 
-      // Hanya masukkan pembeli_id & admin_toko_id jika adminData ada nilainya
       if (adminData?.id) {
         payloadPesanan.admin_toko_id = adminData.id;
         payloadPesanan.pembeli_id = adminData.id;
