@@ -3,21 +3,22 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package, Search } from "lucide-react";
+import { ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package, Search, Store } from "lucide-react";
 import { supabase } from "@/lib/db";
 
 interface Mitra {
   id: string;
   nama: string;
-  tipe: "Admin Toko" | "Produsen Hulu";
+  tipe: "Admin Toko / Koperasi" | "Produsen Hulu";
   lokasi: string;
   komoditas: string;
   rating: number;
   sejakTahun: number;
   tag: string;
+  fotoUrl?: string;
 }
 
-const filterTipe = ["Semua", "Admin Toko", "Produsen Hulu"] as const;
+const filterTipe = ["Semua", "Admin Toko / Koperasi", "Produsen Hulu"] as const;
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -58,15 +59,15 @@ export default function MitraUmkmPage() {
   const muatMitraDatabase = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Ambil data Produsen Hulu
+      // 1. Ambil data Produsen Hulu (beserta foto)
       const { data: dataProdusen } = await supabase
         .from("produsen")
-        .select("id, nama_usaha, alamat, kabupaten, provinsi, kategori, created_at");
+        .select("id, nama_usaha, alamat, kabupaten, provinsi, kategori, foto, created_at");
 
-      // 2. Ambil data Admin Toko / Koperasi UMKM
+      // 2. Ambil data Admin Toko / Koperasi UMKM (beserta foto)
       const { data: dataAdminToko } = await supabase
         .from("admin_toko")
-        .select("id, nama_toko, alamat, kabupaten, created_at");
+        .select("id, nama_toko, alamat, kabupaten, foto, created_at");
 
       const daftarDiolah: Mitra[] = [];
 
@@ -83,7 +84,8 @@ export default function MitraUmkmPage() {
             komoditas: p.kategori || "Bahan Baku & Olahan",
             rating: 5.0,
             sejakTahun: tahun,
-            tag: "Produsen Binaan"
+            tag: "Produsen Binaan",
+            fotoUrl: p.foto || undefined
           });
         });
       }
@@ -96,12 +98,13 @@ export default function MitraUmkmPage() {
           daftarDiolah.push({
             id: a.id,
             nama: a.nama_toko || "Admin Toko UMKM",
-            tipe: "Admin Toko",
+            tipe: "Admin Toko / Koperasi",
             lokasi: lokasi,
             komoditas: "Koperasi & Komoditas Grosir",
             rating: 4.8,
             sejakTahun: tahun,
-            tag: "Koperasi Digital"
+            tag: "Koperasi Digital",
+            fotoUrl: a.foto || undefined
           });
         });
       }
@@ -126,7 +129,7 @@ export default function MitraUmkmPage() {
   });
 
   const totalProdusen = daftarMitra.filter((m) => m.tipe === "Produsen Hulu").length;
-  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko").length;
+  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko / Koperasi").length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
@@ -285,13 +288,27 @@ export default function MitraUmkmPage() {
             {filtered.map((m, i) => (
               <Reveal key={m.id} delay={i * 60}>
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                    <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+                    {/* AVATAR / FOTO PROFIL TOKO */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                      <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {m.fotoUrl ? (
+                          <img src={m.fotoUrl} alt={m.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <Store size={24} color="#64748B" />
+                        )}
+                      </div>
+                      <div>
+                        <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.68rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "99px" }}>{m.tag}</span>
+                        <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0F172A", margin: "0.25rem 0 0 0" }}>{m.nama}</h3>
+                      </div>
+                    </div>
+
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B", fontWeight: 700, fontSize: "0.85rem" }}>
                       <Star size={14} fill="#F59E0B" /> {m.rating.toFixed(1)}
                     </div>
                   </div>
-                  <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A", margin: "0 0 0.4rem 0" }}>{m.nama}</h3>
+
                   <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748B", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
                     <MapPin size={14} /> {m.lokasi}
                   </div>
