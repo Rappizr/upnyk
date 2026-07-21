@@ -10,7 +10,12 @@ function useReveal<T extends HTMLElement>() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setInView(true); io.disconnect(); } }, { threshold: 0.12 });
+    const io = new IntersectionObserver(([entry]) => { 
+      if (entry.isIntersecting) { 
+        setInView(true); 
+        io.disconnect(); 
+      } 
+    }, { threshold: 0.12 });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -40,11 +45,11 @@ export default function PrivasiPage() {
 
       <style dangerouslySetInnerHTML={{__html: `
         .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
+          background: ${isScrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.08)'};
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
+          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)'};
+          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.05)' : 'none'};
         }
         .gradient-text {
           background: linear-gradient(135deg, #34D399 0%, #059669 100%);
@@ -63,36 +68,48 @@ export default function PrivasiPage() {
         .policy-card:hover { box-shadow: 0 20px 40px -20px rgba(5,150,105,0.15); transform: translateY(-3px); }
         .list-item { display: flex; gap: 0.75rem; align-items: flex-start; color: #475569; font-size: 1rem; line-height: 1.6; margin-bottom: 0.75rem; }
 
+        /* Media Query Responsif Seluler & Tablet */
         @media (max-width: 768px) {
-          .header-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-          .nav-logo-text { font-size: 0.85rem !important; }
-          .nav-logo-img { height: 20px !important; }
-          .btn-back { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; padding-left: 0.5rem !important; padding-right: 0.5rem !important; font-size: 0.55rem !important; gap: 0.2rem !important; }
-          .btn-back svg { width: 10px !important; height: 10px !important; }
-          .hero-section { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 6rem !important; padding-bottom: 3rem !important; }
-          .hero-badge { font-size: 0.65rem !important; padding: 0.35rem 0.85rem !important; margin-bottom: 1rem !important; }
-          .hero-title { font-size: 1.85rem !important; line-height: 1.25 !important; }
-          .hero-desc { font-size: 0.85rem !important; }
-          .main-content { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 3rem !important; padding-bottom: 3rem !important; }
-          .intro-block h3 { font-size: 1.25rem !important; }
-          .intro-block p { font-size: 0.85rem !important; line-height: 1.6 !important; }
-          .policy-card { padding: 1rem !important; border-radius: 0.75rem !important; margin-bottom: 1rem !important; }
-          .policy-card div:first-child { gap: 0.5rem !important; margin-bottom: 1rem !important; }
-          .policy-card div:first-child div { padding: 0.4rem !important; border-radius: 0.5rem !important; }
-          .policy-card div:first-child div svg { width: 18px !important; height: 18px !important; }
-          .policy-card h2 { font-size: 0.95rem !important; }
-          .policy-card p { font-size: 0.8rem !important; line-height: 1.5 !important; }
-          .list-item { gap: 0.4rem !important; font-size: 0.75rem !important; line-height: 1.5 !important; margin-bottom: 0.6rem !important; }
-          .list-item svg { width: 12px !important; height: 12px !important; margin-top: 0.15rem !important; }
-          .meta-update-row { margin-top: 2.5rem !important; padding-top: 1.5rem !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
-          .meta-update-row div, .meta-update-row a { font-size: 0.65rem !important; }
-          .meta-update-row div svg { width: 12px !important; height: 12px !important; }
-          .footer-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
-          .footer-wrapper { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 0px !important; }
-          .footer-wrapper span { font-size: 0.42rem !important; line-height: 1.2 !important; }
+          .header-container { padding: 0.75rem 1rem !important; }
+          .nav-logo-text { font-size: 1.15rem !important; }
+          .nav-logo-img { height: 28px !important; }
+          
+          .btn-back { 
+            padding: 0.4rem 0.85rem !important; 
+            font-size: 0.75rem !important; 
+            gap: 0.35rem !important; 
+          }
+          .btn-back svg { width: 14px !important; height: 14px !important; }
+
+          .hero-section { padding: 7.5rem 1.25rem 3.5rem 1.25rem !important; }
+          .hero-badge { font-size: 0.7rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.25rem !important; }
+          .hero-title { font-size: 2.1rem !important; line-height: 1.2 !important; letter-spacing: -0.01em !important; }
+          .hero-desc { font-size: 0.95rem !important; line-height: 1.6 !important; }
+
+          .main-content { padding: 2.5rem 1.25rem 3.5rem 1.25rem !important; }
+          .intro-block h3 { font-size: 1.35rem !important; }
+          .intro-block p { font-size: 0.925rem !important; line-height: 1.65 !important; }
+
+          .policy-card { padding: 1.35rem !important; border-radius: 1rem !important; margin-bottom: 1.25rem !important; }
+          .policy-card div:first-child { gap: 0.75rem !important; margin-bottom: 1rem !important; }
+          .policy-card div:first-child div { padding: 0.45rem !important; border-radius: 0.6rem !important; }
+          .policy-card div:first-child div svg { width: 20px !important; height: 20px !important; }
+          .policy-card h2 { font-size: 1.1rem !important; }
+          .policy-card p { font-size: 0.875rem !important; line-height: 1.6 !important; }
+
+          .list-item { gap: 0.5rem !important; font-size: 0.85rem !important; line-height: 1.55 !important; margin-bottom: 0.75rem !important; }
+          .list-item svg { width: 16px !important; height: 16px !important; margin-top: 0.2rem !important; }
+
+          .meta-update-row { margin-top: 2rem !important; padding-top: 1.25rem !important; flex-direction: column !important; align-items: flex-start !important; gap: 0.75rem !important; }
+          .meta-update-row div, .meta-update-row a { font-size: 0.8rem !important; }
+
+          .footer-container { padding: 2rem 1.25rem !important; }
+          .footer-wrapper { flex-direction: column !important; text-align: center !important; gap: 0.5rem !important; }
+          .footer-wrapper span { font-size: 0.75rem !important; line-height: 1.4 !important; }
         }
       `}} />
 
+      {/* Header Bar */}
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -111,6 +128,7 @@ export default function PrivasiPage() {
         </nav>
       </header>
 
+      {/* Hero Section */}
       <section className="hero-section" style={{
         paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
@@ -132,6 +150,7 @@ export default function PrivasiPage() {
         </div>
       </section>
 
+      {/* Main Content */}
       <main className="main-content" style={{ paddingTop: "6rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
 
         <Reveal>
@@ -227,6 +246,7 @@ export default function PrivasiPage() {
 
       </main>
 
+      {/* Footer */}
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>

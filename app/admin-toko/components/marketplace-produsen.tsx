@@ -34,8 +34,18 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-  status: "Menunggu" | "Diterima";
+  status: "Menunggu" | "Dikirim" | "Diterima";
   tanggal: string;
+}
+
+/** Dipakai untuk menerima prop dari parent (page.tsx). Field dibuat longgar
+ *  karena komponen ini tetap memuat produsennya sendiri dari Supabase. */
+interface ProdusenDariParent {
+  id: string;
+  nama: string;
+  lokasi: string;
+  komoditas: string;
+  estimasiPanenHari: number;
 }
 
 interface Props {
@@ -47,6 +57,9 @@ interface Props {
     hargaSatuan: number,
     satuan: string
   ) => void;
+  /** Opsional: dikirim oleh parent. Tidak wajib dipakai karena komponen
+   *  memuat daftar produsen sendiri langsung dari database. */
+  produsenList?: ProdusenDariParent[];
 }
 
 // Sub-komponen Icon
@@ -119,6 +132,7 @@ export default function MarketplaceProdusen({
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapped: ProdusenToko[] = (data || []).map((p: any) => ({
       id: p.id,
       namaUsaha: p.nama_usaha || "UMKM Produsen",
@@ -135,6 +149,7 @@ export default function MarketplaceProdusen({
   }, [pemicuToast]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     muatProdusen();
   }, [muatProdusen]);
 
@@ -152,6 +167,7 @@ export default function MarketplaceProdusen({
       console.error("Gagal memuat katalog toko:", error);
       pemicuToast("Gagal memuat katalog produk toko", "gagal");
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped: ProdukKomoditas[] = (data || []).map((p: any) => ({
         id: p.id,
         nama: p.nama,
@@ -182,7 +198,7 @@ export default function MarketplaceProdusen({
     [pembelianList]
   );
 
-async function handleOrderSubmit(e: FormEvent) {
+  async function handleOrderSubmit(e: FormEvent) {
     e.preventDefault();
     const qty = Number(jumlahOrder);
 
@@ -211,6 +227,7 @@ async function handleOrderSubmit(e: FormEvent) {
       const totalTagihan = qty * selectedBarang.harga;
 
       // 2. Buat Payload Pesanan
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payloadPesanan: Record<string, any> = {
         produk_id: selectedBarang.id,
         produsen_id: selectedProdusen.id,
@@ -415,7 +432,7 @@ async function handleOrderSubmit(e: FormEvent) {
       {selectedProdusen && (
         <div onClick={() => setSelectedProdusen(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", width: "560px", maxWidth: "100%", maxHeight: "88vh", overflowY: "auto", display: "flex", flexDirection: "column" }}>
-            
+
             <div style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", padding: "1.25rem", color: "white", borderRadius: "16px 16px 0 0", position: "relative" }}>
               <button onClick={() => setSelectedProdusen(null)} aria-label="Tutup Modal" style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(255,255,255,0.2)", border: "none", color: "white", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <IconX />

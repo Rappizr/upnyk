@@ -106,54 +106,71 @@ export default function TentangKamiPage() {
         .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-        @media (max-width: 768px) {
-          .header-container { padding: 0.55rem 0.9rem !important; }
-          .nav-logo-text { font-size: 1rem !important; }
-          .nav-logo-img { height: 24px !important; }
-          .btn-back { padding: 0.42rem 0.9rem !important; font-size: 0.72rem !important; gap: 0.3rem !important; }
-          .btn-back svg { width: 13px !important; height: 13px !important; }
+       @media (max-width: 768px) {
+  .header-container { padding: 0.5rem 0.7rem !important; }
+  .nav-logo-text { font-size: 0.85rem !important; }
+  .nav-logo-img { height: 20px !important; }
+  .btn-back { padding: 0.3rem 0.6rem !important; font-size: 0.62rem !important; gap: 0.2rem !important; }
+  .btn-back svg { width: 10px !important; height: 10px !important; }
 
-          .hero-section { padding: 7rem 1.2rem 3rem !important; }
-          .hero-badge { font-size: 0.66rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.1rem !important; }
-          .hero-title { font-size: 1.95rem !important; line-height: 1.18 !important; }
-          .hero-desc { font-size: 0.9rem !important; margin-bottom: 0 !important; }
+  .hero-section { padding: 5rem 0.9rem 2.5rem !important; }
+  .hero-badge { font-size: 0.55rem !important; padding: 0.3rem 0.7rem !important; margin-bottom: 0.8rem !important; }
+  .hero-title { font-size: 1.4rem !important; line-height: 1.2 !important; }
+  .hero-desc { font-size: 0.72rem !important; margin-bottom: 0 !important; }
 
-          .gallery-section { padding: 2.5rem 1.1rem 3rem !important; }
-          .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.6rem !important; }
-          .gallery-card { border-radius: 0.8rem !important; }
+  .gallery-section { padding: 2rem 0.9rem 2rem !important; }
+  .gallery-section > div:first-child span { font-size: 0.6rem !important; }
+  .gallery-section h2 { font-size: 1.15rem !important; }
+  .gallery-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.4rem !important; }
+  .gallery-card { border-radius: 0.5rem !important; }
+  .gallery-tag { font-size: 0.5rem !important; left: 0.4rem !important; bottom: 0.4rem !important; }
 
-          .problem-section { padding: 3.5rem 1.1rem !important; }
-          .problem-grid-main { grid-template-columns: 1fr !important; gap: 2rem !important; }
-          .problem-left-heading h2 { font-size: 1.6rem !important; }
-          .problem-left-heading p { font-size: 0.88rem !important; }
-          .problem-grid-cards { grid-template-columns: 1fr !important; gap: 0.8rem !important; }
-          .problem-mini-card { padding: 1.1rem !important; border-radius: 0.9rem !important; }
-          .problem-mini-card h4 { font-size: 0.98rem !important; }
-          .problem-mini-card p { font-size: 0.82rem !important; }
+  .problem-section { padding: 2.5rem 0.9rem !important; }
+  .problem-grid-main { grid-template-columns: 1fr !important; gap: 1.2rem !important; }
+  .problem-left-heading span { font-size: 0.62rem !important; }
+  .problem-left-heading h2 { font-size: 1.3rem !important; }
+  .problem-left-heading p { font-size: 0.72rem !important; margin-top: 0.5rem !important; }
+  .problem-grid-cards { grid-template-columns: repeat(2, 1fr) !important; gap: 0.6rem !important; }
+  .problem-mini-card { padding: 0.8rem !important; border-radius: 0.6rem !important; }
+  .problem-mini-card > div { width: 30px !important; height: 30px !important; border-radius: 8px !important; margin-bottom: 0.5rem !important; }
+  .problem-mini-card h4 { font-size: 0.78rem !important; margin-bottom: 0.25rem !important; }
+  .problem-mini-card p { font-size: 0.64rem !important; line-height: 1.4 !important; }
 
-          .vision-section { padding: 3rem 1.1rem !important; }
-          .vision-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-          .vision-grid .modern-card { padding: 1.8rem 1.5rem !important; border-radius: 1.2rem !important; }
-          .vision-grid .modern-card h3 { font-size: 1.35rem !important; }
-          .vision-grid .modern-card p, .vision-grid .modern-card ul { font-size: 0.9rem !important; }
+  .vision-section { padding: 2.5rem 0.9rem !important; }
+  .vision-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.6rem !important; }
+  .vision-grid .modern-card { padding: 1rem 0.9rem !important; border-radius: 0.9rem !important; }
+  .vision-grid .modern-card > div { width: 40px !important; height: 40px !important; border-radius: 12px !important; margin-bottom: 0.7rem !important; }
+  .vision-grid .modern-card h3 { font-size: 0.95rem !important; margin-bottom: 0.5rem !important; }
+  .vision-grid .modern-card p, .vision-grid .modern-card ul { font-size: 0.66rem !important; line-height: 1.5 !important; padding-left: 0.9rem !important; }
+  .vision-grid .modern-card ul { gap: 0.4rem !important; }
 
-          .values-section { padding: 3.5rem 1.1rem !important; }
-          .values-header { margin-bottom: 2.5rem !important; }
-          .values-header h2 { font-size: 1.6rem !important; }
-          .values-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-          .values-card { padding: 1.7rem 1.5rem !important; border-radius: 1.1rem !important; }
+  .values-section { padding: 2.5rem 0.9rem !important; }
+  .values-header { margin-bottom: 1.5rem !important; }
+  .values-header span { font-size: 0.6rem !important; }
+  .values-header h2 { font-size: 1.25rem !important; }
+  .values-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.5rem !important; }
+  .values-card { padding: 0.85rem 0.6rem !important; border-radius: 0.7rem !important; }
+  .values-card > div { width: 34px !important; height: 34px !important; border-radius: 9px !important; margin-bottom: 0.6rem !important; }
+  .values-card h4 { font-size: 0.72rem !important; margin-bottom: 0.3rem !important; }
+  .values-card p { font-size: 0.6rem !important; line-height: 1.35 !important; }
 
-          .team-section { padding: 3.5rem 1.1rem !important; }
-          .team-header { margin-bottom: 2.5rem !important; }
-          .team-header h2 { font-size: 1.6rem !important; }
-          .team-header p { font-size: 0.9rem !important; }
-          .team-grid { grid-template-columns: 1fr !important; gap: 1rem !important; padding: 0 !important; }
-          .team-card { padding: 2rem 1.5rem !important; border-radius: 1.3rem !important; }
+  .team-section { padding: 2.5rem 0.9rem !important; }
+  .team-header { margin-bottom: 1.5rem !important; }
+  .team-header span { font-size: 0.6rem !important; }
+  .team-header h2 { font-size: 1.25rem !important; }
+  .team-header p { font-size: 0.7rem !important; }
+  .team-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.5rem !important; padding: 0 !important; }
+  .team-card { padding: 0.9rem 0.5rem !important; border-radius: 0.8rem !important; }
+  .team-card img { width: 60px !important; height: 60px !important; border: 2px solid var(--paper) !important; }
+  .team-card h3 { font-size: 0.68rem !important; }
+  .team-card p { font-size: 0.56rem !important; margin-top: 0.2rem !important; }
+  .team-card > div:last-child { gap: 0.6rem !important; margin-top: 0.6rem !important; }
+  .team-card svg { width: 14px !important; height: 14px !important; }
 
-          .footer-container { padding: 2.2rem 1.2rem !important; }
-          .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
-          .footer-wrapper span { font-size: 0.72rem !important; }
-        }
+  .footer-container { padding: 1.5rem 0.9rem !important; }
+  .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.3rem !important; }
+  .footer-wrapper span { font-size: 0.6rem !important; }
+}
       `}} />
 
       {/* NAVBAR */}

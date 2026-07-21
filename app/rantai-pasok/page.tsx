@@ -171,8 +171,18 @@ export default function EkosistemPage() {
           .step-card { padding: 1.05rem 1.1rem !important; border-radius: 0.85rem !important; }
           .step-dot { left: -2.1rem !important; width: 20px !important; height: 20px !important; }
 
-          .roles-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-          .role-card { padding: 1.6rem 1.4rem !important; border-radius: 1.1rem !important; }
+          /* PERBAIKAN: role cards tetap 3 kolom seperti PC, hanya diskalakan kecil */
+          .roles-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.55rem !important; }
+          .role-card { padding: 0.9rem 0.65rem !important; border-radius: 0.9rem !important; }
+          .role-card > div:first-child { margin-bottom: 0.6rem !important; flex-wrap: wrap !important; gap: 0.3rem !important; }
+          .role-card > div:first-child > div:first-child { width: 34px !important; height: 34px !important; border-radius: 9px !important; }
+          .role-card > div:first-child > div:first-child svg { width: 17px !important; height: 17px !important; }
+          .role-card > div:first-child > span { font-size: 0.5rem !important; padding: 0.18rem 0.4rem !important; letter-spacing: 0.06em !important; }
+          .role-card h3 { font-size: 0.78rem !important; margin: 0 0 0.35rem !important; line-height: 1.25 !important; }
+          .role-card p { font-size: 0.6rem !important; line-height: 1.4 !important; margin: 0 0 0.75rem !important; }
+          .role-card > div:last-child { padding-top: 0.6rem !important; gap: 0.4rem !important; }
+          .role-card > div:last-child > div { font-size: 0.56rem !important; gap: 0.35rem !important; line-height: 1.3 !important; }
+          .role-card > div:last-child svg { width: 11px !important; height: 11px !important; }
 
           .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
           .footer-wrapper span { font-size: 0.7rem !important; }

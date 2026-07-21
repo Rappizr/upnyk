@@ -44,10 +44,6 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Musik latar otomatis — sebagian besar browser memblokir audio
-  // berbunyi sebelum ada interaksi pengguna, jadi kita coba putar
-  // langsung, dan kalau diblokir, otomatis jalan begitu pengguna
-  // pertama kali klik/scroll/sentuh halaman (tanpa kontrol yang terlihat).
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -217,46 +213,50 @@ export default function LandingPage() {
           .glow-orb-1,.glow-orb-2 { animation: none !important; }
         }
 
+        /* LAYOUT PC TERJAGA PRESISI DI LAYAR HP */
         @media (max-width: 768px) {
-          .header-container { padding: 0.55rem 0.9rem !important; }
-          .nav-logo-text { font-size: 1rem !important; }
-          .nav-logo-img { height: 24px !important; }
-          .nav-container { gap: 0.9rem !important; }
-          .nav-link-desktop { display: none !important; }
-          .btn-masuk-portal { padding: 0.42rem 0.9rem !important; font-size: 0.72rem !important; gap: 0.3rem !important; }
-          .btn-masuk-portal svg { width: 13px !important; height: 13px !important; }
+          .header-container { padding: 0.5rem 0.8rem !important; }
+          .nav-logo-text { font-size: 0.85rem !important; }
+          .nav-logo-img { height: 20px !important; }
+          .nav-container { gap: 0.5rem !important; }
+          .nav-link-desktop { display: inline-block !important; font-size: 0.65rem !important; }
+          .btn-masuk-portal { padding: 0.3rem 0.6rem !important; font-size: 0.62rem !important; gap: 0.2rem !important; }
+          .btn-masuk-portal svg { width: 10px !important; height: 10px !important; }
 
-          .hero-section { padding: 6.5rem 1.2rem 4rem !important; min-height: auto !important; }
-          .hero-wrapper { margin-top: 0 !important; }
-          .hero-badge { font-size: 0.66rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.2rem !important; }
-          .hero-title { font-size: 2.05rem !important; line-height: 1.16 !important; }
-          .hero-desc { font-size: 0.9rem !important; margin-bottom: 2rem !important; }
-          .hero-btn-group { flex-direction: column !important; gap: 0.7rem !important; }
-          .hero-btn-group a { padding: 0.75rem 1.3rem !important; font-size: 0.9rem !important; justify-content: center; }
+          .hero-section { padding: 5rem 0.8rem 3rem !important; min-height: auto !important; }
+          .hero-badge { font-size: 0.55rem !important; padding: 0.3rem 0.6rem !important; margin-bottom: 0.8rem !important; }
+          .hero-title { font-size: 1.4rem !important; line-height: 1.2 !important; }
+          .hero-desc { font-size: 0.72rem !important; margin-bottom: 1.2rem !important; }
+          .hero-btn-group { flex-direction: row !important; gap: 0.4rem !important; }
+          .hero-btn-group a { padding: 0.45rem 0.8rem !important; font-size: 0.7rem !important; }
 
-          .stats-section { padding: 0 1.1rem !important; margin-top: -3rem !important; }
-          .stats-grid { grid-template-columns: 1fr !important; gap: 0.85rem !important; }
-          .glass-stat { padding: 1.15rem 1.25rem !important; border-radius: 1rem !important; }
-          .glass-stat .stat-number { font-size: 1.45rem !important; }
-          .glass-stat .stat-label { font-size: 0.8rem !important; }
+          .stats-section { padding: 0 0.8rem !important; margin-top: -2.5rem !important; }
+          .stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.4rem !important; }
+          .glass-stat { padding: 0.6rem 0.4rem !important; border-radius: 0.6rem !important; gap: 0.4rem !important; }
+          .glass-stat .icon-box { padding: 0.4rem !important; border-radius: 0.4rem !important; }
+          .glass-stat .icon-box svg { width: 16px !important; height: 16px !important; }
+          .glass-stat .stat-number { font-size: 0.85rem !important; }
+          .glass-stat .stat-label { font-size: 0.52rem !important; line-height: 1.1 !important; }
 
-          .features-section { padding: 3.5rem 1.1rem !important; }
-          .features-section h2 { font-size: 1.55rem !important; }
-          .features-section .sec-sub { font-size: 0.88rem !important; margin-top: 0.6rem !important; margin-bottom: 2rem !important; }
-          .features-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-          .modern-card { padding: 1.6rem 1.4rem !important; border-radius: 1.1rem !important; }
+          .features-section { padding: 3rem 0.8rem !important; }
+          .features-section h2 { font-size: 1.3rem !important; }
+          .features-section .sec-sub { font-size: 0.7rem !important; margin-top: 0.4rem !important; margin-bottom: 1.5rem !important; }
+          .features-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.5rem !important; }
+          .modern-card { padding: 0.8rem 0.6rem !important; border-radius: 0.8rem !important; }
+          .modern-card h3 { font-size: 0.75rem !important; margin-bottom: 0.3rem !important; }
+          .modern-card p { font-size: 0.58rem !important; line-height: 1.3 !important; }
 
-          .cta-section { padding: 4rem 1.2rem !important; }
-          .cta-section h2 { font-size: 1.7rem !important; line-height: 1.18 !important; }
-          .cta-section p { font-size: 0.9rem !important; margin-bottom: 2rem !important; }
-          .cta-section a { padding: 0.75rem 1.6rem !important; font-size: 0.92rem !important; }
+          .cta-section { padding: 3rem 0.8rem !important; }
+          .cta-section h2 { font-size: 1.3rem !important; }
+          .cta-section p { font-size: 0.72rem !important; margin-bottom: 1.2rem !important; }
+          .cta-section a { padding: 0.5rem 1rem !important; font-size: 0.75rem !important; }
 
-          .footer-container { padding: 2.2rem 1.2rem !important; }
-          .footer-top { flex-direction: column !important; align-items: flex-start !important; gap: 1.4rem !important; margin-bottom: 2rem !important; }
-          .footer-grid-links { grid-template-columns: repeat(3, auto) !important; column-gap: 1.4rem !important; margin-left: 0 !important; }
-          .footer-link { font-size: 0.78rem !important; }
-          .footer-bottom { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
-          .footer-bottom span { font-size: 0.72rem !important; }
+          .footer-container { padding: 1.5rem 0.8rem !important; }
+          .footer-top { flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 0.5rem !important; margin-bottom: 1rem !important; }
+          .footer-grid-links { grid-template-columns: repeat(3, auto) !important; column-gap: 0.6rem !important; margin-left: auto !important; }
+          .footer-link { font-size: 0.6rem !important; }
+          .footer-bottom { flex-direction: row !important; justify-content: space-between !important; gap: 0.3rem !important; }
+          .footer-bottom span { font-size: 0.55rem !important; }
         }
       `}} />
 
@@ -274,10 +274,7 @@ export default function LandingPage() {
           <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Rantai Pasok</a>
           <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Mitra UMKM</a>
 
-          <Link href="/login" className="btn-masuk-portal" style={{
-            padding: "0.55rem 1.3rem", fontSize: "0.85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.45rem",
-            backgroundColor: isScrolled ? "var(--emerald)" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "var(--emerald)", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
-          }}>
+          <Link href="/login" className="btn-masuk-portal" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 1.3rem", borderRadius: "99px", backgroundColor: isScrolled ? "var(--emerald)" : "var(--emerald)", color: "#FFFFFF", fontSize: "0.85rem", fontWeight: 600, transition: "all 0.3s ease" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
               <polyline points="10 17 15 12 10 7" />
@@ -322,7 +319,7 @@ export default function LandingPage() {
           </p>
 
           <div className="hero-btn-group" style={{ display: "flex", justifyContent: "center", gap: "14px" }}>
-            <Link href="/login" className="btn-glow" style={{ padding: "0.85rem 2.25rem", fontSize: "1rem", fontWeight: 700, borderRadius: "99px", backgroundColor: "var(--emerald)", color: "#FFFFFF", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+            <Link href="/login" className="btn-glow" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 2.25rem", borderRadius: "99px", backgroundColor: "var(--emerald)", color: "#FFFFFF", fontSize: "1rem", fontWeight: 700 }}>
               Mulai Akses
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
             </Link>
@@ -335,7 +332,7 @@ export default function LandingPage() {
 
       {/* STATISTIK */}
       <section className="stats-section" ref={statsRef} style={{ padding: "0 3rem", marginTop: "-5rem", position: "relative", zIndex: 10 }}>
-        <div className="stats-grid" style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
+        <div className="stats-grid" style={{ maxWidth: "1100px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
 
           <div className="glass-stat" style={{ padding: "1.75rem", borderRadius: "1.25rem", display: "flex", alignItems: "center", gap: "1.25rem" }}>
             <div className="icon-box" style={{ background: "#E7F3EC", padding: "0.85rem", borderRadius: "0.85rem", color: "var(--emerald)", flexShrink: 0 }}>
@@ -381,7 +378,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "2rem" }}>
+          <div className="features-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2rem" }}>
             {fitur.map((f, i) => (
               <div key={i} className="modern-card" style={{ padding: "2.4rem 2.1rem", borderRadius: "1.5rem", ["--card-accent" as any]: f.accent }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.4rem" }}>
@@ -406,7 +403,7 @@ export default function LandingPage() {
           <p style={{ color: "#C7D6CC", marginBottom: "2.8rem", fontSize: "1.14rem", lineHeight: 1.65 }}>
             Bergabung dengan ekosistem digitalisasi rantai pasok paling transparan untuk pelaku UMKM dan produsen pelosok di Indonesia. Pilih peran Anda dan mulai berdampak hari ini.
           </p>
-          <Link href="/login" className="btn-glow" style={{ background: "var(--emerald)", color: "#FFFFFF", padding: "1rem 2.5rem", fontSize: "1.1rem", fontWeight: 700, borderRadius: "99px", border: "none", display: "inline-flex", alignItems: "center", gap: "0.55rem", textDecoration: "none" }}>
+          <Link href="/login" className="btn-glow" style={{ textDecoration: "none", border: "none", display: "inline-flex", alignItems: "center", gap: "0.55rem", padding: "1rem 2.5rem", borderRadius: "99px", background: "var(--emerald)", color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 700 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
               <polyline points="10 17 15 12 10 7"/>
