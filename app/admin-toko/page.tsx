@@ -117,71 +117,6 @@ const pageTitles: Record<string, string> = {
   laporan: "Buku Kas",
 };
 
-// Data dummy sementara untuk halaman Pelacakan Pesanan — hapus/ganti begitu pembelian sudah tersambung ke Supabase.
-const DUMMY_PEMBELIAN: Pembelian[] = [
-  {
-    id: "PO-4401",
-    produsenId: "prod-1",
-    produsen: "UD Sumber Rejeki",
-    item: "Singkong Segar",
-    jumlah: 50,
-    satuan: "kg",
-    hargaSatuan: 4500,
-    total: 225000,
-    status: "Menunggu",
-    tanggal: "19 Jul 2026",
-    fotoProduk: "https://placehold.co/100x100/FEF3C7/D97706?text=Singkong",
-    lokasiProdusen: "Kediri, Jawa Timur",
-  },
-  {
-    id: "PO-4402",
-    produsenId: "prod-2",
-    produsen: "Toko Pak Jay",
-    item: "Kripik Tempe Sanan",
-    jumlah: 30,
-    satuan: "pack",
-    hargaSatuan: 12000,
-    total: 360000,
-    status: "Dikirim",
-    tanggal: "18 Jul 2026",
-    noResi: "JNE0057213890",
-    fotoProduk: "https://placehold.co/100x100/FEF3C7/D97706?text=Kripik",
-    lokasiProdusen: "Malang, Jawa Timur",
-  },
-  {
-    id: "PO-4403",
-    produsenId: "prod-3",
-    produsen: "Cireng Ringga",
-    item: "Cireng Isi Ayam",
-    jumlah: 100,
-    satuan: "pcs",
-    hargaSatuan: 2000,
-    total: 200000,
-    status: "Diterima",
-    tanggal: "15 Jul 2026",
-    noResi: "SICEPAT0093821",
-    fotoProduk: "https://placehold.co/100x100/FEF3C7/D97706?text=Cireng",
-    rating: 4,
-    fotoUlasan: "https://placehold.co/200x200/FEF3C7/D97706?text=Diterima",
-    keteranganUlasan: "Barang sesuai pesanan, kemasan rapi, cuma datang agak telat dari estimasi.",
-    lokasiProdusen: "Jombang, Jawa Timur",
-  },
-  {
-    id: "PO-4404",
-    produsenId: "prod-1",
-    produsen: "UD Sumber Rejeki",
-    item: "Tepung Tapioka",
-    jumlah: 20,
-    satuan: "kg",
-    hargaSatuan: 9000,
-    total: 180000,
-    status: "Menunggu",
-    tanggal: "20 Jul 2026",
-    fotoProduk: "https://placehold.co/100x100/FEF3C7/D97706?text=Tapioka",
-    lokasiProdusen: "Kediri, Jawa Timur",
-  },
-];
-
 export default function AdminTokoDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -199,13 +134,12 @@ export default function AdminTokoDashboard() {
     fotoUrl: ""
   });
   // Alamat lengkap toko — dipakai sebagai titik tujuan pada peta rute pengiriman di Pelacakan Pesanan.
-  // Diberi nilai contoh dulu agar peta langsung bisa dilihat sebelum data admin_toko asli tersambung.
-  const [alamatToko, setAlamatToko] = useState("Jombang, Jawa Timur");
+  const [alamatToko, setAlamatToko] = useState("");
 
   // Seluruh list di bawah diinisialisasi kosong (Siap menerima data asli Supabase)
   const [produsenList, setProdusenList] = useState<Produsen[]>([]);
   const [stokList, setStokList] = useState<StokToko[]>([]);
-  const [pembelianList, setPembelianList] = useState<Pembelian[]>(DUMMY_PEMBELIAN);
+  const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
   const [penjualanList, setPenjualanList] = useState<Penjualan[]>([]);
 
   // SINKRONISASI SUPABASE AUTH & LEGALITAS PROFILE
@@ -336,7 +270,7 @@ export default function AdminTokoDashboard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
             <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px", boxSizing: "border-box" }} />
+              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Admin Toko Dashboard</div></div>
           </div>
