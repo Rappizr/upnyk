@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package, Search } from "lucide-react";
+import { supabase } from "@/lib/db";
 
 interface Mitra {
+  id: string;
   nama: string;
-  tipe: "Admin Toko / Koperasi" | "Produsen Hulu";
+  tipe: "Admin Toko" | "Produsen Hulu";
   lokasi: string;
   komoditas: string;
   rating: number;
@@ -15,16 +17,7 @@ interface Mitra {
   tag: string;
 }
 
-const daftarMitra: Mitra[] = [
-  { nama: "Toko Sembako Berkah", tipe: "Admin Toko / Koperasi", lokasi: "Jombang, Jawa Timur", komoditas: "Beras Organik, Kopi Arabika", rating: 4.8, sejakTahun: 2025, tag: "Koperasi Digital" },
-  { nama: "Warung Makmur Jaya", tipe: "Admin Toko / Koperasi", lokasi: "Malang, Jawa Timur", komoditas: "Keripik Tempe, Aneka Camilan", rating: 4.7, sejakTahun: 2025, tag: "Koperasi Digital" },
-  { nama: "Keripik Tempe Sanan", tipe: "Produsen Hulu", lokasi: "Malang, Jawa Timur", komoditas: "Keripik Tempe", rating: 4.9, sejakTahun: 2025, tag: "Produsen Binaan" },
-  { nama: "Kopi Arabika Gayo", tipe: "Produsen Hulu", lokasi: "Surabaya, Jawa Timur", komoditas: "Kopi Arabika", rating: 4.8, sejakTahun: 2026, tag: "Produsen Binaan" },
-  { nama: "Gabungan Kelompok Tani Jombang", tipe: "Produsen Hulu", lokasi: "Jombang, Jawa Timur", komoditas: "Beras Organik", rating: 4.9, sejakTahun: 2025, tag: "Produsen Binaan" },
-  { nama: "Madu Hutan Sumbawa", tipe: "Produsen Hulu", lokasi: "Sumbawa, NTB", komoditas: "Madu Hutan", rating: 5.0, sejakTahun: 2026, tag: "Produsen Binaan" },
-];
-
-const filterTipe = ["Semua", "Admin Toko / Koperasi", "Produsen Hulu"] as const;
+const filterTipe = ["Semua", "Admin Toko", "Produsen Hulu"] as const;
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -52,6 +45,8 @@ export default function MitraUmkmPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [filter, setFilter] = useState<typeof filterTipe[number]>("Semua");
   const [search, setSearch] = useState("");
+  const [daftarMitra, setDaftarMitra] = useState<Mitra[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -59,12 +54,79 @@ export default function MitraUmkmPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO)
+  const muatMitraDatabase = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 1. Ambil data Produsen Hulu
+      const { data: dataProdusen } = await supabase
+        .from("produsen")
+        .select("id, nama_usaha, alamat, kabupaten, provinsi, kategori, created_at");
+
+      // 2. Ambil data Admin Toko / Koperasi UMKM
+      const { data: dataAdminToko } = await supabase
+        .from("admin_toko")
+        .select("id, nama_toko, alamat, kabupaten, created_at");
+
+      const daftarDiolah: Mitra[] = [];
+
+      if (dataProdusen) {
+        dataProdusen.forEach((p) => {
+          const lokasi = [p.kabupaten, p.provinsi].filter(Boolean).join(", ") || p.alamat || "Lokasi belum disetel";
+          const tahun = p.created_at ? new Date(p.created_at).getFullYear() : 2026;
+
+          daftarDiolah.push({
+            id: p.id,
+            nama: p.nama_usaha || "Produsen Binaan",
+            tipe: "Produsen Hulu",
+            lokasi: lokasi,
+            komoditas: p.kategori || "Bahan Baku & Olahan",
+            rating: 5.0,
+            sejakTahun: tahun,
+            tag: "Produsen Binaan"
+          });
+        });
+      }
+
+      if (dataAdminToko) {
+        dataAdminToko.forEach((a) => {
+          const lokasi = [a.alamat, a.kabupaten].filter(Boolean).join(", ") || "Lokasi belum disetel";
+          const tahun = a.created_at ? new Date(a.created_at).getFullYear() : 2026;
+
+          daftarDiolah.push({
+            id: a.id,
+            nama: a.nama_toko || "Admin Toko UMKM",
+            tipe: "Admin Toko",
+            lokasi: lokasi,
+            komoditas: "Koperasi & Komoditas Grosir",
+            rating: 4.8,
+            sejakTahun: tahun,
+            tag: "Koperasi Digital"
+          });
+        });
+      }
+
+      setDaftarMitra(daftarDiolah);
+    } catch (err) {
+      console.error("Gagal memuat data mitra:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    muatMitraDatabase();
+  }, [muatMitraDatabase]);
+
   const filtered = daftarMitra.filter((m) => {
     const cocokTipe = filter === "Semua" || m.tipe === filter;
     const q = search.trim().toLowerCase();
     const cocokCari = !q || m.nama.toLowerCase().includes(q) || m.komoditas.toLowerCase().includes(q) || m.lokasi.toLowerCase().includes(q);
     return cocokTipe && cocokCari;
   });
+
+  const totalProdusen = daftarMitra.filter((m) => m.tipe === "Produsen Hulu").length;
+  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko").length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
@@ -172,14 +234,14 @@ export default function MitraUmkmPage() {
             Koperasi &amp; Produsen di Balik <span className="gradient-text">Setiap Produk</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
-            Setiap mitra di direktori ini sudah melalui verifikasi Super Admin — bukan sekadar terdaftar, tapi teraudit riwayat transaksi dan skor Indeks Harga Adilnya.
+            Setiap mitra di direktori ini merupakan toko dan produsen binaan PasarNusa yang terdaftar secara resmi dan terverifikasi di sistem kami.
           </p>
 
           <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem", maxWidth: "620px", marginLeft: "auto", marginRight: "auto" }}>
             {[
-              { icon: Users, label: "Produsen Binaan", value: daftarMitra.filter(m => m.tipe === "Produsen Hulu").length + "+" },
-              { icon: Package, label: "Koperasi / Toko", value: daftarMitra.filter(m => m.tipe === "Admin Toko / Koperasi").length + "+" },
-              { icon: TrendingUp, label: "Rata-rata Rating", value: "4.8/5" },
+              { icon: Users, label: "Produsen Binaan", value: `${totalProdusen}` },
+              { icon: Package, label: "Koperasi / Toko", value: `${totalKoperasi}` },
+              { icon: TrendingUp, label: "Mitra Terdaftar", value: `${daftarMitra.length}` },
             ].map((s, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "1rem", padding: "1rem", backdropFilter: "blur(8px)" }}>
                 <s.icon size={20} color="#38BDF8" style={{ marginBottom: "0.4rem" }} />
@@ -214,44 +276,50 @@ export default function MitraUmkmPage() {
           </div>
         </Reveal>
 
-        <div className="mitra-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.75rem" }}>
-          {filtered.map((m, i) => (
-            <Reveal key={m.nama} delay={i * 60}>
-              <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                  <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B", fontWeight: 700, fontSize: "0.85rem" }}>
-                    <Star size={14} fill="#F59E0B" /> {m.rating.toFixed(1)}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "4rem", color: "#64748B" }}>
+            Memuat daftar mitra terdaftar...
+          </div>
+        ) : (
+          <div className="mitra-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.75rem" }}>
+            {filtered.map((m, i) => (
+              <Reveal key={m.id} delay={i * 60}>
+                <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                    <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B", fontWeight: 700, fontSize: "0.85rem" }}>
+                      <Star size={14} fill="#F59E0B" /> {m.rating.toFixed(1)}
+                    </div>
+                  </div>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A", margin: "0 0 0.4rem 0" }}>{m.nama}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748B", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
+                    <MapPin size={14} /> {m.lokasi}
+                  </div>
+                  <p style={{ color: "#475569", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.25rem 0", flexGrow: 1 }}>
+                    Sektor / Komoditas: <strong>{m.komoditas}</strong>
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #F1F5F9", paddingTop: "1rem", fontSize: "0.78rem", color: "#94A3B8", fontWeight: 600 }}>
+                    <span>Mitra sejak {m.sejakTahun}</span>
+                    <span style={{ color: "#10B981" }}>● Terverifikasi</span>
                   </div>
                 </div>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A", margin: "0 0 0.4rem 0" }}>{m.nama}</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748B", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
-                  <MapPin size={14} /> {m.lokasi}
-                </div>
-                <p style={{ color: "#475569", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.25rem 0", flexGrow: 1 }}>
-                  Komoditas unggulan: <strong>{m.komoditas}</strong>
-                </p>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #F1F5F9", paddingTop: "1rem", fontSize: "0.78rem", color: "#94A3B8", fontWeight: 600 }}>
-                  <span>Mitra sejak {m.sejakTahun}</span>
-                  <span style={{ color: "#10B981" }}>● Terverifikasi</span>
-                </div>
+              </Reveal>
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", color: "#94A3B8" }}>
+                <Filter size={28} style={{ marginBottom: "0.5rem" }} />
+                <p>Belum ada mitra terdaftar yang cocok dengan pencarianmu.</p>
               </div>
-            </Reveal>
-          ))}
-          {filtered.length === 0 && (
-            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", color: "#94A3B8" }}>
-              <Filter size={28} style={{ marginBottom: "0.5rem" }} />
-              <p>Tidak ada mitra yang cocok dengan pencarianmu.</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         <Reveal delay={100}>
           <div style={{ marginTop: "5rem", background: "linear-gradient(135deg, #0F172A, #1E293B)", borderRadius: "2rem", padding: "3rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden" }}>
             <div className="blob" style={{ width: 300, height: 300, background: "#38BDF8", opacity: 0.18, top: -100, right: -60 }} />
             <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", marginBottom: "1rem", position: "relative" }}>Punya Usaha atau Kelompok Tani Sendiri?</h2>
             <p style={{ color: "#CBD5E1", fontSize: "1.05rem", marginBottom: "2rem", maxWidth: "560px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-              Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi — verifikasi Super Admin biasanya selesai dalam hitungan hari, bukan minggu.
+              Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi untuk masuk ke dalam jaringan PasarNusa.
             </p>
             <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#38BDF8", color: "#0F172A", padding: "0.9rem 2.2rem", borderRadius: "99px", fontWeight: 700, textDecoration: "none", position: "relative" }}>
               Ajukan Kemitraan Sekarang
