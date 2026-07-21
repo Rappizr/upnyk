@@ -18,6 +18,7 @@ import SmartRestock from "./components/smart-restock";
 import EtalasePenjualan from "./components/etalase-penjualan";
 import LaporanBukuKas from "./components/laporan-buku-kas";
 import ProfilTokoPage from "./components/profil-toko";
+import PelacakanPesanan from "./components/pelacakan-pesanan";
 
 export type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -53,8 +54,15 @@ export interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-  status: "Menunggu" | "Diterima";
+  status: "Menunggu" | "Dikirim" | "Diterima";
   tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  /** Lokasi/alamat produsen — dipakai sebagai titik asal peta rute pengiriman */
+  lokasiProdusen?: string;
 }
 
 export interface Penjualan {
@@ -70,6 +78,7 @@ const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit"
 
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
+const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconBox = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const IconRefresh = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>;
 const IconTag = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.5 3H4a1 1 0 0 0-1 1v5.5a2 2 0 0 0 .83 1.5l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>;
@@ -86,7 +95,10 @@ interface MenuGroupDef { title: string; items: MenuItemDef[] }
 
 const menuGroups: MenuGroupDef[] = [
   { title: "Main", items: [{ key: "dashboard", label: "Dashboard", icon: IconDashboard }] },
-  { title: "Belanja Bahan Baku", items: [{ key: "marketplace", label: "Marketplace Produsen", icon: IconStore }] },
+  { title: "Belanja Bahan Baku", items: [
+    { key: "marketplace", label: "Marketplace Produsen", icon: IconStore },
+    { key: "pelacakan", label: "Pelacakan Pesanan", icon: IconTruck },
+  ] },
   { title: "Manajemen Stok", items: [
     { key: "inventaris", label: "Inventaris & Grading", icon: IconBox },
     { key: "restock", label: "Smart Restock", icon: IconRefresh },
@@ -106,6 +118,7 @@ function formatRupiahRingkas(n: number) {
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   marketplace: "Marketplace Produsen",
+  pelacakan: "Pelacakan Pesanan",
   inventaris: "Inventaris & Grading",
   restock: "Smart Restock",
   etalase: "Etalase Penjualan",
@@ -117,7 +130,7 @@ export default function AdminTokoDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  
+
   // State manajemen kelengkapan legalitas admin_toko
   const [isDataLengkap, setIsDataLengkap] = useState(true);
   const [loadingProfil, setLoadingProfil] = useState(true);
@@ -128,6 +141,8 @@ export default function AdminTokoDashboard() {
     inisial: "AT",
     fotoUrl: ""
   });
+  // Alamat lengkap toko — dipakai sebagai titik tujuan pada peta rute pengiriman di Pelacakan Pesanan.
+  const [alamatToko, setAlamatToko] = useState("");
 
   // Seluruh list di bawah diinisialisasi kosong (Siap menerima data asli Supabase)
   const [produsenList, setProdusenList] = useState<Produsen[]>([]);
@@ -142,14 +157,19 @@ export default function AdminTokoDashboard() {
     if (!user) { setLoadingProfil(false); return; }
 
     const { data: profile } = await supabase.from("profiles").select("nama, avatar_url").eq("id", user.id).maybeSingle();
-    const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat").eq("profile_id", user.id).maybeSingle();
+    const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat, desa, kecamatan, kabupaten, provinsi").eq("profile_id", user.id).maybeSingle();
 
     const lengkap = !!(adminToko && adminToko.alamat && adminToko.nama_toko);
     setIsDataLengkap(lengkap);
 
-    // Jika alamat / nama toko kosong, kunci navigasi dan tampilkan modal secara force-open
+    if (adminToko) {
+      const alamatLengkap = [adminToko.alamat, adminToko.desa, adminToko.kecamatan, adminToko.kabupaten, adminToko.provinsi].filter(Boolean).join(", ");
+      if (alamatLengkap) setAlamatToko(alamatLengkap);
+    }
+
+    // Jika alamat / nama toko kosong, kunci navigasi ke Dashboard.
+    // Popup wajib-isi-nya sendiri sudah otomatis dipaksa terbuka oleh ProfilTokoPage.
     if (!lengkap) {
-      setProfilPopupOpen(true);
       setActiveMenu("dashboard");
     }
 
@@ -270,6 +290,14 @@ export default function AdminTokoDashboard() {
 
   async function terimaPembelian(id: string, grade: Grade) {
     // 1. Dapatkan data pembelian PO
+  // Produsen menandai barang sudah dikirim — dipanggil dari halaman Pelacakan Pesanan.
+  // Sementara masih manual di sisi Admin Toko karena dashboard Produsen belum tersambung realtime.
+  function tandaiDikirim(id: string, noResi: string) {
+    setPembelianList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Dikirim", noResi: noResi || undefined } : p)));
+  }
+
+  function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
+    setPembelianList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Diterima", rating, fotoUlasan, keteranganUlasan } : p)));
     const po = pembelianList.find((p) => p.id === id);
     if (!po) return;
 
@@ -386,7 +414,7 @@ export default function AdminTokoDashboard() {
   }
 
   const totalStokNilai = stokList.reduce((s, x) => s + x.jumlah * x.hargaJual, 0);
-  const pesananMenunggu = pembelianList.filter((p) => p.status === "Menunggu").length;
+  const pesananMenunggu = pembelianList.filter((p) => p.status === "Menunggu" || p.status === "Dikirim").length;
   const totalOmset = penjualanList.reduce((s, p) => s + p.total, 0);
   const totalBelanja = pembelianList.reduce((s, p) => s + p.total, 0);
   const labaBersih = totalOmset - totalBelanja;
@@ -394,7 +422,7 @@ export default function AdminTokoDashboard() {
   const produkLive = stokList.filter((s) => s.live).length;
   const stokMenipis = stokList.filter((s) => s.jumlah <= s.batasMinimum);
 
-  const 所有Notif = useMemo(() => {
+  const semuaNotif = useMemo(() => {
     const list: { id: string; text: string; sub: string; tujuan: string }[] = [];
     stokMenipis.forEach((s) => list.push({ id: `stok-${s.id}`, text: `Stok ${s.nama} menipis`, sub: `Sisa ${s.jumlah} ${s.satuan}`, tujuan: "restock" }));
     pembelianList.filter((p) => p.status === "Menunggu").forEach((p) => list.push({ id: `po-${p.id}`, text: `Pembelian menunggu dari ${p.produsen}`, sub: `${p.item} × ${p.jumlah} ${p.satuan}`, tujuan: "inventaris" }));
@@ -444,8 +472,8 @@ export default function AdminTokoDashboard() {
       <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#F59E0B", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Admin Toko Dashboard</div></div>
           </div>
@@ -498,14 +526,6 @@ export default function AdminTokoDashboard() {
           </div>
         </div>
 
-        {profilPopupOpen && (
-          <div onClick={() => isDataLengkap && setProfilPopupOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "4.5rem 1rem 1rem", overflowY: "auto" }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", width: "100%" }}>
-              <ProfilTokoPage onProfileUpdate={periksaKelengkapanAdmin} />
-            </div>
-          </div>
-        )}
-
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
             
@@ -537,10 +557,10 @@ export default function AdminTokoDashboard() {
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{produkLive}</div>
                 <div style={{ fontSize: "0.68rem", color: "#F59E0B", marginTop: "0.15rem" }}>Lihat etalase →</div>
               </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: isDataLengkap ? "pointer" : "not-allowed" }} onClick={() => isDataLengkap && selectMenu("marketplace")}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: isDataLengkap ? "pointer" : "not-allowed" }} onClick={() => isDataLengkap && selectMenu("pelacakan")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PESANAN MENUNGGU</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananMenunggu}</div>
-                <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Perlu diproses</div>
+                <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Lacak pesanan →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>NILAI STOK GUDANG</div>
@@ -595,11 +615,21 @@ export default function AdminTokoDashboard() {
 
         {/* SUB HALAMAN OPERASIONAL HANYA AKAN MERENDER JIKA LEGALITAS DATA SUDAH LENGKAP */}
         {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
+        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen produsenList={produsenList} belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
+        {activeMenu === "pelacakan" && isDataLengkap && <PelacakanPesanan pembelianList={pembelianList} tandaiDikirim={tandaiDikirim} terimaPesanan={terimaPembelian} alamatToko={alamatToko} />}
         {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
         {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
         {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}
         {activeMenu === "laporan" && isDataLengkap && <LaporanBukuKas pembelianList={pembelianList} penjualanList={penjualanList} />}
       </div>
+
+      {/* Popup profil — dipasang sekali di root, jadi selalu bisa nongol di atas activeMenu manapun.
+          ProfilTokoPage juga otomatis memaksa diri terbuka kalau data toko belum lengkap. */}
+      <ProfilTokoPage
+        open={profilPopupOpen}
+        onClose={() => setProfilPopupOpen(false)}
+        onProfileUpdate={periksaKelengkapanAdmin}
+      />
     </div>
   );
 }

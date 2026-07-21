@@ -34,7 +34,6 @@ const pageTitles: Record<string, string> = {
   penjualan: "Daftar Pesanan Toko",
   pengiriman: "Pelacakan Pengiriman",
   keuangan: "Arus Kas Keuangan",
-  profil: "Profil Usaha UMKM"
 };
 
 function formatRupiah(n: number) {
@@ -46,6 +45,9 @@ export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // Popup profil — dipisah dari navigasi activeMenu, jadi bisa muncul di atas halaman manapun.
+  const [showProfilPopup, setShowProfilPopup] = useState(false);
 
   const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
   const [profil, setProfil] = useState<Profil>({
@@ -76,7 +78,7 @@ export default function ProdusenDashboard() {
       alamat: produsen?.alamat || "",
       telepon: mainProfile?.phone || "-",
       email: mainProfile?.email || "-",
-      kategori: produsen?.kategori || "Belum memilih kategori", 
+      kategori: produsen?.kategori || "Belum memilih kategori",
       terverifikasi: produsen?.status === "aktif",
       inisial: inisialPengguna,
       fotoUrl: mainProfile?.avatar_url || undefined // Menyambungkan avatar riil atas kanan dari profiles
@@ -138,8 +140,8 @@ export default function ProdusenDashboard() {
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Produsen / UMKM</div></div>
           </div>
@@ -164,16 +166,17 @@ export default function ProdusenDashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", color: "#334155" }}><IconMenu /></button>
-            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[!isProfileComplete ? "profil" : activeMenu]}</div>
+            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
-          
+
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div onClick={() => isProfileComplete && setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <IconBell />
               {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
             </div>
-            
-            <div onClick={() => setActiveMenu("profil")} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
+
+            {/* Klik profil di pojok kanan atas -> buka popup ProfilUMKM, TIDAK pindah halaman */}
+            <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
               </div>
@@ -189,62 +192,77 @@ export default function ProdusenDashboard() {
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFC" }}>
-          {/* MENGIRIM KAN CALLBACK ONPROFILEUPDATE AGAR HEADER SYNC REALTIME */}
-          {!isProfileComplete || activeMenu === "profil" ? (
-            <div style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", textAlign: "center" }}>
-              {!isProfileComplete && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: "#991B1B", padding: "1rem", borderRadius: "10px", marginBottom: "1.5rem", fontSize: "0.88rem", fontWeight: 600, maxWidth: "520px", margin: "0 auto 1.5rem auto", textAlign: "left" }}>
-                  ⚠️ Akun anda mendeteksi data data legalitas UMKM belum terdaftar lengkap. Silakan isi formulir di bawah ini dengan nama usaha, kategori hulu, dan alamat asli agar fitur operasional penayangan produk dapat diaktifkan kembali.
+          {activeMenu === "dashboard" && (
+            <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+              <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+                <div>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
+                  <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</h2>
+                  <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.85rem", color: "rgba(255,255,255,.85)", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</p>
                 </div>
-              )}
-              <ProfilUMKM onProfileUpdate={muatDataDashboard} />
-            </div>
-          ) : (
-            <>
-              {activeMenu === "dashboard" && (
-                <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-                  <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-                    <div>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
-                      <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</h2>
-                      <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.85rem", color: "rgba(255,255,255,.85)", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</p>
-                    </div>
-                    <button onClick={() => setActiveMenu("pengiriman")} style={{ background: "#fff", color: "#059669", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>Lihat Riwayat Panen <IconArrowRight /></button>
-                  </div>
+                <button onClick={() => setActiveMenu("pengiriman")} style={{ background: "#fff", color: "#059669", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>Lihat Riwayat Panen <IconArrowRight /></button>
+              </div>
 
-                  <div className="pn-stats-grid" style={{ marginBottom: "1.25rem" }}>
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
-                      <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => setActiveMenu("stok")}>Kelola stok →</div>
-                    </div>
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("penjualan")}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananAktif} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>order</span></div>
-                      <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Perlu ditindaklanjuti</div>
-                    </div>
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PENDAPATAN SELESAI</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalPendapatan)}</div>
-                      <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Total transaksi lunas</div>
-                    </div>
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("keuangan")}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>SALDO WALLET</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(saldo)}</div>
-                      <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Siap ditarik</div>
-                    </div>
-                    <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", textTransform: "uppercase", marginBottom: "0.4rem" }}>RATING PRODUK</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{ratingRata ? ratingRata.toFixed(1) : "0.0"} <span style={{ fontSize: "0.7rem", fontWeight: 400 }}>/5.0</span></div>
-                      <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Dari {semuaUlasan.length} ulasan pembeli</div>
-                    </div>
-                  </div>
+              <div className="pn-stats-grid" style={{ marginBottom: "1.25rem" }}>
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
+                  <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => setActiveMenu("stok")}>Kelola stok →</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("penjualan")}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananAktif} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>order</span></div>
+                  <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Perlu ditindaklanjuti</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PENDAPATAN SELESAI</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalPendapatan)}</div>
+                  <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Total transaksi lunas</div>
+                </div>
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("keuangan")}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>SALDO WALLET</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(saldo)}</div>
+                  <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Siap ditarik</div>
+                </div>
+                <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", textTransform: "uppercase", marginBottom: "0.4rem" }}>RATING PRODUK</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{ratingRata ? ratingRata.toFixed(1) : "0.0"} <span style={{ fontSize: "0.7rem", fontWeight: 400 }}>/5.0</span></div>
+                  <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Dari {semuaUlasan.length} ulasan pembeli</div>
+                </div>
+              </div>
 
-                  <div className="pn-panels-grid">
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                        <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen & stok</div>
-                        {stokMenipis.length > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>Butuh tindakan</span>}
+              <div className="pn-panels-grid">
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen & stok</div>
+                    {stokMenipis.length > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>Butuh tindakan</span>}
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
+                  {stokMenipis.length === 0 ? (
+                    <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Semua stok dalam kondisi aman.</p>
+                  ) : (
+                    stokMenipis.map((s) => (
+                      <div key={s.id} style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.6rem 0.7rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</div><div style={{ fontSize: "0.68rem", color: "#DC2626" }}>{s.status === "Habis" ? "Stok habis" : `Hampir habis (sisa ${s.jumlah} ${s.satuan})`}</div></div>
+                        <button onClick={() => setActiveMenu("stok")} style={{ background: "#10B981", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>Kelola stok</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Ulasan terbaru dari pembeli</div>
+                  <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Otomatis tersinkron dari transaksi pembeli</div>
+                  {semuaUlasan.length === 0 ? (
+                    <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Belum ada ulasan masuk dari Supabase.</p>
+                  ) : (
+                    semuaUlasan.slice(0, 3).map((u, i) => (
+                      <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli} <span style={{ fontWeight: 400, color: "#94A3B8" }}>({u.produk})</span></span>
+                          <span style={{ color: "#D97706", fontSize: "0.72rem" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
+                        </div>
+                        <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{u.komentar}</div>
                       </div>
                       <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
                       {stokMenipis.length === 0 ? (
@@ -285,9 +303,27 @@ export default function ProdusenDashboard() {
               {activeMenu === "pengiriman" && <Pengiriman />}
               {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
             </>
+                    ))
+                  )}
+                </div>
+              </div>
+            </main>
           )}
+
+          {activeMenu === "stok" && <StokKomoditas />}
+          {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} deletePesanan={() => {}} updatePesananStatus={() => {}} />}
+          {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={() => {}} />}
+          {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
         </div>
       </div>
+
+      {/* Popup profil — dipasang sekali di root, jadi selalu bisa nongol di atas activeMenu manapun.
+          ProfilUMKM juga otomatis memaksa diri terbuka kalau data toko belum lengkap, terlepas dari showProfilPopup. */}
+      <ProfilUMKM
+        open={showProfilPopup}
+        onClose={() => setShowProfilPopup(false)}
+        onProfileUpdate={muatDataDashboard}
+      />
     </div>
   );
 }
