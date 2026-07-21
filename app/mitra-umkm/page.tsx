@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package,
-  Search, Store, ShieldCheck, Sprout, Leaf
+  ArrowLeft, MapPin, Filter, TrendingUp, Search, Store, ShieldCheck, Sprout, Leaf
 } from "lucide-react";
 import { supabase } from "@/lib/db";
 
@@ -77,7 +76,7 @@ export default function MitraUmkmPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO) — logika dipertahankan
+  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO)
   const muatMitraDatabase = useCallback(async () => {
     setLoading(true);
     try {
@@ -174,7 +173,6 @@ export default function MitraUmkmPage() {
         }
         .blob { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; animation: floatBlob 14s ease-in-out infinite; }
 
-        /* Motif "ledger" halus — menegaskan tema terukur & bisa diaudit */
         .ledger-grid {
           position: absolute; inset: 0; pointer-events: none;
           background-image:
@@ -343,41 +341,46 @@ export default function MitraUmkmPage() {
           <div className="mitra-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.75rem" }}>
             {filtered.map((m, i) => (
               <Reveal key={m.id} delay={i * 60}>
-                <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
-                    {/* AVATAR / FOTO PROFIL TOKO */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-                      <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {m.fotoUrl ? (
-                          <img src={m.fotoUrl} alt={m.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <Store size={24} color="#64748B" />
-                        )}
-                      </div>
-                      <div>
-                        <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.68rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "99px" }}>{m.tag}</span>
-                        <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0F172A", margin: "0.25rem 0 0 0" }}>{m.nama}</h3>
-                      </div>
+                <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
+                  
+                  {/* HEADER KARTU: FOTO PROFIL & NAMA */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem" }}>
+                    <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E3EDE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {m.fotoUrl ? (
+                        <img src={m.fotoUrl} alt={m.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <Store size={24} color="#64748B" />
+                      )}
                     </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
-                      <MapPin size={14} color={C.emerald} /> {m.lokasi}
-                    </div>
-
-                    <p style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
-                      Sektor / Komoditas: <strong style={{ color: C.ink }}>{m.komoditas}</strong>
-                    </p>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
-                      <span>Mitra sejak {m.sejakTahun}</span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: C.green, fontWeight: 700 }}>
-                        <ShieldCheck size={13} /> Terverifikasi
+                    <div>
+                      <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.68rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "99px", display: "inline-block" }}>
+                        {m.tag}
                       </span>
+                      <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0F172A", margin: "0.25rem 0 0 0" }}>{m.nama}</h3>
                     </div>
                   </div>
-                </Reveal>
-              );
-            })}
+
+                  {/* LOKASI */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
+                    <MapPin size={14} color={C.emerald} /> {m.lokasi}
+                  </div>
+
+                  {/* KOMODITAS */}
+                  <p style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
+                    Sektor / Komoditas: <strong style={{ color: C.ink }}>{m.komoditas}</strong>
+                  </p>
+
+                  {/* FOOTER KARTU */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
+                    <span>Mitra sejak {m.sejakTahun}</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: C.green, fontWeight: 700 }}>
+                      <ShieldCheck size={13} /> Terverifikasi
+                    </span>
+                  </div>
+
+                </div>
+              </Reveal>
+            ))}
 
             {filtered.length === 0 && (
               <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "4rem 1rem", color: C.muted }}>
