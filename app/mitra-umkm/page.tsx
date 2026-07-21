@@ -140,7 +140,7 @@ export default function MitraUmkmPage() {
           box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
         }
         .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -156,8 +156,8 @@ export default function MitraUmkmPage() {
         }
         .mitra-card:hover {
           transform: translateY(-6px);
-          box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.12);
-          border-color: rgba(56, 189, 248, 0.4);
+          box-shadow: 0 20px 40px -15px rgba(5, 150, 105, 0.18);
+          border-color: rgba(16, 185, 129, 0.45);
         }
         .filter-chip {
           border: 1px solid #E2E8F0;
@@ -170,7 +170,7 @@ export default function MitraUmkmPage() {
           cursor: pointer;
           transition: all 0.25s ease;
         }
-        .filter-chip.active { background: #0F172A; color: #fff; border-color: #0F172A; }
+        .filter-chip.active { background: #065F46; color: #fff; border-color: #065F46; }
 
         @media (max-width: 768px) {
           .header-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
@@ -203,13 +203,13 @@ export default function MitraUmkmPage() {
             style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }}
           />
           <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
+            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -221,30 +221,30 @@ export default function MitraUmkmPage() {
       <section className="hero-section" style={{
         paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.98))`,
-        background: "#0B1120",
+        backgroundImage: `linear-gradient(to bottom, rgba(6, 78, 59, 0.55), rgba(3, 20, 14, 0.95)), url('https://images.unsplash.com/photo-1519082572439-7ed19908e47e?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll",
       }}>
-        <div className="blob" style={{ width: 420, height: 420, background: "#38BDF8", opacity: 0.22, top: -140, left: -100 }} />
-        <div className="blob" style={{ width: 380, height: 380, background: "#818CF8", opacity: 0.18, bottom: -160, right: -80, animationDelay: "3s" }} />
+        <div className="blob" style={{ width: 420, height: 420, background: "#34D399", opacity: 0.22, top: -140, left: -100 }} />
+        <div className="blob" style={{ width: 380, height: 380, background: "#059669", opacity: 0.20, bottom: -160, right: -80, animationDelay: "3s" }} />
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
           <div className="hero-badge" style={{ display: "inline-block", padding: "0.5rem 1.5rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#34D399", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Jaringan Mitra Terverifikasi
+            Mitra Terverifikasi, Bukan Sekadar Terdaftar
           </div>
           <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
-            Koperasi &amp; Produsen di Balik <span className="gradient-text">Setiap Produk</span>
+            Selama Ini Produsen Cuma Angka. <span className="gradient-text">Di Sini, Mereka Punya Nama.</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
-            Setiap mitra di direktori ini merupakan toko dan produsen binaan PasarNusa yang terdaftar secara resmi dan terverifikasi di sistem kami.
+            Bukan daftar kontak, bukan katalog kosong. Setiap mitra di halaman ini identitasnya diverifikasi, transaksinya tercatat, dan bisa diaudit kapan saja — karena kepercayaan dibangun dari data yang bisa dibuktikan, bukan janji di brosur.
           </p>
 
           <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem", maxWidth: "620px", marginLeft: "auto", marginRight: "auto" }}>
             {[
               { icon: Users, label: "Produsen Binaan", value: `${totalProdusen}` },
               { icon: Package, label: "Koperasi / Toko", value: `${totalKoperasi}` },
-              { icon: TrendingUp, label: "Mitra Terdaftar", value: `${daftarMitra.length}` },
+              { icon: TrendingUp, label: "Mitra Aktif Tercatat", value: `${daftarMitra.length}` },
             ].map((s, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "1rem", padding: "1rem", backdropFilter: "blur(8px)" }}>
-                <s.icon size={20} color="#38BDF8" style={{ marginBottom: "0.4rem" }} />
+                <s.icon size={20} color="#34D399" style={{ marginBottom: "0.4rem" }} />
                 <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#fff" }}>{s.value}</div>
                 <div style={{ fontSize: "0.7rem", color: "#94A3B8", fontWeight: 600 }}>{s.label}</div>
               </div>
@@ -278,7 +278,7 @@ export default function MitraUmkmPage() {
 
         {loading ? (
           <div style={{ textAlign: "center", padding: "4rem", color: "#64748B" }}>
-            Memuat daftar mitra terdaftar...
+            Memverifikasi ulang siapa saja yang tercatat...
           </div>
         ) : (
           <div className="mitra-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.75rem" }}>
@@ -286,7 +286,7 @@ export default function MitraUmkmPage() {
               <Reveal key={m.id} delay={i * 60}>
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                    <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
+                    <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#FFFBEB", color: m.tipe === "Produsen Hulu" ? "#059669" : "#B45309", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B", fontWeight: 700, fontSize: "0.85rem" }}>
                       <Star size={14} fill="#F59E0B" /> {m.rating.toFixed(1)}
                     </div>
@@ -300,7 +300,7 @@ export default function MitraUmkmPage() {
                   </p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #F1F5F9", paddingTop: "1rem", fontSize: "0.78rem", color: "#94A3B8", fontWeight: 600 }}>
                     <span>Mitra sejak {m.sejakTahun}</span>
-                    <span style={{ color: "#10B981" }}>● Terverifikasi</span>
+                    <span style={{ color: "#10B981" }}>● Terverifikasi Sistem</span>
                   </div>
                 </div>
               </Reveal>
@@ -308,7 +308,7 @@ export default function MitraUmkmPage() {
             {filtered.length === 0 && (
               <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", color: "#94A3B8" }}>
                 <Filter size={28} style={{ marginBottom: "0.5rem" }} />
-                <p>Belum ada mitra terdaftar yang cocok dengan pencarianmu.</p>
+                <p>Belum ada mitra terverifikasi yang cocok dengan pencarianmu.</p>
               </div>
             )}
           </div>
@@ -316,13 +316,13 @@ export default function MitraUmkmPage() {
 
         <Reveal delay={100}>
           <div style={{ marginTop: "5rem", background: "linear-gradient(135deg, #0F172A, #1E293B)", borderRadius: "2rem", padding: "3rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden" }}>
-            <div className="blob" style={{ width: 300, height: 300, background: "#38BDF8", opacity: 0.18, top: -100, right: -60 }} />
-            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", marginBottom: "1rem", position: "relative" }}>Punya Usaha atau Kelompok Tani Sendiri?</h2>
+            <div className="blob" style={{ width: 300, height: 300, background: "#34D399", opacity: 0.2, top: -100, right: -60 }} />
+            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", marginBottom: "1rem", position: "relative" }}>Usaha Anda Pantas Diakui, Bukan Cuma Jadi Perantara Tanpa Nama</h2>
             <p style={{ color: "#CBD5E1", fontSize: "1.05rem", marginBottom: "2rem", maxWidth: "560px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-              Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi untuk masuk ke dalam jaringan PasarNusa.
+              Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi — dan hentikan siklus jadi mata rantai yang tak pernah tercatat di sistem manapun.
             </p>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#38BDF8", color: "#0F172A", padding: "0.9rem 2.2rem", borderRadius: "99px", fontWeight: 700, textDecoration: "none", position: "relative" }}>
-              Ajukan Kemitraan Sekarang
+            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#10B981", color: "#FFFFFF", padding: "0.9rem 2.2rem", borderRadius: "99px", fontWeight: 700, textDecoration: "none", position: "relative" }}>
+              Klaim Posisi Anda di Rantai Pasok
             </Link>
           </div>
         </Reveal>
@@ -331,8 +331,8 @@ export default function MitraUmkmPage() {
       {/* FOOTER */}
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
-          <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
+          <span style={{ color: "#64748B" }}>© 2026 PasarNusa & Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
+          <span style={{ color: "#475569" }}>Membangun Rantai Pasok yang Adil, Bukan Sekadar yang Ada.</span>
         </div>
       </footer>
     </div>

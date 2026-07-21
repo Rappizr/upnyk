@@ -64,7 +64,7 @@ export default function KontakMitraPage() {
           box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
         }
         .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -74,18 +74,18 @@ export default function KontakMitraPage() {
         }
         .blob { position: absolute; border-radius: 50%; filter: blur(75px); pointer-events: none; animation: floatBlob 13s ease-in-out infinite; }
         .contact-card { background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.8); transition: all 0.3s ease; }
-        .contact-card:hover { border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.05); transform: translateY(-3px); }
+        .contact-card:hover { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.08); transform: translateY(-3px); }
         .form-input {
           width: 100%; padding: 0.85rem 1rem; border: 1px solid #E2E8F0; border-radius: 0.75rem; font-size: 0.95rem;
           background: #F8FAFC; outline: none; transition: all 0.3s ease; box-sizing: border-box;
         }
-        .form-input:focus { border-color: #2563EB; background: #ffffff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .form-input:focus { border-color: #059669; background: #ffffff; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
         .submit-btn {
-          width: 100%; padding: 1rem; background: #2563EB; color: #ffffff; border: none; border-radius: 0.75rem;
+          width: 100%; padding: 1rem; background: #059669; color: #ffffff; border: none; border-radius: 0.75rem;
           font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center;
           gap: 0.5rem; transition: all 0.3s ease;
         }
-        .submit-btn:hover { background: #1D4ED8; transform: translateY(-2px); }
+        .submit-btn:hover { background: #047857; transform: translateY(-2px); }
 
         @media (max-width: 768px) {
           .header-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
@@ -128,13 +128,13 @@ export default function KontakMitraPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
           <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
+            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -146,11 +146,11 @@ export default function KontakMitraPage() {
       <section className="hero-section" style={{
         paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.98)), url('https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.97)), url('https://images.unsplash.com/photo-1560264280-88b68371db39?auto=format&fit=crop&q=80&w=1920')`,
         backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
       }}>
         <div className="blob" style={{ width: 400, height: 400, background: "#EF4444", opacity: 0.14, top: -100, left: -100 }} />
-        <div className="blob" style={{ width: 360, height: 360, background: "#38BDF8", opacity: 0.16, bottom: -140, right: -80, animationDelay: "3.5s" }} />
+        <div className="blob" style={{ width: 360, height: 360, background: "#34D399", opacity: 0.18, bottom: -140, right: -80, animationDelay: "3.5s" }} />
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
           <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#EF4444", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
             Pusat Bantuan &amp; Pengaduan
@@ -172,7 +172,7 @@ export default function KontakMitraPage() {
           <Reveal>
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               <div className="left-pane-header">
-                <span style={{ color: "#2563EB", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Saluran Kendali</span>
+                <span style={{ color: "#059669", fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Saluran Kendali</span>
                 <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#0F172A", marginTop: "0.25rem", marginBottom: "1.5rem" }}>Kontak Bantuan</h2>
               </div>
 
@@ -193,7 +193,7 @@ export default function KontakMitraPage() {
               </div>
 
               <div className="contact-card" style={{ padding: "1.5rem", borderRadius: "1.25rem", display: "flex", gap: "1.25rem", alignItems: "center" }}>
-                <div style={{ background: "rgba(37,99,235,0.08)", color: "#2563EB", padding: "0.75rem", borderRadius: "0.85rem", flexShrink: 0 }}><Mail size={24} /></div>
+                <div style={{ background: "rgba(5,150,105,0.08)", color: "#059669", padding: "0.75rem", borderRadius: "0.85rem", flexShrink: 0 }}><Mail size={24} /></div>
                 <div>
                   <div style={{ fontSize: "0.8rem", color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Kantor Pusat Admin</div>
                   <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1E293B", marginTop: "0.15rem", lineHeight: 1.4 }}>Gedung Inovasi Digital Lt.3, Blimbing, Kota Malang, Jawa Timur</div>
@@ -201,7 +201,7 @@ export default function KontakMitraPage() {
               </div>
 
               <div className="contact-card" style={{ padding: "1.5rem", borderRadius: "1.25rem", display: "flex", gap: "1.25rem", alignItems: "center" }}>
-                <div style={{ background: "rgba(129,140,248,0.1)", color: "#818CF8", padding: "0.75rem", borderRadius: "0.85rem", flexShrink: 0 }}><Clock size={24} /></div>
+                <div style={{ background: "rgba(52,211,153,0.12)", color: "#34D399", padding: "0.75rem", borderRadius: "0.85rem", flexShrink: 0 }}><Clock size={24} /></div>
                 <div>
                   <div style={{ fontSize: "0.8rem", color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Target Respons Tiket</div>
                   <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1E293B", marginTop: "0.15rem" }}>Ditinjau Super Admin &lt; 1x24 jam</div>
@@ -214,7 +214,7 @@ export default function KontakMitraPage() {
                   <h4 style={{ margin: 0, fontWeight: 800, fontSize: "0.95rem" }}>Kebijakan Perlindungan Pelapor</h4>
                 </div>
                 <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748B", lineHeight: 1.6 }}>
-                  PasarNusa menjamin kerahasiaan identitas akun produsen atau petani yang melaporkan indikasi kecurangan tengkulak maupun Admin Toko yang memanipulasi Indeks Harga Adil platform.
+                  PasarNusa menjamin kerahasiaan identitas akun produsen atau petani yang melaporkan indikasi kecurangan tengkulak maupun Admin Toko yang memanipulasi Indeks Harga Adil platform. Melapor tidak akan membuat akunmu dibungkam, justru itulah cara sistem ini menutup celah kecurangan.
                 </p>
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function KontakMitraPage() {
                     <textarea rows={4} required placeholder="Tuliskan detail keluhan, nomor invoice transaksi, atau nama toko koperasi yang ingin dilaporkan..." className="form-input" style={{ resize: "none" }} value={formData.pesan} onChange={(e) => setFormData({...formData, pesan: e.target.value})}></textarea>
                   </div>
 
-                  <button type="submit" className="submit-btn" style={{ marginTop: "0.5rem", background: formData.jenisLaporan === 'manipulasi_harga' ? '#EF4444' : '#2563EB' }}>
+                  <button type="submit" className="submit-btn" style={{ marginTop: "0.5rem", background: formData.jenisLaporan === 'manipulasi_harga' ? '#EF4444' : '#059669' }}>
                     <Send size={16} /> Kirim Tiket Aduan Ke Admin
                   </button>
                 </form>
@@ -288,7 +288,7 @@ export default function KontakMitraPage() {
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
+          <span style={{ color: "#475569" }}>Membangun Rantai Pasok yang Adil, Bukan Sekadar yang Ada.</span>
         </div>
       </footer>
     </div>
