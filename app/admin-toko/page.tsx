@@ -3,7 +3,14 @@
 import { useMemo, useState, useEffect } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/db";
+import {
+  supabase,
+  getInventarisAdminToko,
+  addInventarisAdminToko,
+  updateInventarisStok,
+  deleteInventarisAdminToko,
+  getMarketplaceUntukInventaris
+} from "@/lib/db";
 
 import MarketplaceProdusen from "./components/marketplace-produsen";
 import InventarisGrading from "./components/inventaris-grading";
@@ -24,6 +31,7 @@ export interface Produsen {
 
 export interface StokToko {
   id: string;
+  produk_id?: string;
   nama: string;
   jumlah: number;
   satuan: string;
@@ -154,33 +162,226 @@ export default function AdminTokoDashboard() {
     setLoadingProfil(false);
   }
 
+  async function fetchInventaris() {
+    try {
+      const dbItems = await getInventarisAdminToko();
+      const mapped = dbItems.map((item) => {
+        const metaKey = `inventaris_meta_${item.produk_id}`;
+        let localMeta: Partial<StokToko> = {};
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem(metaKey);
+            if (stored) localMeta = JSON.parse(stored);
+          } catch {
+            console.error("Gagal membaca localStorage metadata");
+          }
+        }
+        
+        return {
+          id: item.id,
+          nama: item.nama,
+          jumlah: item.jumlah,
+          satuan: item.satuan,
+          batasMinimum: localMeta.batasMinimum !== undefined ? localMeta.batasMinimum : item.batasMinimum,
+          hargaBeli: item.hargaBeli,
+          hargaJual: localMeta.hargaJual !== undefined ? localMeta.hargaJual : item.hargaJual,
+          diskonPersen: localMeta.diskonPersen !== undefined ? localMeta.diskonPersen : item.diskonPersen,
+          grade: localMeta.grade || item.grade || "Belum Dinilai",
+          asalProdusen: item.asalProdusen,
+          live: localMeta.live !== undefined ? localMeta.live : item.live,
+        };
+      });
+      setStokList(mapped);
+    } catch (err) {
+      console.error("fetchInventaris error:", err);
+    }
+  }
+
+  async function fetchProdusenList() {
+    try {
+      // 1. Fetch produsen profiles
+      const { data: produsenData } = await supabase
+        .from("produsen")
+        .select("id, nama_usaha, desa, kabupaten, kategori")
+        .eq("status", "aktif");
+      
+      // 2. Fetch products to know what commodities they sell
+      const { data: produkData } = await supabase
+        .from("produk")
+        .select("id, nama, harga, satuan, produsen_id");
+        
+      if (produsenData) {
+        const mapped = produsenData.map((p) => {
+          const relatedProduk = (produkData || []).filter((prod) => prod.produsen_id === p.id);
+          const komoditas = relatedProduk.map((r) => r.nama).join(", ") || p.kategori || "Bahan Pangan";
+          
+          return {
+            id: p.id,
+            nama: p.nama_usaha || "Produsen",
+            lokasi: `${p.desa || ""}, ${p.kabupaten || ""}`.trim().replace(/^,\s*/, ""),
+            komoditas: komoditas,
+            estimasiPanenHari: Math.floor(Math.random() * 14) + 2, // Mock harvest days
+          };
+        });
+        setProdusenList(mapped);
+      }
+    } catch (e) {
+      console.error("fetchProdusenList error:", e);
+    }
+  }
+
   useEffect(() => {
-    periksaKelengkapanAdmin();
+    if (typeof window !== "undefined") {
+      const storedPembelian = localStorage.getItem("admin_pembelian_list");
+      if (storedPembelian) {
+        try {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setPembelianList(JSON.parse(storedPembelian));
+        } catch {
+          // Gagal memuat JSON
+        }
+      }
+    }
+    fetchProdusenList();
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    periksaKelengkapanAdmin();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchInventaris();
+  }, [activeMenu]);
 
   function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
     const produsen = produsenList.find((p) => p.id === produsenId);
     if (!produsen) return;
     const id = `PO-${4400 + pembelianList.length + 1}`;
     const total = jumlah * hargaSatuan;
-    setPembelianList((prev) => [{ id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu", tanggal: todayLabel() }, ...prev]);
-  }
-
-  function terimaPembelian(id: string, grade: Grade) {
-    setPembelianList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Diterima" } : p)));
-    const po = pembelianList.find((p) => p.id === id);
-    if (!po) return;
-    setStokList((prev) => {
-      const existing = prev.find((s) => s.nama === po.item && s.asalProdusen === po.produsen);
-      if (existing) {
-        return prev.map((s) => (s.id === existing.id ? { ...s, jumlah: s.jumlah + po.jumlah, grade } : s));
+    const newPo = { id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu" as const, tanggal: todayLabel() };
+    
+    setPembelianList((prev) => {
+      const updated = [newPo, ...prev];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
       }
-      const newId = `STK-${String(prev.length + 1).padStart(2, "0")}`;
-      return [...prev, { id: newId, nama: po.item, jumlah: po.jumlah, satuan: po.satuan, batasMinimum: 10, hargaBeli: po.hargaSatuan, hargaJual: Math.round(po.hargaSatuan * 1.4), diskonPersen: 0, grade, asalProdusen: po.produsen, live: false }];
+      return updated;
     });
   }
 
-  function updateStok(id: string, patch: Partial<StokToko>) {
+  async function terimaPembelian(id: string, grade: Grade) {
+    // 1. Dapatkan data pembelian PO
+    const po = pembelianList.find((p) => p.id === id);
+    if (!po) return;
+
+    // 2. Cari produk matching di database
+    let produkId = "";
+    try {
+      // Cari di marketplace yang sesuai produsen dan nama barang
+      const { data: mpProd } = await supabase
+        .from("marketplace")
+        .select("id")
+        .eq("produsen_id", po.produsenId)
+        .ilike("nama", `%${po.item}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (mpProd) {
+        produkId = mpProd.id;
+      } else {
+        // Fallback: cari produk apa saja dari produsen ini
+        const { data: fallbackProd } = await supabase
+          .from("marketplace")
+          .select("id")
+          .eq("produsen_id", po.produsenId)
+          .limit(1)
+          .maybeSingle();
+        if (fallbackProd) produkId = fallbackProd.id;
+      }
+    } catch (err) {
+      console.error("Gagal mencocokkan produk B2B:", err);
+    }
+
+    if (!produkId) {
+      alert(`Produk "${po.item}" tidak ditemukan di marketplace database.`);
+      return;
+    }
+
+    // 3. Tambahkan ke inventaris database
+    const existingStokItem = stokList.find((s) => s.produk_id === produkId || s.nama === po.item);
+    const newJumlah = (existingStokItem ? existingStokItem.jumlah : 0) + po.jumlah;
+
+    const res = await addInventarisAdminToko({
+      produk_id: produkId,
+      stok: newJumlah,
+      stok_minimum: existingStokItem ? existingStokItem.batasMinimum : 10,
+    });
+
+    if (!res) {
+      console.warn("Gagal menambahkan ke inventaris database (RLS / Kendala Akses). Menggunakan penyimpanan lokal.");
+    }
+
+    // Simpan grade ke localStorage metadata
+    const metaKey = `inventaris_meta_${produkId}`;
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(metaKey) || "{}";
+        const meta = JSON.parse(stored);
+        meta.grade = grade;
+        localStorage.setItem(metaKey, JSON.stringify(meta));
+      } catch {
+        // Gagal menyimpan metadata
+      }
+    }
+
+    // Update status PO lokal & localStorage
+    setPembelianList((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const } : p));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    // Refetch untuk menyelaraskan state
+    await fetchInventaris();
+  }
+
+  async function updateStok(id: string, patch: Partial<StokToko>) {
+    const item = stokList.find((s) => s.id === id);
+    if (!item) return;
+
+    // Jika jumlah berubah, update tabel inventaris di database
+    if (patch.jumlah !== undefined) {
+      try {
+        await updateInventarisStok(id, patch.jumlah);
+      } catch (err) {
+        console.warn("Gagal memperbarui stok di database, menggunakan fallback lokal:", err);
+      }
+    }
+
+    const metaKey = `inventaris_meta_${item.produk_id || item.id}`;
+    let localMeta: Partial<StokToko> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(metaKey);
+        if (stored) localMeta = JSON.parse(stored);
+      } catch {
+        // Gagal memuat metadata
+      }
+      
+      const newMeta = {
+        ...localMeta,
+        grade: patch.grade !== undefined ? patch.grade : (localMeta.grade || item.grade),
+        hargaJual: patch.hargaJual !== undefined ? patch.hargaJual : (localMeta.hargaJual !== undefined ? localMeta.hargaJual : item.hargaJual),
+        diskonPersen: patch.diskonPersen !== undefined ? patch.diskonPersen : (localMeta.diskonPersen !== undefined ? localMeta.diskonPersen : item.diskonPersen),
+        live: patch.live !== undefined ? patch.live : (localMeta.live !== undefined ? localMeta.live : item.live),
+        batasMinimum: patch.batasMinimum !== undefined ? patch.batasMinimum : (localMeta.batasMinimum !== undefined ? localMeta.batasMinimum : item.batasMinimum),
+      };
+      
+      localStorage.setItem(metaKey, JSON.stringify(newMeta));
+    }
+
+    // Update state lokal
     setStokList((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
 
@@ -393,7 +594,7 @@ export default function AdminTokoDashboard() {
         )}
 
         {/* SUB HALAMAN OPERASIONAL HANYA AKAN MERENDER JIKA LEGALITAS DATA SUDAH LENGKAP */}
-        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen produsenList={produsenList} belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
+        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
         {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
         {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
         {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}

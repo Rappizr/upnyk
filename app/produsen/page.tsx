@@ -84,12 +84,14 @@ export default function ProdusenDashboard() {
 
     const { data: produk } = await supabase.from("produk").select("*, inventaris(stok, stok_minimum), review(rating, komentar)");
     if (produk) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setStokList(produk.map((p: any) => {
         const stok = p.inventaris?.stok ?? 0;
         const min = p.inventaris?.stok_minimum ?? 10;
         return {
           id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "kg", hargaSatuan: Number(p.harga),
           status: stok <= 0 ? "Habis" : stok <= min ? "Menipis" : "Aman", kategori: "Makanan & Minuman",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ulasan: (p.review || []).map((r: any) => ({ pembeli: "Toko Mitra", rating: r.rating, komentar: r.komentar }))
         };
       }));
@@ -97,6 +99,7 @@ export default function ProdusenDashboard() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     muatDataDashboard();
   }, [activeMenu]);
 
@@ -278,8 +281,8 @@ export default function ProdusenDashboard() {
               )}
 
               {activeMenu === "stok" && <StokKomoditas />}
-              {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} deletePesanan={() => {}} updatePesananStatus={() => {}} />}
-              {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={() => {}} />}
+              {activeMenu === "penjualan" && <PenjualanB2B />}
+              {activeMenu === "pengiriman" && <Pengiriman />}
               {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
             </>
           )}
