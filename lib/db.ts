@@ -211,9 +211,9 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
     };
 
     if (profileData.alamat !== undefined) pembeliPayload.alamat = profileData.alamat || null;
-    if (profileData.phone !== undefined)  pembeliPayload.no_hp  = profileData.phone || null;
+    if (profileData.phone !== undefined) pembeliPayload.no_hp = profileData.phone || null;
     if (profileData.email !== undefined) pembeliPayload.email = profileData.email || null;
-    
+
     if (profileData.tanggal_lahir !== undefined) {
       pembeliPayload.tanggal_lahir = profileData.tanggal_lahir && profileData.tanggal_lahir.trim() !== ""
         ? profileData.tanggal_lahir
@@ -551,7 +551,7 @@ export async function getNotifications(): Promise<any[]> {
 
 export async function markNotificationsAsRead(): Promise<boolean> {
   const userId = await getCurrentUserId();
-  
+
   let query = supabase
     .from('notifikasi')
     .update({ dibaca: true })
@@ -740,4 +740,146 @@ export async function clearCart(): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+// ─────────────────────────────────────────────
+// INVENTARIS ADMIN TOKO
+// ─────────────────────────────────────────────
+
+export interface StokAdminToko {
+  id: string;
+  produk_id: string;
+  nama: string;
+  jumlah: number;
+  satuan: string;
+  batasMinimum: number;
+  hargaBeli: number;
+  hargaJual: number;
+  diskonPersen: number;
+  grade: 'A' | 'B' | 'C' | 'Belum Dinilai';
+  asalProdusen: string;
+  live: boolean;
+  foto?: string | null;
+}
+
+export async function getInventarisAdminToko(): Promise<StokAdminToko[]> {
+  const { data, error } = await supabase
+    .from('inventaris')
+    .select(`
+      id,
+      produk_id,
+      stok,
+      stok_minimum,
+      marketplace:produk_id (
+        id,
+        nama,
+        harga,
+        satuan,
+        foto,
+        produsen_id,
+        produsen:produsen_id (
+          nama_usaha,
+          desa,
+          kabupaten
+        )
+      )
+    `);
+
+  if (error) {
+    console.error('getInventarisAdminToko error:', error.message);
+    return [];
+  }
+
+  return (data || []).map((row: any) => {
+    const mp = row.marketplace;
+    return {
+      id: row.id,
+      produk_id: row.produk_id,
+      nama: mp?.nama || 'Produk',
+      jumlah: row.stok || 0,
+      satuan: mp?.satuan || 'kg',
+      batasMinimum: row.stok_minimum || 10,
+      hargaBeli: mp?.harga || 0,
+      hargaJual: Math.round((mp?.harga || 0) * 1.3),
+      diskonPersen: 0,
+      grade: 'Belum Dinilai' as const,
+      asalProdusen: mp?.produsen ? `${mp.produsen.nama_usaha || mp.produsen.desa || 'Produsen'}` : 'Produsen Lokal',
+      live: false,
+      foto: mp?.foto || null,
+    };
+  });
+}
+
+export async function addInventarisAdminToko(item: {
+  produk_id: string;
+  stok: number;
+  stok_minimum?: number;
+}): Promise<{ id: string } | null> {
+  const insertPayload = {
+    produk_id: item.produk_id,
+    stok: item.stok,
+    stok_minimum: item.stok_minimum || 10,
+  };
+
+  const { data, error } = await supabase
+    .from('inventaris')
+    .upsert(insertPayload, { onConflict: 'produk_id' })
+    .select('id')
+    .maybeSingle();
+
+  if (error) {
+    console.error('addInventarisAdminToko error:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function updateInventarisStok(inventarisId: string, stok: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('inventaris')
+    .update({ stok, updated_at: new Date().toISOString() })
+    .eq('id', inventarisId);
+
+  if (error) {
+    console.error('updateInventarisStok error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteInventarisAdminToko(inventarisId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('inventaris')
+    .delete()
+    .eq('id', inventarisId);
+
+  if (error) {
+    console.error('deleteInventarisAdminToko error:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function getMarketplaceUntukInventaris(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('marketplace')
+    .select(`
+      id,
+      nama,
+      harga,
+      satuan,
+      foto,
+      produsen_id,
+      produsen:produsen_id (
+        nama_usaha,
+        desa,
+        kabupaten
+      )
+    `);
+
+  if (error) {
+    console.error('getMarketplaceUntukInventaris error:', error.message);
+    return [];
+  }
+  return data || [];
 }
