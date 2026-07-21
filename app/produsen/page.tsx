@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/db";
 
@@ -44,9 +44,8 @@ function formatRupiah(n: number) {
 export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [, setNotifOpen] = useState(false);
 
-  // Popup profil — dipisah dari navigasi activeMenu, jadi bisa muncul di atas halaman manapun.
   const [showProfilPopup, setShowProfilPopup] = useState(false);
 
   const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
@@ -59,12 +58,12 @@ export default function ProdusenDashboard() {
   const [pesananList] = useState<Pesanan[]>([]);
   const [pengeluaranList] = useState<Pengeluaran[]>([]);
 
-  async function muatDataDashboard() {
+  const muatDataDashboard = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data: mainProfile } = await supabase.from("profiles").select("nama, email, phone, avatar_url").eq("id", user.id).single();
-    const { data: produsen } = await supabase.from("produsen").select("*").eq("profile_id", user.id).maybeSingle();
+    const { data: produsen } = await supabase.from("produsen").select("*").or(`profile_id.eq.${user.id},id.eq.${user.id}`).maybeSingle();
 
     const namaPengguna = mainProfile?.nama || "User Produsen";
     const inisialPengguna = namaPengguna.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -81,29 +80,27 @@ export default function ProdusenDashboard() {
       kategori: produsen?.kategori || "Belum memilih kategori",
       terverifikasi: produsen?.status === "aktif",
       inisial: inisialPengguna,
-      fotoUrl: mainProfile?.avatar_url || undefined // Menyambungkan avatar riil atas kanan dari profiles
+      fotoUrl: mainProfile?.avatar_url || undefined
     });
 
-    const { data: produk } = await supabase.from("produk").select("*, inventaris(stok, stok_minimum), review(rating, komentar)");
-    if (produk) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setStokList(produk.map((p: any) => {
-        const stok = p.inventaris?.stok ?? 0;
-        const min = p.inventaris?.stok_minimum ?? 10;
-        return {
-          id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "kg", hargaSatuan: Number(p.harga),
-          status: stok <= 0 ? "Habis" : stok <= min ? "Menipis" : "Aman", kategori: "Makanan & Minuman",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ulasan: (p.review || []).map((r: any) => ({ pembeli: "Toko Mitra", rating: r.rating, komentar: r.komentar }))
-        };
-      }));
+    if (produsen) {
+      const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
+      if (produk) {
+        setStokList(produk.map((p: any) => {
+          const stok = Number(p.stok) || 0;
+          return {
+            id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "pcs", hargaSatuan: Number(p.harga) || 0,
+            status: stok <= 0 ? "Habis" : stok <= 10 ? "Menipis" : "Aman", kategori: "Komoditas",
+            ulasan: (p.review || []).map((r: any) => ({ pembeli: "Toko Mitra", rating: Number(r.rating) || 0, komentar: r.komentar || "" }))
+          };
+        }));
+      }
     }
-  }
+  }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     muatDataDashboard();
-  }, [activeMenu]);
+  }, [activeMenu, muatDataDashboard]);
 
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
   const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");
@@ -137,6 +134,7 @@ export default function ProdusenDashboard() {
         }
       `}} />
 
+      {/* SIDEBAR */}
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -149,20 +147,23 @@ export default function ProdusenDashboard() {
         </div>
         <nav style={{ padding: "14px 10px", flex: 1, overflowY: "auto" }}>
           <div style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", padding: "0 8px 6px" }}>MAIN</div>
-          <div onClick={() => setActiveMenu("dashboard")} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "dashboard" ? "#10B981" : "transparent", color: activeMenu === "dashboard" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "14px", fontWeight: activeMenu === "dashboard" ? 600 : 400 }}><IconDashboard /> Dashboard</div>
+          <div onClick={() => { setActiveMenu("dashboard"); setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "dashboard" ? "#10B981" : "transparent", color: activeMenu === "dashboard" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "14px", fontWeight: activeMenu === "dashboard" ? 600 : 400 }}><IconDashboard /> Dashboard</div>
 
           <div style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", padding: "0 8px 6px" }}>OPERASIONAL</div>
-          <div onClick={() => setActiveMenu("stok")} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "stok" ? "#10B981" : "transparent", color: activeMenu === "stok" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconPackage /> Produk / Stok</div>
-          <div onClick={() => setActiveMenu("penjualan")} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "penjualan" ? "#10B981" : "transparent", color: activeMenu === "penjualan" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconStore /> Pesanan</div>
-          <div onClick={() => setActiveMenu("pengiriman")} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "pengiriman" ? "#10B981" : "transparent", color: activeMenu === "pengiriman" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconTruck /> Pengiriman</div>
-          <div onClick={() => setActiveMenu("keuangan")} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "keuangan" ? "#10B981" : "transparent", color: activeMenu === "keuangan" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconWallet /> Keuangan</div>
+          <div onClick={() => { setActiveMenu("stok"); setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "stok" ? "#10B981" : "transparent", color: activeMenu === "stok" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconPackage /> Produk / Stok</div>
+          <div onClick={() => { setActiveMenu("penjualan"); setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "penjualan" ? "#10B981" : "transparent", color: activeMenu === "penjualan" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconStore /> Pesanan</div>
+          <div onClick={() => { setActiveMenu("pengiriman"); setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "pengiriman" ? "#10B981" : "transparent", color: activeMenu === "pengiriman" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconTruck /> Pengiriman</div>
+          <div onClick={() => { setActiveMenu("keuangan"); setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: activeMenu === "keuangan" ? "#10B981" : "transparent", color: activeMenu === "keuangan" ? "#fff" : "#334155", fontSize: "13px", cursor: "pointer", marginBottom: "4px" }}><IconWallet /> Keuangan</div>
         </nav>
         <div style={{ borderTop: "1px solid #F1F5F9", padding: "12px" }}>
           <Link href="/login" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px", borderRadius: "8px", background: "#FEE2E2", color: "#EF4444", textDecoration: "none", fontSize: "13px", fontWeight: 600 }}>Keluar</Link>
         </div>
       </aside>
 
+      {/* KONTEN UTAMA */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
+        
+        {/* HEADER TOPBAR */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", color: "#334155" }}><IconMenu /></button>
@@ -175,7 +176,6 @@ export default function ProdusenDashboard() {
               {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
             </div>
 
-            {/* Klik profil di pojok kanan atas -> buka popup ProfilUMKM, TIDAK pindah halaman */}
             <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
@@ -191,6 +191,7 @@ export default function ProdusenDashboard() {
           </div>
         </div>
 
+        {/* ISI HALAMAN ACCORDING TO ACTIVEMENU */}
         <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFC" }}>
           {activeMenu === "dashboard" && (
             <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
@@ -272,14 +273,12 @@ export default function ProdusenDashboard() {
           )}
 
           {activeMenu === "stok" && <StokKomoditas />}
-          {activeMenu === "penjualan" && <PenjualanB2B pesananList={pesananList} deletePesanan={() => {}} updatePesananStatus={() => {}} />}
-          {activeMenu === "pengiriman" && <Pengiriman pesananList={pesananList} updatePesananStatus={() => {}} />}
+          {activeMenu === "penjualan" && <PenjualanB2B />}
+          {activeMenu === "pengiriman" && <Pengiriman />}
           {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
         </div>
       </div>
 
-      {/* Popup profil — dipasang sekali di root, jadi selalu bisa nongol di atas activeMenu manapun.
-          ProfilUMKM juga otomatis memaksa diri terbuka kalau data toko belum lengkap, terlepas dari showProfilPopup. */}
       <ProfilUMKM
         open={showProfilPopup}
         onClose={() => setShowProfilPopup(false)}

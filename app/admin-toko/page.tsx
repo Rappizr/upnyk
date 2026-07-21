@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
 import {
@@ -52,14 +52,13 @@ export interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-  status: "Menunggu" | "Dikirim" | "Diterima";
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
   noResi?: string;
   fotoProduk?: string;
   rating?: number;
   fotoUlasan?: string;
   keteranganUlasan?: string;
-  /** Lokasi/alamat produsen — dipakai sebagai titik asal peta rute pengiriman */
   lokasiProdusen?: string;
 }
 
@@ -74,16 +73,15 @@ export interface Penjualan {
 
 const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 
-const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
-const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
-const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
-const IconBox = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
-const IconRefresh = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>;
-const IconTag = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.5 3H4a1 1 0 0 0-1 1v5.5a2 2 0 0 0 .83 1.5l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>;
-const IconBook = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path></svg>;
+const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
+const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
+const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
+const IconBox = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
+const IconRefresh = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>;
+const IconTag = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.5 3H4a1 1 0 0 0-1 1v5.5a2 2 0 0 0 .83 1.5l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"></path><circle cx="7.5" cy="7.5" r="1.5"></circle></svg>;
+const IconBook = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path></svg>;
 const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
@@ -106,7 +104,7 @@ const menuGroups: MenuGroupDef[] = [
 ];
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 function formatRupiahRingkas(n: number) {
   if (n >= 1000000) return `Rp ${(n / 1000000).toFixed(1)}jt`;
@@ -127,9 +125,7 @@ export default function AdminTokoDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
 
-  // State manajemen kelengkapan legalitas admin_toko
   const [isDataLengkap, setIsDataLengkap] = useState(true);
   const [loadingProfil, setLoadingProfil] = useState(true);
 
@@ -139,17 +135,14 @@ export default function AdminTokoDashboard() {
     inisial: "AT",
     fotoUrl: ""
   });
-  // Alamat lengkap toko — dipakai sebagai titik tujuan pada peta rute pengiriman di Pelacakan Pesanan.
   const [alamatToko, setAlamatToko] = useState("");
 
-  // Seluruh list di bawah diinisialisasi kosong (Siap menerima data asli Supabase)
   const [produsenList, setProdusenList] = useState<Produsen[]>([]);
   const [stokList, setStokList] = useState<StokToko[]>([]);
   const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
-  const [penjualanList, setPenjualanList] = useState<Penjualan[]>([]);
+  const [penjualanList] = useState<Penjualan[]>([]);
 
-  // SINKRONISASI SUPABASE AUTH & LEGALITAS PROFILE
-  async function periksaKelengkapanAdmin() {
+  const periksaKelengkapanAdmin = useCallback(async () => {
     setLoadingProfil(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoadingProfil(false); return; }
@@ -165,8 +158,6 @@ export default function AdminTokoDashboard() {
       if (alamatLengkap) setAlamatToko(alamatLengkap);
     }
 
-    // Jika alamat / nama toko kosong, kunci navigasi ke Dashboard.
-    // Popup wajib-isi-nya sendiri sudah otomatis dipaksa terbuka oleh ProfilTokoPage.
     if (!lengkap) {
       setActiveMenu("dashboard");
     }
@@ -174,13 +165,13 @@ export default function AdminTokoDashboard() {
     setHeaderProfil({
       namaPemilik: profile?.nama || "Admin Toko",
       namaToko: adminToko?.nama_toko || "Nama Toko Belum Diisi",
-      inisial: adminToko?.nama_toko ? adminToko.nama_toko.slice(0,2).toUpperCase() : "AT",
+      inisial: adminToko?.nama_toko ? adminToko.nama_toko.slice(0, 2).toUpperCase() : "AT",
       fotoUrl: profile?.avatar_url || ""
     });
     setLoadingProfil(false);
-  }
+  }, []);
 
-  async function fetchInventaris() {
+  const fetchInventaris = useCallback(async () => {
     try {
       const dbItems = await getInventarisAdminToko();
       const mapped = dbItems.map((item) => {
@@ -194,7 +185,7 @@ export default function AdminTokoDashboard() {
             console.error("Gagal membaca localStorage metadata");
           }
         }
-
+        
         return {
           id: item.id,
           nama: item.nama,
@@ -213,32 +204,30 @@ export default function AdminTokoDashboard() {
     } catch (err) {
       console.error("fetchInventaris error:", err);
     }
-  }
+  }, []);
 
-  async function fetchProdusenList() {
+  const fetchProdusenList = useCallback(async () => {
     try {
-      // 1. Fetch produsen profiles
       const { data: produsenData } = await supabase
         .from("produsen")
         .select("id, nama_usaha, desa, kabupaten, kategori")
         .eq("status", "aktif");
-
-      // 2. Fetch products to know what commodities they sell
+      
       const { data: produkData } = await supabase
         .from("produk")
         .select("id, nama, harga, satuan, produsen_id");
-
+        
       if (produsenData) {
         const mapped = produsenData.map((p) => {
           const relatedProduk = (produkData || []).filter((prod) => prod.produsen_id === p.id);
           const komoditas = relatedProduk.map((r) => r.nama).join(", ") || p.kategori || "Bahan Pangan";
-
+          
           return {
             id: p.id,
             nama: p.nama_usaha || "Produsen",
             lokasi: `${p.desa || ""}, ${p.kabupaten || ""}`.trim().replace(/^,\s*/, ""),
             komoditas: komoditas,
-            estimasiPanenHari: Math.floor(Math.random() * 14) + 2, // Mock harvest days
+            estimasiPanenHari: Math.floor(Math.random() * 14) + 2,
           };
         });
         setProdusenList(mapped);
@@ -246,37 +235,36 @@ export default function AdminTokoDashboard() {
     } catch (e) {
       console.error("fetchProdusenList error:", e);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedPembelian = localStorage.getItem("admin_pembelian_list");
       if (storedPembelian) {
         try {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setPembelianList(JSON.parse(storedPembelian));
         } catch {
-          // Gagal memuat JSON
+          // JSON Parse fallback
         }
       }
     }
     fetchProdusenList();
-  }, []);
+  }, [fetchProdusenList]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     periksaKelengkapanAdmin();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInventaris();
-  }, [activeMenu]);
+  }, [activeMenu, periksaKelengkapanAdmin, fetchInventaris]);
 
   function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
     const produsen = produsenList.find((p) => p.id === produsenId);
     if (!produsen) return;
     const id = `PO-${4400 + pembelianList.length + 1}`;
     const total = jumlah * hargaSatuan;
-    const newPo = { id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu" as const, tanggal: todayLabel() };
-
+    const newPo: Pembelian = { 
+      id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu", tanggal: todayLabel() 
+    };
+    
     setPembelianList((prev) => {
       const updated = [newPo, ...prev];
       if (typeof window !== "undefined") {
@@ -286,27 +274,12 @@ export default function AdminTokoDashboard() {
     });
   }
 
-  // Produsen menandai barang sudah dikirim — dipanggil dari halaman Pelacakan Pesanan.
-  // Sementara masih manual di sisi Admin Toko karena dashboard Produsen belum tersambung realtime.
-  function tandaiDikirim(id: string, noResi: string) {
-    setPembelianList((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Dikirim" as const, noResi: noResi || undefined } : p));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
-      }
-      return updated;
-    });
-  }
-
   async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
-    // 1. Dapatkan data pembelian PO (dari state saat ini, sebelum diperbarui)
     const po = pembelianList.find((p) => p.id === id);
     if (!po) return;
 
-    // 2. Cari produk matching di database
     let produkId = "";
     try {
-      // Cari di marketplace yang sesuai produsen dan nama barang
       const { data: mpProd } = await supabase
         .from("marketplace")
         .select("id")
@@ -318,7 +291,6 @@ export default function AdminTokoDashboard() {
       if (mpProd) {
         produkId = mpProd.id;
       } else {
-        // Fallback: cari produk apa saja dari produsen ini
         const { data: fallbackProd } = await supabase
           .from("marketplace")
           .select("id")
@@ -331,39 +303,29 @@ export default function AdminTokoDashboard() {
       console.error("Gagal mencocokkan produk B2B:", err);
     }
 
-    if (!produkId) {
-      alert(`Produk "${po.item}" tidak ditemukan di marketplace database.`);
-      return;
-    }
+    if (produkId) {
+      const existingStokItem = stokList.find((s) => s.produk_id === produkId || s.nama === po.item);
+      const newJumlah = (existingStokItem ? existingStokItem.jumlah : 0) + po.jumlah;
 
-    // 3. Tambahkan ke inventaris database
-    const existingStokItem = stokList.find((s) => s.produk_id === produkId || s.nama === po.item);
-    const newJumlah = (existingStokItem ? existingStokItem.jumlah : 0) + po.jumlah;
+      await addInventarisAdminToko({
+        produk_id: produkId,
+        stok: newJumlah,
+        stok_minimum: existingStokItem ? existingStokItem.batasMinimum : 10,
+      });
 
-    const res = await addInventarisAdminToko({
-      produk_id: produkId,
-      stok: newJumlah,
-      stok_minimum: existingStokItem ? existingStokItem.batasMinimum : 10,
-    });
-
-    if (!res) {
-      console.warn("Gagal menambahkan ke inventaris database (RLS / Kendala Akses). Menggunakan penyimpanan lokal.");
-    }
-
-    // 4. Simpan grade ke localStorage metadata
-    const metaKey = `inventaris_meta_${produkId}`;
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(metaKey) || "{}";
-        const meta = JSON.parse(stored);
-        meta.grade = grade;
-        localStorage.setItem(metaKey, JSON.stringify(meta));
-      } catch {
-        // Gagal menyimpan metadata
+      const metaKey = `inventaris_meta_${produkId}`;
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem(metaKey) || "{}";
+          const meta = JSON.parse(stored);
+          meta.grade = grade;
+          localStorage.setItem(metaKey, JSON.stringify(meta));
+        } catch {
+          // Metadata save error
+        }
       }
     }
 
-    // 5. Update status PO -> Diterima (beserta ulasan) & simpan ke localStorage
     setPembelianList((prev) => {
       const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const, rating, fotoUlasan, keteranganUlasan } : p));
       if (typeof window !== "undefined") {
@@ -372,7 +334,6 @@ export default function AdminTokoDashboard() {
       return updated;
     });
 
-    // 6. Refetch untuk menyelaraskan state
     await fetchInventaris();
   }
 
@@ -380,12 +341,11 @@ export default function AdminTokoDashboard() {
     const item = stokList.find((s) => s.id === id);
     if (!item) return;
 
-    // Jika jumlah berubah, update tabel inventaris di database
     if (patch.jumlah !== undefined) {
       try {
         await updateInventarisStok(id, patch.jumlah);
       } catch (err) {
-        console.warn("Gagal memperbarui stok di database, menggunakan fallback lokal:", err);
+        console.warn("Gagal memperbarui stok di database:", err);
       }
     }
 
@@ -396,9 +356,9 @@ export default function AdminTokoDashboard() {
         const stored = localStorage.getItem(metaKey);
         if (stored) localMeta = JSON.parse(stored);
       } catch {
-        // Gagal memuat metadata
+        // Metadata load fail
       }
-
+      
       const newMeta = {
         ...localMeta,
         grade: patch.grade !== undefined ? patch.grade : (localMeta.grade || item.grade),
@@ -407,11 +367,10 @@ export default function AdminTokoDashboard() {
         live: patch.live !== undefined ? patch.live : (localMeta.live !== undefined ? localMeta.live : item.live),
         batasMinimum: patch.batasMinimum !== undefined ? patch.batasMinimum : (localMeta.batasMinimum !== undefined ? localMeta.batasMinimum : item.batasMinimum),
       };
-
+      
       localStorage.setItem(metaKey, JSON.stringify(newMeta));
     }
 
-    // Update state lokal
     setStokList((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
 
@@ -422,16 +381,7 @@ export default function AdminTokoDashboard() {
   const labaBersih = totalOmset - totalBelanja;
   const restockMendesak = produsenList.filter((p) => p.estimasiPanenHari <= 7).length;
   const produkLive = stokList.filter((s) => s.live).length;
-  const stokMenipis = stokList.filter((s) => s.jumlah <= s.batasMinimum);
 
-  const semuaNotif = useMemo(() => {
-    const list: { id: string; text: string; sub: string; tujuan: string }[] = [];
-    stokMenipis.forEach((s) => list.push({ id: `stok-${s.id}`, text: `Stok ${s.nama} menipis`, sub: `Sisa ${s.jumlah} ${s.satuan}`, tujuan: "restock" }));
-    pembelianList.filter((p) => p.status === "Menunggu").forEach((p) => list.push({ id: `po-${p.id}`, text: `Pembelian menunggu dari ${p.produsen}`, sub: `${p.item} × ${p.jumlah} ${p.satuan}`, tujuan: "inventaris" }));
-    return list;
-  }, [stokMenipis, pembelianList]);
-
-  // PROTEKSI NAVIGASI MENU UTAMA
   function selectMenu(key: string) {
     if (!isDataLengkap && key !== "dashboard") {
       alert("Harap lengkapi Profil Toko Anda terlebih dahulu!");
@@ -452,18 +402,13 @@ export default function AdminTokoDashboard() {
         .at-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .at-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .at-user-name { display: block; }
-
+        
         @media (max-width: 900px) {
           .at-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
           .at-sidebar.open { transform: translateX(0); }
           .at-hamburger { display: flex; }
           .hero-banner-container { padding: 0.85rem !important; border-radius: 10px !important; flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
-          .hero-banner-container span { font-size: 0.55rem !important; padding: 0.15rem 0.4rem !important; margin-bottom: 0.2rem !important; }
-          .hero-banner-container div:nth-of-type(1) { font-size: 1.05rem !important; line-height: 1.15 !important; }
-          .hero-banner-container div:nth-of-type(2) { font-size: 0.68rem !important; margin-top: 0.1rem !important; line-height: 1.2 !important; }
-          .hero-banner-container button { padding: 0.4rem 0.75rem !important; font-size: 0.68rem !important; border-radius: 5px !important; width: 100% !important; justify-content: center !important; margin-top: 0.2rem !important; }
           .at-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .at-stats-grid > div { padding: 0.4rem 0.3rem !important; border-radius: 6px !important; }
           .at-panels-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) { .at-user-name { display: none; } }
@@ -489,7 +434,7 @@ export default function AdminTokoDashboard() {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
                 const menuTerpaku = !isDataLengkap && item.key !== "dashboard";
-
+                
                 return (
                   <div
                     key={item.key}
@@ -530,7 +475,7 @@ export default function AdminTokoDashboard() {
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-
+            
             {!isDataLengkap && (
               <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: "#991B1B", padding: "1rem", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.25rem", lineHeight: "1.4", textAlign: "center" }}>
                 ⚠️ Akun Admin Toko Anda mendeteksi data legalitas belum terdaftar lengkap. Silakan klik tombol profil di pojok kanan atas atau tombol lengkapi di bawah untuk mengisi nama toko & alamat cabang operasional agar fitur belanja hulu serta kasir penjualan dapat diaktifkan kembali.
@@ -615,17 +560,42 @@ export default function AdminTokoDashboard() {
           </main>
         )}
 
-        {/* SUB HALAMAN OPERASIONAL HANYA AKAN MERENDER JIKA LEGALITAS DATA SUDAH LENGKAP */}
-        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen produsenList={produsenList} belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
-        {activeMenu === "pelacakan" && isDataLengkap && <PelacakanPesanan pembelianList={pembelianList} tandaiDikirim={tandaiDikirim} terimaPesanan={terimaPembelian} alamatToko={alamatToko} />}
-        {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
-        {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
-        {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}
-        {activeMenu === "laporan" && isDataLengkap && <LaporanBukuKas pembelianList={pembelianList} penjualanList={penjualanList} />}
+        {/* SUB HALAMAN OPERASIONAL */}
+        {activeMenu === "marketplace" && isDataLengkap && (
+          <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />
+        )}
+        {activeMenu === "pelacakan" && isDataLengkap && (
+          <PelacakanPesanan 
+            pembelianList={pembelianList} 
+            terimaPesanan={terimaPembelian} 
+            alamatToko={alamatToko} 
+          />
+        )}
+        {activeMenu === "inventaris" && isDataLengkap && (
+          <InventarisGrading 
+            stokList={stokList} 
+            pembelianList={pembelianList} 
+            produsenList={produsenList} 
+            terimaPembelian={terimaPembelian} 
+            updateStok={updateStok} 
+          />
+        )}
+        {activeMenu === "restock" && isDataLengkap && (
+          <SmartRestock 
+            produsenList={produsenList} 
+            stokList={stokList} 
+            updateStok={updateStok} 
+            onPesan={() => selectMenu("marketplace")} 
+          />
+        )}
+        {activeMenu === "etalase" && isDataLengkap && (
+          <EtalasePenjualan stokList={stokList} updateStok={updateStok} />
+        )}
+        {activeMenu === "laporan" && isDataLengkap && (
+          <LaporanBukuKas pembelianList={pembelianList} penjualanList={penjualanList} />
+        )}
       </div>
 
-      {/* Popup profil — dipasang sekali di root, jadi selalu bisa nongol di atas activeMenu manapun.
-          ProfilTokoPage juga otomatis memaksa diri terbuka kalau data toko belum lengkap. */}
       <ProfilTokoPage
         open={profilPopupOpen}
         onClose={() => setProfilPopupOpen(false)}

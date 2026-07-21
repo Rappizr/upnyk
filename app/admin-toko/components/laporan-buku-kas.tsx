@@ -4,13 +4,23 @@ import { useMemo, useState } from "react";
 
 interface Pembelian {
   id: string;
+  produsenId?: string;
   produsen: string;
   item: string;
   jumlah: number;
+  satuan?: string;
+  hargaSatuan?: number;
   total: number;
-  status: "Menunggu" | "Diterima";
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  lokasiProdusen?: string;
 }
+
 interface Penjualan {
   id: string;
   pembeli: string;
@@ -30,22 +40,40 @@ const IconArrowDown = () => <svg width="20" height="20" viewBox="0 0 24 24" fill
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
 export default function LaporanBukuKas({ pembelianList = [], penjualanList = [] }: Props) {
   const [tab, setTab] = useState<"semua" | "masuk" | "keluar">("semua");
 
   const riwayat = useMemo(() => {
-    const masuk = (penjualanList || []).map((p) => ({ id: p.id, keterangan: `Penjualan — ${p.pembeli} (${p.produk})`, nominal: p.total, tanggal: p.tanggal, tipe: "masuk" as const }));
-    const keluar = (pembelianList || []).filter((p) => p.status === "Diterima").map((p) => ({ id: p.id, keterangan: `Belanja — ${p.produsen} (${p.item})`, nominal: p.total, tanggal: p.tanggal, tipe: "keluar" as const }));
+    const masuk = (penjualanList || []).map((p) => ({
+      id: p.id,
+      keterangan: `Penjualan — ${p.pembeli} (${p.produk})`,
+      nominal: p.total,
+      tanggal: p.tanggal,
+      tipe: "masuk" as const,
+    }));
+
+    const keluar = (pembelianList || [])
+      .filter((p) => p.status === "Diterima" || p.status === "Selesai")
+      .map((p) => ({
+        id: p.id,
+        keterangan: `Belanja — ${p.produsen} (${p.item})`,
+        nominal: p.total,
+        tanggal: p.tanggal,
+        tipe: "keluar" as const,
+      }));
+
     return [...masuk, ...keluar].sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
   }, [pembelianList, penjualanList]);
 
   const filtered = riwayat.filter((r) => tab === "semua" || (tab === "masuk" && r.tipe === "masuk") || (tab === "keluar" && r.tipe === "keluar"));
 
   const totalMasuk = (penjualanList || []).reduce((s, p) => s + p.total, 0);
-  const totalKeluar = (pembelianList || []).filter((p) => p.status === "Diterima").reduce((s, p) => s + p.total, 0);
+  const totalKeluar = (pembelianList || [])
+    .filter((p) => p.status === "Diterima" || p.status === "Selesai")
+    .reduce((s, p) => s + p.total, 0);
   const labaBersih = totalMasuk - totalKeluar;
 
   function unduhPDF() {
@@ -53,7 +81,9 @@ export default function LaporanBukuKas({ pembelianList = [], penjualanList = [] 
   }
 
   function unduhWord() {
-    const rows = riwayat.map((r) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${r.tanggal}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.keterangan}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.tipe === "masuk" ? "+" : "-"} ${formatRupiah(r.nominal)}</td></tr>`).join("");
+    const rows = riwayat
+      .map((r) => `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${r.tanggal}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.keterangan}</td><td style="padding:6px 10px;border:1px solid #ddd;">${r.tipe === "masuk" ? "+" : "-"} ${formatRupiah(r.nominal)}</td></tr>`)
+      .join("");
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buku Kas</title></head><body style="font-family:Calibri,Arial,sans-serif;">
       <h1>Buku Kas — PasarNusa Admin Toko</h1>
       <table style="border-collapse:collapse;margin-bottom:20px;">
@@ -78,7 +108,6 @@ export default function LaporanBukuKas({ pembelianList = [], penjualanList = [] 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
           main {

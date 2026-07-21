@@ -34,8 +34,18 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
+<<<<<<< HEAD
   status: "Menunggu" | "Dikirim" | "Diterima";
+=======
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
+>>>>>>> d40531012e7e01611d8fa70487d3bd65d350af84
   tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  lokasiProdusen?: string;
 }
 
 /** Dipakai untuk menerima prop dari parent (page.tsx). Field dibuat longgar
@@ -237,7 +247,6 @@ export default function MarketplaceProdusen({
         status: "Menunggu"
       };
 
-      // Hanya masukkan pembeli_id & admin_toko_id jika adminData ada nilainya
       if (adminData?.id) {
         payloadPesanan.admin_toko_id = adminData.id;
         payloadPesanan.pembeli_id = adminData.id;
