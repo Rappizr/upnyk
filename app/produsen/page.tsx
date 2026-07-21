@@ -264,45 +264,6 @@ export default function ProdusenDashboard() {
                         </div>
                         <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{u.komentar}</div>
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
-                      {stokMenipis.length === 0 ? (
-                        <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Semua stok dalam kondisi aman.</p>
-                      ) : (
-                        stokMenipis.map((s) => (
-                          <div key={s.id} style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.6rem 0.7rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</div><div style={{ fontSize: "0.68rem", color: "#DC2626" }}>{s.status === "Habis" ? "Stok habis" : `Hampir habis (sisa ${s.jumlah} ${s.satuan})`}</div></div>
-                            <button onClick={() => setActiveMenu("stok")} style={{ background: "#10B981", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>Kelola stok</button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Ulasan terbaru dari pembeli</div>
-                      <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Otomatis tersinkron dari transaksi pembeli</div>
-                      {semuaUlasan.length === 0 ? (
-                        <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Belum ada ulasan masuk dari Supabase.</p>
-                      ) : (
-                        semuaUlasan.slice(0, 3).map((u, i) => (
-                          <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli} <span style={{ fontWeight: 400, color: "#94A3B8" }}>({u.produk})</span></span>
-                              <span style={{ color: "#D97706", fontSize: "0.72rem" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
-                            </div>
-                            <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{u.komentar}</div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </main>
-              )}
-
-              {activeMenu === "stok" && <StokKomoditas />}
-              {activeMenu === "penjualan" && <PenjualanB2B />}
-              {activeMenu === "pengiriman" && <Pengiriman />}
-              {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
-            </>
                     ))
                   )}
                 </div>

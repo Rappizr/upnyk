@@ -1,0 +1,83 @@
+[33m239206f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m update project
+[33mc99619c[m[33m ([m[1;31morigin/rizal[m[33m)[m Merge pull request #13 from Rappizr/rizal
+[33mc217344[m Merge branch 'main' into rizal
+[33m070b2fc[m feat: implement producer dashboard, admin portal, and supabase database connection
+[33m3b3f55f[m update mitra
+[33m6203673[m update project
+[33m2331524[m update project
+[33mfc4caa0[m Merge branch 'main' of https://github.com/Rappizr/upnyk
+[33m748b038[m sementara
+[33mbab079c[m update project
+[33m74d6b40[m update project
+[33m7f1043d[m Merge pull request #12 from Rappizr/rizal
+[33m5cbdca3[m Update halaman mitra dan aset website
+[33m7231125[m feat: initialize buyer dashboard components, database schema, and server actions for wishlist and cart management
+[33mdc3f31a[m sementara
+[33m44bc751[m Merge pull request #11 from Rappizr/rizal
+[33m29b23a1[m update: connect database di login
+[33mfaad539[m Merge pull request #10 from Rappizr/rizal
+[33md65b99c[m refactor: remove redundant utility file and its associated exports
+[33mf1e9812[m hapus all data dummy
+[33mae141a5[m feat: implement initial marketplace architecture with product discovery and cooperative profile views
+[33m7707988[m update
+[33m123ea87[m update
+[33m309d262[m Merge pull request #9 from Rappizr/rizal
+[33m4fb3971[m update: update role pembeli, dan perbaikan ui
+[33m9a5c0b3[m Merge branch 'main' of https://github.com/Rappizr/upnyk into rizal
+[33m8a6b4cc[m update admin platform
+[33m9fc1b60[m update admin toko
+[33mceb2950[m update fix
+[33m02ef653[m update produsen
+[33m35bf333[m Fix admin platform and update components
+[33m4a950f4[m fix: problem di dashboard
+[33mff52695[m Merge pull request #8 from Rappizr/rizal
+[33m12c5005[m feat: implement buyer shopping interface with cart, product marketplace, and order management components
+[33m37188cd[m update
+[33mcb01b5b[m Merge pull request #7 from Rappizr/rizal
+[33m6989bac[m add: login method
+[33mec6bc56[m add: login method
+[33mf8a4d77[m update
+[33me60fc86[m Merge pull request #6 from Rappizr/rizal
+[33ma8d72ae[m update: update view yang ada di login dan penambahan menu back to dashbarad
+[33m72f0cf9[m update
+[33m3cb10f5[m Update
+[33m9d06c9d[m Merge pull request #5 from Rappizr/rizal
+[33m17f8c4f[m 	modified:   app/globals.css 	modified:   app/pembeli/components/CartView.tsx 	modified:   app/pembeli/components/MarketplaceView.tsx 	modified:   app/pembeli/components/PesananView.tsx 	modified:   app/pembeli/components/ProfilView.tsx 	modified:   app/pembeli/components/WishlistView.tsx 	modified:   app/pembeli/page.tsx
+[33mfedaf97[m Update admin platform
+[33m539822c[m Update admin platform and features
+[33m26b0293[m Merge branch 'main' of https://github.com/Rappizr/upnyk  Please enter a commit message to explain why this merge is necessary,
+[33m92e3422[m Merge fitur-baru ke main
+[33mef548fb[m Menambahkan
+[33mdb50847[m Update page.tsx
+[33mabb07e6[m Change 'Hello World' to 'Goodbye World'
+[33m7439282[m Refactor VerifikasiAkun component and update UI
+[33mf1502d5[m Update suspandAkun.tsx
+[33mad22c1e[m Update statistik-umkm.tsx
+[33m067f23c[m Update statistik-supplier.tsx
+[33m29bc70b[m Update statistik-limbah.tsx
+[33m6d7c2b8[m Update statistik-bahan-baku.tsx
+[33ma0e3673[m Update semua-transaksi.tsx
+[33mbaa92fe[m Update semua-kolaborasi.tsx
+[33m64ac962[m Update manajemen-kategori.tsx
+[33mc5132a5[m Update kategori-supplier.tsx
+[33m33ed95a[m Update kategori-limbah.tsx
+[33m9b1b68e[m Update kategori-bahan-baku.tsx
+[33m1b9ccf1[m Update dataUMKM.tsx
+[33m63d86ba[m baru
+[33ma397741[m Menambahkan
+[33mfdb5e55[m Merge pull request #3 from Rappizr/rizal
+[33mba105fc[m feat: initialize marketplace and buyer dashboard modules with core components and store data
+[33mc2122df[m add: keranjang dan pembayara
+[33m31910ff[m Update admin toko
+[33m0609d94[m menyimpan progres kerja blm fiks
+[33m08f9a7e[m[33m ([m[1;31morigin/rafi[m[33m)[m belum fix
+[33m214fc8b[m fix
+[33m97be420[m feat: perbaikan fitur dashboard admin toko
+[33ma812770[m pus
+[33m8055f6d[m Merge pull request #2 from Rappizr/rafi
+[33mf034bd2[m fix: menyelesaikan merge conflict dengan main
+[33m4568279[m fitur atau perbaikan yang kamu lakukan
+[33mf30ddca[m Merge pull request #1 from Rappizr/rizal
+[33m84b13bf[m feat: implement platform architecture with Supabase schema, API routes, and UI pages for buyers, producers, and admin dashboards
+[33mc431959[m feat: initialize core components and user-facing application routes with notification support
+[33m8a5d4af[m[33m ([m[1;31morigin/ringga[m[33m)[m Initial commit from Create Next App

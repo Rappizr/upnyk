@@ -3,21 +3,44 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package, Search } from "lucide-react";
+import {
+  ArrowLeft, MapPin, Star, Filter, TrendingUp, Users, Package,
+  Search, Store, ShieldCheck, Sprout, Leaf
+} from "lucide-react";
 import { supabase } from "@/lib/db";
 
 interface Mitra {
   id: string;
   nama: string;
-  tipe: "Admin Toko" | "Produsen Hulu";
+  tipe: "Admin Toko / Koperasi" | "Produsen Hulu";
   lokasi: string;
   komoditas: string;
   rating: number;
   sejakTahun: number;
   tag: string;
+  fotoUrl?: string;
 }
 
-const filterTipe = ["Semua", "Admin Toko", "Produsen Hulu"] as const;
+const filterTipe = ["Semua", "Admin Toko / Koperasi", "Produsen Hulu"] as const;
+
+/* ============================================================
+   PALET WARNA — Identitas Hijau PasarNusa
+   ============================================================ */
+const C = {
+  deep: "#08170E",       // forest paling gelap (hero / footer)
+  forest: "#0E2A1B",     // forest gelap
+  forest2: "#123A24",    // forest medium
+  green: "#16A34A",      // hijau utama (CTA)
+  greenDark: "#15803D",
+  emerald: "#22C55E",
+  lime: "#A3E635",       // aksen lime terang
+  limeSoft: "#BEF264",
+  bg: "#F4FAF5",         // latar terang kehijauan
+  card: "#FFFFFF",
+  border: "#E3EDE7",
+  ink: "#0B1F14",        // teks utama
+  muted: "#5B7267",      // teks sekunder
+};
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -54,19 +77,17 @@ export default function MitraUmkmPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO)
+  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO) — logika dipertahankan
   const muatMitraDatabase = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Ambil data Produsen Hulu
       const { data: dataProdusen } = await supabase
         .from("produsen")
-        .select("id, nama_usaha, alamat, kabupaten, provinsi, kategori, created_at");
+        .select("id, nama_usaha, alamat, kabupaten, provinsi, kategori, foto, created_at");
 
-      // 2. Ambil data Admin Toko / Koperasi UMKM
       const { data: dataAdminToko } = await supabase
         .from("admin_toko")
-        .select("id, nama_toko, alamat, kabupaten, created_at");
+        .select("id, nama_toko, alamat, kabupaten, foto, created_at");
 
       const daftarDiolah: Mitra[] = [];
 
@@ -83,7 +104,8 @@ export default function MitraUmkmPage() {
             komoditas: p.kategori || "Bahan Baku & Olahan",
             rating: 5.0,
             sejakTahun: tahun,
-            tag: "Produsen Binaan"
+            tag: "Produsen Binaan",
+            fotoUrl: p.foto || undefined
           });
         });
       }
@@ -96,12 +118,13 @@ export default function MitraUmkmPage() {
           daftarDiolah.push({
             id: a.id,
             nama: a.nama_toko || "Admin Toko UMKM",
-            tipe: "Admin Toko",
+            tipe: "Admin Toko / Koperasi",
             lokasi: lokasi,
             komoditas: "Koperasi & Komoditas Grosir",
             rating: 4.8,
             sejakTahun: tahun,
-            tag: "Koperasi Digital"
+            tag: "Koperasi Digital",
+            fotoUrl: a.foto || undefined
           });
         });
       }
@@ -126,90 +149,121 @@ export default function MitraUmkmPage() {
   });
 
   const totalProdusen = daftarMitra.filter((m) => m.tipe === "Produsen Hulu").length;
-  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko").length;
+  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko / Koperasi").length;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
+          background: ${isScrolled ? 'rgba(244, 250, 245, 0.88)' : 'rgba(8, 23, 14, 0.10)'};
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-bottom: 1px solid ${isScrolled ? 'rgba(14,42,27,0.08)' : 'rgba(163,230,53,0.14)'};
+          box-shadow: ${isScrolled ? '0 6px 30px rgba(8, 23, 14, 0.06)' : 'none'};
         }
-        .gradient-text {
-          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+        .gradient-lime {
+          background: linear-gradient(135deg, ${C.emerald} 0%, ${C.lime} 100%);
           -webkit-background-clip: text;
+          background-clip: text;
           -webkit-text-fill-color: transparent;
         }
         @keyframes floatBlob {
           0%, 100% { transform: translate(0,0) scale(1); }
           50% { transform: translate(24px,-18px) scale(1.08); }
         }
-        .blob { position: absolute; border-radius: 50%; filter: blur(70px); pointer-events: none; animation: floatBlob 13s ease-in-out infinite; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; animation: floatBlob 14s ease-in-out infinite; }
+
+        /* Motif "ledger" halus — menegaskan tema terukur & bisa diaudit */
+        .ledger-grid {
+          position: absolute; inset: 0; pointer-events: none;
+          background-image:
+            linear-gradient(rgba(163,230,53,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(163,230,53,0.05) 1px, transparent 1px);
+          background-size: 46px 46px;
+          mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
+          -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
+        }
+
         .mitra-card {
-          background: #ffffff;
-          border: 1px solid rgba(226, 232, 240, 0.8);
-          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          background: ${C.card};
+          border: 1px solid ${C.border};
+          transition: transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s ease, border-color .35s ease;
+          position: relative;
+          overflow: hidden;
         }
-        .mitra-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 20px 40px -15px rgba(5, 150, 105, 0.18);
-          border-color: rgba(16, 185, 129, 0.45);
+        .mitra-card::before {
+          content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+          background: linear-gradient(90deg, ${C.green}, ${C.lime});
+          opacity: 0; transition: opacity .35s ease;
         }
+        .mitra-card:hover { transform: translateY(-6px); box-shadow: 0 24px 46px -20px rgba(14,42,27,0.28); border-color: rgba(34,197,94,0.45); }
+        .mitra-card:hover::before { opacity: 1; }
+
         .filter-chip {
-          border: 1px solid #E2E8F0;
+          border: 1px solid ${C.border};
           background: #fff;
-          color: #475569;
+          color: ${C.muted};
           font-weight: 700;
           font-size: 0.85rem;
-          padding: 0.55rem 1.1rem;
+          padding: 0.55rem 1.15rem;
           border-radius: 99px;
           cursor: pointer;
           transition: all 0.25s ease;
         }
-        .filter-chip.active { background: #065F46; color: #fff; border-color: #065F46; }
+        .filter-chip:hover { border-color: ${C.emerald}; color: ${C.greenDark}; }
+        .filter-chip.active { background: ${C.forest}; color: ${C.limeSoft}; border-color: ${C.forest}; }
+
+        .search-input:focus { border-color: ${C.emerald} !important; box-shadow: 0 0 0 4px rgba(34,197,94,0.12); }
+
+        .cta-btn { transition: transform .25s ease, box-shadow .25s ease; }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -10px rgba(163,230,53,0.5); }
 
         @media (max-width: 768px) {
-          .header-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
-          .nav-logo-text { font-size: 0.85rem !important; }
-          .nav-logo-img { height: 20px !important; }
-          .btn-back { padding: 0.25rem 0.5rem !important; font-size: 0.55rem !important; gap: 0.2rem !important; }
-          .btn-back svg { width: 10px !important; height: 10px !important; }
-          .hero-section { padding: 6rem 1rem 3rem !important; }
-          .hero-title { font-size: 1.85rem !important; line-height: 1.25 !important; }
-          .hero-desc { font-size: 0.85rem !important; }
-          .stats-row { grid-template-columns: repeat(3,1fr) !important; gap: 0.5rem !important; }
-          .main-content { padding: 2.5rem 0.5rem !important; }
+          .header-container { padding: 0.5rem !important; }
+          .nav-logo-text { font-size: 0.9rem !important; }
+          .nav-logo-img { height: 22px !important; }
+          .btn-back { padding: 0.3rem 0.7rem !important; font-size: 0.62rem !important; gap: 0.25rem !important; }
+          .btn-back svg { width: 12px !important; height: 12px !important; }
+          .hero-section { padding: 6.5rem 1rem 3.5rem !important; }
+          .hero-eyebrow { font-size: 0.62rem !important; padding: 0.4rem 1rem !important; }
+          .hero-title { font-size: 2.1rem !important; line-height: 1.15 !important; }
+          .hero-desc { font-size: 0.9rem !important; }
+          .stats-row { grid-template-columns: repeat(3,1fr) !important; gap: 0.55rem !important; }
+          .stat-value { font-size: 1.1rem !important; }
+          .stat-label { font-size: 0.6rem !important; }
+          .main-content { padding: 2.75rem 0.75rem 5rem !important; }
           .mitra-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
           .filters-row { flex-wrap: wrap !important; gap: 0.4rem !important; }
-          .footer-container { padding: 1.5rem 0.5rem !important; }
-          .footer-wrapper { flex-direction: row !important; justify-content: space-between !important; gap: 0px !important; }
-          .footer-wrapper span { font-size: 0.42rem !important; line-height: 1.2 !important; }
+          .toolbar { flex-direction: column !important; align-items: stretch !important; }
+          .search-wrap { width: 100% !important; }
+          .cta-box { padding: 2.25rem 1.25rem !important; }
+          .cta-title { font-size: 1.5rem !important; }
+          .footer-container { padding: 2rem 1rem !important; }
+          .footer-wrapper { flex-direction: column !important; text-align: center !important; gap: 0.75rem !important; }
+          .footer-wrapper span { font-size: 0.72rem !important; line-height: 1.4 !important; }
         }
       `}} />
 
-      {/* NAVBAR */}
-      <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      {/* ================= NAVBAR ================= */}
+      <header className="glass-nav header-container" style={{ padding: "1rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <Image
             className="nav-logo-img"
             src="/logo.png"
-            alt="Logo"
+            alt="Logo PasarNusa"
             width={40}
             height={40}
-            style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }}
+            style={{ height: "38px", width: "auto", objectFit: "contain", borderRadius: "8px" }}
           />
-          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
+          <span className="nav-logo-text" style={{ fontSize: "1.45rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? C.ink : "#FFFFFF", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: isScrolled ? C.green : C.lime }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
-            paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            padding: "0.6rem 1.5rem", fontSize: "0.9rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "0.5rem",
+            backgroundColor: isScrolled ? C.green : "#FFFFFF", color: isScrolled ? "#FFFFFF" : C.greenDark, borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -217,46 +271,49 @@ export default function MitraUmkmPage() {
         </nav>
       </header>
 
-      {/* HERO */}
+      {/* ================= HERO ================= */}
       <section className="hero-section" style={{
-        paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
+        padding: "13rem 2rem 6rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(6, 78, 59, 0.55), rgba(3, 20, 14, 0.95)), url('https://images.unsplash.com/photo-1519082572439-7ed19908e47e?auto=format&fit=crop&q=80&w=1920')`,
-        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll",
+        background: `radial-gradient(120% 120% at 50% 0%, ${C.forest2} 0%, ${C.forest} 42%, ${C.deep} 100%)`,
       }}>
-        <div className="blob" style={{ width: 420, height: 420, background: "#34D399", opacity: 0.22, top: -140, left: -100 }} />
-        <div className="blob" style={{ width: 380, height: 380, background: "#059669", opacity: 0.20, bottom: -160, right: -80, animationDelay: "3s" }} />
-        <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", padding: "0.5rem 1.5rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#34D399", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Mitra Terverifikasi, Bukan Sekadar Terdaftar
+        <div className="ledger-grid" />
+        <div className="blob" style={{ width: 440, height: 440, background: C.emerald, opacity: 0.20, top: -150, left: -110 }} />
+        <div className="blob" style={{ width: 380, height: 380, background: C.lime, opacity: 0.16, bottom: -170, right: -90, animationDelay: "3s" }} />
+
+        <div style={{ maxWidth: "880px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
+          <div className="hero-eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1.4rem", borderRadius: "99px", background: "rgba(163, 230, 53, 0.12)", border: "1px solid rgba(163, 230, 53, 0.35)", color: C.limeSoft, fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", marginBottom: "1.75rem", textTransform: "uppercase" }}>
+            <ShieldCheck size={15} /> Jaringan Mitra Terverifikasi
           </div>
-          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
-            Selama Ini Produsen Cuma Angka. <span className="gradient-text">Di Sini, Mereka Punya Nama.</span>
+
+          <h1 className="hero-title" style={{ fontSize: "4.4rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.08, marginBottom: "1.5rem", letterSpacing: "-0.035em" }}>
+            Koperasi &amp; Produsen di Balik <span className="gradient-lime">Setiap Produk</span>
           </h1>
-          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
-            Bukan daftar kontak, bukan katalog kosong. Setiap mitra di halaman ini identitasnya diverifikasi, transaksinya tercatat, dan bisa diaudit kapan saja — karena kepercayaan dibangun dari data yang bisa dibuktikan, bukan janji di brosur.
+
+          <p className="hero-desc" style={{ fontSize: "1.18rem", color: "#CFE7D6", lineHeight: 1.7, maxWidth: "680px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
+            Setiap mitra di direktori ini adalah toko dan produsen binaan PasarNusa yang terdaftar resmi dan terverifikasi di sistem kami — transparan, terukur, dan bisa diaudit.
           </p>
 
-          <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem", maxWidth: "620px", marginLeft: "auto", marginRight: "auto" }}>
+          <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.1rem", maxWidth: "660px", marginLeft: "auto", marginRight: "auto" }}>
             {[
-              { icon: Users, label: "Produsen Binaan", value: `${totalProdusen}` },
-              { icon: Package, label: "Koperasi / Toko", value: `${totalKoperasi}` },
-              { icon: TrendingUp, label: "Mitra Aktif Tercatat", value: `${daftarMitra.length}` },
+              { icon: Sprout, label: "Produsen Binaan", value: `${totalProdusen}` },
+              { icon: Store, label: "Koperasi / Toko", value: `${totalKoperasi}` },
+              { icon: TrendingUp, label: "Total Mitra", value: `${daftarMitra.length}` },
             ].map((s, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "1rem", padding: "1rem", backdropFilter: "blur(8px)" }}>
-                <s.icon size={20} color="#34D399" style={{ marginBottom: "0.4rem" }} />
-                <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#fff" }}>{s.value}</div>
-                <div style={{ fontSize: "0.7rem", color: "#94A3B8", fontWeight: 600 }}>{s.label}</div>
+              <div key={i} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(163,230,53,0.16)", borderRadius: "1.1rem", padding: "1.15rem 0.75rem", backdropFilter: "blur(8px)" }}>
+                <s.icon size={22} color={C.lime} style={{ marginBottom: "0.5rem" }} />
+                <div className="stat-value" style={{ fontSize: "1.55rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
+                <div className="stat-label" style={{ fontSize: "0.72rem", color: "#9DBAA6", fontWeight: 600, marginTop: "0.3rem", letterSpacing: "0.02em" }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* MAIN */}
-      <main className="main-content" style={{ paddingTop: "5rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
+      {/* ================= MAIN ================= */}
+      <main className="main-content" style={{ padding: "5rem 2rem 7rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         <Reveal>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.25rem", marginBottom: "2.5rem" }}>
+          <div className="toolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.25rem", marginBottom: "2.75rem" }}>
             <div className="filters-row" style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
               {filterTipe.map((t) => (
                 <button key={t} onClick={() => setFilter(t)} className={`filter-chip${filter === t ? " active" : ""}`}>
@@ -264,75 +321,106 @@ export default function MitraUmkmPage() {
                 </button>
               ))}
             </div>
-            <div style={{ position: "relative", width: "min(320px, 100%)" }}>
-              <Search size={16} color="#94A3B8" style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
+            <div className="search-wrap" style={{ position: "relative", width: "min(340px, 100%)" }}>
+              <Search size={16} color={C.muted} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)" }} />
               <input
+                className="search-input"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari nama, komoditas, atau lokasi..."
-                style={{ width: "100%", padding: "0.7rem 1rem 0.7rem 2.5rem", borderRadius: "99px", border: "1px solid #E2E8F0", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "0.75rem 1rem 0.75rem 2.6rem", borderRadius: "99px", border: `1px solid ${C.border}`, fontSize: "0.9rem", outline: "none", boxSizing: "border-box", color: C.ink, transition: "border-color .2s ease, box-shadow .2s ease" }}
               />
             </div>
           </div>
         </Reveal>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "4rem", color: "#64748B" }}>
-            Memverifikasi ulang siapa saja yang tercatat...
+          <div style={{ textAlign: "center", padding: "5rem 1rem", color: C.muted }}>
+            <Leaf size={30} color={C.emerald} style={{ marginBottom: "0.75rem", animation: "floatBlob 3s ease-in-out infinite" }} />
+            <p style={{ fontWeight: 600 }}>Memuat daftar mitra terdaftar...</p>
           </div>
         ) : (
           <div className="mitra-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.75rem" }}>
-            {filtered.map((m, i) => (
-              <Reveal key={m.id} delay={i * 60}>
-                <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                    <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#FFFBEB", color: m.tipe === "Produsen Hulu" ? "#059669" : "#B45309", fontSize: "0.7rem", fontWeight: 700, padding: "0.3rem 0.7rem", borderRadius: "99px" }}>{m.tag}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B", fontWeight: 700, fontSize: "0.85rem" }}>
-                      <Star size={14} fill="#F59E0B" /> {m.rating.toFixed(1)}
+            {filtered.map((m, i) => {
+              const isProdusen = m.tipe === "Produsen Hulu";
+              return (
+                <Reveal key={m.id} delay={i * 60}>
+                  <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                        <div style={{ width: "54px", height: "54px", borderRadius: "16px", overflow: "hidden", background: "#F1F7F2", border: `2px solid ${isProdusen ? "#D6F5E0" : "#DCEAE0"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {m.fotoUrl ? (
+                            <img src={m.fotoUrl} alt={m.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            isProdusen ? <Sprout size={24} color={C.green} /> : <Store size={24} color={C.greenDark} />
+                          )}
+                        </div>
+                        <div>
+                          <span style={{ display: "inline-block", background: isProdusen ? "#E9FBEF" : "#EAF3EC", color: isProdusen ? C.green : C.greenDark, fontSize: "0.66rem", fontWeight: 800, padding: "0.25rem 0.6rem", borderRadius: "99px", letterSpacing: "0.03em", textTransform: "uppercase" }}>{m.tag}</span>
+                          <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: C.ink, margin: "0.35rem 0 0 0", letterSpacing: "-0.01em" }}>{m.nama}</h3>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#D97706", fontWeight: 700, fontSize: "0.85rem" }}>
+                        <Star size={14} fill="#F59E0B" color="#F59E0B" /> {m.rating.toFixed(1)}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
+                      <MapPin size={14} color={C.emerald} /> {m.lokasi}
+                    </div>
+
+                    <p style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
+                      Sektor / Komoditas: <strong style={{ color: C.ink }}>{m.komoditas}</strong>
+                    </p>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
+                      <span>Mitra sejak {m.sejakTahun}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: C.green, fontWeight: 700 }}>
+                        <ShieldCheck size={13} /> Terverifikasi
+                      </span>
                     </div>
                   </div>
-                  <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0F172A", margin: "0 0 0.4rem 0" }}>{m.nama}</h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748B", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
-                    <MapPin size={14} /> {m.lokasi}
-                  </div>
-                  <p style={{ color: "#475569", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.25rem 0", flexGrow: 1 }}>
-                    Sektor / Komoditas: <strong>{m.komoditas}</strong>
-                  </p>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #F1F5F9", paddingTop: "1rem", fontSize: "0.78rem", color: "#94A3B8", fontWeight: 600 }}>
-                    <span>Mitra sejak {m.sejakTahun}</span>
-                    <span style={{ color: "#10B981" }}>● Terverifikasi Sistem</span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
+                </Reveal>
+              );
+            })}
+
             {filtered.length === 0 && (
-              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", color: "#94A3B8" }}>
-                <Filter size={28} style={{ marginBottom: "0.5rem" }} />
-                <p>Belum ada mitra terverifikasi yang cocok dengan pencarianmu.</p>
+              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "4rem 1rem", color: C.muted }}>
+                <Filter size={30} color={C.emerald} style={{ marginBottom: "0.6rem" }} />
+                <p style={{ fontWeight: 600 }}>Belum ada mitra terdaftar yang cocok dengan pencarianmu.</p>
               </div>
             )}
           </div>
         )}
 
+        {/* ================= CTA ================= */}
         <Reveal delay={100}>
-          <div style={{ marginTop: "5rem", background: "linear-gradient(135deg, #0F172A, #1E293B)", borderRadius: "2rem", padding: "3rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden" }}>
-            <div className="blob" style={{ width: 300, height: 300, background: "#34D399", opacity: 0.2, top: -100, right: -60 }} />
-            <h2 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", marginBottom: "1rem", position: "relative" }}>Usaha Anda Pantas Diakui, Bukan Cuma Jadi Perantara Tanpa Nama</h2>
-            <p style={{ color: "#CBD5E1", fontSize: "1.05rem", marginBottom: "2rem", maxWidth: "560px", marginLeft: "auto", marginRight: "auto", position: "relative" }}>
-              Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi — dan hentikan siklus jadi mata rantai yang tak pernah tercatat di sistem manapun.
-            </p>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: "#10B981", color: "#FFFFFF", padding: "0.9rem 2.2rem", borderRadius: "99px", fontWeight: 700, textDecoration: "none", position: "relative" }}>
-              Klaim Posisi Anda di Rantai Pasok
-            </Link>
+          <div className="cta-box" style={{ marginTop: "5rem", background: `radial-gradient(120% 140% at 0% 0%, ${C.forest2} 0%, ${C.forest} 45%, ${C.deep} 100%)`, borderRadius: "2rem", padding: "3.5rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden", border: "1px solid rgba(163,230,53,0.14)" }}>
+            <div className="blob" style={{ width: 320, height: 320, background: C.lime, opacity: 0.16, top: -110, right: -70 }} />
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 1.1rem", borderRadius: "99px", background: "rgba(163,230,53,0.12)", border: "1px solid rgba(163,230,53,0.3)", color: C.limeSoft, fontWeight: 700, fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "1.25rem" }}>
+                <Sprout size={13} /> Gabung Jaringan
+              </div>
+              <h2 className="cta-title" style={{ fontSize: "2.15rem", fontWeight: 800, color: "#fff", marginBottom: "1rem", letterSpacing: "-0.02em" }}>
+                Punya Usaha atau Kelompok Tani Sendiri?
+              </h2>
+              <p style={{ color: "#CFE7D6", fontSize: "1.05rem", marginBottom: "2.25rem", maxWidth: "580px", marginLeft: "auto", marginRight: "auto", lineHeight: 1.65 }}>
+                Daftarkan diri sebagai Produsen Hulu atau Admin Toko/Koperasi untuk masuk ke jaringan PasarNusa yang transparan dan terukur.
+              </p>
+              <Link href="/login" className="cta-btn" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", background: `linear-gradient(135deg, ${C.emerald}, ${C.lime})`, color: C.deep, padding: "0.95rem 2.4rem", borderRadius: "99px", fontWeight: 800, textDecoration: "none", fontSize: "0.98rem" }}>
+                Ajukan Kemitraan Sekarang
+              </Link>
+            </div>
           </div>
         </Reveal>
       </main>
 
-      {/* FOOTER */}
-      <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
+      {/* ================= FOOTER ================= */}
+      <footer className="footer-container" style={{ padding: "3rem 4rem", background: C.deep, color: C.muted, borderTop: "1px solid rgba(163,230,53,0.06)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
-          <span style={{ color: "#64748B" }}>© 2026 PasarNusa & Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Membangun Rantai Pasok yang Adil, Bukan Sekadar yang Ada.</span>
+          <span style={{ color: "#7C978A" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
+          <span style={{ color: "#5B7267" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
         </div>
       </footer>
     </div>
