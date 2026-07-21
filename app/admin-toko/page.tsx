@@ -8,8 +8,6 @@ import {
   getInventarisAdminToko,
   addInventarisAdminToko,
   updateInventarisStok,
-  deleteInventarisAdminToko,
-  getMarketplaceUntukInventaris
 } from "@/lib/db";
 
 import MarketplaceProdusen from "./components/marketplace-produsen";
@@ -196,7 +194,7 @@ export default function AdminTokoDashboard() {
             console.error("Gagal membaca localStorage metadata");
           }
         }
-        
+
         return {
           id: item.id,
           nama: item.nama,
@@ -224,17 +222,17 @@ export default function AdminTokoDashboard() {
         .from("produsen")
         .select("id, nama_usaha, desa, kabupaten, kategori")
         .eq("status", "aktif");
-      
+
       // 2. Fetch products to know what commodities they sell
       const { data: produkData } = await supabase
         .from("produk")
         .select("id, nama, harga, satuan, produsen_id");
-        
+
       if (produsenData) {
         const mapped = produsenData.map((p) => {
           const relatedProduk = (produkData || []).filter((prod) => prod.produsen_id === p.id);
           const komoditas = relatedProduk.map((r) => r.nama).join(", ") || p.kategori || "Bahan Pangan";
-          
+
           return {
             id: p.id,
             nama: p.nama_usaha || "Produsen",
@@ -278,7 +276,7 @@ export default function AdminTokoDashboard() {
     const id = `PO-${4400 + pembelianList.length + 1}`;
     const total = jumlah * hargaSatuan;
     const newPo = { id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu" as const, tanggal: todayLabel() };
-    
+
     setPembelianList((prev) => {
       const updated = [newPo, ...prev];
       if (typeof window !== "undefined") {
@@ -288,16 +286,20 @@ export default function AdminTokoDashboard() {
     });
   }
 
-  async function terimaPembelian(id: string, grade: Grade) {
-    // 1. Dapatkan data pembelian PO
   // Produsen menandai barang sudah dikirim — dipanggil dari halaman Pelacakan Pesanan.
   // Sementara masih manual di sisi Admin Toko karena dashboard Produsen belum tersambung realtime.
   function tandaiDikirim(id: string, noResi: string) {
-    setPembelianList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Dikirim", noResi: noResi || undefined } : p)));
+    setPembelianList((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Dikirim" as const, noResi: noResi || undefined } : p));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
+      }
+      return updated;
+    });
   }
 
-  function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
-    setPembelianList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Diterima", rating, fotoUlasan, keteranganUlasan } : p)));
+  async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
+    // 1. Dapatkan data pembelian PO (dari state saat ini, sebelum diperbarui)
     const po = pembelianList.find((p) => p.id === id);
     if (!po) return;
 
@@ -348,7 +350,7 @@ export default function AdminTokoDashboard() {
       console.warn("Gagal menambahkan ke inventaris database (RLS / Kendala Akses). Menggunakan penyimpanan lokal.");
     }
 
-    // Simpan grade ke localStorage metadata
+    // 4. Simpan grade ke localStorage metadata
     const metaKey = `inventaris_meta_${produkId}`;
     if (typeof window !== "undefined") {
       try {
@@ -361,16 +363,16 @@ export default function AdminTokoDashboard() {
       }
     }
 
-    // Update status PO lokal & localStorage
+    // 5. Update status PO -> Diterima (beserta ulasan) & simpan ke localStorage
     setPembelianList((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const } : p));
+      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const, rating, fotoUlasan, keteranganUlasan } : p));
       if (typeof window !== "undefined") {
         localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
       }
       return updated;
     });
 
-    // Refetch untuk menyelaraskan state
+    // 6. Refetch untuk menyelaraskan state
     await fetchInventaris();
   }
 
@@ -396,7 +398,7 @@ export default function AdminTokoDashboard() {
       } catch {
         // Gagal memuat metadata
       }
-      
+
       const newMeta = {
         ...localMeta,
         grade: patch.grade !== undefined ? patch.grade : (localMeta.grade || item.grade),
@@ -405,7 +407,7 @@ export default function AdminTokoDashboard() {
         live: patch.live !== undefined ? patch.live : (localMeta.live !== undefined ? localMeta.live : item.live),
         batasMinimum: patch.batasMinimum !== undefined ? patch.batasMinimum : (localMeta.batasMinimum !== undefined ? localMeta.batasMinimum : item.batasMinimum),
       };
-      
+
       localStorage.setItem(metaKey, JSON.stringify(newMeta));
     }
 
@@ -450,7 +452,7 @@ export default function AdminTokoDashboard() {
         .at-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .at-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .at-user-name { display: block; }
-        
+
         @media (max-width: 900px) {
           .at-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
           .at-sidebar.open { transform: translateX(0); }
@@ -487,7 +489,7 @@ export default function AdminTokoDashboard() {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
                 const menuTerpaku = !isDataLengkap && item.key !== "dashboard";
-                
+
                 return (
                   <div
                     key={item.key}
@@ -528,7 +530,7 @@ export default function AdminTokoDashboard() {
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            
+
             {!isDataLengkap && (
               <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: "#991B1B", padding: "1rem", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.25rem", lineHeight: "1.4", textAlign: "center" }}>
                 ⚠️ Akun Admin Toko Anda mendeteksi data legalitas belum terdaftar lengkap. Silakan klik tombol profil di pojok kanan atas atau tombol lengkapi di bawah untuk mengisi nama toko & alamat cabang operasional agar fitur belanja hulu serta kasir penjualan dapat diaktifkan kembali.
@@ -614,7 +616,6 @@ export default function AdminTokoDashboard() {
         )}
 
         {/* SUB HALAMAN OPERASIONAL HANYA AKAN MERENDER JIKA LEGALITAS DATA SUDAH LENGKAP */}
-        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
         {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen produsenList={produsenList} belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
         {activeMenu === "pelacakan" && isDataLengkap && <PelacakanPesanan pembelianList={pembelianList} tandaiDikirim={tandaiDikirim} terimaPesanan={terimaPembelian} alamatToko={alamatToko} />}
         {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
