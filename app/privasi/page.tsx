@@ -47,7 +47,7 @@ export default function PrivasiPage() {
           box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
         }
         .gradient-text {
-          background: linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -60,7 +60,7 @@ export default function PrivasiPage() {
           background: #ffffff; padding: 2.5rem; border-radius: 1.5rem; border: 1px solid rgba(226, 232, 240, 0.8);
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); margin-bottom: 2rem; transition: box-shadow .3s ease, transform .3s ease;
         }
-        .policy-card:hover { box-shadow: 0 20px 40px -20px rgba(37,99,235,0.12); transform: translateY(-3px); }
+        .policy-card:hover { box-shadow: 0 20px 40px -20px rgba(5,150,105,0.15); transform: translateY(-3px); }
         .list-item { display: flex; gap: 0.75rem; align-items: flex-start; color: #475569; font-size: 1rem; line-height: 1.6; margin-bottom: 0.75rem; }
 
         @media (max-width: 768px) {
@@ -97,13 +97,13 @@ export default function PrivasiPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
           <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#2563EB" : "#38BDF8" }}>Nusa</span>
+            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#2563EB" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#2563EB", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -114,20 +114,20 @@ export default function PrivasiPage() {
       <section className="hero-section" style={{
         paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.98)), url('https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundImage: `linear-gradient(to bottom, rgba(6, 30, 24, 0.82), rgba(4, 15, 12, 0.97)), url('https://images.unsplash.com/photo-1574105079631-4f915922b61b?auto=format&fit=crop&q=80&w=1920')`,
         backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
       }}>
-        <div className="blob" style={{ width: 420, height: 420, background: "#38BDF8", opacity: 0.18, top: -120, left: -100 }} />
-        <div className="blob" style={{ width: 360, height: 360, background: "#818CF8", opacity: 0.16, bottom: -140, right: -80, animationDelay: "4s" }} />
+        <div className="blob" style={{ width: 420, height: 420, background: "#34D399", opacity: 0.2, top: -120, left: -100 }} />
+        <div className="blob" style={{ width: 360, height: 360, background: "#059669", opacity: 0.18, bottom: -140, right: -80, animationDelay: "4s" }} />
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(56, 189, 248, 0.15)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "#38BDF8", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Data Protection &amp; Security
+          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#34D399", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
+            Perlindungan Data, Bukan Sekadar Formalitas
           </div>
           <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
             Kebijakan Privasi <br /><span className="gradient-text">Ekosistem PasarNusa</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
-            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok — berikut bagaimana kami mengumpulkan, memakai, dan melindunginya secara eksplisit.
+            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok — dan aset itu paling mudah disalahgunakan kalau kebijakannya cuma basa-basi. Berikut yang kami kumpulkan, kami pakai, dan kami lindungi, secara eksplisit tanpa istilah kabur.
           </p>
         </div>
       </section>
@@ -138,7 +138,7 @@ export default function PrivasiPage() {
           <div className="intro-block" style={{ marginBottom: "3.5rem", textAlign: "left" }}>
             <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1rem", letterSpacing: "-0.02em" }}>Komitmen Privasi Kami</h3>
             <p style={{ color: "#475569", fontSize: "1.05rem", lineHeight: 1.7, margin: 0 }}>
-              PasarNusa mengoperasikan platform manajemen rantai pasok rural yang menghubungkan produsen pelosok, Admin Toko/koperasi, dan pembeli kota. Karena data yang kami kumpulkan langsung dari lapangan — koordinat lahan, riwayat panen, saldo digital — kebijakan ini menjelaskan secara spesifik apa yang kami kumpulkan, untuk apa, dan siapa yang bisa mengaksesnya.
+              PasarNusa mengoperasikan platform manajemen rantai pasok rural yang menghubungkan produsen pelosok, Admin Toko/koperasi, dan pembeli kota. Karena data yang kami kumpulkan langsung dari lapangan — koordinat lahan, riwayat panen, saldo digital — kebijakan ini menjelaskan secara spesifik apa yang kami kumpulkan, untuk apa, dan siapa yang bisa mengaksesnya. Tidak ada klausul yang sengaja dibuat kabur.
             </p>
           </div>
         </Reveal>
@@ -146,22 +146,22 @@ export default function PrivasiPage() {
         <Reveal delay={80}>
           <div className="policy-card">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div style={{ background: "#EFF6FF", padding: "0.5rem", borderRadius: "0.75rem", color: "#2563EB" }}><FileText size={24} /></div>
+              <div style={{ background: "#F0FDFA", padding: "0.5rem", borderRadius: "0.75rem", color: "#0D9488" }}><FileText size={24} /></div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>1. Data yang Kami Kumpulkan</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, marginBottom: "1.25rem" }}>
               Untuk menjalankan siklus transaksi hulu ke hilir secara valid, kami mengumpulkan jenis informasi berikut sesuai peran (role) akunmu:
             </p>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#2563EB" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Profil Produsen:</strong> nama lengkap, nomor kontak, riwayat kelompok tani/peternak, koordinat GPS lahan produksi, serta jenis hasil bumi yang diinput melalui menu Produk/Stok.</span>
             </div>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#2563EB" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Admin Toko/Koperasi:</strong> laporan Buku Kas digital, verifikasi legalitas usaha, margin keuntungan toko, dan hasil Quality Grading komoditas.</span>
             </div>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#2563EB" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Pembeli &amp; Finansial:</strong> alamat pengiriman, riwayat transaksi Marketplace, serta mutasi dana yang diproses melalui sistem Escrow.</span>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>2. Bagaimana Kami Menggunakan Data Anda</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, marginBottom: "1.25rem" }}>
-              Informasi yang dikumpulkan dipakai untuk menggerakkan efisiensi rantai pasok secara proaktif — bukan untuk tujuan lain:
+              Informasi yang dikumpulkan dipakai untuk menggerakkan efisiensi rantai pasok secara proaktif — bukan untuk tujuan lain, dan bukan untuk dijual ke pihak ketiga mana pun:
             </p>
             <div className="list-item">
               <CheckCircle2 size={18} color="#10B981" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
@@ -198,7 +198,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>3. Perlindungan &amp; Keamanan Data</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
-              Seluruh jejak transaksi digital, laporan audit keuangan, dan saldo Wallet Produsen dilindungi dengan enkripsi tingkat server. Dana dari pembeli dikunci oleh sistem Escrow dan baru didepositkan ke Wallet pihak yang berhak setelah status pengiriman dikonfirmasi selesai — bukan begitu transaksi dibuat.
+              Seluruh jejak transaksi digital, laporan audit keuangan, dan saldo Wallet Produsen dilindungi dengan enkripsi tingkat server. Dana dari pembeli dikunci oleh sistem Escrow dan baru didepositkan ke Wallet pihak yang berhak setelah status pengiriman dikonfirmasi selesai — bukan begitu transaksi dibuat, dan bukan berdasarkan kepercayaan sepihak.
             </p>
           </div>
         </Reveal>
@@ -210,7 +210,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>4. Keterbukaan Data Pihak Ketiga &amp; Lembaga</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
-              Sebagai bentuk dukungan pada inklusi keuangan, riwayat kredit dan buku kas digital produsen hulu dapat dibagikan kepada lembaga keuangan mitra (seperti penyedia kredit mikro) <strong>hanya jika</strong> pengguna yang bersangkutan memberi persetujuan eksplisit. Kami tidak menjual data pribadi kepada broker iklan komersial mana pun.
+              Sebagai bentuk dukungan pada inklusi keuangan, riwayat kredit dan buku kas digital produsen hulu dapat dibagikan kepada lembaga keuangan mitra (seperti penyedia kredit mikro) <strong>hanya jika</strong> pengguna yang bersangkutan memberi persetujuan eksplisit. Kami tidak menjual data pribadi kepada broker iklan komersial mana pun — titik, tanpa pengecualian tersembunyi di baris kecil.
             </p>
           </div>
         </Reveal>
@@ -221,7 +221,7 @@ export default function PrivasiPage() {
               <Shield size={16} />
               <span>Terakhir diperbarui: 11 Juli 2026</span>
             </div>
-            <Link href="/tentang-kami" style={{ color: "#2563EB", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600 }}>Pelajari Konsep Platform &rarr;</Link>
+            <Link href="/tentang-kami" style={{ color: "#059669", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600 }}>Pelajari Konsep Platform &rarr;</Link>
           </div>
         </Reveal>
 
@@ -230,7 +230,7 @@ export default function PrivasiPage() {
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
-          <span style={{ color: "#475569" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>
+          <span style={{ color: "#475569" }}>Membangun Rantai Pasok yang Adil, Bukan Sekadar yang Ada.</span>
         </div>
       </footer>
     </div>
