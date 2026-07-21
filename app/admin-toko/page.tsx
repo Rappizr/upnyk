@@ -274,16 +274,6 @@ export default function AdminTokoDashboard() {
     });
   }
 
-  function tandaiDikirim(id: string, noResi: string) {
-    setPembelianList((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Dikirim" as const, noResi: noResi || undefined } : p));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
-      }
-      return updated;
-    });
-  }
-
   async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
     const po = pembelianList.find((p) => p.id === id);
     if (!po) return;
@@ -577,7 +567,6 @@ export default function AdminTokoDashboard() {
         {activeMenu === "pelacakan" && isDataLengkap && (
           <PelacakanPesanan 
             pembelianList={pembelianList} 
-            tandaiDikirim={tandaiDikirim} 
             terimaPesanan={terimaPembelian} 
             alamatToko={alamatToko} 
           />

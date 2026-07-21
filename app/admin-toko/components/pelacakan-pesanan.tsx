@@ -1,14 +1,36 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState, useRef } from "react";
 import type { ChangeEvent } from "react";
-import type { Grade, Pembelian } from "../page";
+import { supabase } from "@/lib/db";
+
+export type Grade = "A" | "B" | "C" | "Belum Dinilai";
+
+export interface Pembelian {
+  id: string;
+  produsenId?: string;
+  produsen: string;
+  item: string;
+  jumlah: number;
+  satuan?: string;
+  hargaSatuan?: number;
+  total: number;
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan" | "Baru";
+  tanggal: string;
+  noResi?: string;
+  fotoProduk?: string;
+  rating?: number;
+  fotoUlasan?: string;
+  keteranganUlasan?: string;
+  lokasiProdusen?: string;
+}
 
 const WARNA_UTAMA = "#F59E0B";
 const WARNA_UTAMA_GELAP = "#D97706";
 
 const IconTruck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconClock = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+const IconBox = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const IconCheck = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 const IconStar = ({ filled }: { filled: boolean }) => <svg width="26" height="26" viewBox="0 0 24 24" fill={filled ? "#F59E0B" : "none"} stroke={filled ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
 const IconStarSmall = ({ filled }: { filled: boolean }) => <svg width="13" height="13" viewBox="0 0 24 24" fill={filled ? "#F59E0B" : "none"} stroke={filled ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
@@ -19,53 +41,43 @@ const IconRoute = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconChevronDown = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 
 const LANGKAH = [
-  { key: "Menunggu", label: "Menunggu", icon: IconClock },
+  { key: "Baru", label: "Menunggu", icon: IconClock },
+  { key: "Diproses", label: "Diproses", icon: IconBox },
   { key: "Dikirim", label: "Dikirim", icon: IconTruck },
-  { key: "Diterima", label: "Diterima", icon: IconCheck },
+  { key: "Selesai", label: "Diterima", icon: IconCheck },
 ] as const;
 
 function indeksLangkah(status: Pembelian["status"]) {
-  return LANGKAH.findIndex((l) => l.key === status);
+  if (status === "Menunggu" || status === "Baru") return 0;
+  if (status === "Diproses") return 1;
+  if (status === "Dikirim") return 2;
+  if (status === "Diterima" || status === "Selesai") return 3;
+  return 0;
 }
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
 interface Props {
   pembelianList: Pembelian[];
-  tandaiDikirim: (id: string, noResi: string) => void;
   terimaPesanan: (id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) => void;
-  /** Alamat toko (titik tujuan) untuk peta rute pengiriman */
   alamatToko?: string;
 }
 
-export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaPesanan, alamatToko }: Props) {
+export default function PelacakanPesanan({ pembelianList, terimaPesanan, alamatToko }: Props) {
   const [petaTerbukaId, setPetaTerbukaId] = useState<string | null>(null);
-  const [modalKirimId, setModalKirimId] = useState<string | null>(null);
-  const [noResiInput, setNoResiInput] = useState("");
-
   const [modalTerimaId, setModalTerimaId] = useState<string | null>(null);
-  const [gradeInput, setGradeInput] = useState<Grade>("Belum Dinilai");
-  const [ratingInput, setRatingInput] = useState(0);
+  const [gradeInput, setGradeInput] = useState<Grade>("A");
+  const [ratingInput, setRatingInput] = useState(5);
   const [keteranganInput, setKeteranganInput] = useState("");
   const [fotoUlasanInput, setFotoUlasanInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const fileUlasanRef = useRef<HTMLInputElement>(null);
 
-  function bukaModalKirim(id: string) {
-    setNoResiInput("");
-    setModalKirimId(id);
-  }
-
-  function kirimTandaiDikirim() {
-    if (!modalKirimId) return;
-    tandaiDikirim(modalKirimId, noResiInput);
-    setModalKirimId(null);
-  }
-
   function bukaModalTerima(id: string) {
-    setGradeInput("Belum Dinilai");
-    setRatingInput(0);
+    setGradeInput("A");
+    setRatingInput(5);
     setKeteranganInput("");
     setFotoUlasanInput("");
     setModalTerimaId(id);
@@ -79,14 +91,39 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
     reader.readAsDataURL(file);
   }
 
-  function kirimTerimaPesanan() {
-    if (!modalTerimaId) return;
-    if (gradeInput === "Belum Dinilai") {
-      alert("Pilih grade kualitas barang terlebih dahulu.");
-      return;
+  async function kirimTerimaPesanan() {
+    if (!modalTerimaId || submitting) return;
+    setSubmitting(true);
+
+    try {
+      const targetPo = pembelianList.find((p) => p.id === modalTerimaId);
+
+      if (targetPo) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { data: prodData } = await supabase
+          .from("produk")
+          .select("id")
+          .ilike("nama", `%${targetPo.item}%`)
+          .maybeSingle();
+
+        if (prodData?.id && user) {
+          await supabase.from("review").insert({
+            produk_id: prodData.id,
+            pembeli_id: user.id,
+            rating: ratingInput,
+            komentar: keteranganInput || "Pesanan telah diterima dalam kondisi baik.",
+          });
+        }
+      }
+
+      terimaPesanan(modalTerimaId, gradeInput, ratingInput, fotoUlasanInput || undefined, keteranganInput || undefined);
+      setModalTerimaId(null);
+    } catch (err) {
+      console.error("Gagal mengirim ulasan:", err);
+    } finally {
+      setSubmitting(false);
     }
-    terimaPesanan(modalTerimaId, gradeInput, ratingInput || undefined, fotoUlasanInput || undefined, keteranganInput || undefined);
-    setModalTerimaId(null);
   }
 
   const overlayStyle: React.CSSProperties = {
@@ -115,30 +152,32 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {pembelianList.map((p) => {
             const langkahAktif = indeksLangkah(p.status);
+            const isSelesai = p.status === "Diterima" || p.status === "Selesai";
+
             return (
               <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
-                {/* Header */}
+                {/* Header Card */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.4rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1E293B" }}>{p.id}</span>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1E293B" }}>#{p.id.slice(0, 8).toUpperCase()}</span>
                     <span style={{ fontSize: "0.7rem", color: "#94A3B8" }}>• {p.tanggal}</span>
                   </div>
                   <span style={{ fontSize: "0.68rem", fontWeight: 700, color: WARNA_UTAMA_GELAP, background: "#FEF3C7", padding: "0.2rem 0.6rem", borderRadius: "999px" }}>{p.produsen}</span>
                 </div>
 
-                {/* Item info */}
+                {/* Item Info */}
                 <div style={{ display: "flex", gap: "0.85rem", padding: "1rem 1.1rem", alignItems: "center" }}>
                   <div style={{ width: "56px", height: "56px", borderRadius: "8px", background: "#FEF3C7", color: WARNA_UTAMA_GELAP, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                     {p.fotoProduk ? <img src={p.fotoProduk} alt={p.item} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <IconPackage />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{p.item}</div>
-                    <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.jumlah} {p.satuan} × {formatRupiah(p.hargaSatuan)}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.jumlah} {p.satuan || "pcs"} × {formatRupiah(p.hargaSatuan || 0)}</div>
                   </div>
                   <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{formatRupiah(p.total)}</div>
                 </div>
 
-                {/* Stepper ala Shopee */}
+                {/* Tracking Stepper */}
                 <div style={{ padding: "0.5rem 1.5rem 1.1rem" }}>
                   <div style={{ display: "flex", alignItems: "center" }}>
                     {LANGKAH.map((l, i) => {
@@ -159,9 +198,14 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
                       );
                     })}
                   </div>
-                  {p.noResi && <div style={{ marginTop: "0.6rem", fontSize: "0.72rem", color: "#64748B" }}>No. Resi: <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.noResi}</span></div>}
+                  
+                  {p.noResi && (
+                    <div style={{ marginTop: "0.6rem", fontSize: "0.72rem", color: "#64748B" }}>
+                      No. Resi Pengiriman: <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.noResi}</span>
+                    </div>
+                  )}
 
-                  {p.status !== "Menunggu" && (
+                  {p.status !== "Menunggu" && p.status !== "Baru" && (
                     <div style={{ marginTop: "0.75rem" }}>
                       <button
                         onClick={() => setPetaTerbukaId(petaTerbukaId === p.id ? null : p.id)}
@@ -176,8 +220,8 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
                           {p.lokasiProdusen && alamatToko ? (
                             <>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.68rem", color: "#64748B", marginBottom: "0.4rem", flexWrap: "wrap", gap: "0.3rem" }}>
-                                <span>📍 Asal: <strong style={{ color: "#1E293B" }}>{p.lokasiProdusen}</strong></span>
-                                <span>🏁 Tujuan: <strong style={{ color: "#1E293B" }}>{alamatToko}</strong></span>
+                                <span>📍 Asal Produsen: <strong style={{ color: "#1E293B" }}>{p.lokasiProdusen}</strong></span>
+                                <span>🏁 Tujuan Toko: <strong style={{ color: "#1E293B" }}>{alamatToko}</strong></span>
                               </div>
                               <iframe
                                 title={`Rute pengiriman dari ${p.produsen}`}
@@ -188,7 +232,7 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
                             </>
                           ) : (
                             <div style={{ fontSize: "0.75rem", color: "#94A3B8", fontStyle: "italic", padding: "0.75rem", background: "#F8FAFC", borderRadius: "8px" }}>
-                              Alamat produsen atau toko belum lengkap untuk menampilkan rute.
+                              Alamat produsen atau toko belum disetel untuk menampilkan rute peta.
                             </div>
                           )}
                         </div>
@@ -197,18 +241,27 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
                   )}
                 </div>
 
-                {/* Area aksi / hasil ulasan */}
+                {/* Action Area (Konfirmasi Penerimaan / Ulasan) */}
                 <div style={{ padding: "0 1.1rem 1.1rem" }}>
-                  {p.status === "Menunggu" && (
-                    <button onClick={() => bukaModalKirim(p.id)} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "1px solid #FDE68A", background: "#FFFBEB", color: WARNA_UTAMA_GELAP, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>Tandai Sudah Dikirim</button>
-                  )}
                   {p.status === "Dikirim" && (
-                    <button onClick={() => bukaModalTerima(p.id)} style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>Pesanan Diterima</button>
+                    <button 
+                      onClick={() => bukaModalTerima(p.id)} 
+                      style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
+                    >
+                      Pesanan Diterima & Beri Ulasan
+                    </button>
                   )}
-                  {p.status === "Diterima" && (
-                    <div style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.75rem 0.9rem" }}>
+
+                  {!isSelesai && p.status !== "Dikirim" && p.status !== "Dibatalkan" && (
+                    <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "8px", padding: "0.65rem 0.85rem", fontSize: "0.78rem", color: "#64748B", textAlign: "center" }}>
+                      ⏳ Pesanan sedang disiapkan / diproses oleh <strong>{p.produsen}</strong>.
+                    </div>
+                  )}
+
+                  {isSelesai && (
+                    <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "8px", padding: "0.75rem 0.9rem" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#1E293B" }}>Ulasan Anda</span>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#065F46" }}>✓ Pesanan Telah Diterima</span>
                         {typeof p.rating === "number" && p.rating > 0 && (
                           <div style={{ display: "flex", gap: "1px" }}>
                             {[1, 2, 3, 4, 5].map((n) => <IconStarSmall key={n} filled={n <= (p.rating || 0)} />)}
@@ -216,9 +269,9 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
                         )}
                       </div>
                       {p.keteranganUlasan ? (
-                        <p style={{ fontSize: "0.78rem", color: "#475569", margin: 0 }}>{p.keteranganUlasan}</p>
+                        <p style={{ fontSize: "0.78rem", color: "#047857", margin: 0 }}>"{p.keteranganUlasan}"</p>
                       ) : (
-                        <p style={{ fontSize: "0.78rem", color: "#94A3B8", margin: 0, fontStyle: "italic" }}>Belum ada keterangan ulasan.</p>
+                        <p style={{ fontSize: "0.75rem", color: "#059669", margin: 0, fontStyle: "italic" }}>Barang telah masuk gudang toko.</p>
                       )}
                       {p.fotoUlasan && (
                         <img src={p.fotoUlasan} alt="Foto ulasan" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "6px", marginTop: "0.5rem" }} />
@@ -232,35 +285,22 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
         </div>
       )}
 
-      {/* MODAL: Tandai Sudah Dikirim */}
-      {modalKirimId && (
-        <div style={overlayStyle} onClick={() => setModalKirimId(null)}>
-          <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setModalKirimId(null)} style={closeBtnStyle}><IconX /></button>
-            <div style={{ fontWeight: 700, fontSize: "1rem", color: "#1E293B", marginBottom: "0.9rem" }}>Tandai Pesanan Sudah Dikirim</div>
-            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Nomor Resi (opsional)</label>
-            <input value={noResiInput} onChange={(e) => setNoResiInput(e.target.value)} placeholder="Contoh: JNE0012345678" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.85rem", boxSizing: "border-box", marginBottom: "1rem" }} />
-            <button onClick={kirimTandaiDikirim} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>Konfirmasi Dikirim</button>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Pesanan Diterima → grading + rating/ulasan */}
+      {/* MODAL: Pesanan Diterima */}
       {modalTerimaId && (
-        <div style={overlayStyle} onClick={() => setModalTerimaId(null)}>
+        <div style={overlayStyle} onClick={() => !submitting && setModalTerimaId(null)}>
           <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setModalTerimaId(null)} style={closeBtnStyle}><IconX /></button>
-            <div style={{ fontWeight: 700, fontSize: "1rem", color: "#1E293B", marginBottom: "0.2rem" }}>Konfirmasi Pesanan Diterima</div>
-            <p style={{ fontSize: "0.78rem", color: "#64748B", marginTop: 0, marginBottom: "1rem" }}>Nilai kualitas barang & beri ulasan untuk produsen.</p>
+            <button disabled={submitting} onClick={() => setModalTerimaId(null)} style={closeBtnStyle}><IconX /></button>
+            <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#1E293B", marginBottom: "0.2rem" }}>Konfirmasi Pesanan Diterima</div>
+            <p style={{ fontSize: "0.78rem", color: "#64748B", marginTop: 0, marginBottom: "1rem" }}>Berikan rating & ulasan kualitas komoditas dari produsen.</p>
 
             <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Grade Kualitas Barang *</label>
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.1rem" }}>
               {(["A", "B", "C"] as Grade[]).map((g) => (
-                <button key={g} type="button" onClick={() => setGradeInput(g)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: gradeInput === g ? `2px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0", background: gradeInput === g ? "#FFFBEB" : "white", color: gradeInput === g ? WARNA_UTAMA_GELAP : "#64748B", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>{g}</button>
+                <button key={g} type="button" onClick={() => setGradeInput(g)} style={{ flex: 1, padding: "0.5rem", borderRadius: "6px", border: gradeInput === g ? `2px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0", background: gradeInput === g ? "#FFFBEB" : "white", color: gradeInput === g ? WARNA_UTAMA_GELAP : "#64748B", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>Grade {g}</button>
               ))}
             </div>
 
-            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Rating Produk</label>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Rating Produsen *</label>
             <div style={{ display: "flex", gap: "0.3rem", marginBottom: "1rem" }}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} type="button" onClick={() => setRatingInput(n)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -269,7 +309,7 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
               ))}
             </div>
 
-            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Foto Produk (opsional)</label>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Foto Bukti Penerimaan (opsional)</label>
             <div onClick={() => fileUlasanRef.current?.click()} style={{ border: `1.5px dashed ${WARNA_UTAMA}`, background: "#FFFBEB", borderRadius: "10px", height: "90px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", marginBottom: "1rem" }}>
               {fotoUlasanInput ? (
                 <img src={fotoUlasanInput} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -282,10 +322,12 @@ export default function PelacakanPesanan({ pembelianList, tandaiDikirim, terimaP
             </div>
             <input ref={fileUlasanRef} type="file" accept="image/*" onChange={handleFotoUlasanChange} style={{ display: "none" }} />
 
-            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Keterangan</label>
-            <textarea value={keteranganInput} onChange={(e) => setKeteranganInput(e.target.value)} placeholder="Ceritakan kualitas & kesesuaian barang yang diterima..." rows={3} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.85rem", boxSizing: "border-box", marginBottom: "1.1rem", resize: "vertical", fontFamily: "inherit" }} />
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: "0.4rem" }}>Ulasan & Catatan Kualitas</label>
+            <textarea value={keteranganInput} onChange={(e) => setKeteranganInput(e.target.value)} placeholder="Ceritakan kualitas & kesesuaian komoditas yang diterima..." rows={3} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.85rem", boxSizing: "border-box", marginBottom: "1.1rem", resize: "vertical", fontFamily: "inherit" }} />
 
-            <button onClick={kirimTerimaPesanan} style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>Konfirmasi Pesanan Diterima</button>
+            <button disabled={submitting} onClick={kirimTerimaPesanan} style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: submitting ? "#CBD5E1" : WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: submitting ? "not-allowed" : "pointer" }}>
+              {submitting ? "Memproses..." : "Konfirmasi & Selesaikan Pesanan"}
+            </button>
           </div>
         </div>
       )}

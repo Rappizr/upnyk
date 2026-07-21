@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone, Send, CheckCircle2, ShieldAlert, HelpCircle, Clock } from "lucide-react";
+import { supabase } from "@/lib/db";
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -29,11 +30,13 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 export default function KontakMitraPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
     namaPelapor: '',
-    rolePengguna: 'produsen',
+    rolePengguna: 'Produsen Hulu',
     kontak: '',
-    jenisLaporan: 'bantuan_sistem',
+    jenisLaporan: 'Kendala Teknis',
     pesan: ''
   });
 
@@ -43,13 +46,60 @@ export default function KontakMitraPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // PROSES SIMPAN ADUAN SINKRON KE TABEL `pengaduan` SUPABASE
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormSubmitted(true);
-    setTimeout(() => {
-      setFormSubmitted(false);
-      setFormData({ namaPelapor: '', rolePengguna: 'produsen', kontak: '', jenisLaporan: 'bantuan_sistem', pesan: '' });
-    }, 5000);
+    if (submitting) return;
+
+    setSubmitting(true);
+
+    try {
+      // Ambil user auth jika pelapor sudah login
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Mapping Jenis Laporan ke Kategori DB yang Sesuai
+      let kategoriMapped = "Lainnya";
+      if (formData.jenisLaporan === "manipulasi_harga" || formData.jenisLaporan === "Manipulasi Harga") {
+        kategoriMapped = "Manipulasi Harga";
+      } else if (formData.jenisLaporan === "bantuan_sistem" || formData.jenisLaporan === "Kendala Teknis") {
+        kategoriMapped = "Kendala Teknis";
+      } else if (formData.jenisLaporan === "kendala_wallet" || formData.jenisLaporan === "Sengketa Transaksi") {
+        kategoriMapped = "Sengketa Transaksi";
+      }
+
+      // Insert ke tabel `pengaduan` Supabase
+      const { error } = await supabase
+        .from("pengaduan")
+        .insert({
+          profile_id: user?.id || null,
+          pelapor: formData.namaPelapor,
+          role: formData.rolePengguna,
+          kontak: formData.kontak,
+          kategori: kategoriMapped,
+          deskripsi: formData.pesan,
+          status: "Baru"
+        });
+
+      if (error) {
+        console.error("Gagal mengirim aduan:", error);
+        alert(`Gagal mengirim laporan: ${error.message}`);
+        setSubmitting(false);
+        return;
+      }
+
+      // Berhasil
+      setFormSubmitted(true);
+      setTimeout(() => {
+        setFormSubmitted(false);
+        setFormData({ namaPelapor: '', rolePengguna: 'Produsen Hulu', kontak: '', jenisLaporan: 'Kendala Teknis', pesan: '' });
+      }, 5000);
+
+    } catch (err) {
+      console.error("System error submit pengaduan:", err);
+      alert("Terjadi kesalahan sistem saat mengirim aduan.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -77,7 +127,7 @@ export default function KontakMitraPage() {
         .contact-card:hover { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.08); transform: translateY(-3px); }
         .form-input {
           width: 100%; padding: 0.85rem 1rem; border: 1px solid #E2E8F0; border-radius: 0.75rem; font-size: 0.95rem;
-          background: #F8FAFC; outline: none; transition: all 0.3s ease; box-sizing: border-box;
+          background: #F8FAFC; outline: none; transition: all 0.3s ease; box-sizing: border-box; color: #1E293B;
         }
         .form-input:focus { border-color: #059669; background: #ffffff; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1); }
         .submit-btn {
@@ -240,41 +290,41 @@ export default function KontakMitraPage() {
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
                   <div>
-                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Nama Pengguna / Pelapor</label>
+                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Nama Pengguna / Pelapor *</label>
                     <input type="text" required placeholder="Masukkan nama akun Anda" className="form-input" value={formData.namaPelapor} onChange={(e) => setFormData({...formData, namaPelapor: e.target.value})} />
                   </div>
 
                   <div className="form-row-mobile" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                     <div>
-                      <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Role Akun Anda</label>
+                      <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Role Akun Anda *</label>
                       <select className="form-input" value={formData.rolePengguna} onChange={(e) => setFormData({...formData, rolePengguna: e.target.value})}>
-                        <option value="produsen">Produsen Hulu</option>
-                        <option value="admin_toko">Admin Toko / Koperasi</option>
-                        <option value="pembeli">Pembeli (B2B/B2C)</option>
+                        <option value="Produsen Hulu">Produsen Hulu</option>
+                        <option value="Admin Toko">Admin Toko / Koperasi</option>
+                        <option value="Pembeli">Pembeli (B2B/B2C)</option>
                       </select>
                     </div>
                     <div>
-                      <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>No. HP / Kontak Terkait</label>
+                      <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>No. HP / Kontak Terkait *</label>
                       <input type="tel" required placeholder="Contoh: 0812345..." className="form-input" value={formData.kontak} onChange={(e) => setFormData({...formData, kontak: e.target.value})} />
                     </div>
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Kategori Masalah / Aduan</label>
+                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Kategori Masalah / Aduan *</label>
                     <select className="form-input" value={formData.jenisLaporan} onChange={(e) => setFormData({...formData, jenisLaporan: e.target.value})}>
-                      <option value="bantuan_sistem">Kendala Teknis Aplikasi &amp; Sistem</option>
-                      <option value="manipulasi_harga">Pelanggaran Indeks Harga Adil (Kecurangan Toko)</option>
-                      <option value="kendala_wallet">Masalah Pencairan Saldo Dana / Wallet</option>
+                      <option value="Kendala Teknis">Kendala Teknis Aplikasi &amp; Sistem</option>
+                      <option value="Manipulasi Harga">Pelanggaran Indeks Harga Adil (Kecurangan Toko)</option>
+                      <option value="Sengketa Transaksi">Masalah Pencairan Saldo Dana / Wallet</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Deskripsi Masalah Kronologis</label>
+                    <label className="form-label" style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Deskripsi Masalah Kronologis *</label>
                     <textarea rows={4} required placeholder="Tuliskan detail keluhan, nomor invoice transaksi, atau nama toko koperasi yang ingin dilaporkan..." className="form-input" style={{ resize: "none" }} value={formData.pesan} onChange={(e) => setFormData({...formData, pesan: e.target.value})}></textarea>
                   </div>
 
-                  <button type="submit" className="submit-btn" style={{ marginTop: "0.5rem", background: formData.jenisLaporan === 'manipulasi_harga' ? '#EF4444' : '#059669' }}>
-                    <Send size={16} /> Kirim Tiket Aduan Ke Admin
+                  <button type="submit" disabled={submitting} className="submit-btn" style={{ marginTop: "0.5rem", background: formData.jenisLaporan === 'Manipulasi Harga' ? '#EF4444' : '#059669', opacity: submitting ? 0.7 : 1 }}>
+                    <Send size={16} /> {submitting ? "Mengirim Aduan..." : "Kirim Tiket Aduan Ke Admin"}
                   </button>
                 </form>
               )}

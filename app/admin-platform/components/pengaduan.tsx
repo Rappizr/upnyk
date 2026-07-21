@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/db";
 
-type KategoriPengaduan = "Manipulasi Harga" | "Kendala Teknis" | "Sengketa Transaksi" | "Lainnya";
+export type KategoriPengaduan = "Manipulasi Harga" | "Kendala Teknis" | "Sengketa Transaksi" | "Lainnya";
 
-interface Pengaduan {
+export interface Pengaduan {
   id: string;
   pelapor: string;
   role: string;
@@ -15,16 +16,12 @@ interface Pengaduan {
   tanggal: string;
 }
 
-interface Props {
-  pengaduanList: Pengaduan[];
-  updateStatusPengaduan: (id: string, status: Pengaduan["status"]) => void;
-}
-
 const statusStyle: Record<Pengaduan["status"], { bg: string; color: string }> = {
   Baru: { bg: "#FEF3C7", color: "#92400E" },
   Diproses: { bg: "#E0F2FE", color: "#075985" },
   Selesai: { bg: "#D1FAE5", color: "#065F46" },
 };
+
 const kategoriStyle: Record<KategoriPengaduan, { bg: string; color: string }> = {
   "Manipulasi Harga": { bg: "#FEE2E2", color: "#991B1B" },
   "Kendala Teknis": { bg: "#EFF6FF", color: "#2563EB" },
@@ -38,14 +35,73 @@ const IconFlag = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="non
 const IconAlertTriangle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const IconCheck = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>;
 
-export default function PengaduanPage({ pengaduanList = [], updateStatusPengaduan }: Props) {
+export default function PengaduanPage() {
+  const [pengaduanList, setPengaduanList] = useState<Pengaduan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [kategoriFilter, setKategoriFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pengaduan | null>(null);
 
+  // FETCH DATA PENGADUAN LANGSUNG DARI SUPABASE
+  const muatDataPengaduan = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("pengaduan")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Gagal membaca pengaduan:", error.message || error);
+        setLoading(false);
+        return;
+      }
+
+      const mapped: Pengaduan[] = (data || []).map((p: any) => ({
+        id: p.id,
+        pelapor: p.pelapor || "Pengguna",
+        role: p.role || "Pembeli",
+        kontak: p.kontak || "-",
+        kategori: (p.kategori as KategoriPengaduan) || "Lainnya",
+        deskripsi: p.deskripsi || "",
+        status: (p.status as Pengaduan["status"]) || "Baru",
+        tanggal: p.created_at ? new Date(p.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-",
+      }));
+
+      setPengaduanList(mapped);
+    } catch (err) {
+      console.error("Error muatDataPengaduan:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    muatDataPengaduan();
+  }, [muatDataPengaduan]);
+
+  // UPDATE STATUS TIKET DI SUPABASE
+  async function updateStatusPengaduan(id: string, status: Pengaduan["status"]) {
+    const { error } = await supabase
+      .from("pengaduan")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      alert(`Gagal memperbarui status: ${error.message}`);
+    } else {
+      setPengaduanList((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status } : p))
+      );
+      if (detail && detail.id === id) {
+        setDetail((d) => (d ? { ...d, status } : null));
+      }
+    }
+  }
+
   const filtered = useMemo(() => {
-    return (pengaduanList || []).filter((p) => {
+    return pengaduanList.filter((p) => {
       const q = search.trim().toLowerCase();
       const matchSearch = !q || p.pelapor?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q) || p.deskripsi?.toLowerCase().includes(q);
       const matchKategori = !kategoriFilter || p.kategori === kategoriFilter;
@@ -54,102 +110,40 @@ export default function PengaduanPage({ pengaduanList = [], updateStatusPengadua
     });
   }, [pengaduanList, search, kategoriFilter, statusFilter]);
 
-  const totalBaru = useMemo(() => (pengaduanList || []).filter((p) => p.status === "Baru").length, [pengaduanList]);
-  const totalManipulasiHarga = useMemo(() => (pengaduanList || []).filter((p) => p.kategori === "Manipulasi Harga" && p.status !== "Selesai").length, [pengaduanList]);
-  const totalSelesai = useMemo(() => (pengaduanList || []).filter((p) => p.status === "Selesai").length, [pengaduanList]);
+  const totalBaru = useMemo(() => pengaduanList.filter((p) => p.status === "Baru").length, [pengaduanList]);
+  const totalManipulasiHarga = useMemo(() => pengaduanList.filter((p) => p.kategori === "Manipulasi Harga" && p.status !== "Selesai").length, [pengaduanList]);
+  const totalSelesai = useMemo(() => pengaduanList.filter((p) => p.status === "Selesai").length, [pengaduanList]);
 
-  function updateDetail(id: string, status: Pengaduan["status"]) {
-    setDetail((d) => (d && d.id === id ? { ...d, status } : d));
+  if (loading) {
+    return (
+      <div style={{ padding: "3rem", textAlign: "center", color: "#64748B", fontFamily: "sans-serif" }}>
+        Memuat Laporan Pengaduan...
+      </div>
+    );
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          main h1 {
-            font-size: 1.15rem !important;
-          }
-          main p {
-            font-size: 0.62rem !important;
-            line-height: 1.2 !important;
-          }
-          
-          /* FORCE GRID METRIK ATAS 3 KOLOM */
-          .ticket-stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .ticket-stat-card {
-            padding: 0.4rem !important;
-            border-radius: 6px !important;
-            gap: 0.4rem !important;
-          }
-          .ticket-stat-card > div:first-child {
-            padding: 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .ticket-stat-card > div:first-child svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .ticket-stat-card > div:last-child > div:first-child {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          .ticket-stat-card > div:last-child > div:last-child {
-            font-size: 0.48rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          
-          .ticket-filter-bar {
-            padding: 0.6rem !important;
-            border-radius: 8px !important;
-            gap: 0.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .ticket-filter-bar input, .ticket-filter-bar select {
-            padding: 0.35rem 0.5rem !important;
-            font-size: 0.7rem !important;
-            border-radius: 6px !important;
-          }
-          .ticket-filter-bar input {
-            padding-left: 1.75rem !important;
-          }
-          
-          .ticket-row-card {
-            padding: 0.6rem 0.75rem !important;
-            border-radius: 8px !important;
-          }
-          .ticket-row-header span:nth-child(1) {
-            font-size: 0.75rem !important;
-          }
-          .ticket-row-header span:nth-child(2) {
-            font-size: 0.68rem !important;
-          }
-          .ticket-row-header span:nth-child(3) {
-            padding: 0.1rem 0.3rem !important;
-            font-size: 0.52rem !important;
-          }
-          .ticket-row-card p {
-            font-size: 0.72rem !important;
-            line-height: 1.3 !important;
-          }
-          .ticket-status-badge-right {
-            padding: 0.15rem 0.4rem !important;
-            font-size: 0.55rem !important;
-          }
+          main { padding: 0.5rem 0.25rem !important; }
+          main h1 { font-size: 1.15rem !important; }
+          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
+          .ticket-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
+          .ticket-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
+          .ticket-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
+          .ticket-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
+          .ticket-filter-bar { padding: 0.6rem !important; border-radius: 8px !important; gap: 0.5rem !important; margin-bottom: 1rem !important; }
+          .ticket-filter-bar input, .ticket-filter-bar select { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
+          .ticket-row-card { padding: 0.6rem 0.75rem !important; border-radius: 8px !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Pengaduan</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Tiket bantuan dari Pusat Bantuan pengguna — termasuk laporan indikasi manipulasi Indeks Harga Adil oleh Admin Toko.</p>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
+          Tiket bantuan pengguna — termasuk laporan indikasi manipulasi Indeks Harga Adil oleh Admin Toko.
+        </p>
       </div>
 
       <div className="ticket-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -170,7 +164,7 @@ export default function PengaduanPage({ pengaduanList = [], updateStatusPengadua
       <div className="ticket-filter-bar" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari pelapor, ID, atau isi aduan..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari pelapor, ID, atau isi aduan..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
         </div>
         <select value={kategoriFilter} onChange={(e) => setKategoriFilter(e.target.value)} style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", color: "#334155" }}>
           <option value="">Semua Kategori</option>
@@ -189,7 +183,7 @@ export default function PengaduanPage({ pengaduanList = [], updateStatusPengadua
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {filtered.length === 0 && (
-          <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Tidak ada tiket yang cocok.</div>
+          <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada tiket pengaduan tercatat.</div>
         )}
         {filtered.map((p) => {
           const s = statusStyle[p.status || "Baru"];
@@ -198,28 +192,29 @@ export default function PengaduanPage({ pengaduanList = [], updateStatusPengadua
             <div key={p.id} onClick={() => setDetail(p)} className="ticket-row-card" style={{ background: "white", border: p.kategori === "Manipulasi Harga" ? "1px solid #FCA5A5" : "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem 1.25rem", cursor: "pointer" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="ticket-row-header" style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.9rem" }}>{p.id}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.85rem" }}>#{p.id.slice(0, 8).toUpperCase()}</span>
                     <span style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pelapor} ({p.role})</span>
                     <span style={{ background: k.bg, color: k.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>{p.kategori}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: "0.82rem", color: "#334155", lineHeight: 1.5 }}>{p.deskripsi}</p>
                 </div>
-                <span className="ticket-status-badge-right" style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
+                <span style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
               </div>
             </div>
           );
         })}
       </div>
 
+      {/* DETAIL MODAL */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "460px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{detail.id}</h2>
+              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>#{detail.id.slice(0, 8).toUpperCase()}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
-            <p style={{ margin: "0 0 1.1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>{detail.tanggal}</p>
+            <p style={{ margin: "0 0 1.1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>Diposting: {detail.tanggal}</p>
 
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
               <span style={{ background: kategoriStyle[detail.kategori || "Lainnya"].bg, color: kategoriStyle[detail.kategori || "Lainnya"].color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px" }}>{detail.kategori}</span>
@@ -244,9 +239,9 @@ export default function PengaduanPage({ pengaduanList = [], updateStatusPengadua
             {detail.status !== "Selesai" && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 {detail.status === "Baru" && (
-                  <button onClick={() => { updateStatusPengaduan(detail.id, "Diproses"); updateDetail(detail.id, "Diproses"); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Tandai Diproses</button>
+                  <button onClick={() => updateStatusPengaduan(detail.id, "Diproses")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Tandai Diproses</button>
                 )}
-                <button onClick={() => { updateStatusPengaduan(detail.id, "Selesai"); updateDetail(detail.id, "Selesai"); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tandai Selesai</button>
+                <button onClick={() => updateStatusPengaduan(detail.id, "Selesai")} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tandai Selesai</button>
               </div>
             )}
             {detail.status === "Selesai" && (
