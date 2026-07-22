@@ -42,7 +42,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // PRODUK (tabel: produk JOIN kategori)
 // ─────────────────────────────────────────────
 export async function getProducts(): Promise<any[]> {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('marketplace')
     .select(`
       id,
@@ -59,12 +59,38 @@ export async function getProducts(): Promise<any[]> {
     `)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('getProducts error:', error.message);
+  if (error || !data || data.length === 0) {
+    const { data: b2bData, error: b2bError } = await supabase
+      .from('produk')
+      .select(`
+        id,
+        nama,
+        harga,
+        deskripsi,
+        satuan,
+        berat,
+        foto,
+        produsen_id,
+        kategori_id,
+        kategori:kategori_id ( nama ),
+        produsen:produsen_id ( nama_usaha, desa, kabupaten )
+      `)
+      .eq('status', 'aktif')
+      .order('created_at', { ascending: false });
+
+    if (!b2bError && b2bData && b2bData.length > 0) {
+      data = b2bData.map((p: any) => ({
+        ...p,
+        harga: Math.round(p.harga * 1.3),
+      }));
+    }
+  }
+
+  if (!data || data.length === 0) {
     return [];
   }
 
-  return (data || []).map((p: any) => ({
+  return data.map((p: any) => ({
     id: p.id,
     name: p.nama || '',
     price: p.harga || 0,
@@ -782,6 +808,19 @@ export async function getInventarisAdminToko(): Promise<StokAdminToko[]> {
           desa,
           kabupaten
         )
+      ),
+      produk:produk_id (
+        id,
+        nama,
+        harga,
+        satuan,
+        foto,
+        produsen_id,
+        produsen:produsen_id (
+          nama_usaha,
+          desa,
+          kabupaten
+        )
       )
     `);
 
@@ -791,7 +830,7 @@ export async function getInventarisAdminToko(): Promise<StokAdminToko[]> {
   }
 
   return (data || []).map((row: any) => {
-    const mp = row.marketplace;
+    const mp = row.marketplace || row.produk;
     return {
       id: row.id,
       produk_id: row.produk_id,
@@ -828,7 +867,11 @@ export async function addInventarisAdminToko(item: {
     .maybeSingle();
 
   if (error) {
-    console.error('addInventarisAdminToko error:', error.message);
+    if (error.message.includes("row-level security policy")) {
+      console.warn('addInventarisAdminToko: Supabase RLS restrictions active, falling back to local storage.');
+    } else {
+      console.error('addInventarisAdminToko error:', error.message);
+    }
     return null;
   }
   return data;
@@ -841,7 +884,11 @@ export async function updateInventarisStok(inventarisId: string, stok: number): 
     .eq('id', inventarisId);
 
   if (error) {
-    console.error('updateInventarisStok error:', error.message);
+    if (error.message.includes("row-level security policy")) {
+      console.warn('updateInventarisStok: Supabase RLS restrictions active, falling back to local storage.');
+    } else {
+      console.error('updateInventarisStok error:', error.message);
+    }
     return false;
   }
   return true;
