@@ -23,13 +23,6 @@ interface Props {
   updateStok: (id: string, patch: Partial<StokToko>) => void;
 }
 
-const gradeStyle: Record<Grade, { bg: string; color: string }> = {
-  A: { bg: "#D1FAE5", color: "#065F46" },
-  B: { bg: "#FEF3C7", color: "#92400E" },
-  C: { bg: "#FEE2E2", color: "#991B1B" },
-  "Belum Dinilai": { bg: "#F1F5F9", color: "#475569" },
-};
-
 const IconTag = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.5 3H4a1 1 0 0 0-1 1v5.5a2 2 0 0 0 .83 1.5l9.58 9.59a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.83Z"></path></svg>;
 const IconEye = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
@@ -179,12 +172,10 @@ export default function EtalasePenjualan({ stokList = [], updateStok }: Props) {
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>Belum ada produk di gudang. Isi dulu lewat Inventaris & Grading.</div>
         )}
         {stokList.map((s) => {
-          const g = gradeStyle[s.grade || "Belum Dinilai"];
           const hargaFinal = hargaSetelahDiskon(s.hargaJual, s.diskonPersen);
           return (
             <div key={s.id} className="showcase-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem" }}>
-              <div className="showcase-badge-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
-                <span style={{ background: g.bg, color: g.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>Grade {s.grade}</span>
+              <div className="showcase-badge-container" style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-start", marginBottom: "0.5rem" }}>
                 <span style={{ background: s.live ? "#D1FAE5" : "#F1F5F9", color: s.live ? "#065F46" : "#64748B", fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.55rem", borderRadius: "999px" }}>{s.live ? "Tayang" : "Draft"}</span>
               </div>
               <div className="showcase-title-text" style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.15rem" }}>{s.nama}</div>

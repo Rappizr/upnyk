@@ -96,7 +96,7 @@ const menuGroups: MenuGroupDef[] = [
     { key: "pelacakan", label: "Pelacakan Pesanan", icon: IconTruck },
   ] },
   { title: "Manajemen Stok", items: [
-    { key: "inventaris", label: "Inventaris & Grading", icon: IconBox },
+    { key: "inventaris", label: "Inventaris", icon: IconBox },
     { key: "restock", label: "Smart Restock", icon: IconRefresh },
   ] },
   { title: "Penjualan", items: [{ key: "etalase", label: "Etalase Penjualan", icon: IconTag }] },
@@ -115,7 +115,7 @@ const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   marketplace: "Marketplace Produsen",
   pelacakan: "Pelacakan Pesanan",
-  inventaris: "Inventaris & Grading",
+  inventaris: "Inventaris",
   restock: "Smart Restock",
   etalase: "Etalase Penjualan",
   laporan: "Buku Kas",
@@ -174,20 +174,36 @@ export default function AdminTokoDashboard() {
   const fetchInventaris = useCallback(async () => {
     try {
       const dbItems = await getInventarisAdminToko();
-      const mapped = dbItems.map((item) => {
+      
+      let localInv: any[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const stored = localStorage.getItem("admin_inventaris_list");
+          if (stored) localInv = JSON.parse(stored);
+        } catch {
+          console.error("Gagal membaca localStorage admin_inventaris_list");
+        }
+      }
+
+      const mergedMap = new Map();
+
+      localInv.forEach((item) => {
+        mergedMap.set(item.produk_id || item.id, item);
+      });
+
+      dbItems.forEach((item) => {
         const metaKey = `inventaris_meta_${item.produk_id}`;
         let localMeta: Partial<StokToko> = {};
         if (typeof window !== "undefined") {
           try {
             const stored = localStorage.getItem(metaKey);
             if (stored) localMeta = JSON.parse(stored);
-          } catch {
-            console.error("Gagal membaca localStorage metadata");
-          }
+          } catch {}
         }
         
-        return {
+        const mappedItem = {
           id: item.id,
+          produk_id: item.produk_id,
           nama: item.nama,
           jumlah: item.jumlah,
           satuan: item.satuan,
@@ -198,9 +214,18 @@ export default function AdminTokoDashboard() {
           grade: localMeta.grade || item.grade || "Belum Dinilai",
           asalProdusen: item.asalProdusen,
           live: localMeta.live !== undefined ? localMeta.live : item.live,
+          foto: item.foto || null,
         };
+        
+        mergedMap.set(item.produk_id || item.id, mappedItem);
       });
-      setStokList(mapped);
+
+      const finalItems = Array.from(mergedMap.values());
+      setStokList(finalItems);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_inventaris_list", JSON.stringify(finalItems));
+      }
     } catch (err) {
       console.error("fetchInventaris error:", err);
     }
@@ -236,6 +261,93 @@ export default function AdminTokoDashboard() {
       console.error("fetchProdusenList error:", e);
     }
   }, []);
+
+  const sinkronisasiBarangDiterima = useCallback(async () => {
+    const diterimaList = pembelianList.filter((p) => p.status === "Diterima");
+    if (diterimaList.length === 0) return;
+
+    let updatedDb = false;
+    for (const po of diterimaList) {
+      // Periksa apakah item ini sudah ada di stokList berdasarkan nama
+      const inStok = stokList.some((s) => s.nama.toLowerCase() === po.item.toLowerCase());
+      if (!inStok) {
+        let produkId = "";
+        try {
+          const { data: mpProd } = await supabase
+            .from("marketplace")
+            .select("id")
+            .eq("produsen_id", po.produsenId)
+            .ilike("nama", `%${po.item}%`)
+            .limit(1)
+            .maybeSingle();
+
+          if (mpProd) {
+            produkId = mpProd.id;
+          } else {
+            const { data: b2bProd } = await supabase
+              .from("produk")
+              .select("*")
+              .eq("produsen_id", po.produsenId)
+              .ilike("nama", `%${po.item}%`)
+              .limit(1)
+              .maybeSingle();
+
+            let targetB2b = b2bProd;
+            if (!targetB2b) {
+              const { data: fallbackB2b } = await supabase
+                .from("produk")
+                .select("*")
+                .eq("produsen_id", po.produsenId)
+                .limit(1)
+                .maybeSingle();
+              targetB2b = fallbackB2b;
+            }
+
+            if (targetB2b) {
+              const b2cPrice = Math.round(targetB2b.harga * 1.3);
+              const { data: newB2c, error: createError } = await supabase
+                .from("marketplace")
+                .insert({
+                  nama: targetB2b.nama,
+                  harga: b2cPrice,
+                  deskripsi: targetB2b.deskripsi || "",
+                  satuan: targetB2b.satuan || "kg",
+                  berat: targetB2b.berat || 0,
+                  foto: targetB2b.foto || null,
+                  kategori_id: targetB2b.kategori_id || null,
+                  produsen_id: targetB2b.produsen_id || null,
+                })
+                .select("id")
+                .single();
+
+              if (!createError && newB2c) {
+                produkId = newB2c.id;
+              }
+            }
+          }
+
+          if (produkId) {
+            await addInventarisAdminToko({
+              produk_id: produkId,
+              stok: po.jumlah,
+              stok_minimum: 10,
+            });
+            updatedDb = true;
+          }
+        } catch (err) {
+          console.error("Gagal sinkronisasi produk diterima:", err);
+        }
+      }
+    }
+
+    if (updatedDb) {
+      await fetchInventaris();
+    }
+  }, [pembelianList, stokList, fetchInventaris]);
+
+  useEffect(() => {
+    sinkronisasiBarangDiterima();
+  }, [stokList, sinkronisasiBarangDiterima]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -278,52 +390,90 @@ export default function AdminTokoDashboard() {
     const po = pembelianList.find((p) => p.id === id);
     if (!po) return;
 
-    let produkId = "";
+    let targetB2b = null;
     try {
-      const { data: mpProd } = await supabase
-        .from("marketplace")
-        .select("id")
+      const { data: b2bProd } = await supabase
+        .from("produk")
+        .select("*")
         .eq("produsen_id", po.produsenId)
         .ilike("nama", `%${po.item}%`)
         .limit(1)
         .maybeSingle();
-
-      if (mpProd) {
-        produkId = mpProd.id;
-      } else {
-        const { data: fallbackProd } = await supabase
-          .from("marketplace")
-          .select("id")
+      
+      targetB2b = b2bProd;
+      if (!targetB2b) {
+        const { data: fallbackB2b } = await supabase
+          .from("produk")
+          .select("*")
           .eq("produsen_id", po.produsenId)
           .limit(1)
           .maybeSingle();
-        if (fallbackProd) produkId = fallbackProd.id;
+        targetB2b = fallbackB2b;
       }
     } catch (err) {
       console.error("Gagal mencocokkan produk B2B:", err);
     }
 
-    if (produkId) {
-      const existingStokItem = stokList.find((s) => s.produk_id === produkId || s.nama === po.item);
-      const newJumlah = (existingStokItem ? existingStokItem.jumlah : 0) + po.jumlah;
+    const matchedB2bId = targetB2b?.id || `local-${Date.now()}`;
+    const matchedB2bNama = targetB2b?.nama || po.item;
+    const matchedB2bHarga = targetB2b?.harga || po.hargaSatuan;
+    const matchedB2bSatuan = targetB2b?.satuan || po.satuan || "kg";
+    const matchedB2bFoto = targetB2b?.foto || null;
 
+    const asalProdusen = po.produsen || 'Produsen Lokal';
+
+    let localInv: any[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        localInv = JSON.parse(localStorage.getItem("admin_inventaris_list") || "[]");
+      } catch {}
+    }
+
+    const existingIndex = localInv.findIndex((s) => s.produk_id === matchedB2bId || s.nama === po.item);
+    let updatedItem: any;
+    if (existingIndex > -1) {
+      localInv[existingIndex].jumlah += po.jumlah;
+      localInv[existingIndex].grade = grade;
+      updatedItem = localInv[existingIndex];
+    } else {
+      updatedItem = {
+        id: `inv-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        produk_id: matchedB2bId,
+        nama: matchedB2bNama,
+        jumlah: po.jumlah,
+        satuan: matchedB2bSatuan,
+        batasMinimum: 10,
+        hargaBeli: matchedB2bHarga,
+        hargaJual: Math.round(matchedB2bHarga * 1.3),
+        diskonPersen: 0,
+        grade: grade,
+        asalProdusen: asalProdusen,
+        live: false,
+        foto: matchedB2bFoto
+      };
+      localInv.push(updatedItem);
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("admin_inventaris_list", JSON.stringify(localInv));
+      
+      const metaKey = `inventaris_meta_${matchedB2bId}`;
+      try {
+        const stored = localStorage.getItem(metaKey) || "{}";
+        const meta = JSON.parse(stored);
+        meta.grade = grade;
+        localStorage.setItem(metaKey, JSON.stringify(meta));
+      } catch {}
+    }
+
+    try {
       await addInventarisAdminToko({
-        produk_id: produkId,
-        stok: newJumlah,
-        stok_minimum: existingStokItem ? existingStokItem.batasMinimum : 10,
+        produk_id: matchedB2bId,
+        stok: updatedItem.jumlah,
+        stok_minimum: updatedItem.batasMinimum
       });
-
-      const metaKey = `inventaris_meta_${produkId}`;
-      if (typeof window !== "undefined") {
-        try {
-          const stored = localStorage.getItem(metaKey) || "{}";
-          const meta = JSON.parse(stored);
-          meta.grade = grade;
-          localStorage.setItem(metaKey, JSON.stringify(meta));
-        } catch {
-          // Metadata save error
-        }
-      }
+    } catch (dbErr) {
+      console.warn("Background DB sync ignored:", dbErr);
     }
 
     setPembelianList((prev) => {
@@ -338,40 +488,40 @@ export default function AdminTokoDashboard() {
   }
 
   async function updateStok(id: string, patch: Partial<StokToko>) {
-    const item = stokList.find((s) => s.id === id);
-    if (!item) return;
-
-    if (patch.jumlah !== undefined) {
-      try {
-        await updateInventarisStok(id, patch.jumlah);
-      } catch (err) {
-        console.warn("Gagal memperbarui stok di database:", err);
+    let updatedList = stokList.map((item) => {
+      if (item.id === id || item.produk_id === id) {
+        const updated = { ...item, ...patch };
+        const metaKey = `inventaris_meta_${item.produk_id || item.id}`;
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem(metaKey) || "{}";
+            const meta = JSON.parse(stored);
+            if (patch.hargaJual !== undefined) meta.hargaJual = patch.hargaJual;
+            if (patch.diskonPersen !== undefined) meta.diskonPersen = patch.diskonPersen;
+            if (patch.live !== undefined) meta.live = patch.live;
+            if (patch.grade !== undefined) meta.grade = patch.grade;
+            if (patch.batasMinimum !== undefined) meta.batasMinimum = patch.batasMinimum;
+            localStorage.setItem(metaKey, JSON.stringify(meta));
+          } catch {}
+        }
+        return updated;
       }
-    }
+      return item;
+    });
 
-    const metaKey = `inventaris_meta_${item.produk_id || item.id}`;
-    let localMeta: Partial<StokToko> = {};
+    setStokList(updatedList);
     if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(metaKey);
-        if (stored) localMeta = JSON.parse(stored);
-      } catch {
-        // Metadata load fail
-      }
-      
-      const newMeta = {
-        ...localMeta,
-        grade: patch.grade !== undefined ? patch.grade : (localMeta.grade || item.grade),
-        hargaJual: patch.hargaJual !== undefined ? patch.hargaJual : (localMeta.hargaJual !== undefined ? localMeta.hargaJual : item.hargaJual),
-        diskonPersen: patch.diskonPersen !== undefined ? patch.diskonPersen : (localMeta.diskonPersen !== undefined ? localMeta.diskonPersen : item.diskonPersen),
-        live: patch.live !== undefined ? patch.live : (localMeta.live !== undefined ? localMeta.live : item.live),
-        batasMinimum: patch.batasMinimum !== undefined ? patch.batasMinimum : (localMeta.batasMinimum !== undefined ? localMeta.batasMinimum : item.batasMinimum),
-      };
-      
-      localStorage.setItem(metaKey, JSON.stringify(newMeta));
+      localStorage.setItem("admin_inventaris_list", JSON.stringify(updatedList));
     }
 
-    setStokList((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    const item = stokList.find((s) => s.id === id);
+    if (item && patch.jumlah !== undefined) {
+      try {
+        await updateInventarisStok(item.id, patch.jumlah);
+      } catch (err) {
+        console.warn("Background DB update ignored:", err);
+      }
+    }
   }
 
   const totalStokNilai = stokList.reduce((s, x) => s + x.jumlah * x.hargaJual, 0);
