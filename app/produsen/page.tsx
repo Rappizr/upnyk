@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "@/lib/db";
 
 import StokKomoditas from "./components/stok-komoditas";
@@ -15,6 +16,15 @@ export interface Ulasan { pembeli: string; rating: number; komentar: string }
 export interface StokItem { id: string; nama: string; jumlah: number; satuan: string; hargaSatuan: number; status: "Aman" | "Menipis" | "Habis"; kategori: string; fotoUrl?: string; ulasan: Ulasan[] }
 export interface Pesanan { id: string; pembeli: string; itemId: string; item: string; jumlah: number; satuan: string; total: number; status: "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan"; tanggal: string; alamatKirim: string; noResi?: string }
 export interface Pengeluaran { id: string; keterangan: string; nominal: number; tanggal: string; kategori: string }
+
+interface ProdukRow {
+  id: string;
+  nama: string;
+  stok: number | null;
+  satuan: string | null;
+  harga: number | null;
+  review?: { rating: number | null; komentar: string | null }[] | null;
+}
 
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconPackage = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
@@ -86,21 +96,23 @@ export default function ProdusenDashboard() {
     if (produsen) {
       const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
       if (produk) {
-        setStokList(produk.map((p: any) => {
+        setStokList((produk as ProdukRow[]).map((p) => {
           const stok = Number(p.stok) || 0;
           return {
             id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "pcs", hargaSatuan: Number(p.harga) || 0,
-            status: stok <= 0 ? "Habis" : stok <= 10 ? "Menipis" : "Aman", kategori: "Komoditas",
-            ulasan: (p.review || []).map((r: any) => ({ pembeli: "Toko Mitra", rating: Number(r.rating) || 0, komentar: r.komentar || "" }))
+            status: stok <= 0 ? "Habis" as const : stok <= 10 ? "Menipis" as const : "Aman" as const, kategori: "Komoditas",
+            ulasan: (p.review || []).map((r) => ({ pembeli: "Toko Mitra", rating: Number(r.rating) || 0, komentar: r.komentar || "" }))
           };
         }));
       }
     }
   }, []);
 
-  useEffect(() => {
-    muatDataDashboard();
-  }, [activeMenu, muatDataDashboard]);
+ useEffect(() => {
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  muatDataDashboard();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [activeMenu]);
 
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
   const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");
@@ -138,8 +150,8 @@ export default function ProdusenDashboard() {
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+           <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, position: "relative" }}>
+              <Image src="/logo.png" alt="Logo PasarNusa" fill style={{ objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Produsen / UMKM</div></div>
           </div>
@@ -177,8 +189,8 @@ export default function ProdusenDashboard() {
             </div>
 
             <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                {profil.fotoUrl ? <Image src={profil.fotoUrl} alt="" fill style={{ objectFit: "cover" }} /> : profil.inisial}
               </div>
               <div className="pn-user-name">
                 <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profil.nama}</div>

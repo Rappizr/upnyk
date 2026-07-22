@@ -34,11 +34,7 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-<<<<<<< HEAD
-  status: "Menunggu" | "Dikirim" | "Diterima";
-=======
-  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
->>>>>>> d40531012e7e01611d8fa70487d3bd65d350af84
+status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
   noResi?: string;
   fotoProduk?: string;
