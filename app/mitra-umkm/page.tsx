@@ -197,6 +197,8 @@ export default function MitraUmkmPage() {
         }
         .mitra-card:hover { transform: translateY(-6px); box-shadow: 0 24px 46px -20px rgba(14,42,27,0.28); border-color: rgba(34,197,94,0.45); }
         .mitra-card:hover::before { opacity: 1; }
+        /* Fix grid blowout: grid items default to min-width:auto, which lets card content push past its column and get cropped by the viewport. */
+        .mitra-grid > div { min-width: 0; }
 
         .filter-chip {
           border: 1px solid ${C.border};
@@ -208,6 +210,7 @@ export default function MitraUmkmPage() {
           border-radius: 99px;
           cursor: pointer;
           transition: all 0.25s ease;
+          white-space: nowrap;
         }
         .filter-chip:hover { border-color: ${C.emerald}; color: ${C.greenDark}; }
         .filter-chip.active { background: ${C.forest}; color: ${C.limeSoft}; border-color: ${C.forest}; }
@@ -217,6 +220,7 @@ export default function MitraUmkmPage() {
         .cta-btn { transition: transform .25s ease, box-shadow .25s ease; }
         .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -10px rgba(163,230,53,0.5); }
 
+        /* ===================== RESPONSIF: TATA LETAK SAMA SEPERTI PC ===================== */
         @media (max-width: 768px) {
           .header-container { padding: 0.5rem !important; }
           .nav-logo-text { font-size: 0.9rem !important; }
@@ -227,19 +231,52 @@ export default function MitraUmkmPage() {
           .hero-eyebrow { font-size: 0.62rem !important; padding: 0.4rem 1rem !important; }
           .hero-title { font-size: 2.1rem !important; line-height: 1.15 !important; }
           .hero-desc { font-size: 0.9rem !important; }
-          .stats-row { grid-template-columns: repeat(3,1fr) !important; gap: 0.55rem !important; }
-          .stat-value { font-size: 1.1rem !important; }
-          .stat-label { font-size: 0.6rem !important; }
-          .main-content { padding: 2.75rem 0.75rem 5rem !important; }
-          .mitra-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
-          .filters-row { flex-wrap: wrap !important; gap: 0.4rem !important; }
-          .toolbar { flex-direction: column !important; align-items: stretch !important; }
-          .search-wrap { width: 100% !important; }
+
+          /* 3 kotak statistik tetap sebaris, hanya diperkecil */
+          .stats-row { grid-template-columns: repeat(3,1fr) !important; gap: 0.4rem !important; }
+          .stats-row > div { padding: 0.65rem 0.4rem !important; border-radius: 0.7rem !important; }
+          .stats-row svg { width: 16px !important; height: 16px !important; margin-bottom: 0.25rem !important; }
+          .stat-value { font-size: 0.95rem !important; }
+          .stat-label { font-size: 0.52rem !important; line-height: 1.15 !important; }
+
+          .main-content { padding: 2rem 0.6rem 4rem !important; }
+
+          /* Toolbar filter + search tetap sebaris, dibuat ringkas */
+          .toolbar { flex-wrap: nowrap !important; gap: 0.4rem !important; margin-bottom: 1.25rem !important; align-items: center !important; }
+          .filters-row { flex-wrap: nowrap !important; gap: 0.3rem !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; flex-shrink: 0 !important; }
+          .filters-row::-webkit-scrollbar { display: none !important; }
+          .filter-chip { padding: 0.4rem 0.65rem !important; font-size: 0.6rem !important; }
+          .search-wrap { width: 34px !important; flex-shrink: 0 !important; }
+          .search-input { padding: 0.5rem !important; padding-left: 2.1rem !important; font-size: 0.7rem !important; }
+          .search-input::placeholder { color: transparent !important; }
+
+          /* 3 kotak mitra tetap sebaris seperti versi PC, dibuat lebih kecil lagi dan gak kepotong */
+          .mitra-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.3rem !important; }
+          .mitra-card { padding: 0.45rem !important; border-radius: 0.55rem !important; min-width: 0 !important; }
+          .mitra-card-header { gap: 0.25rem !important; margin-bottom: 0.35rem !important; align-items: flex-start !important; }
+          .mitra-avatar { width: 22px !important; height: 22px !important; border-width: 1px !important; }
+          .mitra-avatar svg { width: 10px !important; height: 10px !important; }
+          .mitra-badge { font-size: 0.36rem !important; padding: 0.08rem 0.28rem !important; }
+          .mitra-title { font-size: 0.52rem !important; margin-top: 0.15rem !important; line-height: 1.2 !important; word-break: break-word !important; }
+          .mitra-location { font-size: 0.42rem !important; gap: 2px !important; margin-bottom: 0.3rem !important; }
+          .mitra-location svg { width: 8px !important; height: 8px !important; flex-shrink: 0 !important; }
+          .mitra-sector { font-size: 0.42rem !important; margin-bottom: 0.4rem !important; line-height: 1.3 !important; word-break: break-word !important; }
+          .mitra-footer { padding-top: 0.4rem !important; font-size: 0.38rem !important; flex-direction: column !important; align-items: flex-start !important; gap: 0.2rem !important; }
+          .mitra-footer svg { width: 8px !important; height: 8px !important; flex-shrink: 0 !important; }
+
           .cta-box { padding: 2.25rem 1.25rem !important; }
           .cta-title { font-size: 1.5rem !important; }
           .footer-container { padding: 2rem 1rem !important; }
           .footer-wrapper { flex-direction: column !important; text-align: center !important; gap: 0.75rem !important; }
           .footer-wrapper span { font-size: 0.72rem !important; line-height: 1.4 !important; }
+        }
+
+        @media (max-width: 380px) {
+          .mitra-grid { gap: 0.25rem !important; }
+          .mitra-card { padding: 0.35rem !important; }
+          .mitra-title { font-size: 0.48rem !important; }
+          .mitra-badge { font-size: 0.32rem !important; padding: 0.06rem 0.22rem !important; }
+          .mitra-avatar { width: 20px !important; height: 20px !important; }
         }
       `}} />
 
@@ -344,34 +381,34 @@ export default function MitraUmkmPage() {
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
                   
                   {/* HEADER KARTU: FOTO PROFIL & NAMA */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem" }}>
-                    <div style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E3EDE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div className="mitra-card-header" style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem" }}>
+                    <div className="mitra-avatar" style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E3EDE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {m.fotoUrl ? (
                         <img src={m.fotoUrl} alt={m.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <Store size={24} color="#64748B" />
                       )}
                     </div>
-                    <div>
-                      <span style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.68rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "99px", display: "inline-block" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span className="mitra-badge" style={{ background: m.tipe === "Produsen Hulu" ? "#ECFDF5" : "#EFF6FF", color: m.tipe === "Produsen Hulu" ? "#059669" : "#2563EB", fontSize: "0.68rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "99px", display: "inline-block" }}>
                         {m.tag}
                       </span>
-                      <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0F172A", margin: "0.25rem 0 0 0" }}>{m.nama}</h3>
+                      <h3 className="mitra-title" style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0F172A", margin: "0.25rem 0 0 0", overflow: "hidden", textOverflow: "ellipsis" }}>{m.nama}</h3>
                     </div>
                   </div>
 
                   {/* LOKASI */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
-                    <MapPin size={14} color={C.emerald} /> {m.lokasi}
+                  <div className="mitra-location" style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
+                    <MapPin size={14} color={C.emerald} /> <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.lokasi}</span>
                   </div>
 
                   {/* KOMODITAS */}
-                  <p style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
+                  <p className="mitra-sector" style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
                     Sektor / Komoditas: <strong style={{ color: C.ink }}>{m.komoditas}</strong>
                   </p>
 
                   {/* FOOTER KARTU */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
+                  <div className="mitra-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
                     <span>Mitra sejak {m.sejakTahun}</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: C.green, fontWeight: 700 }}>
                       <ShieldCheck size={13} /> Terverifikasi

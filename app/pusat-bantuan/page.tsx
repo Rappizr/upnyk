@@ -162,14 +162,20 @@ export default function KontakMitraPage() {
           .right-form-panel { padding: 0.6rem !important; border-radius: 0.75rem !important; }
           .right-form-panel div:first-child svg { width: 14px !important; height: 14px !important; }
           .right-form-panel div:first-child span { font-size: 0.65rem !important; }
-          .form-label { font-size: 0.52rem !important; margin-bottom: 0.15rem !important; }
-          .form-input { padding: 0.4rem 0.5rem !important; font-size: 0.55rem !important; border-radius: 0.35rem !important; }
-          .form-row-mobile { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
+          .form-label { font-size: 0.5rem !important; margin-bottom: 0.15rem !important; }
+          .form-input { padding: 0.35rem 0.4rem !important; font-size: 0.5rem !important; border-radius: 0.3rem !important; }
+          .form-row-mobile { grid-template-columns: repeat(2, 1fr) !important; gap: 0.4rem !important; }
           .submit-btn { padding: 0.5rem !important; font-size: 0.6rem !important; border-radius: 0.35rem !important; }
           .submit-btn svg { width: 12px !important; height: 12px !important; }
           .footer-container { padding-left: 0.5rem !important; padding-right: 0.5rem !important; padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
           .footer-wrapper { flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 0px !important; }
           .footer-wrapper span { font-size: 0.42rem !important; line-height: 1.2 !important; }
+        }
+
+        @media (max-width: 380px) {
+          .form-row-mobile { gap: 0.3rem !important; }
+          .form-input { padding: 0.3rem 0.35rem !important; font-size: 0.46rem !important; }
+          .form-label { font-size: 0.46rem !important; }
         }
       `}} />
 

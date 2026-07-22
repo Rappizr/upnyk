@@ -241,7 +241,7 @@ export default function AdminPlatformDashboard() {
     return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
   }, [entitasList]);
 
-  const 所有Notif = useMemo(() => {
+  const semuaNotif = useMemo(() => {
     const list: { id: string; text: string; sub: string; tujuan: string }[] = [];
     pendaftarList.filter((p) => p.status === "Menunggu").forEach((p) => list.push({ id: `reg-${p.id}`, text: `Pendaftaran baru: ${p.nama}`, sub: `${p.jenisAkun} • ${p.lokasi}`, tujuan: p.jenisAkun === "Admin Toko" ? "umkm" : "produsen" }));
     pengaduanList.filter((p) => p.status === "Baru").forEach((p) => list.push({ id: `adu-${p.id}`, text: `Aduan baru dari ${p.pelapor}`, sub: p.kategori, tujuan: "pengaduan" }));
@@ -334,8 +334,8 @@ export default function AdminPlatformDashboard() {
       <aside className={`ap-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" /></svg>
+            <div style={{ width: "32px", height: "32px", borderRadius: "9px", overflow: "hidden", background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <img src="/logo.png" alt="Logo PasarNusa" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Admin Platform</div></div>
           </div>
@@ -378,17 +378,17 @@ export default function AdminPlatformDashboard() {
             <div style={{ position: "relative" }}>
               <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: notifOpen ? "#F1F5F9" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <IconBell />
-                {所有Notif.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
+                {semuaNotif.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
               </div>
               {notifOpen && (
                 <>
                   <div onClick={() => setNotifOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
                   <div style={{ position: "absolute", top: "42px", right: 0, width: "320px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", zIndex: 60, maxHeight: "380px", overflowY: "auto" }}>
                     <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #F1F5F9", fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>Notifikasi</div>
-                    {所有Notif.length === 0 ? (
+                    {semuaNotif.length === 0 ? (
                       <div style={{ padding: "1.25rem 1rem", fontSize: "0.8rem", color: "#94A3B8", textAlign: "center" }}>Tidak ada notifikasi baru.</div>
                     ) : (
-                      所有Notif.map((n) => (
+                      semuaNotif.map((n) => (
                         <div key={n.id} onClick={() => { selectMenu(n.tujuan); setNotifOpen(false); }} style={{ padding: "0.7rem 1rem", borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}>
                           <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{n.text}</div>
                           <div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>{n.sub}</div>
@@ -415,7 +415,7 @@ export default function AdminPlatformDashboard() {
         {profilPopupOpen && (
           <div onClick={() => setProfilPopupOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "4.5rem 1rem 1rem", overflowY: "auto" }}>
             <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", width: "100%" }}>
-              <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} />
+              <ProfilAdminPage profil={profilAdmin} setProfil={setProfilAdmin} onClose={() => setProfilPopupOpen(false)} />
             </div>
           </div>
         )}

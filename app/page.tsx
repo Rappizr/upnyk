@@ -215,13 +215,14 @@ export default function LandingPage() {
 
         /* LAYOUT PC TERJAGA PRESISI DI LAYAR HP */
         @media (max-width: 768px) {
-          .header-container { padding: 0.5rem 0.8rem !important; }
-          .nav-logo-text { font-size: 0.85rem !important; }
-          .nav-logo-img { height: 20px !important; }
-          .nav-container { gap: 0.5rem !important; }
-          .nav-link-desktop { display: inline-block !important; font-size: 0.65rem !important; }
-          .btn-masuk-portal { padding: 0.3rem 0.6rem !important; font-size: 0.62rem !important; gap: 0.2rem !important; }
-          .btn-masuk-portal svg { width: 10px !important; height: 10px !important; }
+          .header-container { padding: 0.6rem 1rem !important; }
+          .nav-logo-text { font-size: 0.98rem !important; }
+          .nav-logo-img { height: 26px !important; }
+          .nav-container { gap: 0.6rem !important; }
+          /* Link teks (Fitur Utama, Rantai Pasok, Mitra UMKM) memang untuk desktop saja - di HP disembunyikan biar navbar gak mepet/wrap, cukup logo + tombol Masuk Portal */
+          .nav-link-desktop { display: none !important; }
+          .btn-masuk-portal { padding: 0.5rem 0.95rem !important; font-size: 0.75rem !important; gap: 0.3rem !important; }
+          .btn-masuk-portal svg { width: 12px !important; height: 12px !important; }
 
           .hero-section { padding: 5rem 0.8rem 3rem !important; min-height: auto !important; }
           .hero-badge { font-size: 0.55rem !important; padding: 0.3rem 0.6rem !important; margin-bottom: 0.8rem !important; }
@@ -270,11 +271,11 @@ export default function LandingPage() {
         </div>
 
         <nav className="nav-container" style={{ display: "flex", alignItems: "center", gap: "2.4rem" }}>
-          <a href="#fitur" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Fitur Utama</a>
-          <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Rantai Pasok</a>
-          <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600 }}>Mitra UMKM</a>
+          <a href="#fitur" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600, whiteSpace: "nowrap" }}>Fitur Utama</a>
+          <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600, whiteSpace: "nowrap" }}>Rantai Pasok</a>
+          <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.92rem", fontWeight: 600, whiteSpace: "nowrap" }}>Mitra UMKM</a>
 
-          <Link href="/login" className="btn-masuk-portal" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 1.3rem", borderRadius: "99px", backgroundColor: isScrolled ? "var(--emerald)" : "var(--emerald)", color: "#FFFFFF", fontSize: "0.85rem", fontWeight: 600, transition: "all 0.3s ease" }}>
+          <Link href="/login" className="btn-masuk-portal" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 1.3rem", borderRadius: "99px", backgroundColor: isScrolled ? "var(--emerald)" : "var(--emerald)", color: "#FFFFFF", fontSize: "0.85rem", fontWeight: 600, transition: "all 0.3s ease", whiteSpace: "nowrap" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
               <polyline points="10 17 15 12 10 7" />

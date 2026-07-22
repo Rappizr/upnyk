@@ -81,24 +81,24 @@ export default function PrivasiPage() {
           }
           .btn-back svg { width: 14px !important; height: 14px !important; }
 
-          .hero-section { padding: 7.5rem 1.25rem 3.5rem 1.25rem !important; }
-          .hero-badge { font-size: 0.7rem !important; padding: 0.4rem 0.9rem !important; margin-bottom: 1.25rem !important; }
-          .hero-title { font-size: 2.1rem !important; line-height: 1.2 !important; letter-spacing: -0.01em !important; }
-          .hero-desc { font-size: 0.95rem !important; line-height: 1.6 !important; }
+          .hero-section { padding: 6.75rem 1.25rem 3rem 1.25rem !important; }
+          .hero-badge { font-size: 0.65rem !important; padding: 0.35rem 0.85rem !important; margin-bottom: 1.1rem !important; }
+          .hero-title { font-size: 2.25rem !important; line-height: 1.18 !important; letter-spacing: -0.01em !important; }
+          .hero-desc { font-size: 0.9rem !important; line-height: 1.6 !important; }
 
           .main-content { padding: 2.5rem 1.25rem 3.5rem 1.25rem !important; }
-          .intro-block h3 { font-size: 1.35rem !important; }
-          .intro-block p { font-size: 0.925rem !important; line-height: 1.65 !important; }
+          .intro-block h3 { font-size: 1.3rem !important; }
+          .intro-block p { font-size: 0.9rem !important; line-height: 1.65 !important; }
 
-          .policy-card { padding: 1.35rem !important; border-radius: 1rem !important; margin-bottom: 1.25rem !important; }
-          .policy-card div:first-child { gap: 0.75rem !important; margin-bottom: 1rem !important; }
-          .policy-card div:first-child div { padding: 0.45rem !important; border-radius: 0.6rem !important; }
-          .policy-card div:first-child div svg { width: 20px !important; height: 20px !important; }
-          .policy-card h2 { font-size: 1.1rem !important; }
-          .policy-card p { font-size: 0.875rem !important; line-height: 1.6 !important; }
+          .policy-card { padding: 1.25rem !important; border-radius: 1rem !important; margin-bottom: 1.1rem !important; }
+          .policy-card div:first-child { display: flex !important; flex-wrap: nowrap !important; gap: 0.65rem !important; margin-bottom: 0.9rem !important; }
+          .policy-card div:first-child div { padding: 0.4rem !important; border-radius: 0.55rem !important; flex-shrink: 0 !important; }
+          .policy-card div:first-child div svg { width: 18px !important; height: 18px !important; }
+          .policy-card h2 { font-size: 1.02rem !important; line-height: 1.3 !important; }
+          .policy-card p { font-size: 0.85rem !important; line-height: 1.6 !important; }
 
-          .list-item { gap: 0.5rem !important; font-size: 0.85rem !important; line-height: 1.55 !important; margin-bottom: 0.75rem !important; }
-          .list-item svg { width: 16px !important; height: 16px !important; margin-top: 0.2rem !important; }
+          .list-item { gap: 0.5rem !important; font-size: 0.82rem !important; line-height: 1.55 !important; margin-bottom: 0.7rem !important; }
+          .list-item svg { width: 15px !important; height: 15px !important; margin-top: 0.2rem !important; flex-shrink: 0 !important; }
 
           .meta-update-row { margin-top: 2rem !important; padding-top: 1.25rem !important; flex-direction: column !important; align-items: flex-start !important; gap: 0.75rem !important; }
           .meta-update-row div, .meta-update-row a { font-size: 0.8rem !important; }
