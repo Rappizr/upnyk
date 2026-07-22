@@ -34,7 +34,7 @@ interface Pembelian {
   satuan: string;
   hargaSatuan: number;
   total: number;
-status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
+  status: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
   tanggal: string;
   noResi?: string;
   fotoProduk?: string;
@@ -98,6 +98,10 @@ export default function MarketplaceProdusen({
   const [jumlahOrder, setJumlahOrder] = useState<string>("1");
   const [submittingOrder, setSubmittingOrder] = useState(false);
 
+  const [step, setStep] = useState<"katalog" | "pembayaran" | "sukses">("katalog");
+  const [selectedPayment, setSelectedPayment] = useState<"qris" | "transfer">("qris");
+  const [paymentProof, setPaymentProof] = useState<string>("");
+
   const [toast, setToast] = useState<{
     tampil: boolean;
     pesan: string;
@@ -108,19 +112,57 @@ export default function MarketplaceProdusen({
     setToast({ tampil: true, pesan, tipe });
   }, []);
 
+  const handleOrderFinish = useCallback(() => {
+    const qty = Number(jumlahOrder);
+    if (!selectedProdusen || !selectedBarang) return;
+
+    belanjaProdusen(
+      selectedProdusen.id,
+      selectedBarang.nama,
+      qty,
+      selectedBarang.harga,
+      selectedBarang.satuan
+    );
+
+    const namaBarang = selectedBarang.nama;
+    const namaToko = selectedProdusen.namaUsaha;
+
+    setSelectedBarang(null);
+    setJumlahOrder("1");
+    setSelectedProdusen(null);
+    setStep("katalog");
+    setPaymentProof("");
+    setSelectedPayment("qris");
+
+    pemicuToast(`Berhasil memesan ${namaBarang} dari ${namaToko}!`, "sukses");
+  }, [selectedProdusen, selectedBarang, jumlahOrder, belanjaProdusen, pemicuToast]);
+
+  const handleModalClose = useCallback(() => {
+    if (step === "sukses") {
+      handleOrderFinish();
+    } else {
+      setSelectedProdusen(null);
+      setSelectedBarang(null);
+      setJumlahOrder("1");
+      setStep("katalog");
+      setPaymentProof("");
+      setSelectedPayment("qris");
+    }
+  }, [step, handleOrderFinish]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleModalClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleModalClose]);
+
   useEffect(() => {
     if (!toast.tampil) return;
     const timer = setTimeout(() => setToast((t) => ({ ...t, tampil: false })), 3500);
     return () => clearTimeout(timer);
   }, [toast.tampil]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedProdusen(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const muatProdusen = useCallback(async () => {
     setLoading(true);
@@ -204,8 +246,19 @@ export default function MarketplaceProdusen({
     [pembelianList]
   );
 
-  async function handleOrderSubmit(e: FormEvent) {
+  function handleOrderInitiate(e: FormEvent) {
     e.preventDefault();
+    const qty = Number(jumlahOrder);
+
+    if (!selectedProdusen || !selectedBarang || isNaN(qty) || qty <= 0) {
+      pemicuToast("Jumlah pesanan tidak valid!", "gagal");
+      return;
+    }
+
+    setStep("pembayaran");
+  }
+
+  async function handleOrderSubmit() {
     const qty = Number(jumlahOrder);
 
     if (!selectedProdusen || !selectedBarang || isNaN(qty) || qty <= 0) {
@@ -240,7 +293,9 @@ export default function MarketplaceProdusen({
         jumlah: qty,
         total_harga: totalTagihan,
         total: totalTagihan,
-        status: "Menunggu"
+        status: "Menunggu",
+        bukti_pembayaran: paymentProof || null,
+        metode_pembayaran: selectedPayment === "qris" ? "QRIS" : "Transfer Bank"
       };
 
       if (adminData?.id) {
@@ -273,7 +328,7 @@ export default function MarketplaceProdusen({
         .from("transaksi")
         .insert({
           pesanan_id: pesananBaru.id,
-          metode: "Transfer",
+          metode: selectedPayment === "qris" ? "QRIS" : "Transfer Bank",
           total: totalTagihan,
           status: "Pending"
         });
@@ -285,23 +340,7 @@ export default function MarketplaceProdusen({
         return;
       }
 
-      // 4. Update UI lokal & Reset Modal
-      belanjaProdusen(
-        selectedProdusen.id,
-        selectedBarang.nama,
-        qty,
-        selectedBarang.harga,
-        selectedBarang.satuan
-      );
-
-      const namaBarang = selectedBarang.nama;
-      const namaToko = selectedProdusen.namaUsaha;
-
-      setSelectedBarang(null);
-      setJumlahOrder("1");
-      setSelectedProdusen(null);
-
-      pemicuToast(`Berhasil memesan ${namaBarang} dari ${namaToko}!`, "sukses");
+      setStep("sukses");
 
     } catch (err) {
       console.error("System error:", err);
@@ -435,11 +474,11 @@ export default function MarketplaceProdusen({
       </div>
 
       {selectedProdusen && (
-        <div onClick={() => setSelectedProdusen(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+        <div onClick={handleModalClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", width: "560px", maxWidth: "100%", maxHeight: "88vh", overflowY: "auto", display: "flex", flexDirection: "column" }}>
 
             <div style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", padding: "1.25rem", color: "white", borderRadius: "16px 16px 0 0", position: "relative" }}>
-              <button onClick={() => setSelectedProdusen(null)} aria-label="Tutup Modal" style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(255,255,255,0.2)", border: "none", color: "white", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <button onClick={handleModalClose} aria-label="Tutup Modal" style={{ position: "absolute", top: "1rem", right: "1rem", background: "rgba(255,255,255,0.2)", border: "none", color: "white", borderRadius: "50%", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <IconX />
               </button>
 
@@ -457,96 +496,335 @@ export default function MarketplaceProdusen({
               </div>
             </div>
 
-            <div style={{ padding: "1.25rem", flex: 1 }}>
-              <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.75rem" }}>
-                Pilih Komoditas / Bahan Baku yang Dijual ({katalogProduk.length})
-              </div>
+            {step === "katalog" && (
+              <div style={{ padding: "1.25rem", flex: 1 }}>
+                <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.75rem" }}>
+                  Pilih Komoditas / Bahan Baku yang Dijual ({katalogProduk.length})
+                </div>
 
-              {loadingKatalog ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "#64748B" }}>Memuat daftar barang...</div>
-              ) : katalogProduk.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "#94A3B8" }}>Toko produsen ini belum menayangkan barang komoditas.</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  {katalogProduk.map((barang) => (
-                    <div
-                      key={barang.id}
-                      style={{ border: selectedBarang?.id === barang.id ? "2px solid #F59E0B" : "1px solid #E2E8F0", background: selectedBarang?.id === barang.id ? "#FFFBEB" : "white", borderRadius: "10px", padding: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <div style={{ width: "50px", height: "50px", borderRadius: "8px", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                          {barang.fotoUrl ? <img src={barang.fotoUrl} alt={barang.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <IconPackage />}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{barang.nama}</div>
-                          <div style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 700 }}>
-                            {formatRupiah(barang.harga)} <span style={{ color: "#64748B", fontWeight: 400 }}>/ {barang.satuan}</span>
+                {loadingKatalog ? (
+                  <div style={{ textAlign: "center", padding: "2rem", color: "#64748B" }}>Memuat daftar barang...</div>
+                ) : katalogProduk.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "2rem", color: "#94A3B8" }}>Toko produsen ini belum menayangkan barang komoditas.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    {katalogProduk.map((barang) => (
+                      <div
+                        key={barang.id}
+                        style={{ border: selectedBarang?.id === barang.id ? "2px solid #F59E0B" : "1px solid #E2E8F0", background: selectedBarang?.id === barang.id ? "#FFFBEB" : "white", borderRadius: "10px", padding: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <div style={{ width: "50px", height: "50px", borderRadius: "8px", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                            {barang.fotoUrl ? <img src={barang.fotoUrl} alt={barang.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <IconPackage />}
                           </div>
-                          <div style={{ fontSize: "0.7rem", color: "#94A3B8" }}>Stok Tersedia: {barang.stok} {barang.satuan}</div>
+                          <div>
+                            <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{barang.nama}</div>
+                            <div style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 700 }}>
+                              {formatRupiah(barang.harga)} <span style={{ color: "#64748B", fontWeight: 400 }}>/ {barang.satuan}</span>
+                            </div>
+                            <div style={{ fontSize: "0.7rem", color: "#94A3B8" }}>Stok Tersedia: {barang.stok} {barang.satuan}</div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => { setSelectedBarang(barang); setJumlahOrder("1"); }}
+                          style={{ background: selectedBarang?.id === barang.id ? "#D97706" : "#F59E0B", color: "white", border: "none", padding: "0.45rem 0.85rem", borderRadius: "6px", fontWeight: 600, cursor: "pointer", fontSize: "0.78rem", whiteSpace: "nowrap" }}
+                        >
+                          {selectedBarang?.id === barang.id ? "Dipilih" : "Beli"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {selectedBarang && (
+                  <form onSubmit={handleOrderInitiate} style={{ borderTop: "1px solid #E2E8F0", marginTop: "1rem", paddingTop: "1rem" }}>
+                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>
+                      Form Pemesanan: <span style={{ color: "#D97706" }}>{selectedBarang.nama}</span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end" }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 600, color: "#64748B", marginBottom: "0.25rem" }}>
+                          JUMLAH ORDER ({selectedBarang.satuan.toUpperCase()}) *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          max={selectedBarang.stok || 9999}
+                          value={jumlahOrder}
+                          onChange={(e) => setJumlahOrder(e.target.value)}
+                          style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                        />
+                      </div>
+
+                      <div style={{ flex: 1, background: "#F8FAFC", padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
+                        <div style={{ fontSize: "0.65rem", color: "#94A3B8", fontWeight: 700 }}>TOTAL TAGIHAN</div>
+                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>
+                          {formatRupiah((Number(jumlahOrder) || 0) * selectedBarang.harga)}
                         </div>
                       </div>
 
                       <button
-                        onClick={() => { setSelectedBarang(barang); setJumlahOrder("1"); }}
-                        style={{ background: selectedBarang?.id === barang.id ? "#D97706" : "#F59E0B", color: "white", border: "none", padding: "0.45rem 0.85rem", borderRadius: "6px", fontWeight: 600, cursor: "pointer", fontSize: "0.78rem", whiteSpace: "nowrap" }}
+                        type="submit"
+                        disabled={submittingOrder}
+                        style={{
+                          background: submittingOrder ? "#9CA3AF" : "#10B981",
+                          color: "white",
+                          border: "none",
+                          padding: "0.55rem 1.1rem",
+                          borderRadius: "6px",
+                          fontWeight: 700,
+                          cursor: submittingOrder ? "not-allowed" : "pointer",
+                          fontSize: "0.85rem",
+                          whiteSpace: "nowrap",
+                        }}
                       >
-                        {selectedBarang?.id === barang.id ? "Dipilih" : "Beli"}
+                        {submittingOrder ? "Mengirim..." : "Kirim Pesanan"}
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </form>
+                )}
+              </div>
+            )}
 
-              {selectedBarang && (
-                <form onSubmit={handleOrderSubmit} style={{ borderTop: "1px solid #E2E8F0", marginTop: "1rem", paddingTop: "1rem" }}>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>
-                    Form Pemesanan: <span style={{ color: "#D97706" }}>{selectedBarang.nama}</span>
+            {step === "pembayaran" && selectedBarang && (
+              <div style={{ padding: "1.25rem", flex: 1 }}>
+                <button
+                  onClick={() => setStep("katalog")}
+                  style={{ background: "none", border: "none", color: "#64748B", fontSize: "0.82rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", marginBottom: "1rem", padding: 0 }}
+                >
+                  ← Kembali ke Katalog
+                </button>
+
+                <div style={{ fontSize: "0.92rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.75rem" }}>
+                  Metode Pembayaran
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                  <div
+                    onClick={() => setSelectedPayment("qris")}
+                    style={{
+                      cursor: "pointer",
+                      padding: "0.85rem",
+                      borderRadius: "10px",
+                      border: selectedPayment === "qris" ? "2px solid #F59E0B" : "1px solid #CBD5E1",
+                      background: selectedPayment === "qris" ? "#FFFBEB" : "white",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: selectedPayment === "qris" ? "#F59E0B" : "#CBD5E1" }} />
+                      <strong style={{ fontSize: "0.85rem", color: "#1E293B" }}>QRIS (Instan)</strong>
+                    </div>
+                    <span style={{ fontSize: "0.68rem", color: "#64748B", lineHeight: 1.3 }}>Scan kode QR menggunakan e-wallet atau mobile banking.</span>
                   </div>
 
-                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-end" }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 600, color: "#64748B", marginBottom: "0.25rem" }}>
-                        JUMLAH ORDER ({selectedBarang.satuan.toUpperCase()}) *
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="1"
-                        max={selectedBarang.stok || 9999}
-                        value={jumlahOrder}
-                        onChange={(e) => setJumlahOrder(e.target.value)}
-                        style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
-                      />
+                  <div
+                    onClick={() => setSelectedPayment("transfer")}
+                    style={{
+                      cursor: "pointer",
+                      padding: "0.85rem",
+                      borderRadius: "10px",
+                      border: selectedPayment === "transfer" ? "2px solid #F59E0B" : "1px solid #CBD5E1",
+                      background: selectedPayment === "transfer" ? "#FFFBEB" : "white",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: selectedPayment === "transfer" ? "#F59E0B" : "#CBD5E1" }} />
+                      <strong style={{ fontSize: "0.85rem", color: "#1E293B" }}>Transfer Bank</strong>
                     </div>
+                    <span style={{ fontSize: "0.68rem", color: "#64748B", lineHeight: 1.3 }}>Transfer manual ke rekening resmi koperasi/produsen.</span>
+                  </div>
+                </div>
 
-                    <div style={{ flex: 1, background: "#F8FAFC", padding: "0.5rem 0.75rem", borderRadius: "6px", border: "1px solid #E2E8F0" }}>
-                      <div style={{ fontSize: "0.65rem", color: "#94A3B8", fontWeight: 700 }}>TOTAL TAGIHAN</div>
-                      <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>
-                        {formatRupiah((Number(jumlahOrder) || 0) * selectedBarang.harga)}
+                <div style={{ background: "#F8FAFC", borderRadius: "12px", padding: "1rem", border: "1px solid #E2E8F0", marginBottom: "1.25rem" }}>
+                  {selectedPayment === "qris" ? (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.5rem" }}>Pindai QRIS PasarNusa</div>
+                      <div style={{ margin: "0 auto 0.75rem auto", width: "120px", height: "120px", border: "1px solid #CBD5E1", padding: "6px", background: "white", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "3px" }}>
+                        {Array.from({ length: 16 }).map((_, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              background: (idx % 2 === 0 && idx % 3 !== 0) || idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "#000000" : "#ffffff",
+                              border: idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "2px solid #000000" : "none"
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 600 }}>PasarNusa Merchant ID: PN-PRD-902</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>Rekening Transfer Produsen</div>
+                      <div style={{ borderBottom: "1px solid #E2E8F0", paddingBottom: "0.5rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#64748B" }}>
+                          <span>Bank Mandiri</span>
+                          <span>a.n Koperasi Mandiri</span>
+                        </div>
+                        <code style={{ fontSize: "0.88rem", color: "#1E293B", fontWeight: 700 }}>137-00-1234-5678</code>
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "#64748B" }}>
+                          <span>Bank Rakyat Indonesia (BRI)</span>
+                          <span>a.n Koperasi Mandiri</span>
+                        </div>
+                        <code style={{ fontSize: "0.88rem", color: "#1E293B", fontWeight: 700 }}>0021-01-088765-53-2</code>
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    <button
-                      type="submit"
-                      disabled={submittingOrder}
-                      style={{
-                        background: submittingOrder ? "#9CA3AF" : "#10B981",
-                        color: "white",
-                        border: "none",
-                        padding: "0.55rem 1.1rem",
-                        borderRadius: "6px",
-                        fontWeight: 700,
-                        cursor: submittingOrder ? "not-allowed" : "pointer",
-                        fontSize: "0.85rem",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {submittingOrder ? "Mengirim..." : "Kirim Pesanan"}
-                    </button>
+                <div style={{ borderTop: "1px dashed #CBD5E1", paddingTop: "1rem", marginBottom: "1.25rem" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.25rem" }}>Unggah Bukti Pembayaran</div>
+                  <div style={{ fontSize: "0.7rem", color: "#64748B", marginBottom: "0.75rem" }}>Silakan unggah screenshot atau foto bukti pembayaran Anda.</div>
+
+                  <div
+                    style={{
+                      border: "2px dashed #CBD5E1",
+                      borderRadius: "10px",
+                      padding: "1.25rem",
+                      textAlign: "center",
+                      background: paymentProof ? "#ECFDF5" : "#F8FAFC",
+                      borderColor: paymentProof ? "#10B981" : "#CBD5E1",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {paymentProof ? (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "center", color: "#10B981", marginBottom: "0.5rem" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8"></path></svg>
+                        </div>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#065F46" }}>Bukti Pembayaran Terpilih!</div>
+                        <div style={{ fontSize: "0.75rem", color: "#047857", margin: "0.25rem 0 0.5rem 0", wordBreak: "break-all" }}>{paymentProof}</div>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentProof("")}
+                          style={{ background: "none", border: "none", color: "#EF4444", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
+                        >
+                          Ganti Berkas
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "center", color: "#64748B", marginBottom: "0.5rem" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"></path></svg>
+                        </div>
+                        <label style={{ display: "inline-block", background: "#F59E0B", color: "white", padding: "0.4rem 1rem", borderRadius: "6px", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", marginBottom: "0.4rem" }}>
+                          Pilih Foto Bukti
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setPaymentProof(e.target.files[0].name);
+                              }
+                            }}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                        <div style={{ fontSize: "0.68rem", color: "#94A3B8" }}>Format JPG, PNG, atau WEBP. Maksimal 5MB.</div>
+                      </div>
+                    )}
                   </div>
-                </form>
-              )}
-            </div>
+                </div>
+
+                <div style={{ background: "#ECFDF5", borderRadius: "10px", padding: "0.85rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <span style={{ fontSize: "0.68rem", color: "#047857", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Total Pembayaran</span>
+                    <strong style={{ fontSize: "1rem", color: "#065F46" }}>
+                      {formatRupiah((Number(jumlahOrder) || 0) * selectedBarang.harga)}
+                    </strong>
+                  </div>
+
+                  <button
+                    onClick={() => handleOrderSubmit()}
+                    disabled={submittingOrder || !paymentProof}
+                    style={{
+                      background: (submittingOrder || !paymentProof) ? "#9CA3AF" : "#10B981",
+                      color: "white",
+                      border: "none",
+                      padding: "0.6rem 1.25rem",
+                      borderRadius: "6px",
+                      fontWeight: 700,
+                      cursor: (submittingOrder || !paymentProof) ? "not-allowed" : "pointer",
+                      fontSize: "0.82rem"
+                    }}
+                  >
+                    {submittingOrder ? "Memproses..." : "Konfirmasi Pembayaran"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "sukses" && selectedBarang && (
+              <div style={{ padding: "2rem 1.5rem", flex: 1, textAlign: "center" }}>
+                <div style={{ width: "64px", height: "64px", background: "#ECFDF5", color: "#10B981", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem auto" }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+
+                <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1E293B", margin: "0 0 0.5rem 0" }}>
+                  Pembayaran Berhasil!
+                </h3>
+                <p style={{ fontSize: "0.82rem", color: "#64748B", margin: "0 0 1.5rem 0", lineHeight: 1.4 }}>
+                  Pemesanan bahan baku Anda sedang diajukan ke <strong>{selectedProdusen.namaUsaha}</strong>. Bukti transfer telah terkirim dan akan divalidasi oleh produsen.
+                </p>
+
+                <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", textAlign: "left", marginBottom: "1.5rem" }}>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748B", textTransform: "uppercase", borderBottom: "1px solid #E2E8F0", paddingBottom: "0.4rem", marginBottom: "0.6rem" }}>
+                    Detail Pemesanan
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.8rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748B" }}>Produk:</span>
+                      <strong style={{ color: "#1E293B" }}>{selectedBarang.nama}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748B" }}>Jumlah:</span>
+                      <strong style={{ color: "#1E293B" }}>{jumlahOrder} {selectedBarang.satuan}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748B" }}>Metode:</span>
+                      <strong style={{ color: "#1E293B" }}>{selectedPayment === "qris" ? "QRIS" : "Transfer Bank"}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#64748B" }}>Bukti File:</span>
+                      <span style={{ color: "#059669", fontWeight: 600, maxWidth: "180px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }} title={paymentProof}>{paymentProof}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed #CBD5E1", paddingTop: "0.5rem", fontSize: "0.88rem", marginTop: "0.2rem" }}>
+                      <strong style={{ color: "#1E293B" }}>Total Tagihan:</strong>
+                      <strong style={{ color: "#F59E0B" }}>{formatRupiah(Number(jumlahOrder) * selectedBarang.harga)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleOrderFinish}
+                  style={{
+                    width: "100%",
+                    background: "#10B981",
+                    color: "white",
+                    border: "none",
+                    padding: "0.65rem",
+                    borderRadius: "8px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontSize: "0.85rem"
+                  }}
+                >
+                  Selesai & Lanjut
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

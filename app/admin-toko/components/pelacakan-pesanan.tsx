@@ -100,7 +100,7 @@ export default function PelacakanPesanan({ pembelianList, terimaPesanan, alamatT
 
       if (targetPo) {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         const { data: prodData } = await supabase
           .from("produk")
           .select("id")
@@ -198,7 +198,7 @@ export default function PelacakanPesanan({ pembelianList, terimaPesanan, alamatT
                       );
                     })}
                   </div>
-                  
+
                   {p.noResi && (
                     <div style={{ marginTop: "0.6rem", fontSize: "0.72rem", color: "#64748B" }}>
                       No. Resi Pengiriman: <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.noResi}</span>
@@ -244,8 +244,8 @@ export default function PelacakanPesanan({ pembelianList, terimaPesanan, alamatT
                 {/* Action Area (Konfirmasi Penerimaan / Ulasan) */}
                 <div style={{ padding: "0 1.1rem 1.1rem" }}>
                   {p.status === "Dikirim" && (
-                    <button 
-                      onClick={() => bukaModalTerima(p.id)} 
+                    <button
+                      onClick={() => bukaModalTerima(p.id)}
                       style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
                     >
                       Pesanan Diterima & Beri Ulasan

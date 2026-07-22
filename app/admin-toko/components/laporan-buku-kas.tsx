@@ -108,7 +108,8 @@ export default function LaporanBukuKas({ pembelianList = [], penjualanList = [] 
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media (max-width: 768px) {
           main {
             padding: 0.5rem 0.25rem !important;

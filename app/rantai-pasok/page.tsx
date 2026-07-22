@@ -17,7 +17,7 @@ export default function EkosistemPage() {
   const alurLangkah = [
     { no: "01", judul: "Input Komoditas", sub: "Produsen · Hulu", desc: "Petani dan peternak memasukkan data kuantitas stok hasil panen serta patokan harga harian langsung dari lahan melalui aplikasi." },
     { no: "02", judul: "Smart Restock & Borongan", sub: "Admin Toko · Koperasi", desc: "Sistem AI mengingatkan jadwal panen dan memicu Admin Toko membuat pesanan borongan secara proaktif, sebelum tengkulak konvensional datang." },
-    { no: "03", judul: "Quality Grading & Etalase", sub: "Standardisasi Mutu", desc: "Komoditas disetor ke gudang digital, diperiksa kualitasnya (Grade A/B/C) oleh Admin Toko, lalu otomatis masuk ke etalase publik." },
+    { no: "03", judul: "Inventaris & Etalase", sub: "Manajemen Stok", desc: "Komoditas disetor ke gudang digital, dicatat stoknya oleh Admin Toko, lalu otomatis masuk ke etalase publik." },
     { no: "04", judul: "Transaksi & Escrow System", sub: "Pembeli · Hilir", desc: "Pembeli memesan produk melalui marketplace. Dana ditahan aman oleh sistem Escrow PasarNusa demi proteksi kedua belah pihak." },
     { no: "05", judul: "Otomatisasi Split Wallet", sub: "Distribusi Adil", desc: "Saat pesanan dikonfirmasi sampai, Escrow membagi dana otomatis: persentase keuntungan ke Admin Toko, dan margin utama langsung ke Wallet Produsen." }
   ];
@@ -39,7 +39,7 @@ export default function EkosistemPage() {
       accent: "#D98A2B",
       soft: "rgba(217,138,43,0.12)",
       desc: "Entitas perantara transparan, penanggung jawab logistik gudang desa dan kontrol standardisasi kualitas komoditas.",
-      fitur: ["Fitur proaktif Smart Restock", "Penilaian kualitas (Grading A/B/C)", "Buku kas digital & audit margin"]
+      fitur: ["Fitur proaktif Smart Restock", "Pencatatan inventaris gudang", "Buku kas digital & audit margin"]
     },
     {
       layer: "Hilir",
