@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { ReactElement } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/db";
 
 import PetaRantaiPasok from "./components/peta-rantai-pasok";
 import EscrowTransaksi from "./components/escrow-transaksi";
@@ -13,34 +14,12 @@ import DataUMKM from "./components/data-umkm";
 import DataProdusen from "./components/data-produsen";
 import DataPembeli from "./components/data-pembeli";
 
-export type JenisAkun = "Admin Toko" | "Produsen";
-export type TipeEntitas = "Toko" | "Produsen";
-
-export interface Pendaftar {
-  id: string;
-  nama: string;
-  pemilik: string;
-  jenisAkun: JenisAkun;
-  lokasi: string;
-  tanggal: string;
-  status: "Menunggu" | "Disetujui" | "Ditolak";
-}
-
 export interface Entitas {
   id: string;
   nama: string;
   pemilik: string;
-  tipe: TipeEntitas;
+  tipe: "Toko" | "Produsen";
   lokasi: string;
-  status: "Aktif" | "Nonaktif";
-}
-
-export interface Pembeli {
-  id: string;
-  namaLengkap: string;
-  alamat: string;
-  telepon: string;
-  email: string;
   status: "Aktif" | "Nonaktif";
 }
 
@@ -56,17 +35,6 @@ export interface EscrowTx {
   tanggal: string;
 }
 
-export interface Pengaduan {
-  id: string;
-  pelapor: string;
-  role: string;
-  kontak: string;
-  kategori: "Manipulasi Harga" | "Kendala Teknis" | "Sengketa Transaksi" | "Lainnya";
-  deskripsi: string;
-  status: "Baru" | "Diproses" | "Selesai";
-  tanggal: string;
-}
-
 export interface Komoditas {
   nama: string;
   hargaPlatform: number;
@@ -74,44 +42,23 @@ export interface Komoditas {
   volumeTon: number;
 }
 
-const initialPendaftar: Pendaftar[] = [
-  { id: "REG-101", nama: "Koperasi Tani Makmur", pemilik: "Slamet Wijaya", jenisAkun: "Admin Toko", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
-  { id: "REG-102", nama: "Keripik Bu Sari", pemilik: "Budi Santoso", jenisAkun: "Produsen", lokasi: "Malang, Jawa Timur", tanggal: "09 Jul 2026", status: "Menunggu" },
-  { id: "REG-103", nama: "Gabungan Kelompok Tani Jombang", pemilik: "Hendra Kusuma", jenisAkun: "Produsen", lokasi: "Jombang, Jawa Timur", tanggal: "10 Jul 2026", status: "Menunggu" },
-];
-
 const initialEntitas: Entitas[] = [
   { id: "ENT-01", nama: "Warung Makmur Jaya", pemilik: "Made Aditya", tipe: "Toko", lokasi: "Malang, Jawa Timur", status: "Aktif" },
   { id: "ENT-02", nama: "Toko Sembako Berkah", pemilik: "Siti Rahma", tipe: "Toko", lokasi: "Jombang, Jawa Timur", status: "Aktif" },
   { id: "ENT-03", nama: "Keripik Tempe Sanan", pemilik: "Budi Santoso", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
   { id: "ENT-04", nama: "Kopi Arabika Gayo", pemilik: "Rina Kartika", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
-  { id: "ENT-05", nama: "Pengepul Kedelai Lokal", pemilik: "Agus Salim", tipe: "Produsen", lokasi: "Malang, Jawa Timur", status: "Aktif" },
-];
-
-const initialPembeli: Pembeli[] = [
-  { id: "BUY-01", namaLengkap: "Minimarket Sejahtera", alamat: "Jl. Ijen No. 8, Malang, Jawa Timur", telepon: "0813-1122-3344", email: "sejahtera.mart@gmail.com", status: "Aktif" },
-  { id: "BUY-02", namaLengkap: "Koperasi Pasar Besar", alamat: "Pasar Besar Malang, Los C12", telepon: "0857-9988-7766", email: "koperasi.pasarbesar@gmail.com", status: "Aktif" },
-  { id: "BUY-03", namaLengkap: "Warung Bu Ida", alamat: "Jl. Kawi No. 21, Malang, Jawa Timur", telepon: "0812-5544-3322", email: "buida.warung@gmail.com", status: "Aktif" },
 ];
 
 const initialTransaksi: EscrowTx[] = [
   { id: "TX-90211", pembeli: "Minimarket Sejahtera", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1575000, persenToko: 70, persenProdusen: 30, status: "Tersalur", tanggal: "05 Jul 2026" },
   { id: "TX-90212", pembeli: "Koperasi Pasar Besar", toko: "Toko Sembako Berkah", produsen: "Kopi Arabika Gayo", nominal: 900000, persenToko: 65, persenProdusen: 35, status: "Ditahan", tanggal: "08 Jul 2026" },
   { id: "TX-90213", pembeli: "Warung Bu Ida", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1500000, persenToko: 70, persenProdusen: 30, status: "Ditahan", tanggal: "09 Jul 2026" },
-  { id: "TX-90214", pembeli: "Toko Barokah", toko: "Toko Sembako Berkah", produsen: "Kopi Arabika Gayo", nominal: 620000, persenToko: 60, persenProdusen: 40, status: "Disengketakan", tanggal: "07 Jul 2026" },
 ];
 
 const initialKomoditas: Komoditas[] = [
   { nama: "Keripik Tempe", hargaPlatform: 45000, hargaTengkulak: 32000, volumeTon: 12.4 },
   { nama: "Kopi Arabika", hargaPlatform: 78000, hargaTengkulak: 55000, volumeTon: 8.1 },
   { nama: "Beras Organik", hargaPlatform: 15500, hargaTengkulak: 11000, volumeTon: 24.6 },
-  { nama: "Madu Hutan", hargaPlatform: 120000, hargaTengkulak: 85000, volumeTon: 3.2 },
-];
-
-const initialPengaduan: Pengaduan[] = [
-  { id: "TIK-501", pelapor: "Budi Santoso", role: "Produsen Hulu", kontak: "0812-3456-7890", kategori: "Manipulasi Harga", deskripsi: "Admin Toko menekan harga beli jauh di bawah kesepakatan awal untuk komoditas kopi arabika, indikasi merugikan produsen.", status: "Baru", tanggal: "10 Jul 2026" },
-  { id: "TIK-502", pelapor: "Toko Sembako Berkah", role: "Admin Toko", kontak: "0813-2211-4455", kategori: "Kendala Teknis", deskripsi: "Aplikasi gagal memuat halaman Etalase Penjualan sejak pagi tadi, sudah coba refresh berkali-kali.", status: "Diproses", tanggal: "09 Jul 2026" },
-  { id: "TIK-503", pelapor: "Minimarket Sejahtera", role: "Pembeli", kontak: "0857-6677-8899", kategori: "Sengketa Transaksi", deskripsi: "Barang yang diterima tidak sesuai dengan yang dipesan, meminta peninjauan dana escrow transaksi TX-90213.", status: "Baru", tanggal: "10 Jul 2026" },
 ];
 
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
@@ -171,12 +118,16 @@ export default function AdminPlatformDashboard() {
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const [pendaftarList, setPendaftarList] = useState<Pendaftar[]>(initialPendaftar);
-  const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitas);
-  const [pembeliList, setPembeliList] = useState<Pembeli[]>(initialPembeli);
+  const [entitasList] = useState<Entitas[]>(initialEntitas);
   const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksi);
   const [komoditasList] = useState<Komoditas[]>(initialKomoditas);
-  const [pengaduanList, setPengaduanList] = useState<Pengaduan[]>(initialPengaduan);
+  
+  const [counts, setCounts] = useState({
+    toko: 0,
+    produsen: 0,
+    pengaduanAktif: 0,
+  });
+
   const [profilAdmin, setProfilAdmin] = useState<ProfilAdmin>({
     nama: "Nadia Ramadhani",
     jabatan: "Super Admin",
@@ -186,24 +137,26 @@ export default function AdminPlatformDashboard() {
     inisial: "NR",
   });
 
-  function approvePendaftar(id: string) {
-    setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Disetujui" } : p)));
-    const p = pendaftarList.find((x) => x.id === id);
-    if (p) {
-      const tipe: TipeEntitas = p.jenisAkun === "Admin Toko" ? "Toko" : "Produsen";
-      const entId = `ENT-${String(entitasList.length + 1).padStart(2, "0")}`;
-      setEntitasList((prev) => [...prev, { id: entId, nama: p.nama, pemilik: p.pemilik, tipe, lokasi: p.lokasi, status: "Aktif" }]);
+  // METRIK COUNTS LIVE DARI SUPABASE
+  const fetchCounts = useCallback(async () => {
+    try {
+      const { count: countToko } = await supabase.from("admin_toko").select("*", { count: "exact", head: true });
+      const { count: countProd } = await supabase.from("produsen").select("*", { count: "exact", head: true });
+      const { count: countAduan } = await supabase.from("pengaduan").select("*", { count: "exact", head: true }).neq("status", "Selesai");
+
+      setCounts({
+        toko: countToko || 0,
+        produsen: countProd || 0,
+        pengaduanAktif: countAduan || 0,
+      });
+    } catch (err) {
+      console.error("Gagal muat metrik counts:", err);
     }
-  }
-  function rejectPendaftar(id: string) {
-    setPendaftarList((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Ditolak" } : p)));
-  }
-  function toggleSuspendEntitas(id: string) {
-    setEntitasList((prev) => prev.map((e) => (e.id === id ? { ...e, status: e.status === "Aktif" ? "Nonaktif" : "Aktif" } : e)));
-  }
-  function toggleSuspendPembeli(id: string) {
-    setPembeliList((prev) => prev.map((b) => (b.id === id ? { ...b, status: b.status === "Aktif" ? "Nonaktif" : "Aktif" } : b)));
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts, activeMenu]);
 
   function salurkanDana(id: string) {
     setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
@@ -215,18 +168,7 @@ export default function AdminPlatformDashboard() {
     setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
   }
 
-  function updateStatusPengaduan(id: string, status: Pengaduan["status"]) {
-    setPengaduanList((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-  }
-
-  const totalToko = entitasList.filter((e) => e.tipe === "Toko").length;
-  const totalProdusen = entitasList.filter((e) => e.tipe === "Produsen").length;
-  const pengaduanAktif = pengaduanList.filter((p) => p.status === "Baru" || p.status === "Diproses").length;
   const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
-  const totalMenunggu = pendaftarList.filter((p) => p.status === "Menunggu").length;
-  const menungguToko = pendaftarList.filter((p) => p.status === "Menunggu" && p.jenisAkun === "Admin Toko").length;
-  const menungguProdusen = pendaftarList.filter((p) => p.status === "Menunggu" && p.jenisAkun === "Produsen").length;
-  const escrowDitahan = transaksiList.filter((t) => t.status === "Ditahan").length;
 
   const indeksHargaAdil = useMemo(() => {
     if (komoditasList.length === 0) return 0;
@@ -240,14 +182,6 @@ export default function AdminPlatformDashboard() {
     entitasList.forEach((e) => { map[e.lokasi] = (map[e.lokasi] || 0) + 1; });
     return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
   }, [entitasList]);
-
-  const semuaNotif = useMemo(() => {
-    const list: { id: string; text: string; sub: string; tujuan: string }[] = [];
-    pendaftarList.filter((p) => p.status === "Menunggu").forEach((p) => list.push({ id: `reg-${p.id}`, text: `Pendaftaran baru: ${p.nama}`, sub: `${p.jenisAkun} • ${p.lokasi}`, tujuan: p.jenisAkun === "Admin Toko" ? "umkm" : "produsen" }));
-    pengaduanList.filter((p) => p.status === "Baru").forEach((p) => list.push({ id: `adu-${p.id}`, text: `Aduan baru dari ${p.pelapor}`, sub: p.kategori, tujuan: "pengaduan" }));
-    transaksiList.filter((t) => t.status === "Disengketakan").forEach((t) => list.push({ id: `tx-${t.id}`, text: `Transaksi disengketakan: ${t.id}`, sub: `${t.toko} ↔ ${t.produsen}`, tujuan: "escrow" }));
-    return list;
-  }, [pendaftarList, pengaduanList, transaksiList]);
 
   function selectMenu(key: string) {
     setActiveMenu(key);
@@ -280,15 +214,6 @@ export default function AdminPlatformDashboard() {
             padding: 0.15rem 0.4rem !important;
             margin-bottom: 0.2rem !important;
           }
-          .admin-banner-hero-container div:nth-of-type(1) {
-            font-size: 1.05rem !important;
-            line-height: 1.15 !important;
-          }
-          .admin-banner-hero-container div:nth-of-type(2) {
-            font-size: 0.68rem !important;
-            margin-top: 0.1rem !important;
-            line-height: 1.2 !important;
-          }
           .admin-banner-hero-container button {
             padding: 0.4rem 0.75rem !important;
             font-size: 0.68rem !important;
@@ -303,25 +228,6 @@ export default function AdminPlatformDashboard() {
             gap: 0.25rem !important; 
             margin-bottom: 1rem !important;
           }
-          .ap-stats-grid > div {
-            padding: 0.4rem 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .ap-stats-grid > div > div:first-child {
-            font-size: 0.52rem !important;
-            line-height: 1.1 !important;
-            margin-bottom: 0.25rem !important;
-          }
-          .ap-stats-grid > div > div:nth-child(2) {
-            font-size: 0.65rem !important;
-            line-height: 1.1 !important;
-          }
-          .ap-stats-grid > div > div:last-child {
-            font-size: 0.5rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          
           .ap-panels-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
@@ -348,7 +254,7 @@ export default function AdminPlatformDashboard() {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = activeMenu === item.key;
-                const badge = item.key === "umkm" && menungguToko > 0 ? menungguToko : item.key === "produsen" && menungguProdusen > 0 ? menungguProdusen : item.key === "pengaduan" && pengaduanAktif > 0 ? pengaduanAktif : item.key === "escrow" && escrowDitahan > 0 ? escrowDitahan : 0;
+                const badge = item.key === "pengaduan" && counts.pengaduanAktif > 0 ? counts.pengaduanAktif : 0;
                 return (
                   <div
                     key={item.key}
@@ -378,26 +284,7 @@ export default function AdminPlatformDashboard() {
             <div style={{ position: "relative" }}>
               <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: notifOpen ? "#F1F5F9" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <IconBell />
-                {semuaNotif.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
               </div>
-              {notifOpen && (
-                <>
-                  <div onClick={() => setNotifOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 55 }} />
-                  <div style={{ position: "absolute", top: "42px", right: 0, width: "320px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", zIndex: 60, maxHeight: "380px", overflowY: "auto" }}>
-                    <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #F1F5F9", fontWeight: 700, fontSize: "0.85rem", color: "#1E293B" }}>Notifikasi</div>
-                    {semuaNotif.length === 0 ? (
-                      <div style={{ padding: "1.25rem 1rem", fontSize: "0.8rem", color: "#94A3B8", textAlign: "center" }}>Tidak ada notifikasi baru.</div>
-                    ) : (
-                      semuaNotif.map((n) => (
-                        <div key={n.id} onClick={() => { selectMenu(n.tujuan); setNotifOpen(false); }} style={{ padding: "0.7rem 1rem", borderBottom: "1px solid #F1F5F9", cursor: "pointer" }}>
-                          <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{n.text}</div>
-                          <div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>{n.sub}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </>
-              )}
             </div>
             <div onClick={() => setProfilPopupOpen(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1E293B", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
@@ -436,18 +323,18 @@ export default function AdminPlatformDashboard() {
             <div className="ap-stats-grid" style={{ marginBottom: "1.25rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalToko}</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{counts.toko}</div>
                 <div style={{ fontSize: "0.68rem", color: "#2563EB", marginTop: "0.15rem" }}>Lihat data →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("produsen")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>TOTAL PRODUSEN</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalProdusen}</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{counts.produsen}</div>
                 <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Lihat data →</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("pengaduan")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PENGADUAN AKTIF</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pengaduanAktif}</div>
-                <div style={{ fontSize: "0.68rem", color: pengaduanAktif > 0 ? "#EF4444" : "#64748B", marginTop: "0.15rem" }}>{pengaduanAktif > 0 ? "Perlu ditinjau →" : "Tidak ada aduan"}</div>
+                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{counts.pengaduanAktif}</div>
+                <div style={{ fontSize: "0.68rem", color: counts.pengaduanAktif > 0 ? "#EF4444" : "#64748B", marginTop: "0.15rem" }}>{counts.pengaduanAktif > 0 ? "Perlu ditinjau →" : "Tidak ada aduan"}</div>
               </div>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("escrow")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PERPUTARAN DANA</div>
@@ -460,47 +347,15 @@ export default function AdminPlatformDashboard() {
                 <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Lebih adil dari tengkulak</div>
               </div>
             </div>
-
-            <div className="ap-panels-grid">
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Menunggu verifikasi</div>
-                  {totalMenunggu > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>{totalMenunggu} akun baru</span>}
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Pendaftar baru menunggu persetujuan peran</div>
-                {pendaftarList.filter((p) => p.status === "Menunggu").length === 0 ? (
-                  <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Tidak ada pendaftaran yang menunggu.</p>
-                ) : (
-                  pendaftarList.filter((p) => p.status === "Menunggu").slice(0, 3).map((p) => (
-                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.55rem 0", borderBottom: "1px solid #F1F5F9", gap: "0.5rem" }}>
-                      <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{p.nama}</div><div style={{ fontSize: "0.68rem", color: "#94A3B8" }}>Mendaftar sebagai {p.jenisAkun}</div></div>
-                      <button onClick={() => selectMenu(p.jenisAkun === "Admin Toko" ? "umkm" : "produsen")} style={{ background: "#2563EB", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Tinjau</button>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Aktivitas escrow terbaru</div>
-                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Dana yang tertahan dan tersalurkan</div>
-                {transaksiList.slice(0, 3).map((t, i) => (
-                  <div key={t.id} onClick={() => selectMenu("escrow")} style={{ padding: "0.5rem 0", borderBottom: i < 2 ? "1px solid #F1F5F9" : "none", cursor: "pointer" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{t.id}</span>
-                      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: t.status === "Tersalur" ? "#059669" : t.status === "Ditahan" ? "#D97706" : "#DC2626" }}>{t.status}</span>
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{formatRupiah(t.nominal)} — {t.toko}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </main>
         )}
 
-        {activeMenu === "umkm" && <DataUMKM entitasList={entitasList} pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} toggleSuspendEntitas={toggleSuspendEntitas} transaksiList={transaksiList} />}
-        {activeMenu === "produsen" && <DataProdusen entitasList={entitasList} pendaftarList={pendaftarList} approvePendaftar={approvePendaftar} rejectPendaftar={rejectPendaftar} toggleSuspendEntitas={toggleSuspendEntitas} transaksiList={transaksiList} />}
-        {activeMenu === "pembeli" && <DataPembeli pembeliList={pembeliList} toggleSuspendPembeli={toggleSuspendPembeli} />}
+        {/* SUB HALAMAN TANPA PROPS KARENA KOMPONEN SUDAH FETCH DATA DIRECT SUPABASE */}
+        {activeMenu === "umkm" && <DataUMKM />}
+        {activeMenu === "produsen" && <DataProdusen />}
+        {activeMenu === "pembeli" && <DataPembeli />}
         {activeMenu === "peta" && <PetaRantaiPasok entitasList={entitasList} transaksiList={transaksiList} />}
-        {activeMenu === "pengaduan" && <PengaduanPage pengaduanList={pengaduanList} updateStatusPengaduan={updateStatusPengaduan} />}
+        {activeMenu === "pengaduan" && <PengaduanPage />}
         {activeMenu === "escrow" && <EscrowTransaksi transaksiList={transaksiList} salurkanDana={salurkanDana} tandaiSengketa={tandaiSengketa} selesaikanSengketa={selesaikanSengketa} />}
         {activeMenu === "laporan" && <LaporanDampak komoditasList={komoditasList} daerahProduktif={daerahProduktif} indeksHargaAdil={indeksHargaAdil} totalGMV={totalGMV} entitasList={entitasList} />}
       </div>
