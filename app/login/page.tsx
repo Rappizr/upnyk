@@ -183,6 +183,38 @@ export default function LoginPage() {
 
       // Login Supabase berhasil
       if (authData.user) {
+        // -------------------------------------------------------------
+        // TAMBAHAN PENGECEKAN STATUS AKUN TERBLOKIR / SUSPENDED
+        // -------------------------------------------------------------
+        const { data: profileStatus } = await supabase
+          .from('profiles')
+          .select('status, role')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+
+        if (profileStatus?.status === "suspended" || profileStatus?.status === "nonaktif") {
+          await supabase.auth.signOut();
+          setError("⛔ Akun Anda telah ditangguhkan (Terblokir). Silakan hubungi Admin Platform.");
+          setIsLoading(false);
+          return;
+        }
+
+        if (selectedRole === "admin_toko") {
+          const { data: toko } = await supabase
+            .from("admin_toko")
+            .select("status")
+            .eq("profile_id", authData.user.id)
+            .maybeSingle();
+
+          if (toko?.status === "suspended" || toko?.status === "nonaktif") {
+            await supabase.auth.signOut();
+            setError("⛔ Akun Toko Anda telah ditangguhkan oleh Admin Platform.");
+            setIsLoading(false);
+            return;
+          }
+        }
+        // -------------------------------------------------------------
+
         // Ambil profil dari database public.profiles untuk mencocokkan peran (role)
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
@@ -265,7 +297,8 @@ export default function LoginPage() {
           email: regEmail.trim(),
           phone: regPhone.trim(),
           role: selectedRole,
-          avatar_url: regAvatarUrl
+          avatar_url: regAvatarUrl,
+          status: 'aktif'
         }).select();
 
         if (profileError) {
@@ -277,19 +310,24 @@ export default function LoginPage() {
           const { error: roleErr } = await supabase.from('pembeli').upsert({
             id: authData.user.id,
             profile_id: authData.user.id,
-            nama: regName.trim()
+            nama: regName.trim(),
+            status: 'aktif'
           });
           if (roleErr) console.warn('Client-side pembeli upsert info (trigger might have handled it):', roleErr.message);
         } else if (selectedRole === 'produsen') {
           const { error: roleErr } = await supabase.from('produsen').upsert({
             id: authData.user.id,
-            nama: regName.trim()
+            profile_id: authData.user.id,
+            nama_usaha: regName.trim(),
+            status: 'aktif'
           });
           if (roleErr) console.warn('Client-side produsen upsert info (trigger might have handled it):', roleErr.message);
         } else if (selectedRole === 'admin_toko') {
           const { error: roleErr } = await supabase.from('admin_toko').upsert({
             id: authData.user.id,
-            nama: regName.trim()
+            profile_id: authData.user.id,
+            nama_toko: regName.trim(),
+            status: 'menunggu'
           });
           if (roleErr) console.warn('Client-side admin_toko upsert info (trigger might have handled it):', roleErr.message);
         }

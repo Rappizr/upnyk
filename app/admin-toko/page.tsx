@@ -127,6 +127,7 @@ export default function AdminTokoDashboard() {
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
 
   const [isDataLengkap, setIsDataLengkap] = useState(true);
+  const [isSuspended, setIsSuspended] = useState(false);
   const [loadingProfil, setLoadingProfil] = useState(true);
 
   const [headerProfil, setHeaderProfil] = useState({
@@ -142,13 +143,20 @@ export default function AdminTokoDashboard() {
   const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
   const [penjualanList] = useState<Penjualan[]>([]);
 
+  // DETEKSI KELENGKAPAN SERTA STATUS SUSPEND AKUN
   const periksaKelengkapanAdmin = useCallback(async () => {
     setLoadingProfil(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoadingProfil(false); return; }
 
-    const { data: profile } = await supabase.from("profiles").select("nama, avatar_url").eq("id", user.id).maybeSingle();
-    const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat, desa, kecamatan, kabupaten, provinsi").eq("profile_id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("nama, avatar_url, status").eq("id", user.id).maybeSingle();
+    const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat, desa, kecamatan, kabupaten, provinsi, status").eq("profile_id", user.id).maybeSingle();
+
+    if (profile?.status === "suspended" || profile?.status === "nonaktif" || adminToko?.status === "suspended" || adminToko?.status === "nonaktif") {
+      setIsSuspended(true);
+    } else {
+      setIsSuspended(false);
+    }
 
     const lengkap = !!(adminToko && adminToko.alamat && adminToko.nama_toko);
     setIsDataLengkap(lengkap);
@@ -268,7 +276,6 @@ export default function AdminTokoDashboard() {
 
     let updatedDb = false;
     for (const po of diterimaList) {
-      // Periksa apakah item ini sudah ada di stokList berdasarkan nama
       const inStok = stokList.some((s) => s.nama.toLowerCase() === po.item.toLowerCase());
       if (!inStok) {
         let produkId = "";
@@ -355,9 +362,7 @@ export default function AdminTokoDashboard() {
       if (storedPembelian) {
         try {
           setPembelianList(JSON.parse(storedPembelian));
-        } catch {
-          // JSON Parse fallback
-        }
+        } catch {}
       }
     }
     fetchProdusenList();
@@ -533,6 +538,10 @@ export default function AdminTokoDashboard() {
   const produkLive = stokList.filter((s) => s.live).length;
 
   function selectMenu(key: string) {
+    if (isSuspended) {
+      alert("Akses Ditangguhkan: Akun Anda dalam status dibekukan.");
+      return;
+    }
     if (!isDataLengkap && key !== "dashboard") {
       alert("Harap lengkapi Profil Toko Anda terlebih dahulu!");
       setProfilPopupOpen(true);
@@ -563,6 +572,24 @@ export default function AdminTokoDashboard() {
         }
         @media (max-width: 480px) { .at-user-name { display: none; } }
       `}} />
+
+      {/* MODAL / LOCKSCREEN JIKA AKUN DIBEKUKAN / SUSPENDED */}
+      {isSuspended && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "2rem", width: "420px", maxWidth: "100%", textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FEE2E2", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem auto", fontSize: "1.5rem", fontWeight: 800 }}>
+              🚫
+            </div>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1E293B", margin: "0 0 0.5rem 0" }}>Akun Toko Ditangguhkan</h2>
+            <p style={{ fontSize: "0.85rem", color: "#64748B", lineHeight: 1.5, margin: "0 0 1.5rem 0" }}>
+              Akses akun Admin Toko Anda telah dibekukan sementara oleh Admin Platform PasarNusa. Silakan hubungi pusat bantuan untuk tindak lanjut.
+            </p>
+            <Link href="/login" style={{ display: "inline-block", width: "100%", padding: "0.75rem", borderRadius: "8px", background: "#EF4444", color: "white", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem", boxSizing: "border-box" }}>
+              Keluar Ke Halaman Login
+            </Link>
+          </div>
+        </div>
+      )}
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 

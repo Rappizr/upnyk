@@ -5,6 +5,7 @@ import { supabase } from "@/lib/db";
 
 interface TokoUmkm {
   id: string;
+  profile_id?: string;
   nama: string;
   pemilik: string;
   lokasi: string;
@@ -31,6 +32,7 @@ const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" 
 const IconStore = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
 const IconClock = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const IconBan = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>;
+const IconAlertTriangle = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 
 function formatRupiah(n: number) {
   return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
@@ -45,45 +47,18 @@ export default function DataUMKM() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
+  // STATE MODAL KONFIRMASI SUSPEND
+  const [targetSuspend, setTargetSuspend] = useState<TokoUmkm | null>(null);
+  const [submittingSuspend, setSubmittingSuspend] = useState(false);
+
   // FETCH DATA UMKM / ADMIN TOKO DARI SUPABASE
   const muatDataUmkm = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Coba kueri terelasi langsung
-      const { data: adminRelasi, error: errRelasi } = await supabase
-        .from("admin_toko")
-        .select(`
-          id, profile_id, nama_toko, alamat, desa, kecamatan, kabupaten, status,
-          profiles ( nama, phone, email )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (!errRelasi && adminRelasi) {
-        const mapped: TokoUmkm[] = adminRelasi.map((a: any) => {
-          const lokasiFormatted = [a.alamat, a.kecamatan, a.kabupaten].filter(Boolean).join(", ") || "Lokasi belum disetel";
-          let statusNormalized: TokoUmkm["status"] = "Aktif";
-          if (a.status === "suspended") statusNormalized = "Suspended";
-          else if (a.status === "menunggu") statusNormalized = "Menunggu";
-
-          return {
-            id: a.id,
-            nama: a.nama_toko || "Admin Toko UMKM",
-            pemilik: a.profiles?.nama || "Pemilik Toko",
-            lokasi: lokasiFormatted,
-            status: statusNormalized,
-            telepon: a.profiles?.phone || "-",
-            email: a.profiles?.email || "-",
-          };
-        });
-        setUmkmList(mapped);
-        setLoading(false);
-        return;
-      }
-
-      // 2. Fallback jika Foreign Key belum terpasang di Supabase
       const { data: adminTokoData } = await supabase
         .from("admin_toko")
-        .select("id, profile_id, nama_toko, alamat, desa, kecamatan, kabupaten, status");
+        .select("id, profile_id, nama_toko, alamat, desa, kecamatan, kabupaten, status")
+        .order("created_at", { ascending: false });
 
       const profileIds = (adminTokoData || []).map((a) => a.profile_id).filter(Boolean);
       let profileMap = new Map();
@@ -99,16 +74,17 @@ export default function DataUMKM() {
         }
       }
 
-      const mappedFallback: TokoUmkm[] = (adminTokoData || []).map((a) => {
+      const mapped: TokoUmkm[] = (adminTokoData || []).map((a) => {
         const prof = profileMap.get(a.profile_id);
         const lokasiFormatted = [a.alamat, a.kecamatan, a.kabupaten].filter(Boolean).join(", ") || "Lokasi belum disetel";
         
         let statusNormalized: TokoUmkm["status"] = "Aktif";
-        if (a.status === "suspended") statusNormalized = "Suspended";
+        if (a.status === "suspended" || a.status === "nonaktif") statusNormalized = "Suspended";
         else if (a.status === "menunggu") statusNormalized = "Menunggu";
 
         return {
           id: a.id,
+          profile_id: a.profile_id,
           nama: a.nama_toko || "Admin Toko UMKM",
           pemilik: prof?.nama || "Pemilik Toko",
           lokasi: lokasiFormatted,
@@ -118,7 +94,7 @@ export default function DataUMKM() {
         };
       });
 
-      setUmkmList(mappedFallback);
+      setUmkmList(mapped);
     } catch (err) {
       console.error("Error muatDataUmkm:", err);
     } finally {
@@ -130,25 +106,45 @@ export default function DataUMKM() {
     muatDataUmkm();
   }, [muatDataUmkm]);
 
-  // TOGGLE SUSPEND / AKTIFKAN AKUN DI SUPABASE
-  async function toggleSuspendEntitas(id: string, statusSaatIni: string) {
-    const statusBaru = statusSaatIni === "Aktif" ? "suspended" : "aktif";
-    const statusLabel = statusSaatIni === "Aktif" ? "Suspended" : "Aktif";
+  // PROSES SUSPEND AKUN DI DATABASE (Dua Tabel: admin_toko & profiles)
+  async function eksekusiToggleSuspend() {
+    if (!targetSuspend) return;
+    setSubmittingSuspend(true);
 
-    const { error } = await supabase
-      .from("admin_toko")
-      .update({ status: statusBaru })
-      .eq("id", id);
+    const statusBaruAdminToko = targetSuspend.status === "Aktif" ? "suspended" : "aktif";
+    const statusBaruProfile = targetSuspend.status === "Aktif" ? "suspended" : "aktif";
+    const statusLabel: TokoUmkm["status"] = targetSuspend.status === "Aktif" ? "Suspended" : "Aktif";
 
-    if (error) {
-      alert(`Gagal mengubah status toko: ${error.message}`);
-    } else {
+    try {
+      // 1. Update status di tabel admin_toko
+      const { error: errToko } = await supabase
+        .from("admin_toko")
+        .update({ status: statusBaruAdminToko })
+        .eq("id", targetSuspend.id);
+
+      if (errToko) throw errToko;
+
+      // 2. Update status di tabel profiles (jika profile_id ada)
+      if (targetSuspend.profile_id) {
+        await supabase
+          .from("profiles")
+          .update({ status: statusBaruProfile })
+          .eq("id", targetSuspend.profile_id);
+      }
+
+      // Update state lokal
       setUmkmList((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, status: statusLabel } : u))
+        prev.map((u) => (u.id === targetSuspend.id ? { ...u, status: statusLabel } : u))
       );
-      if (detail && detail.id === id) {
+      if (detail && detail.id === targetSuspend.id) {
         setDetail((prev) => (prev ? { ...prev, status: statusLabel } : null));
       }
+
+      setTargetSuspend(null);
+    } catch (err: any) {
+      alert(`Gagal mengubah status toko: ${err.message || "Terjadi kesalahan"}`);
+    } finally {
+      setSubmittingSuspend(false);
     }
   }
 
@@ -302,7 +298,7 @@ export default function DataUMKM() {
                     <td style={{ padding: "1rem", textAlign: "center" }}>
                       <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
                         <button onClick={() => bukaKelolaDetail(b)} style={{ background: "#EFF6FF", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Kelola</button>
-                        <button onClick={() => toggleSuspendEntitas(b.id, b.status)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
+                        <button onClick={() => setTargetSuspend(b)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
                       </div>
                     </td>
                   </tr>
@@ -312,6 +308,39 @@ export default function DataUMKM() {
           </table>
         </div>
       </div>
+
+      {/* POPUP MODAL KONFIRMASI SUSPEND / AKTIFKAN */}
+      {targetSuspend && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+              <div style={{ background: targetSuspend.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", color: targetSuspend.status === "Aktif" ? "#EF4444" : "#10B981", padding: "0.6rem", borderRadius: "12px" }}>
+                <IconAlertTriangle />
+              </div>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>
+                {targetSuspend.status === "Aktif" ? "Konfirmasi Suspend Akun" : "Aktifkan Akun Kembali"}
+              </h3>
+            </div>
+
+            <p style={{ fontSize: "0.88rem", color: "#475569", lineHeight: 1.5, margin: "0 0 1.25rem 0" }}>
+              {targetSuspend.status === "Aktif" ? (
+                <>Apakah Anda yakin ingin menangguhkan (suspend) toko <strong>{targetSuspend.nama}</strong> ({targetSuspend.pemilik})? Akun ini akan langsung terblokir dan tidak dapat mengakses sistem.</>
+              ) : (
+                <>Apakah Anda yakin ingin mengaktifkan kembali akses toko <strong>{targetSuspend.nama}</strong>?</>
+              )}
+            </p>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button onClick={() => setTargetSuspend(null)} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>
+                Batal
+              </button>
+              <button onClick={eksekusiToggleSuspend} disabled={submittingSuspend} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: targetSuspend.status === "Aktif" ? "#EF4444" : "#10B981", color: "white", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem", opacity: submittingSuspend ? 0.7 : 1 }}>
+                {submittingSuspend ? "Proses..." : targetSuspend.status === "Aktif" ? "Ya, Suspend Toko" : "Ya, Aktifkan Toko"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL KELOLA & DETAIL TOKO */}
       {detail && (
