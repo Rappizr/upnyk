@@ -109,9 +109,7 @@ export default function ProdusenDashboard() {
   }, []);
 
  useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   muatDataDashboard();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [activeMenu]);
 
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
@@ -146,7 +144,6 @@ export default function ProdusenDashboard() {
         }
       `}} />
 
-      {/* SIDEBAR */}
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -172,10 +169,7 @@ export default function ProdusenDashboard() {
         </div>
       </aside>
 
-      {/* KONTEN UTAMA */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
-        
-        {/* HEADER TOPBAR */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", color: "#334155" }}><IconMenu /></button>
@@ -190,7 +184,7 @@ export default function ProdusenDashboard() {
 
             <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
-                {profil.fotoUrl ? <Image src={profil.fotoUrl} alt="" fill style={{ objectFit: "cover" }} /> : profil.inisial}
+                {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
               </div>
               <div className="pn-user-name">
                 <div style={{ fontSize: "12.5px", fontWeight: 600, color: "#1E293B" }}>{profil.nama}</div>
@@ -203,7 +197,6 @@ export default function ProdusenDashboard() {
           </div>
         </div>
 
-        {/* ISI HALAMAN ACCORDING TO ACTIVEMENU */}
         <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFC" }}>
           {activeMenu === "dashboard" && (
             <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>

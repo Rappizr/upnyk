@@ -1,77 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { getProductsAction, getWishlistAction, addToWishlistAction, removeFromWishlistAction, addToCartAction } from "@/app/actions";
-function RiceIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  );
-}
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/db";
+import { 
+  getWishlistAction, 
+  addToWishlistAction, 
+  removeFromWishlistAction 
+} from "@/app/actions";
 
-function CoffeeIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-      <path d="M6 1v3M10 1v3M14 1v3" />
-    </svg>
-  );
-}
-
-function SpiceIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2c1.5 4 4 4 4 8 0 4.5-3.5 8-8 8s-8-3.5-8-8c0-4 2.5-4 4-8" />
-      <path d="M12 10a4 4 0 0 0-4-4" />
-    </svg>
-  );
-}
-
-function OilIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z" />
-    </svg>
-  );
-}
-
-function HoneyIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-      <path d="M12 6v12M8 10h8M6 14h12" />
-    </svg>
-  );
-}
-
-function GrainIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2a15 15 0 0 0-8 13.5C4 19.5 7.5 22 12 22s8-2.5 8-6.5C20 15 16 2 12 2z" />
-      <path d="M12 2v20" />
-    </svg>
-  );
-}
-
-function LeafIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 0 8.5C17 15 15 18 11 20z" />
-      <path d="M19 2c-2.26 4.33-5.27 7.14-8 18" />
-    </svg>
-  );
-}
-
-function FactoryIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M2 20h20M20 16v4M4 20v-8l6-4v4l6-4v4l4-4v12" />
-    </svg>
-  );
-}
-
+// ICON COMPONENTS
 function StarIcon({ size = 16, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -118,180 +54,11 @@ function CashIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
-function InfoIcon({ size = 16, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-  );
-}
-
-function IconRenderer({ type, size = 24, className = "", ...props }: any) {
-  const normalized = type.toLowerCase();
-  switch (normalized) {
-    case "rice":
-      return <RiceIcon size={size} className={className} {...props} />;
-    case "coffee":
-      return <CoffeeIcon size={size} className={className} {...props} />;
-    case "spice":
-      return <SpiceIcon size={size} className={className} {...props} />;
-    case "oil":
-      return <OilIcon size={size} className={className} {...props} />;
-    case "honey":
-      return <HoneyIcon size={size} className={className} {...props} />;
-    case "grain":
-      return <GrainIcon size={size} className={className} {...props} />;
-    case "leaf":
-      return <LeafIcon size={size} className={className} {...props} />;
-    case "factory":
-      return <FactoryIcon size={size} className={className} {...props} />;
-    default:
-      return <RiceIcon size={size} className={className} {...props} />;
-  }
-}
-
-const categories = ["Semua", "Pangan", "Minuman", "Rempah", "Organik", "Olahan", "Peternakan"];
-
-// List of locations (Kabupaten) to filter
-const locations = ["Semua Wilayah", "Cianjur", "Brebes", "Aceh Tengah", "Minahasa", "Kapuas Hulu"];
-
-// Full detailed Profile Info for each co-op store
-const coopProfiles: Record<string, any> = {
-  "Koperasi Tani Maju": {
-    name: "Koperasi Tani Maju",
-    desc: "Kelompok tani desa Sukamaju yang berdedikasi memproduksi beras organik berkualitas tinggi sejak 2015.",
-    desa: "Desa Sukamaju",
-    kabupaten: "Cianjur",
-    provinsi: "Jawa Barat",
-    rating: 4.9,
-    reviews: 480,
-    established: "2015",
-    productsCount: 2,
-    badge: "Koperasi Pelosok Pilihan",
-    bannerText: "Dapatkan Beras Organik Cianjur Segar Langsung dari Sawah Desa Sukamaju!"
-  },
-  "Koperasi Brebes Jaya": {
-    name: "Koperasi Brebes Jaya",
-    desc: "Produsen bawang merah Brebes segar bermutu tinggi langsung dari lahan petani lokal desa Wanasari.",
-    desa: "Desa Wanasari",
-    kabupaten: "Brebes",
-    provinsi: "Jawa Tengah",
-    rating: 4.8,
-    established: "2018",
-    reviews: 320,
-    productsCount: 2,
-    badge: "UMKM Unggulan Desa",
-    bannerText: "Bawang Merah Brebes Khas Petani Wanasari, Pedas dan Gurih Alami!"
-  },
-  "Koperasi Gayo Indah": {
-    name: "Koperasi Gayo Indah",
-    desc: "Kopi Arabika Gayo organik bercita rasa tinggi, diproses basah secara tradisional oleh petani desa Kenawat.",
-    desa: "Desa Kenawat",
-    kabupaten: "Aceh Tengah",
-    provinsi: "Aceh",
-    rating: 4.9,
-    established: "2012",
-    reviews: 218,
-    productsCount: 1,
-    badge: "Koperasi Kopi Ekspor",
-    bannerText: "Cita Rasa Kopi Arabika Gayo Premium Langsung dari Pegunungan Aceh Tengah!"
-  },
-  "Koperasi Sulawesi Makmur": {
-    name: "Koperasi Sulawesi Makmur",
-    desc: "Koperasi penghasil kelapa terpadu desa Ranomeeto, Sulawesi Utara. Memproduksi minyak kelapa VCO dan santan instan higienis.",
-    desa: "Desa Ranomeeto",
-    kabupaten: "Minahasa",
-    provinsi: "Sulawesi Utara",
-    rating: 4.7,
-    established: "2019",
-    reviews: 500,
-    productsCount: 3,
-    badge: "Koperasi Kelapa Pelosok",
-    bannerText: "Kelapa Segar Minahasa Diolah Menjadi VCO dan Santan Berkualitas!"
-  },
-  "Koperasi Madu Borneo": {
-    name: "Koperasi Madu Borneo",
-    desc: "Koperasi konservasi madu hutan liar desa Putussibau, Kalimantan Barat. Mengambil madu murni langsung dari pohon sialang hutan.",
-    desa: "Desa Putussibau",
-    kabupaten: "Kapuas Hulu",
-    provinsi: "Kalimantan Barat",
-    rating: 5.0,
-    established: "2016",
-    reviews: 521,
-    productsCount: 1,
-    badge: "Madu Hutan Bersertifikat",
-    bannerText: "Madu Murni Hutan Kalimantan Langsung dari Konservasi Suku Dayak Putussibau!"
-  }
-};
-
-// Mapping of products to co-op stores based on their ID or category
-const productStoreMap: Record<number, string> = {
-  1: "Koperasi Tani Maju",
-  2: "Koperasi Gayo Indah",
-  3: "Koperasi Brebes Jaya",
-  4: "Koperasi Sulawesi Makmur",
-  5: "Koperasi Brebes Jaya",
-  6: "Koperasi Sulawesi Makmur",
-  7: "Koperasi Sulawesi Makmur",
-  8: "Koperasi Madu Borneo"
-};
-
-const productDetailMap: Record<number, { weight: string; desc: string }> = {
-  1: {
-    weight: "1,0 kg",
-    desc: "Beras merah organik pilihan kualitas prima dari sawah pegunungan Cianjur. Diproduksi secara alami tanpa pestisida kimia oleh Koperasi Tani Maju. Sangat tinggi serat, cocok untuk konsumsi harian sehat dan diet indeks glikemik rendah."
-  },
-  2: {
-    weight: "0,5 kg",
-    desc: "Kopi Arabika Gayo asli Aceh Tengah dengan pemrosesan semi-washed tradisional. Memiliki aroma floral yang kuat, body tebal, dan keasaman seimbang yang khas. Dipanen dari perkebunan rakyat organik binaan Koperasi Gayo Indah."
-  },
-  3: {
-    weight: "1,0 kg",
-    desc: "Bawang merah segar asli Brebes kualitas super, dipanen langsung dari lahan subur desa Wanasari. Memiliki kandungan air rendah sehingga lebih renyah, aromatik kuat, dan tahan lama disimpan. Sangat cocok untuk bumbu dapur premium."
-  },
-  4: {
-    weight: "0,5 kg",
-    desc: "Minyak Kelapa Murni (Virgin Coconut Oil) cold-pressed hasil olahan kelapa segar pilihan Minahasa. Kaya akan asam laurat yang baik untuk metabolisme, perawatan kulit, dan kesehatan rambut. Diproduksi tanpa pemanasan suhu tinggi."
-  },
-  5: {
-    weight: "0,25 kg",
-    desc: "Cabai merah keriting pilihan dari daerah Garut, Jawa Barat. Memiliki tingkat kepedasan yang pas, warna merah menyala yang segar, serta tekstur cabai yang padat dan padat rasa. Sangat cocok untuk sambal tradisional Indonesia."
-  },
-  6: {
-    weight: "0,25 kg",
-    desc: "Cokelat bubuk murni kualitas ekspor terbuat dari biji kakao fermentasi pilihan petani lokal Luwu, Sulawesi Selatan. Memiliki rasa cokelat pahit-manis yang kaya, cocok untuk minuman cokelat hangat premium maupun bahan kue."
-  },
-  7: {
-    weight: "0,5 kg",
-    desc: "Santan kelapa murni segar yang diperas dari kelapa tua pilihan daerah pesisir Manado. Diproses secara higienis tanpa bahan pengawet untuk menjaga keaslian rasa gurih alami masakan tradisional Indonesia Anda."
-  },
-  8: {
-    weight: "0,5 kg",
-    desc: "Madu hutan murni 100% organik yang dipanen langsung dari sarang lebah Apis Dorsata liar di pohon Sialang pedalaman hutan Kalimantan Barat. Kaya akan enzim alami, antioksidan, dan nutrisi penting untuk stamina keluarga."
-  }
-};
-
 interface MarketplaceViewProps {
   onCartUpdated?: () => void;
   onNavigateToCart?: () => void;
   initialStoreFilter?: string;
   clearInitialStoreFilter?: () => void;
-}
-
-// Helper: map icon_type -> category label untuk filter UI
-function iconTypeToCategory(iconType: string): string {
-  switch (iconType) {
-    case 'rice': return 'Beras';
-    case 'coffee': return 'Kopi';
-    case 'spice': return 'Rempah';
-    case 'oil': return 'Minyak';
-    case 'honey': return 'Madu';
-    case 'grain': return 'Biji-bijian';
-    case 'leaf': return 'Sayuran';
-    default: return 'Lainnya';
-  }
 }
 
 export default function MarketplaceView({ 
@@ -300,659 +67,500 @@ export default function MarketplaceView({
   initialStoreFilter,
   clearInitialStoreFilter
 }: MarketplaceViewProps) {
-  const searchParams = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
-  const [activeCategory, setActiveCategory] = useState("Semua");
+  const [stores, setStores] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [activeLocation, setActiveLocation] = useState("Semua Wilayah");
-  const [selectedStore, setSelectedStore] = useState("");
-  const [sortBy, setSortBy] = useState("terlaris");
+  const [sortBy, setSortBy] = useState("terbaru");
   const [loading, setLoading] = useState(true);
+
+  // WISHLIST & MODAL STATE
   const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [detailQty, setDetailQty] = useState(1);
-  const [showAddedToCartPopup, setShowAddedToCartPopup] = useState(false);
+  const [showCartPopup, setShowCartPopup] = useState(false);
   const [addedProductName, setAddedProductName] = useState("");
 
-  useEffect(() => {
-    if (initialStoreFilter) {
-      setSelectedStore(initialStoreFilter);
-      clearInitialStoreFilter?.();
-    }
-  }, [initialStoreFilter, clearInitialStoreFilter]);
+  // 1. FETCH DATA REALTIME TOKO & ETALASE TAYANG DARI SUPABASE
+  const loadMarketplaceData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // A. Load Toko dari `admin_toko`
+      const { data: tokoData, error: errToko } = await supabase
+        .from("admin_toko")
+        .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto");
 
-  useEffect(() => {
-    if (searchParams) {
-      const storeParam = searchParams.get("store");
-      if (storeParam) {
-        setSelectedStore(storeParam);
+      if (errToko) console.error("Error load admin_toko:", errToko.message);
+      setStores(tokoData || []);
+
+      // B. Load Produk dari `etalase` yang status = 'tayang'
+      const { data: etalaseData, error: errEtalase } = await supabase
+        .from("etalase")
+        .select("*")
+        .eq("status", "tayang")
+        .order("created_at", { ascending: false });
+
+      if (errEtalase) console.error("Error load etalase:", errEtalase.message);
+
+      if (etalaseData && etalaseData.length > 0) {
+        const tokoMap = new Map((tokoData || []).map((t) => [t.id, t]));
+
+        const mappedProducts = etalaseData.map((e: any) => {
+          const toko = tokoMap.get(e.admin_toko_id);
+          const lokasi = [toko?.desa, toko?.kabupaten].filter(Boolean).join(", ") || "Indonesia";
+
+          return {
+            id: e.id,
+            admin_toko_id: e.admin_toko_id,
+            name: e.nama_produk || "Produk Toko",
+            price: Number(e.harga_jual) || 0,
+            diskon: Number(e.diskon_persen) || 0,
+            stock: Number(e.stok) || 0,
+            satuan: e.satuan || "pcs",
+            storeName: toko?.nama_toko || "Toko Mitra",
+            kabupaten: toko?.kabupaten || "",
+            origin: lokasi,
+            foto: e.foto || null,
+            deskripsi: e.deskripsi || "Produk berkualitas tinggi tersedia di toko mitra kami.",
+            rating: 5.0,
+            reviews: 0
+          };
+        });
+
+        setProducts(mappedProducts);
+      } else {
+        setProducts([]);
       }
-    }
-  }, [searchParams]);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [prodData, wlData] = await Promise.all([
-          getProductsAction(),
-          getWishlistAction()
-        ]);
-
-        setProducts(prodData || []);
-        setWishlistItems(wlData || []);
-        setWishlistedIds((wlData || []).map((w: any) => w.product_id));
-      } catch (err) {
-        console.error("Failed to load products:", err);
-      } finally {
-        setLoading(false);
+      // C. Load Wishlist User
+      const wlData = await getWishlistAction();
+      if (wlData) {
+        setWishlistedIds(wlData.map((w: any) => w.product_id));
       }
+
+    } catch (err) {
+      console.error("Gagal memuat data marketplace:", err);
+    } finally {
+      setLoading(false);
     }
-    loadData();
   }, []);
 
-  const handleAddToWishlist = async (productId: string) => {
+  useEffect(() => {
+    loadMarketplaceData();
+  }, [loadMarketplaceData]);
+
+  useEffect(() => {
+    if (initialStoreFilter && stores.length > 0) {
+      const found = stores.find((s) => s.nama_toko.toLowerCase() === initialStoreFilter.toLowerCase());
+      if (found) setSelectedStoreId(found.id);
+      clearInitialStoreFilter?.();
+    }
+  }, [initialStoreFilter, stores, clearInitialStoreFilter]);
+
+// TOGGLE WISHLIST REALTIME DENGAN HANDLING ERROR
+  const handleToggleWishlist = async (productId: string) => {
     try {
-      const savedIds = wishlistedIds;
-      if (savedIds.includes(productId)) {
-        // Hapus dari wishlist database
-        const success = await removeFromWishlistAction(productId);
-        if (success) {
-          setWishlistedIds(prev => prev.filter(id => id !== productId));
-          setWishlistItems(prev => prev.filter((w: any) => w.product_id !== productId));
-        } else {
+      const isWishlisted = wishlistedIds.includes(productId);
+
+      if (isWishlisted) {
+        // Optimistic UI Update (langsung ubah warna agar responsif)
+        setWishlistedIds((prev) => prev.filter((id) => id !== productId));
+
+        const ok = await removeFromWishlistAction(productId);
+        if (!ok) {
+          // Revert jika gagal di server
+          setWishlistedIds((prev) => [...prev, productId]);
           alert("Gagal menghapus dari wishlist.");
         }
       } else {
-        // Tambah ke wishlist database
+        // Optimistic UI Update
+        setWishlistedIds((prev) => [...prev, productId]);
+
         const res = await addToWishlistAction(productId);
-        if (res) {
-          setWishlistedIds(prev => [...prev, productId]);
-          setWishlistItems(prev => [...prev, { id: res.id, product_id: productId }]);
-          alert("Berhasil ditambahkan ke wishlist!");
-        } else {
-          alert("Gagal menambahkan ke wishlist.");
+        if (!res) {
+          // Revert jika gagal
+          setWishlistedIds((prev) => prev.filter((id) => id !== productId));
+          alert("Gagal menyimpan ke wishlist. Pastikan Anda sudah login!");
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Error toggle wishlist:", err);
+      alert("Terjadi kesalahan saat menyimpan wishlist: " + (err.message || ""));
     }
   };
 
-
-
-  const handleAddOrder = async (p: any, qty = 1) => {
+  // TAMBAH KE KERANJANG BELANJA (LOCALSTORAGE)
+  const handleAddToCart = (p: any, qty = 1) => {
     try {
-      await addToCartAction(p.id, qty);
+      const saved = localStorage.getItem("cartItems");
+      let cart = saved ? JSON.parse(saved) : [];
+
+      const idx = cart.findIndex((item: any) => item.product.id === p.id);
+      if (idx > -1) {
+        cart[idx].qty += qty;
+      } else {
+        cart.push({
+          id: Date.now() + Math.random(),
+          product: {
+            id: p.id,
+            admin_toko_id: p.admin_toko_id,
+            name: p.name,
+            price: p.diskon > 0 ? Math.round(p.price * (1 - p.diskon / 100)) : p.price,
+            supplier: p.storeName,
+            origin: p.origin,
+            foto: p.foto,
+            satuan: p.satuan
+          },
+          qty: qty
+        });
+      }
+
+      localStorage.setItem("cartItems", JSON.stringify(cart));
       if (onCartUpdated) onCartUpdated();
-    } catch (err) {
-      console.error(err);
+
+      setAddedProductName(p.name);
+      setShowCartPopup(true);
+    } catch (e) {
+      console.error("Gagal tambah keranjang:", e);
     }
   };
 
-  // Filtering Logic — produk dari Supabase menggunakan UUID, tidak ada field 'category'/'store' langsung
-  let filtered = products.map(p => ({
-    ...p,
-    // Derive category label from icon_type for filtering
-    category: p.category || iconTypeToCategory(p.icon_type),
-    // Store mapping: for Supabase products, use supplier field or fallback
-    store: p.supplier || "Koperasi Pelosok Pilihan"
-  }));
+  // FILTER & SORTING PRODUK
+  let filteredProducts = products.filter((p) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.storeName.toLowerCase().includes(q);
+    const matchStore = !selectedStoreId || p.admin_toko_id === selectedStoreId;
+    const matchLoc = activeLocation === "Semua Wilayah" || (p.kabupaten || "").toLowerCase().includes(activeLocation.toLowerCase());
+    return matchSearch && matchStore && matchLoc;
+  });
 
-  // Filter by search query
-  if (searchQuery.trim() !== "") {
-    const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(p => 
-      (p.name || "").toLowerCase().includes(q) || 
-      (p.category || "").toLowerCase().includes(q) ||
-      (p.store || "").toLowerCase().includes(q) ||
-      (p.description || "").toLowerCase().includes(q)
-    );
-  }
-
-  // Filter by category
-  if (activeCategory !== "Semua") {
-    filtered = filtered.filter(p => (p.category || "") === activeCategory);
-  }
-
-  // Filter by location
-  if (activeLocation !== "Semua Wilayah") {
-    filtered = filtered.filter(p => (p.origin || "").toLowerCase().includes(activeLocation.toLowerCase()));
-  }
-
-  // Filter by selected co-op store profile
-  if (selectedStore) {
-    filtered = filtered.filter(p => p.store === selectedStore);
-  }
-
-  // Sorting
   if (sortBy === "termurah") {
-    filtered.sort((a, b) => a.price - b.price);
+    filteredProducts.sort((a, b) => a.price - b.price);
   } else if (sortBy === "termahal") {
-    filtered.sort((a, b) => b.price - a.price);
-  } else if (sortBy === "rating") {
-    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    filteredProducts.sort((a, b) => b.price - a.price);
   }
 
-  const activeCoop = coopProfiles[selectedStore];
+  const selectedStoreObj = stores.find((s) => s.id === selectedStoreId);
+  const locationOptions = ["Semua Wilayah", ...Array.from(new Set(stores.map((s) => s.kabupaten).filter(Boolean)))];
 
   return (
-    <>
-      {selectedStore && activeCoop ? (
-        /* Toko Profile Header Card */
-        <div className="card" style={{ marginBottom: "1.5rem", borderLeft: "4px solid var(--color-primary)", padding: "1.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                <span className="badge badge-info">{activeCoop.badge}</span>
-                <span className="text-xs text-muted">Est. {activeCoop.established}</span>
-              </div>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0 0 0.5rem 0", color: "var(--color-primary)" }}>
-                {activeCoop.name}
-              </h2>
-              <p className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.25rem", marginBottom: "0.5rem" }}>
-                <LocationIcon size={14} /> {activeCoop.desa}, {activeCoop.kabupaten}, {activeCoop.provinsi}
-              </p>
-              <p className="text-sm" style={{ maxWidth: "600px", lineHeight: 1.5, margin: "0 0 1rem 0" }}>
-                {activeCoop.desc}
-              </p>
-              <div style={{ display: "flex", gap: "1.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                <span className="text-xs text-muted" style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }}>
-                  <StarIcon size={12} fill="currentColor" className="text-amber-400" /> <strong>{activeCoop.rating}</strong> ({activeCoop.reviews} ulasan)
-                </span>
-                <span className="text-xs text-muted">Katalog: <strong>{filtered.length} Komoditas</strong></span>
-                <span className="text-xs text-muted">Verifikasi Rantai Pasok: <strong className="text-emerald-600">✓ Aktif</strong></span>
-              </div>
-            </div>
-            <button
-              className="btn-ghost"
-              onClick={() => setSelectedStore("")}
-              style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }}
-            >
-              ← Tutup Profil Toko
-            </button>
-          </div>
-          <div style={{ marginTop: "1rem", padding: "0.75rem", background: "var(--color-primary-light)", borderRadius: "var(--radius-sm)", fontSize: "0.8rem", color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <InfoIcon size={16} style={{ flexShrink: 0 }} />
-            <span>{activeCoop.bannerText}</span>
-          </div>
-        </div>
-      ) : (
-        <>
-          <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <CartIcon size={28} className="text-primary" /> Marketplace
-          </h1>
-          <p className="page-subtitle">Temukan produk terbaik dari ribuan UMKM & supplier lokal Indonesia</p>
-        </>
-      )}
+    <div style={{ fontFamily: "sans-serif" }}>
+      {/* HEADER MARKETPLACE */}
+      <div style={{ marginBottom: "1.25rem" }}>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+          <CartIcon size={28} className="text-primary" /> Marketplace Toko
+        </h1>
+        <p className="page-subtitle" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
+          Jelajahi komoditas segar dan olahan unggulan dari Toko Admin terpercaya.
+        </p>
+      </div>
 
-      {/* Search Bar */}
-      <div style={{ marginBottom: "1rem", position: "relative", width: "100%" }}>
+      {/* SEARCH BAR */}
+      <div style={{ marginBottom: "1rem" }}>
         <input
           type="text"
           className="form-input"
-          placeholder="Cari produk berdasarkan nama, kategori, atau koperasi..."
+          placeholder="Cari produk berdasarkan nama atau nama toko..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          id="marketplace-search-input"
-          style={{
-            width: "100%",
-            padding: "0.625rem 2.5rem 0.625rem 2.75rem",
-            fontSize: "0.9rem",
-            borderRadius: "var(--radius-md)",
-            border: "1.5px solid var(--color-border)",
-            height: "44px",
-            boxSizing: "border-box"
-          }}
+          style={{ width: "100%", padding: "0.75rem 1rem", borderRadius: "10px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }}
         />
-        <svg 
-          style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--color-text-muted)" }} 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2.5" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            style={{
-              position: "absolute",
-              right: "1rem",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--color-text-muted)",
-              fontSize: "1.2rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0
-            }}
+      </div>
+
+      {/* BARIS FILTER (PILIK TOKO, WILAYAH, URUTAN) */}
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
+        {/* DROPDOWN TOKO */}
+        <div style={{ flex: 1, minWidth: "180px" }}>
+          <select
+            value={selectedStoreId}
+            onChange={(e) => setSelectedStoreId(e.target.value)}
+            style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white", color: "#1E293B", outline: "none" }}
           >
-            ×
+            <option value="">-- Filter Semua Toko --</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>🏪 {s.nama_toko}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* DROPDOWN WILAYAH */}
+        <div style={{ minWidth: "150px" }}>
+          <select
+            value={activeLocation}
+            onChange={(e) => setActiveLocation(e.target.value)}
+            style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white", color: "#1E293B", outline: "none" }}
+          >
+            {locationOptions.map((loc: any) => (
+              <option key={loc} value={loc}>{loc}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* DROPDOWN SORTING */}
+        <div style={{ minWidth: "150px" }}>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", background: "white", color: "#1E293B", outline: "none" }}
+          >
+            <option value="terbaru">Terbaru</option>
+            <option value="termurah">Harga Terendah</option>
+            <option value="termahal">Harga Tertinggi</option>
+          </select>
+        </div>
+      </div>
+
+      {/* BANNER PROFIL TOKO AKTIF */}
+      {selectedStoreObj && (
+        <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "12px", padding: "1rem 1.25rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div>
+            <span className="badge badge-info" style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase" }}>Melihat Katalog Toko</span>
+            <h2 style={{ margin: "0.25rem 0 0 0", fontSize: "1.2rem", fontWeight: 800, color: "#1E293B" }}>{selectedStoreObj.nama_toko}</h2>
+            <p style={{ margin: "0.2rem 0 0 0", fontSize: "0.8rem", color: "#64748B", display: "flex", alignItems: "center", gap: "4px" }}>
+              <LocationIcon size={14} /> {selectedStoreObj.desa}, {selectedStoreObj.kabupaten}, {selectedStoreObj.provinsi}
+            </p>
+          </div>
+          <button 
+            onClick={() => setSelectedStoreId("")}
+            style={{ background: "white", border: "1px solid #CBD5E1", padding: "0.45rem 0.85rem", borderRadius: "8px", fontSize: "0.8rem", cursor: "pointer", color: "#475569", fontWeight: 700 }}
+          >
+            ✕ Tutup Katalog Toko
           </button>
-        )}
-      </div>
-
-      {/* Filter and Search Bar Controls */}
-      <div className="marketplace-controls">
-        {/* Categories Chips */}
-        <div className="category-scroll-strip" style={{ display: "flex", gap: "0.5rem" }}>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              className={`filter-chip${activeCategory === cat ? " active" : ""}`}
-              onClick={() => setActiveCategory(cat)}
-              id={`filter-${cat.toLowerCase()}`}
-            >
-              {cat}
-            </button>
-          ))}
         </div>
+      )}
 
-        {/* Location Dropdown and Sorting */}
-        <div className="filter-row">
-          <div className="filter-select-group">
-            <label className="text-xs text-muted" style={{ fontWeight: 600 }}>Wilayah:</label>
-            <select
-              className="form-input"
-              style={{ width: "auto", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }}
-              value={activeLocation}
-              onChange={(e) => setActiveLocation(e.target.value)}
-              id="location-select"
-            >
-              {locations.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-select-group">
-            <label className="text-xs text-muted" style={{ fontWeight: 600 }}>Urutkan:</label>
-            <select
-              className="form-input"
-              style={{ width: "auto", padding: "0.4rem 0.75rem", fontSize: "0.85rem" }}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              id="sort-select"
-            >
-              <option value="terlaris">Terlaris</option>
-              <option value="termurah">Harga Terendah</option>
-              <option value="termahal">Harga Tertinggi</option>
-              <option value="rating">Rating Tertinggi</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Result count / breadcrumb */}
-      <div className="text-sm text-muted mb-4" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          Menampilkan <strong>{filtered.length}</strong> produk
-          {activeCategory !== "Semua" && <> dalam <strong>{activeCategory}</strong></>}
-          {activeLocation !== "Semua Wilayah" && <> dari <strong>{activeLocation}</strong></>}
-          {selectedStore && <> di <strong>{selectedStore}</strong></>}
-        </div>
-        {selectedStore && (
-          <span className="badge badge-success" style={{ fontSize: "0.75rem" }}>
-            Melihat Katalog {selectedStore}
-          </span>
-        )}
-      </div>
-
+      {/* RENDER GRID PRODUK */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-muted)" }}>Memuat produk marketplace...</div>
+        <div style={{ textAlign: "center", padding: "3rem", color: "#64748B" }}>Memuat produk etalase toko...</div>
+      ) : filteredProducts.length === 0 ? (
+        <div style={{ background: "white", padding: "3rem", textAlign: "center", borderRadius: "12px", border: "1px solid #E2E8F0", color: "#94A3B8" }}>
+          {selectedStoreId ? "Toko ini belum menayangkan produk di etalase." : "Belum ada produk yang ditayangkan oleh Admin Toko."}
+        </div>
       ) : (
-        /* Product Grid */
-        <div className="product-grid">
-          {filtered.map((p) => (
-            <div 
-              key={p.id} 
-              className="product-card card-hover" 
-              id={`mp-product-${p.id}`}
-              style={{ position: "relative" }}
-            >
-              {/* Floating Wishlist Button */}
-              <button 
-                className="icon-btn" 
-                id={`btn-mp-wishlist-${p.id}`} 
-                title="Simpan ke Wishlist" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddToWishlist(p.id);
-                }}
-                style={{ 
-                  position: "absolute",
-                  top: "0.5rem",
-                  right: "0.5rem",
-                  display: "inline-flex", 
-                  alignItems: "center", 
-                  justifyContent: "center",
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.9)",
-                  border: wishlistedIds.includes(p.id) ? "1px solid var(--color-alert)" : "1px solid var(--color-border)",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                  cursor: "pointer",
-                  color: wishlistedIds.includes(p.id) ? "var(--color-alert)" : "var(--color-text-subtle)",
-                  zIndex: 5,
-                  transition: "transform 0.15s, background 0.15s"
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "scale(1.1)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                }}
-              >
-                <HeartIcon size={14} fill={wishlistedIds.includes(p.id) ? "currentColor" : "none"} />
-              </button>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "1.25rem" }}>
+          {filteredProducts.map((p) => {
+            const isWishlisted = wishlistedIds.includes(p.id);
+            const hargaFinal = p.diskon > 0 ? Math.round(p.price * (1 - p.diskon / 100)) : p.price;
 
+            return (
               <div 
-                className="product-img" 
-                onClick={() => {
-                  setSelectedProduct(p);
-                  setDetailQty(1);
-                }}
-                style={{ background: "var(--color-border-light)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                key={p.id} 
+                style={{ background: "white", borderRadius: "14px", border: "1px solid #E2E8F0", overflow: "hidden", display: "flex", flexDirection: "column", position: "relative", boxShadow: "0 2px 8px rgba(0,0,0,0.02)" }}
               >
-                <IconRenderer type={p.icon_type} size={32} className="text-amber-600" />
-              </div>
-              <div className="product-body">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.375rem" }}>
-                  <div className="badge badge-gray text-xs">{p.category}</div>
-                  <span 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedStore(p.store);
-                    }}
-                    className="text-xs text-primary font-bold" 
-                    style={{ cursor: "pointer", textDecoration: "underline" }}
-                  >
-                    {p.store}
-                  </span>
-                </div>
+{/* TOMBOL WISHLIST FLOATING */}
+<button
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handleToggleWishlist(p.id);
+  }}
+  style={{ 
+    position: "absolute", 
+    top: "10px", 
+    right: "10px", 
+    zIndex: 50, 
+    background: "rgba(255, 255, 255, 0.95)", 
+    border: isWishlisted ? "1px solid #EF4444" : "1px solid #CBD5E1", 
+    borderRadius: "50%", 
+    width: "34px", 
+    height: "34px", 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    cursor: "pointer", 
+    color: isWishlisted ? "#EF4444" : "#94A3B8",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.12)"
+  }}
+  title={isWishlisted ? "Hapus dari Wishlist" : "Tambah ke Wishlist"}
+>
+  <span style={{ pointerEvents: "none", display: "flex" }}>
+    <HeartIcon size={18} fill={isWishlisted ? "currentColor" : "none"} />
+  </span>
+</button>
+
+                {/* GAMBAR PRODUK */}
                 <div 
-                  className="product-name" 
-                  onClick={() => {
-                    setSelectedProduct(p);
-                    setDetailQty(1);
-                  }}
-                  style={{ cursor: "pointer" }}
+                  onClick={() => { setSelectedProduct(p); setDetailQty(1); }}
+                  style={{ height: "140px", background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer" }}
                 >
-                  {p.name}
+                  {p.foto ? (
+                    <img src={p.foto} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "2.5rem" }}>📦</span>
+                  )}
                 </div>
-                <div className="product-origin" style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.8rem", marginBottom: "0.375rem" }}>
-                  <LocationIcon size={14} /> {p.origin}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
-                    {p.stock === "Tersedia" ? "✓" : "!"} {p.stock}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.5rem" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.2rem" }} className="text-xs text-muted">
-                    <StarIcon size={12} fill="currentColor" className="text-amber-400" /> {p.rating}
-                    <span className="text-xs text-muted">({p.reviews} ulasan)</span>
-                  </span>
-                </div>
-                <div className="product-price">Rp {p.price.toLocaleString("id-ID")}</div>
-                
-                <div className="product-actions" style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.75rem" }}>
-                  <button 
-                    className="btn-secondary" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddOrder(p, 1);
-                      setAddedProductName(p.name);
-                      setShowAddedToCartPopup(true);
-                    }} 
-                    style={{ 
-                      flex: 1, 
-                      padding: "0.5rem 0.25rem", 
-                      fontSize: "0.75rem", 
-                      display: "inline-flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      gap: "0.25rem",
-                      borderRadius: "6px",
-                      background: "var(--color-primary-light)",
-                      color: "var(--color-primary)",
-                      border: "1px solid var(--color-primary)",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      cursor: "pointer"
-                    }} 
-                    id={`btn-mp-add-cart-${p.id}`}
+
+                {/* INFO PRODUK */}
+                <div style={{ padding: "0.9rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <div 
+                    onClick={() => setSelectedStoreId(p.admin_toko_id)}
+                    style={{ fontSize: "0.72rem", color: "#2563EB", fontWeight: 800, textTransform: "uppercase", marginBottom: "0.2rem", cursor: "pointer" }}
                   >
-                    <CartIcon size={12} /> Keranjang
-                  </button>
-                  <button 
-                    className="btn-primary" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddOrder(p, 1);
-                      if (onNavigateToCart) onNavigateToCart();
-                    }} 
-                    style={{ 
-                      flex: 1, 
-                      padding: "0.5rem 0.25rem", 
-                      fontSize: "0.75rem", 
-                      display: "inline-flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      gap: "0.25rem",
-                      borderRadius: "6px",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      cursor: "pointer"
-                    }} 
-                    id={`btn-mp-buy-now-${p.id}`}
-                  >
-                    <CashIcon size={12} /> Beli
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-}
-        </div >
-      )}
-
-      {selectedProduct && (
-        <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: "640px" }}>
-            {/* Modal Header */}
-            <div className="modal-header">
-              <span className="modal-header-title">Detail Produk</span>
-              <button onClick={() => setSelectedProduct(null)} className="modal-close-btn">
-                &times;
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="modal-body">
-              <div className="modal-product-layout">
-                {/* Product Image Icon container */}
-                <div className="modal-product-img">
-                  <IconRenderer type={selectedProduct.icon_type} size={80} className="text-amber-600" />
-                </div>
-
-                {/* Main Product Info */}
-                <div className="modal-product-info">
-                  <div>
-                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
-                      <span className="badge badge-gray text-xs">{selectedProduct.category}</span>
-                      <span 
-                        className="text-xs text-primary font-bold" 
-                        style={{ cursor: "pointer", textDecoration: "underline" }}
-                        onClick={() => {
-                          setSelectedStore(selectedProduct.store);
-                          setSelectedProduct(null);
-                        }}
-                      >
-                        {selectedProduct.store}
-                      </span>
-                    </div>
-                    <h2 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0 0 0.5rem 0", color: "var(--color-primary)", lineHeight: 1.2 }}>
-                      {selectedProduct.name}
-                    </h2>
-                    <p style={{ display: "flex", alignItems: "center", gap: "0.25rem", color: "var(--color-text-muted)", fontSize: "0.85rem", margin: "0 0 0.75rem 0" }}>
-                      <LocationIcon size={14} /> {selectedProduct.origin}
-                    </p>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }} className="text-xs text-muted">
-                        <StarIcon size={12} fill="currentColor" className="text-amber-400" /> <strong>{selectedProduct.rating}</strong> ({selectedProduct.reviews} ulasan)
-                      </span>
-                      <span className={`badge ${selectedProduct.stock === "Tersedia" ? "badge-success" : "badge-warning"}`} style={{ fontSize: "0.7rem" }}>
-                        {selectedProduct.stock}
-                      </span>
-                      <span className="badge badge-info" style={{ fontSize: "0.7rem" }}>
-                        Berat: {productDetailMap[selectedProduct.id]?.weight || "1,0 kg"}
-                      </span>
-                    </div>
+                    🏪 {p.storeName}
                   </div>
 
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-primary)", marginTop: "0.5rem" }}>
-                    Rp {selectedProduct.price.toLocaleString("id-ID")}
+                  <div 
+                    onClick={() => { setSelectedProduct(p); setDetailQty(1); }}
+                    style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.25rem", cursor: "pointer" }}
+                  >
+                    {p.name}
                   </div>
-                </div>
-              </div>
 
-              {/* Description */}
-              <div style={{ borderTop: "1px solid var(--color-border-light)", paddingTop: "1rem" }}>
-                <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.95rem", fontWeight: 700, color: "var(--color-text)" }}>Deskripsi Produk</h4>
-                <p style={{ fontSize: "0.875rem", lineHeight: 1.6, color: "var(--color-text-subtle)", margin: 0 }}>
-                  {productDetailMap[selectedProduct.id]?.desc || "Komoditas pilihan bermutu tinggi langsung dari koperasi tani Indonesia."}
-                </p>
-              </div>
+                  <div style={{ fontSize: "0.75rem", color: "#64748B", marginBottom: "0.4rem", display: "flex", alignItems: "center", gap: "3px" }}>
+                    <LocationIcon size={12} /> {p.origin}
+                  </div>
 
-              {/* Action area */}
-              <div className="modal-action-bar">
-                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--color-text-subtle)" }}>Jumlah:</span>
-                  <div className="qty-selector">
-                    <button 
-                      onClick={() => setDetailQty(Math.max(1, detailQty - 1))}
-                      className="qty-btn"
+                  <div style={{ fontSize: "0.75rem", color: p.stock > 0 ? "#10B981" : "#EF4444", fontWeight: 700, marginBottom: "0.6rem" }}>
+                    {p.stock > 0 ? `✓ Tersedia (${p.stock} ${p.satuan})` : "✕ Stok Habis"}
+                  </div>
+
+                  {/* HARGA */}
+                  <div style={{ marginTop: "auto", paddingTop: "0.5rem", borderTop: "1px dashed #F1F5F9", marginBottom: "0.75rem" }}>
+                    {p.diskon > 0 ? (
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#94A3B8", textDecoration: "line-through" }}>Rp {p.price.toLocaleString("id-ID")}</span>
+                          <span style={{ fontSize: "0.68rem", fontWeight: 800, background: "#FEE2E2", color: "#991B1B", padding: "0.1rem 0.35rem", borderRadius: "4px" }}>-{p.diskon}%</span>
+                        </div>
+                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B" }}>Rp {hargaFinal.toLocaleString("id-ID")}</div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>Rp {p.price.toLocaleString("id-ID")}</div>
+                    )}
+                  </div>
+
+                  {/* AKSI TOMBOL */}
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <button
+                      onClick={() => handleAddToCart(p, 1)}
+                      disabled={p.stock <= 0}
+                      style={{ flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", border: "1px solid #2563EB", background: "#EFF6FF", color: "#2563EB", fontWeight: 700, fontSize: "0.75rem", cursor: p.stock > 0 ? "pointer" : "not-allowed", opacity: p.stock > 0 ? 1 : 0.5 }}
                     >
-                      -
+                      + Keranjang
                     </button>
-                    <span className="qty-value">
-                      {detailQty}
-                    </span>
-                    <button 
-                      onClick={() => setDetailQty(detailQty + 1)}
-                      className="qty-btn"
+                    <button
+                      onClick={() => {
+                        handleAddToCart(p, 1);
+                        if (onNavigateToCart) onNavigateToCart();
+                      }}
+                      disabled={p.stock <= 0}
+                      style={{ flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", border: "none", background: p.stock > 0 ? "#2563EB" : "#CBD5E1", color: "white", fontWeight: 800, fontSize: "0.75rem", cursor: p.stock > 0 ? "pointer" : "not-allowed" }}
                     >
-                      +
+                      Beli
                     </button>
                   </div>
-                </div>
 
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button 
-                    className="modal-wishlist-btn"
-                    onClick={() => {
-                      handleAddToWishlist(selectedProduct.id);
-                    }}
-                    style={{
-                      color: wishlistedIds.includes(selectedProduct.id) ? "var(--color-alert)" : "inherit"
-                    }}
-                  >
-                    <HeartIcon size={18} fill={wishlistedIds.includes(selectedProduct.id) ? "currentColor" : "none"} />
-                  </button>
-                  <button 
-                    className="btn-secondary"
-                    onClick={() => {
-                      handleAddOrder(selectedProduct, detailQty);
-                      setAddedProductName(selectedProduct.name);
-                      setShowAddedToCartPopup(true);
-                      setSelectedProduct(null);
-                    }}
-                    style={{ 
-                      padding: "0.5rem 1rem", 
-                      fontSize: "0.85rem", 
-                      display: "inline-flex", 
-                      alignItems: "center", 
-                      gap: "0.5rem", 
-                      borderRadius: "8px",
-                      background: "var(--color-primary-light)",
-                      color: "var(--color-primary)",
-                      border: "1px solid var(--color-primary)"
-                    }}
-                  >
-                    <CartIcon size={16} /> Keranjang
-                  </button>
-                  <button 
-                    className="btn-primary"
-                    onClick={() => {
-                      handleAddOrder(selectedProduct, detailQty);
-                      setSelectedProduct(null);
-                      if (onNavigateToCart) onNavigateToCart();
-                    }}
-                    style={{ padding: "0.5rem 1rem", fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: "8px" }}
-                  >
-                    <CashIcon size={16} /> Beli Sekarang
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       )}
-      {showAddedToCartPopup && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
-          <div className="card modal-container" style={{ maxWidth: "400px", padding: "2rem", textAlign: "center", position: "relative" }}>
+
+      {/* MODAL DETAIL PRODUK */}
+      {selectedProduct && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9000, padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "550px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", position: "relative", maxHeight: "90vh", overflowY: "auto" }}>
             <button 
-              onClick={() => setShowAddedToCartPopup(false)}
-              className="modal-close-btn"
-              style={{ position: "absolute", top: "1rem", right: "1rem" }}
+              onClick={() => setSelectedProduct(null)}
+              style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: "#94A3B8" }}
             >
               &times;
             </button>
-            
-            <div style={{ width: "60px", height: "60px", background: "var(--color-primary-light)", color: "var(--color-primary)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem auto" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
-                <polyline points="10 10 12 12 16 8"/>
-              </svg>
+
+            <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+              <div style={{ width: "140px", height: "140px", background: "#F1F5F9", borderRadius: "12px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {selectedProduct.foto ? (
+                  <img src={selectedProduct.foto} alt={selectedProduct.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "3rem" }}>📦</span>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: "200px" }}>
+                <span style={{ fontSize: "0.75rem", color: "#2563EB", fontWeight: 800, textTransform: "uppercase" }}>🏪 {selectedProduct.storeName}</span>
+                <h2 style={{ margin: "0.2rem 0 0.4rem 0", fontSize: "1.25rem", fontWeight: 800, color: "#1E293B" }}>{selectedProduct.name}</h2>
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748B", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <LocationIcon size={14} /> {selectedProduct.origin}
+                </p>
+
+                <div style={{ marginTop: "0.8rem", fontSize: "1.3rem", fontWeight: 800, color: "#F59E0B" }}>
+                  Rp {(selectedProduct.diskon > 0 ? Math.round(selectedProduct.price * (1 - selectedProduct.diskon / 100)) : selectedProduct.price).toLocaleString("id-ID")}
+                </div>
+              </div>
             </div>
 
-            <h3 style={{ fontSize: "1.25rem", fontWeight: 800, margin: "0 0 0.5rem 0", color: "var(--color-primary)" }}>
-              Berhasil Ditambahkan!
-            </h3>
+            <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: "0.85rem", marginBottom: "1.25rem" }}>
+              <h4 style={{ margin: "0 0 0.35rem 0", fontSize: "0.88rem", fontWeight: 700, color: "#334155" }}>Deskripsi Produk</h4>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748B", lineHeight: 1.5 }}>{selectedProduct.deskripsi}</p>
+            </div>
+
+            {/* BARIS JUMLAH & TOMBOL BUY */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap", borderTop: "1px dashed #E2E8F0", paddingTop: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#475569" }}>Jumlah:</span>
+                <button onClick={() => setDetailQty(Math.max(1, detailQty - 1))} style={{ width: "28px", height: "28px", border: "1px solid #CBD5E1", borderRadius: "6px", background: "white", cursor: "pointer", fontWeight: 800 }}>-</button>
+                <span style={{ fontSize: "0.9rem", fontWeight: 800, minWidth: "20px", textAlign: "center" }}>{detailQty}</span>
+                <button onClick={() => setDetailQty(detailQty + 1)} style={{ width: "28px", height: "28px", border: "1px solid #CBD5E1", borderRadius: "6px", background: "white", cursor: "pointer", fontWeight: 800 }}>+</button>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem", flex: 1, minWidth: "200px" }}>
+                <button
+                  onClick={() => {
+                    handleAddToCart(selectedProduct, detailQty);
+                    setSelectedProduct(null);
+                  }}
+                  style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #2563EB", background: "#EFF6FF", color: "#2563EB", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}
+                >
+                  + Keranjang
+                </button>
+                <button
+                  onClick={() => {
+                    handleAddToCart(selectedProduct, detailQty);
+                    setSelectedProduct(null);
+                    if (onNavigateToCart) onNavigateToCart();
+                  }}
+                  style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}
+                >
+                  Beli Sekarang
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* POPUP SUKSES MASUK KERANJANG */}
+      {showCartPopup && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "380px", maxWidth: "100%", textAlign: "center", position: "relative", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <button onClick={() => setShowCartPopup(false)} style={{ position: "absolute", top: "0.75rem", right: "0.75rem", background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "#94A3B8" }}>&times;</button>
             
-            <p style={{ fontSize: "0.9rem", color: "var(--color-text-subtle)", margin: "0 0 1.5rem 0", lineHeight: 1.5 }}>
-              <strong>{addedProductName}</strong> telah berhasil dimasukkan ke dalam keranjang belanja Anda.
+            <div style={{ width: "50px", height: "50px", background: "#DCFCE7", color: "#10B981", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem auto", fontSize: "1.5rem" }}>
+              ✓
+            </div>
+
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: "0 0 0.35rem 0", color: "#1E293B" }}>Berhasil Ditambahkan!</h3>
+            <p style={{ fontSize: "0.85rem", color: "#64748B", margin: "0 0 1.25rem 0", lineHeight: 1.4 }}>
+              <strong>{addedProductName}</strong> berhasil dimasukkan ke keranjang belanja Anda.
             </p>
 
-            <div style={{ display: "flex", gap: "0.75rem", flexDirection: "column" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <button 
-                className="btn-primary" 
                 onClick={() => {
-                  setShowAddedToCartPopup(false);
+                  setShowCartPopup(false);
                   if (onNavigateToCart) onNavigateToCart();
-                }}
-                style={{ width: "100%", padding: "0.6rem 1rem", fontSize: "0.85rem", justifyContent: "center" }}
+                }} 
+                style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}
               >
                 Lihat Keranjang Belanja
               </button>
               <button 
-                className="btn-secondary" 
-                onClick={() => setShowAddedToCartPopup(false)}
-                style={{ width: "100%", padding: "0.6rem 1rem", fontSize: "0.85rem", justifyContent: "center" }}
+                onClick={() => setShowCartPopup(false)} 
+                style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}
               >
                 Lanjut Belanja
               </button>
@@ -960,6 +568,6 @@ export default function MarketplaceView({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

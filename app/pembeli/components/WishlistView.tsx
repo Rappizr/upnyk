@@ -1,75 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/db";
 import { getWishlistAction, removeFromWishlistAction, addToCartAction } from "@/app/actions";
-function RiceIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  );
-}
-
-function CoffeeIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-      <path d="M6 1v3M10 1v3M14 1v3" />
-    </svg>
-  );
-}
-
-function SpiceIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2c1.5 4 4 4 4 8 0 4.5-3.5 8-8 8s-8-3.5-8-8c0-4 2.5-4 4-8" />
-      <path d="M12 10a4 4 0 0 0-4-4" />
-    </svg>
-  );
-}
-
-function OilIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-11-7-11S5 10.7 5 15a7 7 0 0 0 7 7z" />
-    </svg>
-  );
-}
-
-function HoneyIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-      <path d="M12 6v12M8 10h8M6 14h12" />
-    </svg>
-  );
-}
-
-function GrainIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M12 2a15 15 0 0 0-8 13.5C4 19.5 7.5 22 12 22s8-2.5 8-6.5C20 15 16 2 12 2z" />
-      <path d="M12 2v20" />
-    </svg>
-  );
-}
-
-function LeafIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 0 8.5C17 15 15 18 11 20z" />
-      <path d="M19 2c-2.26 4.33-5.27 7.14-8 18" />
-    </svg>
-  );
-}
-
-function FactoryIcon({ size = 24, className = "", ...props }: any) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
-      <path d="M2 20h20M20 16v4M4 20v-8l6-4v4l6-4v4l4-4v12" />
-    </svg>
-  );
-}
 
 function HeartIcon({ size = 16, className = "", ...props }: any) {
   return (
@@ -107,42 +39,6 @@ function LocationIcon({ size = 16, className = "", ...props }: any) {
   );
 }
 
-function IconRenderer({ type, size = 24, className = "", ...props }: any) {
-  const normalized = type.toLowerCase();
-  switch (normalized) {
-    case "rice":
-      return <RiceIcon size={size} className={className} {...props} />;
-    case "coffee":
-      return <CoffeeIcon size={size} className={className} {...props} />;
-    case "spice":
-      return <SpiceIcon size={size} className={className} {...props} />;
-    case "oil":
-      return <OilIcon size={size} className={className} {...props} />;
-    case "honey":
-      return <HoneyIcon size={size} className={className} {...props} />;
-    case "grain":
-      return <GrainIcon size={size} className={className} {...props} />;
-    case "leaf":
-      return <LeafIcon size={size} className={className} {...props} />;
-    case "factory":
-      return <FactoryIcon size={size} className={className} {...props} />;
-    default:
-      return <RiceIcon size={size} className={className} {...props} />;
-  }
-}
-
-// Product Store Mapping
-const productStoreMap: Record<string, string> = {
-  1: "Koperasi Tani Maju",
-  2: "Koperasi Gayo Indah",
-  3: "Koperasi Brebes Jaya",
-  4: "Koperasi Sulawesi Makmur",
-  5: "Koperasi Brebes Jaya",
-  6: "Koperasi Sulawesi Makmur",
-  7: "Koperasi Sulawesi Makmur",
-  8: "Koperasi Madu Borneo"
-};
-
 export default function WishlistView({ 
   onCartUpdated, 
   onNavigateMarketplace 
@@ -153,32 +49,84 @@ export default function WishlistView({
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadWishlist() {
-      try {
-        const wishData = await getWishlistAction();
-        const formattedItems = (wishData || []).map((w: any) => ({
-          id: w.product_id,
-          product: w.product,
-          price_dropped: false,
-          saved_at: "Baru saja"
-        }));
+  // FETCH WISHLIST DENGAN INFORMASI ETALASE & ADMIN_TOKO REALTIME
+  const loadWishlistRealtime = useCallback(async () => {
+    setLoading(true);
+    try {
+      const wishData = await getWishlistAction();
+      
+      if (wishData && wishData.length > 0) {
+        const prodIds = wishData.map((w: any) => w.product_id).filter(Boolean);
+
+        // Fetch detail etalase
+        let etalaseMap = new Map();
+        let tokoMap = new Map();
+
+        if (prodIds.length > 0) {
+          const { data: etalaseList } = await supabase
+            .from("etalase")
+            .select("*")
+            .in("id", prodIds);
+
+          if (etalaseList && etalaseList.length > 0) {
+            etalaseMap = new Map(etalaseList.map((e) => [e.id, e]));
+
+            const tokoIds = etalaseList.map((e) => e.admin_toko_id).filter(Boolean);
+            if (tokoIds.length > 0) {
+              const { data: tokoList } = await supabase
+                .from("admin_toko")
+                .select("id, nama_toko, desa, kabupaten")
+                .in("id", tokoIds);
+
+              if (tokoList) {
+                tokoMap = new Map(tokoList.map((t) => [t.id, t]));
+              }
+            }
+          }
+        }
+
+        const formattedItems = wishData.map((w: any) => {
+          const etalaseObj = etalaseMap.get(w.product_id) || w.product || {};
+          const tokoObj = tokoMap.get(etalaseObj.admin_toko_id);
+          const lokasi = [tokoObj?.desa, tokoObj?.kabupaten].filter(Boolean).join(", ") || "Indonesia";
+
+          return {
+            id: w.id || w.product_id,
+            product_id: w.product_id,
+            product: {
+              id: etalaseObj.id || w.product_id,
+              name: etalaseObj.nama_produk || etalaseObj.name || "Produk Toko",
+              price: Number(etalaseObj.harga_jual) || Number(etalaseObj.price) || 0,
+              stock: Number(etalaseObj.stok || etalaseObj.stock) > 0 ? "Tersedia" : "Habis",
+              supplier: tokoObj?.nama_toko || etalaseObj.supplier || "Toko Mitra",
+              origin: lokasi,
+              foto: etalaseObj.foto || null,
+            },
+            price_dropped: false,
+            saved_at: "Baru saja"
+          };
+        });
 
         setItems(formattedItems);
-      } catch (err) {
-        console.error("Failed to load wishlist:", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setItems([]);
       }
+    } catch (err) {
+      console.error("Gagal memuat wishlist:", err);
+    } finally {
+      setLoading(false);
     }
-    loadWishlist();
   }, []);
 
-  const remove = async (id: string) => {
+  useEffect(() => {
+    loadWishlistRealtime();
+  }, [loadWishlistRealtime]);
+
+  const remove = async (productId: string, wishId: string) => {
     try {
-      const success = await removeFromWishlistAction(id);
+      const success = await removeFromWishlistAction(productId);
       if (success) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
+        setItems((prev) => prev.filter((i) => i.product_id !== productId && i.id !== wishId));
       } else {
         alert("Gagal menghapus dari wishlist.");
       }
@@ -198,6 +146,7 @@ export default function WishlistView({
 
       setItems([]);
       if (onCartUpdated) onCartUpdated();
+      alert("Semua item berhasil dipindahkan ke keranjang!");
     } catch (err) {
       console.error(err);
     }
@@ -213,13 +162,28 @@ export default function WishlistView({
       {/* Summary */}
       <div className="card wishlist-summary-card">
         <div className="wishlist-summary-stats">
-          <div><div className="stat-value">{items.length}</div><div className="text-sm text-muted">Item Tersimpan</div></div>
-          <div><div className="stat-value text-secondary">{items.filter((i) => i.price_dropped).length}</div><div className="text-sm text-muted">Harga Turun</div></div>
-          <div><div className="stat-value text-primary">
-            Rp {items.reduce((a, b) => a + (b.product?.price || 0), 0).toLocaleString("id-ID")}
-          </div><div className="text-sm text-muted">Total Estimasi</div></div>
+          <div>
+            <div className="stat-value">{items.length}</div>
+            <div className="text-sm text-muted">Item Tersimpan</div>
+          </div>
+          <div>
+            <div className="stat-value text-secondary">{items.filter((i) => i.price_dropped).length}</div>
+            <div className="text-sm text-muted">Harga Turun</div>
+          </div>
+          <div>
+            <div className="stat-value text-primary">
+              Rp {items.reduce((a, b) => a + (b.product?.price || 0), 0).toLocaleString("id-ID")}
+            </div>
+            <div className="text-sm text-muted">Total Estimasi</div>
+          </div>
         </div>
-        <button className="btn-primary" onClick={handleCheckoutAll} disabled={items.length === 0} style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }} id="btn-checkout-all-wishlist">
+        <button 
+          className="btn-primary" 
+          onClick={handleCheckoutAll} 
+          disabled={items.length === 0} 
+          style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }} 
+          id="btn-checkout-all-wishlist"
+        >
           <CartIcon size={16} /> Pindah Semua ke Keranjang
         </button>
       </div>
@@ -232,43 +196,52 @@ export default function WishlistView({
           {items.map((item) => {
             const p = item.product;
             if (!p) return null;
-            const storeName = productStoreMap[p.id] || "Supplier Koperasi";
+
             return (
               <div key={item.id} className="wishlist-card" id={`wishlist-item-${item.id}`}>
-                <div className="wishlist-img-wrapper">
-                  <IconRenderer type={p.icon_type} size={44} className="text-amber-500" />
+                <div className="wishlist-img-wrapper" style={{ width: 80, height: 80, background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", overflow: "hidden" }}>
+                  {p.foto ? (
+                    <img src={p.foto} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "2rem" }}>📦</span>
+                  )}
                 </div>
-                <div className="wishlist-card-body">
+
+                <div className="wishlist-card-body" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.3rem" }}>
                       {item.price_dropped && (
                         <span className="badge badge-danger text-xs">Harga Turun!</span>
                       )}
-                      <span className="badge badge-info text-xs">Toko Koperasi Pelosok</span>
-                      <span className="text-xs text-primary font-semibold">{storeName}</span>
+                      <span className="badge badge-info text-xs">Toko Admin</span>
+                      <span className="text-xs text-primary font-semibold">🏪 {p.supplier}</span>
                     </div>
-                    <div className="font-semibold">{p.name}</div>
+
+                    <div className="font-semibold" style={{ fontSize: "0.95rem", color: "#1E293B" }}>{p.name}</div>
+                    
                     <div className="text-sm text-muted" style={{ display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "0.15rem" }}>
                       <LocationIcon size={14} /> {p.origin}
                     </div>
-                    <div className="text-xs text-subtle" style={{ marginTop: "0.25rem" }}>Disimpan {item.saved_at}</div>
                   </div>
+
                   <div style={{ textAlign: "center" }}>
                     <span className={`badge ${p.stock === "Tersedia" ? "badge-success" : "badge-warning"}`}>
                       {p.stock}
                     </span>
                   </div>
+
                   <div style={{ textAlign: "right" }}>
                     <div className="font-bold text-primary" style={{ fontSize: "1.1rem" }}>
                       Rp {p.price.toLocaleString("id-ID")}
                     </div>
                   </div>
-                  <div className="wishlist-card-actions">
+
+                  <div className="wishlist-card-actions" style={{ display: "flex", gap: "0.5rem" }}>
                     <button 
                       className="btn-secondary" 
                       onClick={async () => {
                         await addToCartAction(p.id, 1);
-                        await remove(item.id);
+                        await remove(item.product_id, item.id);
                         if (onCartUpdated) onCartUpdated();
                       }}
                       style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} 
@@ -276,7 +249,12 @@ export default function WishlistView({
                     >
                       <CartIcon size={14} /> Beli
                     </button>
-                    <button className="btn-ghost" style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", color: "var(--color-alert)", borderColor: "var(--color-alert-light)", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} onClick={() => remove(item.id)} id={`btn-wl-remove-${item.id}`}>
+                    <button 
+                      className="btn-ghost" 
+                      style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", color: "var(--color-alert)", borderColor: "var(--color-alert-light)", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} 
+                      onClick={() => remove(item.product_id, item.id)} 
+                      id={`btn-wl-remove-${item.id}`}
+                    >
                       <TrashIcon size={14} /> Hapus
                     </button>
                   </div>
@@ -284,16 +262,17 @@ export default function WishlistView({
               </div>
             );
           })}
+
           {items.length === 0 && (
-            <div className="wishlist-empty-state">
-              <div className="wishlist-empty-icon">
-                <HeartIcon size={40} fill="none" />
+            <div className="wishlist-empty-state" style={{ background: "white", padding: "3rem", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
+              <div className="wishlist-empty-icon" style={{ marginBottom: "1rem", color: "#94A3B8" }}>
+                <HeartIcon size={48} fill="none" />
               </div>
               <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--color-text)", marginBottom: "0.5rem" }}>
                 Wishlist Anda Kosong
               </h3>
-              <p style={{ fontSize: "0.875rem", color: "var(--color-text-muted)", maxWidth: "400px", marginBottom: "1.5rem" }}>
-                Jelajahi berbagai komoditas terbaik dari koperasi pelosok Indonesia dan tambahkan ke wishlist Anda.
+              <p style={{ fontSize: "0.875rem", color: "var(--color-text-muted)", maxWidth: "400px", margin: "0 auto 1.5rem auto" }}>
+                Jelajahi berbagai produk terbaik dari toko admin mitra kami dan simpan favorit Anda di sini.
               </p>
               {onNavigateMarketplace && (
                 <button 

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { FormEvent } from "react";
+import { supabase } from "@/lib/db";
 
 type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
-interface StokToko {
+export interface StokToko {
   id: string;
+  produk_id?: string;
   nama: string;
   jumlah: number;
   satuan: string;
@@ -16,13 +18,15 @@ interface StokToko {
   grade: Grade;
   asalProdusen: string;
   live: boolean;
+  lokasiRak?: string;
 }
 
-interface Pembelian {
+export interface Pembelian {
   id: string;
   produsenId: string;
   produsen: string;
   item: string;
+  itemId?: string;
   jumlah: number;
   satuan: string;
   hargaSatuan: number;
@@ -37,7 +41,7 @@ interface Pembelian {
   lokasiProdusen?: string;
 }
 
-interface Produsen {
+export interface Produsen {
   id: string;
   nama: string;
   lokasi: string;
@@ -45,15 +49,15 @@ interface Produsen {
   estimasiPanenHari: number;
 }
 
-interface LeafletLayer {
-  addTo: (map: LeafletMapInstance) => LeafletLayer;
-  bindPopup: (html: string) => LeafletLayer;
-  getBounds: () => unknown;
-}
 interface LeafletMapInstance {
   setView: (center: [number, number], zoom: number) => LeafletMapInstance;
   remove: () => void;
   fitBounds: (bounds: unknown, options?: { padding?: [number, number] }) => void;
+}
+interface LeafletLayer {
+  addTo: (map: LeafletMapInstance) => LeafletLayer;
+  bindPopup: (html: string) => LeafletLayer;
+  getBounds: () => unknown;
 }
 interface LeafletStatic {
   map: (el: HTMLElement, opts?: { scrollWheelZoom?: boolean }) => LeafletMapInstance;
@@ -138,96 +142,287 @@ interface Props {
   updateStok: (id: string, patch: Partial<StokToko>) => void;
 }
 
-
 const IconBox = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 3 6.92 12 12 21 6.92 12 2"></polygon><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const IconTruckIn = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+const IconCheckCircle = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
 
-export default function InventarisGrading({ stokList, pembelianList, produsenList, terimaPembelian, updateStok }: Props) {
+export default function InventarisGrading({
+  pembelianList = [],
+  produsenList = [],
+  terimaPembelian,
+}: Props) {
+  const [inventarisDb, setInventarisDb] = useState<StokToko[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editItem, setEditItem] = useState<StokToko | null>(null);
   const [editJumlah, setEditJumlah] = useState(0);
   const [lacakId, setLacakId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const menungguGrading = pembelianList.filter((p) => p.status === "Menunggu" || p.status === "Dikirim" || p.status === "Diproses");
+  // STATE NOTIFIKASI TOAST CUSTOM
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  }
+
+  // 1. MUAT DATA INVENTARIS DARI SUPABASE
+  const muatInventarisFromDb = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: adminToko } = await supabase
+        .from("admin_toko")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (!adminToko) return;
+
+      const { data: invData, error: errInv } = await supabase
+        .from("inventaris")
+        .select("*")
+        .eq("admin_toko_id", adminToko.id)
+        .order("updated_at", { ascending: false });
+
+      if (errInv) throw errInv;
+
+      if (invData && invData.length > 0) {
+        const prodIds = invData.map((i) => i.produk_id).filter(Boolean);
+        let prodMap = new Map();
+
+        if (prodIds.length > 0) {
+          const { data: prodList } = await supabase
+            .from("produk")
+            .select("id, nama, harga, satuan, produsen_id")
+            .in("id", prodIds);
+
+          if (prodList) {
+            prodMap = new Map(prodList.map((pr) => [pr.id, pr]));
+          }
+        }
+
+        const mapped: StokToko[] = invData.map((item: any) => {
+          const prodObj = prodMap.get(item.produk_id);
+          const hBeli = Number(prodObj?.harga) || Number(item.harga_beli) || 0;
+          return {
+            id: item.id,
+            produk_id: item.produk_id,
+            nama: prodObj?.nama || item.nama_produk || "Komoditas Panen",
+            jumlah: Number(item.stok) || 0,
+            satuan: prodObj?.satuan || item.satuan || "pcs",
+            hargaBeli: hBeli,
+            hargaJual: Math.round(hBeli * 1.3),
+            diskonPersen: 0,
+            grade: "A",
+            asalProdusen: "Produsen Mitra",
+            live: true,
+            lokasiRak: item.lokasi_rak || "Gudang Utama",
+          };
+        });
+
+        setInventarisDb(mapped);
+      } else {
+        setInventarisDb([]);
+      }
+    } catch (err) {
+      console.error("Gagal muat inventaris:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    muatInventarisFromDb();
+  }, [muatInventarisFromDb]);
+
+  // 2. TERIMA BARANG MASUK KE BACKEND
+  async function handleTerimaBarang(p: Pembelian) {
+    if (submitting) return;
+    setSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSubmitting(false); return; }
+
+      const { data: adminToko } = await supabase
+        .from("admin_toko")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      if (!adminToko) {
+        showToast("⚠️ Data Admin Toko belum terdaftar!");
+        setSubmitting(false);
+        return;
+      }
+
+      let produkIdTarget = p.itemId;
+      if (!produkIdTarget) {
+        const { data: pData } = await supabase
+          .from("pesanan")
+          .select("produk_id")
+          .eq("id", p.id)
+          .maybeSingle();
+        produkIdTarget = pData?.produk_id;
+      }
+
+      let existingInv = null;
+      if (produkIdTarget) {
+        const { data: foundByProd } = await supabase
+          .from("inventaris")
+          .select("id, stok")
+          .eq("admin_toko_id", adminToko.id)
+          .eq("produk_id", produkIdTarget)
+          .maybeSingle();
+        existingInv = foundByProd;
+      }
+
+      if (existingInv) {
+        const stokBaru = Number(existingInv.stok) + Number(p.jumlah);
+        await supabase
+          .from("inventaris")
+          .update({
+            stok: stokBaru,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingInv.id);
+      } else {
+        await supabase
+          .from("inventaris")
+          .insert({
+            admin_toko_id: adminToko.id,
+            produk_id: produkIdTarget || null,
+            stok: p.jumlah,
+            stok_minimum: 5,
+            stok_maksimum: 100,
+            lokasi_rak: "Gudang Utama",
+            updated_at: new Date().toISOString(),
+          });
+      }
+
+      await supabase
+        .from("pesanan")
+        .update({ status: "selesai" })
+        .eq("id", p.id);
+
+      terimaPembelian(p.id, "A");
+      showToast(`Berhasil menerima "${p.item}"! Stok tersimpan di gudang.`);
+      await muatInventarisFromDb();
+    } catch (err: any) {
+      console.error("Gagal menerima barang:", err);
+      showToast(`Gagal menyimpan: ${err.message || "Terjadi kesalahan"}`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // EDIT SESUAIKAN STOK
+  async function handleEditSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!editItem) return;
+
+    try {
+      const { error } = await supabase
+        .from("inventaris")
+        .update({
+          stok: editJumlah,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editItem.id);
+
+      if (error) throw error;
+
+      showToast(`Stok ${editItem.nama} berhasil disesuaikan!`);
+      setEditItem(null);
+      await muatInventarisFromDb();
+    } catch (err: any) {
+      showToast(`Gagal memperbarui stok: ${err.message}`);
+    }
+  }
+
+  const menungguGrading = pembelianList.filter(
+    (p) => p.status === "Menunggu" || p.status === "Dikirim" || p.status === "Diproses"
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return stokList.filter((s) => !q || s.nama.toLowerCase().includes(q) || s.asalProdusen.toLowerCase().includes(q));
-  }, [stokList, search]);
+    return inventarisDb.filter(
+      (s) => !q || s.nama.toLowerCase().includes(q) || s.asalProdusen.toLowerCase().includes(q)
+    );
+  }, [inventarisDb, search]);
 
-  const totalNilaiStok = stokList.reduce((s, x) => s + x.jumlah * x.hargaBeli, 0);
-
-  function handleEditSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!editItem) return;
-    updateStok(editItem.id, { jumlah: editJumlah });
-    setEditItem(null);
-  }
+  const totalNilaiStok = inventarisDb.reduce((s, x) => s + x.jumlah * x.hargaBeli, 0);
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
-          .grading-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .grading-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
-          .grading-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
-          .grading-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
-          .grading-stat-card > div:last-child > div:first-child { font-size: 0.65rem !important; line-height: 1.1 !important; }
-          .grading-stat-card > div:last-child > div:last-child { font-size: 0.5rem !important; line-height: 1.1 !important; margin-top: 0.1rem !important; }
-          .grading-warn-box { padding: 0.6rem !important; border-radius: 8px !important; margin-bottom: 1rem !important; }
-          .grading-warn-item > div:first-child { font-size: 0.65rem !important; }
-          .grading-warn-item > div:first-child div:last-child { font-size: 0.55rem !important; }
-          .grading-warn-item button { padding: 0.25rem 0.45rem !important; font-size: 0.55rem !important; border-radius: 4px !important; }
-          .search-wrapper-mobile { max-width: 100% !important; margin-bottom: 1rem !important; }
-          .search-wrapper-mobile input { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
-          .grading-table-container th, .grading-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
-          .grading-table-container table { min-width: auto !important; width: 100% !important; }
-          .grading-table-container button { padding: 0.25rem 0.4rem !important; font-size: 0.52rem !important; border-radius: 4px !important; }
-          .grading-table-container span { padding: 0.1rem 0.3rem !important; font-size: 0.52rem !important; border-radius: 4px !important; }
-        }
-      `}} />
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif", position: "relative" }}>
+      
+      {/* NOTIFIKASI TOAST OVERLAY */}
+      {toastMessage && (
+        <div style={{ position: "fixed", top: "20px", right: "20px", zIndex: 9999, background: "#1E293B", color: "white", padding: "0.85rem 1.25rem", borderRadius: "10px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)", display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.88rem", fontWeight: 600 }}>
+          <span style={{ color: "#10B981", display: "flex" }}><IconCheckCircle /></span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Inventaris</h1>
+        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>Inventaris</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Kelola stok gudang barang masuk dari produsen.</p>
       </div>
 
       <div className="grading-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBox /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{stokList.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Jenis Produk</div></div>
+          <div>
+            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{inventarisDb.length}</div>
+            <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Jenis Produk</div>
+          </div>
         </div>
+
         <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconWallet /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalNilaiStok)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Nilai Stok</div></div>
+          <div>
+            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{formatRupiah(totalNilaiStok)}</div>
+            <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Nilai Stok</div>
+          </div>
         </div>
+
         <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconTruckIn /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{menungguGrading.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Perlu Diterima</div></div>
+          <div>
+            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{menungguGrading.length}</div>
+            <div style={{ fontSize: "0.78rem", color: "#64748B" }}>Perlu Diterima</div>
+          </div>
         </div>
       </div>
 
+      {/* BOX BARANG MASUK PERLU DITERIMA */}
       {menungguGrading.length > 0 && (
-        <div className="grading-warn-box" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.5rem" }}>
-          <h3 style={{ margin: "0 0 0.9rem 0", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Barang Masuk — Perlu Diterima</h3>
+        <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1.1rem", marginBottom: "1.5rem" }}>
+          <h3 style={{ margin: "0 0 0.9rem 0", fontSize: "1rem", fontWeight: 800, color: "#1E293B" }}>Barang Masuk — Perlu Diterima</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {menungguGrading.map((p) => {
               const produsen = produsenList.find((pr) => pr.id === p.produsenId);
               const asal = produsen ? coordFromLokasi(produsen.lokasi) : gudangToko;
               return (
-                <div key={p.id} className="grading-warn-item" style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem" }}>
+                <div key={p.id} style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem 0.9rem", border: "1px solid #F1F5F9" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-                    <div><div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div><div style={{ fontSize: "0.72rem", color: "#94A3B8" }}>Dari {p.produsen} • {p.tanggal}</div></div>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1E293B" }}>{p.item} — {p.jumlah} {p.satuan}</div>
+                      <div style={{ fontSize: "0.72rem", color: "#64748B" }}>Dari {p.produsen} • {p.tanggal}</div>
+                    </div>
                     <div style={{ display: "flex", gap: "0.4rem" }}>
-                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 600, padding: "0.45rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>{lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}</button>
-                      <button onClick={() => terimaPembelian(p.id, "Belum Dinilai")} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 600, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer" }}>Terima Barang</button>
+                      <button onClick={() => setLacakId(lacakId === p.id ? null : p.id)} style={{ background: "white", border: "1px solid #CBD5E1", color: "#334155", fontSize: "0.76rem", fontWeight: 700, padding: "0.45rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>
+                        {lacakId === p.id ? "Tutup Peta" : "Lacak Kiriman"}
+                      </button>
+                      <button onClick={() => handleTerimaBarang(p)} disabled={submitting} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.78rem", fontWeight: 800, padding: "0.45rem 0.8rem", borderRadius: "6px", cursor: "pointer", opacity: submitting ? 0.7 : 1 }}>
+                        {submitting ? "Memproses..." : "Terima Barang"}
+                      </button>
                     </div>
                   </div>
                   {lacakId === p.id && (
@@ -248,55 +443,59 @@ export default function InventarisGrading({ stokList, pembelianList, produsenLis
         </div>
       )}
 
-      <div className="search-wrapper-mobile" style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama produk atau produsen..." style={{ width: "100%", padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+      {/* SEARCH */}
+      <div style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama produk atau produsen..." style={{ width: "100%", padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
       </div>
 
-      <div className="grading-table-container" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
+      {/* TABEL INVENTARIS STOK */}
+      <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
                 <th style={{ padding: "1rem", color: "#475569" }}>Nama Produk</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Asal Produsen</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Jumlah</th>
+                <th style={{ padding: "1rem", color: "#475569" }}>Jumlah Stok</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Harga Beli</th>
                 <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 && (
-                <tr><td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada stok yang cocok.</td></tr>
-              )}
-              {filtered.map((s) => {
-                return (
+              {loading ? (
+                <tr><td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "#64748B" }}>Memuat stok dari database...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada stok barang di gudang. Klik "Terima Barang" pada barang masuk di atas.</td></tr>
+              ) : (
+                filtered.map((s) => (
                   <tr key={s.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</td>
+                    <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{s.nama}</td>
                     <td style={{ padding: "1rem", color: "#334155" }}>{s.asalProdusen}</td>
-                    <td style={{ padding: "1rem", color: "#334155" }}>{s.jumlah} {s.satuan}</td>
+                    <td style={{ padding: "1rem", fontWeight: 800, color: s.jumlah > 0 ? "#10B981" : "#EF4444" }}>{s.jumlah} {s.satuan}</td>
                     <td style={{ padding: "1rem", color: "#475569" }}>{formatRupiah(s.hargaBeli)}</td>
                     <td style={{ padding: "1rem", textAlign: "center" }}>
-                      <button onClick={() => { setEditItem(s); setEditJumlah(s.jumlah); }} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Sesuaikan Stok</button>
+                      <button onClick={() => { setEditItem(s); setEditJumlah(s.jumlah); }} style={{ background: "#F1F5F9", border: "1px solid #CBD5E1", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", fontWeight: 700, cursor: "pointer" }}>Sesuaikan Stok</button>
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* MODAL EDIT STOK */}
       {editItem && (
-        <div onClick={() => setEditItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "360px", maxWidth: "100%" }}>
+        <div onClick={() => setEditItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "360px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 700, color: "#1E293B" }}>Sesuaikan Stok {editItem.nama}</h2>
+              <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 800, color: "#1E293B" }}>Sesuaikan Stok {editItem.nama}</h2>
               <button onClick={() => setEditItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <form onSubmit={handleEditSubmit}>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "#334155", margin: "1rem 0 0.3rem" }}>Jumlah Stok Saat Ini ({editItem.satuan})</label>
-              <input required type="number" min="0" value={editJumlah} onChange={(e) => setEditJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", marginBottom: "1rem" }} />
-              <button type="submit" style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 600, cursor: "pointer" }}>Simpan</button>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", margin: "1rem 0 0.3rem" }}>Jumlah Stok Saat Ini ({editItem.satuan})</label>
+              <input required type="number" min="0" value={editJumlah} onChange={(e) => setEditJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", marginBottom: "1rem", boxSizing: "border-box" }} />
+              <button type="submit" style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 800, cursor: "pointer" }}>Simpan Perubahan</button>
             </form>
           </div>
         </div>

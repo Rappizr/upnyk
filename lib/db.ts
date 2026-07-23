@@ -27,21 +27,74 @@ function resolveIconType(namaKategori: string | null, namaProduk: string): strin
 }
 
 // ─────────────────────────────────────────────
-// HELPER: Dapatkan user ID dari Supabase session
+// HELPER: Dapatkan user ID dari Supabase session / fallback pembeli
 // ─────────────────────────────────────────────
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    return user?.id || null;
+    if (user?.id) return user.id;
+
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("supabase_user_id");
+      if (stored) return stored;
+    }
+
+    const { data: pembeli } = await supabase.from('pembeli').select('id, profile_id').limit(1).maybeSingle();
+    return pembeli?.id || pembeli?.profile_id || null;
   } catch {
     return null;
   }
 }
 
 // ─────────────────────────────────────────────
-// PRODUK (tabel: produk JOIN kategori)
+// PRODUK (tabel: etalase & admin_toko, fallback ke marketplace/produk)
 // ─────────────────────────────────────────────
 export async function getProducts(): Promise<any[]> {
+  // 1. Coba ambil dari etalase tayang milik Admin Toko terlebih dahulu
+  const { data: etalaseData, error: etalaseErr } = await supabase
+    .from('etalase')
+    .select('*')
+    .eq('status', 'tayang')
+    .order('created_at', { ascending: false });
+
+  if (!etalaseErr && etalaseData && etalaseData.length > 0) {
+    const tokoIds = etalaseData.map((e) => e.admin_toko_id).filter(Boolean);
+    let tokoMap = new Map();
+
+    if (tokoIds.length > 0) {
+      const { data: tokoList } = await supabase
+        .from('admin_toko')
+        .select('id, nama_toko, desa, kabupaten')
+        .in('id', tokoIds);
+
+      if (tokoList) {
+        tokoMap = new Map(tokoList.map((t) => [t.id, t]));
+      }
+    }
+
+    return etalaseData.map((e: any) => {
+      const toko = tokoMap.get(e.admin_toko_id);
+      const asal = [toko?.desa, toko?.kabupaten].filter(Boolean).join(', ') || 'Indonesia';
+
+      return {
+        id: e.id,
+        admin_toko_id: e.admin_toko_id,
+        name: e.nama_produk || '',
+        price: Number(e.harga_jual) || 0,
+        description: e.deskripsi || '',
+        unit: e.satuan || 'pcs',
+        weight: 1,
+        image: e.foto || null,
+        origin: asal,
+        rating: 4.8,
+        stock: Number(e.stok) > 0 ? 'Tersedia' : 'Habis',
+        icon_type: resolveIconType(null, e.nama_produk || ''),
+        supplier: toko?.nama_toko || 'Toko Admin',
+      };
+    });
+  }
+
+  // 2. Fallback jika etalase kosong -> ambil dari marketplace / produk
   let { data, error } = await supabase
     .from('marketplace')
     .select(`
@@ -442,7 +495,7 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 }
 
 // ─────────────────────────────────────────────
-// WISHLIST (localStorage — tabel keranjang tidak memiliki produk_id)
+// WISHLIST (Menggunakan pembeli_id & produk_id)
 // ─────────────────────────────────────────────
 export async function getWishlist(): Promise<any[]> {
   const userId = await getCurrentUserId();
@@ -450,54 +503,54 @@ export async function getWishlist(): Promise<any[]> {
 
   const { data, error } = await supabase
     .from('wishlist')
-    .select(`
-      id,
-      produk_id,
-      marketplace:produk_id (
-        id,
-        nama,
-        harga,
-        deskripsi,
-        satuan,
-        berat,
-        foto,
-        produsen_id,
-        kategori_id,
-        kategori:kategori_id ( nama )
-      )
-    `)
+    .select('id, produk_id, pembeli_id')
     .eq('pembeli_id', userId);
 
-  if (error) {
-    console.error('getWishlist error:', error.message);
-    return [];
-  }
+  if (error || !data || data.length === 0) return [];
 
-  return (data || []).map((w: any) => ({
-    id: w.id,
-    product_id: w.produk_id,
-    product: w.marketplace ? {
-      id: w.marketplace.id,
-      name: w.marketplace.nama || '',
-      price: w.marketplace.harga || 0,
-      description: w.marketplace.deskripsi || '',
-      unit: w.marketplace.satuan || 'kg',
-      weight: w.marketplace.berat || 0,
-      image: w.marketplace.foto || null,
-      kategori_id: w.marketplace.kategori_id,
-      produsen_id: w.marketplace.produsen_id,
-      origin: 'Indonesia',
-      rating: 4.5,
-      stock: 'Tersedia',
-      icon_type: resolveIconType(w.marketplace.kategori?.nama || null, w.marketplace.nama || ''),
-      supplier: 'Koperasi Lokal',
-    } : null
-  })).filter((w: any) => w.product !== null);
+  const prodIds = data.map((w: any) => w.produk_id).filter(Boolean);
+  if (prodIds.length === 0) return [];
+
+  // Ambil detail produk dari etalase
+  const { data: etalaseList } = await supabase
+    .from('etalase')
+    .select('*')
+    .in('id', prodIds);
+
+  const etalaseMap = new Map((etalaseList || []).map((e) => [e.id, e]));
+
+  return data.map((w: any) => {
+    const p = etalaseMap.get(w.produk_id);
+    return {
+      id: w.id,
+      product_id: w.produk_id,
+      product: p ? {
+        id: p.id,
+        name: p.nama_produk || 'Produk Toko',
+        price: Number(p.harga_jual) || 0,
+        stock: Number(p.stok) > 0 ? 'Tersedia' : 'Habis',
+        image: p.foto || null,
+        supplier: 'Toko Admin',
+        origin: 'Indonesia',
+        icon_type: resolveIconType(null, p.nama_produk || '')
+      } : null
+    };
+  }).filter((w: any) => w.product !== null);
 }
 
 export async function addToWishlist(productId: string): Promise<any> {
   const userId = await getCurrentUserId();
   if (!userId) return null;
+
+  // Cek apakah item sudah ada di wishlist
+  const { data: existing } = await supabase
+    .from('wishlist')
+    .select('id')
+    .eq('pembeli_id', userId)
+    .eq('produk_id', productId)
+    .maybeSingle();
+
+  if (existing) return existing;
 
   const { data, error } = await supabase
     .from('wishlist')
@@ -759,7 +812,7 @@ export async function clearCart(): Promise<boolean> {
   const { error } = await supabase
     .from('keranjang')
     .delete()
-    .eq('pembeli_id', userId); // delete all rows where pembeli_id = userId
+    .eq('pembeli_id', userId);
 
   if (error) {
     console.error('clearCart error:', error.message);

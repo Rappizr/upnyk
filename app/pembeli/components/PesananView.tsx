@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getOrdersAction, updateOrderStatusAction } from "@/app/actions";
+
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -100,7 +101,7 @@ function LocationIcon({ size = 16, className = "", ...props }: any) {
 }
 
 function IconRenderer({ type, size = 24, className = "", ...props }: any) {
-  const normalized = type.toLowerCase();
+  const normalized = (type || "").toLowerCase();
   switch (normalized) {
     case "rice":
       return <RiceIcon size={size} className={className} {...props} />;
@@ -125,15 +126,6 @@ function IconRenderer({ type, size = 24, className = "", ...props }: any) {
 
 const tabs = ["Semua", "Sudah Dibayar", "Dikirim", "Selesai"];
 
-const statusColor: Record<string, string> = {
-  "Sudah Dibayar": "badge-warning",
-  "Belum Dibayar": "badge-warning",
-  Diproses: "badge-warning",
-  Dikirim: "badge-info",
-  Selesai: "badge-success",
-  Dibatalkan: "badge-gray",
-};
-
 export default function PesananView() {
   const [orders, setOrders] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("Semua");
@@ -141,7 +133,8 @@ export default function PesananView() {
   const [loading, setLoading] = useState(true);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
 
-  async function loadOrders() {
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
     try {
       const data = await getOrdersAction();
       setOrders(data || []);
@@ -153,11 +146,11 @@ export default function PesananView() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [expanded]);
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [loadOrders]);
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
     try {
@@ -165,6 +158,8 @@ export default function PesananView() {
       if (success) {
         await loadOrders();
         alert(`Status pesanan berhasil diupdate menjadi: ${status}`);
+      } else {
+        alert("Gagal memperbarui status pesanan.");
       }
     } catch (err) {
       console.error(err);
@@ -176,6 +171,7 @@ export default function PesananView() {
     switch (order.status) {
       case "Belum Dibayar":
       case "Diproses":
+      case "Sudah Dibayar":
         return [
           { label: "Sudah Dibayar", time: dateStr, done: true, active: true },
           { label: "Dikirim", time: "-", done: false, active: false },
@@ -198,15 +194,14 @@ export default function PesananView() {
     }
   };
 
-  const filtered =
-    activeTab === "Semua"
-      ? orders.filter(o => o.status !== "Dibatalkan")
-      : orders.filter((o) => {
-          if (activeTab === "Sudah Dibayar") {
-            return o.status === "Belum Dibayar" || o.status === "Diproses";
-          }
-          return o.status === activeTab;
-        });
+  const filtered = activeTab === "Semua"
+    ? orders.filter(o => o.status !== "Dibatalkan")
+    : orders.filter((o) => {
+        if (activeTab === "Sudah Dibayar") {
+          return o.status === "Belum Dibayar" || o.status === "Diproses" || o.status === "Sudah Dibayar";
+        }
+        return o.status === activeTab;
+      });
 
   return (
     <>
@@ -218,7 +213,12 @@ export default function PesananView() {
       {/* Tabs */}
       <div className="tabs">
         {tabs.map((t) => (
-          <button key={t} className={`tab-btn${activeTab === t ? " active" : ""}`} onClick={() => setActiveTab(t)} id={`tab-${t.replace(/\s/g, "-").toLowerCase()}`}>
+          <button 
+            key={t} 
+            className={`tab-btn${activeTab === t ? " active" : ""}`} 
+            onClick={() => setActiveTab(t)} 
+            id={`tab-${t.replace(/\s/g, "-").toLowerCase()}`}
+          >
             {t}
           </button>
         ))}
@@ -231,15 +231,17 @@ export default function PesananView() {
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {filtered.map((order) => {
             const timeline = getCustomTimeline(order);
+            const totalItemCount = (order.items || []).reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
+
             return (
-              <div key={order.id} className="card" id={`order-${order.id}`}>
+              <div key={order.id || order.originalId} className="card" id={`order-${order.id}`}>
                 {/* Order Header */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
                       <span className="font-semibold text-sm">{order.id}</span>
                       <span className={`badge ${
-                        order.status === "Belum Dibayar" || order.status === "Diproses"
+                        order.status === "Belum Dibayar" || order.status === "Diproses" || order.status === "Sudah Dibayar"
                           ? "badge-warning"
                           : order.status === "Dikirim"
                           ? "badge-info"
@@ -253,26 +255,26 @@ export default function PesananView() {
                       </span>
                     </div>
                     <div className="text-xs text-muted" style={{ marginTop: "0.25rem" }}>
-                      {order.date} · <strong>{order.supplier}</strong>
+                      {order.date} · <strong>{order.supplier || "Toko Admin"}</strong>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div className="font-bold text-primary font-bold">Rp {order.total.toLocaleString("id-ID")}</div>
-                    <div className="text-xs text-muted">{order.items?.length || 0} item</div>
+                    <div className="font-bold text-primary">Rp {(order.total || 0).toLocaleString("id-ID")}</div>
+                    <div className="text-xs text-muted">{totalItemCount} item</div>
                   </div>
                 </div>
 
                 {/* Items */}
-                {order.items?.map((item: any, i: number) => (
+                {(order.items || []).map((item: any, i: number) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
-                      <IconRenderer type={item.icon_type} size={24} />
+                      <IconRenderer type={item.icon_type || "rice"} size={24} />
                     </span>
                     <div style={{ flex: 1 }}>
-                      <div className="text-sm font-medium">{item.name}</div>
-                      <div className="text-xs text-muted">x{item.qty}</div>
+                      <div className="text-sm font-medium">{item.name || "Produk"}</div>
+                      <div className="text-xs text-muted">x{item.qty || 1}</div>
                     </div>
-                    <div className="font-semibold text-sm">Rp {item.price.toLocaleString("id-ID")}</div>
+                    <div className="font-semibold text-sm">Rp {(item.price || 0).toLocaleString("id-ID")}</div>
                   </div>
                 ))}
 
@@ -285,15 +287,15 @@ export default function PesananView() {
                   )}
                   {order.status === "Dikirim" && (
                     <button onClick={() => handleUpdateStatus(order.id, "Selesai")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-selesai-${order.id}`}>
-                      Selesai & Terima Barang
+                      Selesai &amp; Terima Barang
                     </button>
                   )}
                   {order.status === "Selesai" && (
-                    <button className="btn-secondary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-ulasan-${order.id}`}>
+                    <button className="btn-secondary" onClick={() => alert("Terima kasih atas ulasan Anda!")} style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-ulasan-${order.id}`}>
                       <StarIcon size={14} fill="currentColor" /> Beri Ulasan
                     </button>
                   )}
-                  <button className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
+                  <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
                     Invoice
                   </button>
                   {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
@@ -350,6 +352,8 @@ export default function PesananView() {
           )}
         </div>
       )}
+
+      {/* RECEIPT / BUKTI PEMBAYARAN MODAL */}
       {receiptOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -370,7 +374,7 @@ export default function PesananView() {
                 color: "var(--color-text-muted)"
               }}
             >
-              ×
+              &times;
             </button>
             <div style={{ textAlign: "center", borderBottom: "2px dashed var(--color-border)", paddingBottom: "1.5rem", marginBottom: "1.5rem" }}>
               <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-primary)", letterSpacing: "1px" }}>PASARNUSA</div>
@@ -399,8 +403,8 @@ export default function PesananView() {
                 <span className="font-semibold">{receiptOrder.payment_method || "QRIS"}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-muted">Supplier Koperasi</span>
-                <span className="font-semibold text-primary">{receiptOrder.supplier}</span>
+                <span className="text-muted">Supplier Toko</span>
+                <span className="font-semibold text-primary">{receiptOrder.supplier || "Toko Admin"}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-muted">Status Pembayaran</span>
@@ -411,10 +415,10 @@ export default function PesananView() {
             <div style={{ borderBottom: "1px solid var(--color-border-light)", paddingBottom: "1rem", marginBottom: "1rem" }}>
               <div className="font-semibold text-xs text-muted" style={{ marginBottom: "0.5rem", textTransform: "uppercase" }}>Rincian Barang</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {receiptOrder.items?.map((item: any, idx: number) => (
+                {(receiptOrder.items || []).map((item: any, idx: number) => (
                   <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                    <span>{item.name} (x{item.qty})</span>
-                    <span>Rp {(item.price * item.qty).toLocaleString("id-ID")}</span>
+                    <span>{item.name || "Produk"} (x{item.qty || 1})</span>
+                    <span>Rp {((item.price || 0) * (item.qty || 1)).toLocaleString("id-ID")}</span>
                   </div>
                 ))}
               </div>
@@ -422,12 +426,12 @@ export default function PesananView() {
 
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.15rem", marginBottom: "2rem" }}>
               <strong>Total Pembayaran</strong>
-              <strong style={{ color: "var(--color-primary)" }}>Rp {receiptOrder.total.toLocaleString("id-ID")}</strong>
+              <strong style={{ color: "var(--color-primary)" }}>Rp {(receiptOrder.total || 0).toLocaleString("id-ID")}</strong>
             </div>
 
             <div style={{ textAlign: "center", color: "var(--color-text-subtle)", fontSize: "0.75rem", lineHeight: 1.4 }}>
-              <div>Terima kasih atas kontribusi Anda mendukung petani lokal.</div>
-              <div style={{ marginTop: "0.25rem", fontFamily: "monospace", letterSpacing: "1px" }}>PN-TXN-{receiptOrder.id.replace("ORD-", "")}</div>
+              <div>Terima kasih atas kontribusi Anda mendukung toko UMKM lokal.</div>
+              <div style={{ marginTop: "0.25rem", fontFamily: "monospace", letterSpacing: "1px" }}>PN-TXN-{String(receiptOrder.id).replace("ORD-", "")}</div>
             </div>
           </div>
         </div>
