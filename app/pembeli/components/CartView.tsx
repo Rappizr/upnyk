@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { 
   createOrderAction,
@@ -7,6 +8,7 @@ import {
   removeFromCartAction,
   clearCartAction
 } from "@/app/actions";
+
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
@@ -151,7 +153,7 @@ function UploadIcon({ size = 24, className = "", ...props }: any) {
 }
 
 function IconRenderer({ type, size = 24, className = "", ...props }: any) {
-  const normalized = type.toLowerCase();
+  const normalized = (type || "").toLowerCase();
   switch (normalized) {
     case "rice":
       return <RiceIcon size={size} className={className} {...props} />;
@@ -196,8 +198,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const loadCart = async () => {
     try {
       const items = await getCartAction();
-      setCartItems(items);
-      onUpdateCartCount?.(items.length);
+      setCartItems(items || []);
+      onUpdateCartCount?.(items?.length || 0);
     } catch (e) {
       console.error(e);
     }
@@ -238,13 +240,12 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   };
 
   // Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * item.qty, 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * (item.qty || 1), 0);
   const shippingFee = subtotal > 0 ? 10000 : 0;
   const discount = 0;
   const grandTotal = Math.max(0, subtotal + shippingFee - discount);
-  const totalWeight = cartItems.reduce((sum, item) => sum + ((item.product?.weight || 0) * item.qty), 0);
+  const totalWeight = cartItems.reduce((sum, item) => sum + ((item.product?.weight || 0) * (item.qty || 1)), 0);
 
-  // Group items by supplier for multi-supplier orders
   const handleConfirmOrder = () => {
     if (cartItems.length === 0) return;
     setStep("payment");
@@ -253,27 +254,25 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const handleCheckoutPayment = async () => {
     setSubmitting(true);
     try {
-      // Group items by supplier so we create separate orders per supplier store
+      // Group items by supplier
       const grouped: Record<string, any[]> = {};
       cartItems.forEach((item) => {
-        const storeName = item.product.supplier || "Koperasi Pelosok Pilihan";
+        const storeName = item.product?.supplier || "Koperasi Pelosok Pilihan";
         if (!grouped[storeName]) {
           grouped[storeName] = [];
         }
         grouped[storeName].push({
-          // Include produk_id for Supabase detail_pesanan
-          produk_id: item.product.id,
-          id: item.product.id,
-          icon_type: item.product.icon_type,
-          name: item.product.name,
-          qty: item.qty,
-          price: item.product.price
+          produk_id: item.product?.id,
+          id: item.product?.id,
+          icon_type: item.product?.icon_type,
+          name: item.product?.name,
+          qty: item.qty || 1,
+          price: item.product?.price || 0
         });
       });
 
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
         const supplierTotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
-        // Distribute discount and shipping proportionally (simplification)
         return await createOrderAction({
           supplier,
           items,
@@ -289,7 +288,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       
       // Store summary for success page
       setOrderSummary({
-        itemsCount: cartItems.reduce((sum, item) => sum + item.qty, 0),
+        itemsCount: cartItems.reduce((sum, item) => sum + (item.qty || 1), 0),
         subtotal,
         discount,
         grandTotal,
@@ -298,9 +297,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         totalWeight,
         items: cartItems.map(item => ({
           name: item.product?.name,
-          qty: item.qty,
-          price: item.product?.price,
-          weight: (item.product?.weight || 0) * item.qty,
+          qty: item.qty || 1,
+          price: item.product?.price || 0,
+          weight: (item.product?.weight || 0) * (item.qty || 1),
           icon_type: item.product?.icon_type
         }))
       });
@@ -332,8 +331,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         <p style={{ color: "var(--color-text-subtle)", marginBottom: "2rem", lineHeight: 1.5 }}>
           Terima kasih atas kontribusi Anda memajukan Koperasi Tani & Kelompok Usaha Pedesaan di Indonesia melalui PasarNusa.
         </p>
-
-
 
         <div className="card" style={{ textAlign: "left", padding: "1.5rem", marginBottom: "2rem" }}>
           <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.1rem", borderBottom: "1px solid var(--color-border-light)", paddingBottom: "0.5rem" }}>
@@ -527,7 +524,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                 <h3 style={{ margin: "0 0 0.5rem 0" }}>Pembayaran via QRIS</h3>
                 <p className="text-xs text-muted" style={{ marginBottom: "1.5rem" }}>Pindai kode QRIS di bawah ini untuk membayar instan</p>
                 <div style={{ margin: "0 auto 1.5rem auto", width: "180px", height: "180px", border: "1px solid var(--color-border)", padding: "8px", background: "white", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  {/* Mock QR Code representation */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px", width: "100%", height: "100%" }}>
                     {Array.from({ length: 16 }).map((_, idx) => (
                       <div 
@@ -572,8 +568,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                 </div>
               </div>
             )}
-
-
 
             {/* Upload Bukti Pembayaran */}
             {(selectedPayment === "qris" || selectedPayment === "bank") && (
@@ -694,13 +688,19 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           {/* Cart Items List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {cartItems.map((item) => {
-              const p = item.product;
+              const p = item.product || {};
               const storeName = p.supplier || "Koperasi Pelosok Pilihan";
               return (
                 <div key={item.id} className="cart-item-card">
                   <div className="cart-item-info" style={{ display: "flex", gap: "1rem", flex: 1, alignItems: "center" }}>
-                    <div style={{ width: 80, height: 80, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)", flexShrink: 0 }}>
-                      <IconRenderer type={p.icon_type} size={36} className="text-amber-600" />
+                    
+                    {/* Gambar atau Ikon Produk */}
+                    <div style={{ width: 80, height: 80, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)", flexShrink: 0, overflow: "hidden" }}>
+                      {p.foto ? (
+                        <img src={p.foto} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <IconRenderer type={p.icon_type} size={36} className="text-amber-600" />
+                      )}
                     </div>
                     
                     <div style={{ flex: 1 }}>
@@ -708,9 +708,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                         <span className="badge badge-info" style={{ fontSize: "0.65rem" }}>Toko Koperasi</span>
                         <span className="text-xs text-primary font-bold">{storeName}</span>
                       </div>
-                      <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{p.name}</div>
+                      <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{p.name || "Produk"}</div>
                       <div className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.15rem", marginTop: "0.15rem" }}>
-                        <LocationIcon size={12} /> {p.origin}
+                        <LocationIcon size={12} /> {p.origin || "Indonesia"}
                       </div>
                     </div>
                   </div>
@@ -719,14 +719,14 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                     {/* Quantity Controls */}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", border: "1px solid var(--color-border)", borderRadius: "4px", padding: "2px" }}>
                       <button 
-                        onClick={() => updateQty(item.id, item.qty - 1)}
+                        onClick={() => updateQty(item.id, (item.qty || 1) - 1)}
                         style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
                       >
                         -
                       </button>
-                      <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{item.qty}</span>
+                      <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{item.qty || 1}</span>
                       <button 
-                        onClick={() => updateQty(item.id, item.qty + 1)}
+                        onClick={() => updateQty(item.id, (item.qty || 1) + 1)}
                         style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
                       >
                         +
@@ -734,9 +734,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                     </div>
 
                     <div style={{ textAlign: "right", minWidth: "100px" }}>
-                      <div className="text-xs text-muted">Rp {p.price.toLocaleString("id-ID")}</div>
+                      <div className="text-xs text-muted">Rp {(p.price || 0).toLocaleString("id-ID")}</div>
                       <div className="font-bold text-primary" style={{ fontSize: "1rem" }}>
-                        Rp {(p.price * item.qty).toLocaleString("id-ID")}
+                        Rp {((p.price || 0) * (item.qty || 1)).toLocaleString("id-ID")}
                       </div>
                     </div>
 
@@ -761,7 +761,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.875rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-muted">Total Harga ({cartItems.reduce((sum, item) => sum + item.qty, 0)} barang)</span>
+                <span className="text-muted">Total Harga ({cartItems.reduce((sum, item) => sum + (item.qty || 1), 0)} barang)</span>
                 <span>Rp {subtotal.toLocaleString("id-ID")}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
