@@ -26,31 +26,43 @@ function resolveIconType(namaKategori: string | null, namaProduk: string): strin
   return 'grain';
 }
 
-// ─────────────────────────────────────────────
-// HELPER: Dapatkan user ID dari Supabase session / fallback pembeli
-// ─────────────────────────────────────────────
 async function getCurrentUserId(): Promise<string | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.id) return user.id;
+    let authUserId: string | null = null;
 
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("supabase_user_id");
-      if (stored) return stored;
+    // 1. Cek dari Auth Supabase
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData?.user?.id) {
+      authUserId = authData.user.id;
     }
 
-    const { data: pembeli } = await supabase.from('pembeli').select('id, profile_id').limit(1).maybeSingle();
-    return pembeli?.id || pembeli?.profile_id || null;
+    // 2. Cek dari LocalStorage jika di client side
+    if (!authUserId && typeof window !== "undefined") {
+      authUserId = localStorage.getItem("supabase_user_id");
+    }
+
+    // 3. Fallback: Ambil pembeli ID paling baru di database
+    if (!authUserId) {
+      const { data: pembeli } = await supabase
+        .from('pembeli')
+        .select('id, profile_id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      authUserId = pembeli?.id || pembeli?.profile_id || null;
+    }
+
+    return authUserId;
   } catch {
     return null;
   }
 }
 
 // ─────────────────────────────────────────────
-// PRODUK (tabel: etalase & admin_toko, fallback ke marketplace/produk)
+// PRODUK
 // ─────────────────────────────────────────────
 export async function getProducts(): Promise<any[]> {
-  // 1. Coba ambil dari etalase tayang milik Admin Toko terlebih dahulu
   const { data: etalaseData, error: etalaseErr } = await supabase
     .from('etalase')
     .select('*')
@@ -74,7 +86,7 @@ export async function getProducts(): Promise<any[]> {
 
     return etalaseData.map((e: any) => {
       const toko = tokoMap.get(e.admin_toko_id);
-      const asal = [toko?.desa, toko?.kabupaten].filter(Boolean).join(', ') || 'Indonesia';
+      const asal = [toko?.desa, toko?.kabupaten].filter(Boolean).join(', ');
 
       return {
         id: e.id,
@@ -86,15 +98,13 @@ export async function getProducts(): Promise<any[]> {
         weight: 1,
         image: e.foto || null,
         origin: asal,
-        rating: 4.8,
         stock: Number(e.stok) > 0 ? 'Tersedia' : 'Habis',
         icon_type: resolveIconType(null, e.nama_produk || ''),
-        supplier: toko?.nama_toko || 'Toko Admin',
+        supplier: toko?.nama_toko || '',
       };
     });
   }
 
-  // 2. Fallback jika etalase kosong -> ambil dari marketplace / produk
   let { data, error } = await supabase
     .from('marketplace')
     .select(`
@@ -132,16 +142,11 @@ export async function getProducts(): Promise<any[]> {
       .order('created_at', { ascending: false });
 
     if (!b2bError && b2bData && b2bData.length > 0) {
-      data = b2bData.map((p: any) => ({
-        ...p,
-        harga: Math.round(p.harga * 1.3),
-      }));
+      data = b2bData;
     }
   }
 
-  if (!data || data.length === 0) {
-    return [];
-  }
+  if (!data || data.length === 0) return [];
 
   return data.map((p: any) => ({
     id: p.id,
@@ -153,11 +158,10 @@ export async function getProducts(): Promise<any[]> {
     image: p.foto || null,
     kategori_id: p.kategori_id,
     produsen_id: p.produsen_id,
-    origin: p.produsen ? `${p.produsen.desa || ''}, ${p.produsen.kabupaten || ''}`.replace(/^,\s*/, '') : 'Indonesia',
-    rating: 4.5,
+    origin: p.produsen ? `${p.produsen.desa || ''}, ${p.produsen.kabupaten || ''}`.replace(/^,\s*/, '') : '',
     stock: 'Tersedia',
     icon_type: resolveIconType(p.kategori?.nama || null, p.nama || ''),
-    supplier: p.produsen?.nama_usaha || 'Koperasi Lokal',
+    supplier: p.produsen?.nama_usaha || '',
   }));
 }
 
@@ -194,8 +198,7 @@ export async function saveProduct(product: any): Promise<any> {
 }
 
 // ─────────────────────────────────────────────
-// PROFILE PEMBELI (tabel: profiles)
-// Auth: Gunakan user ID dari Supabase session
+// PROFILE PEMBELI
 // ─────────────────────────────────────────────
 export async function getProfile(userIdParam?: string): Promise<any> {
   const userId = userIdParam || await getCurrentUserId();
@@ -208,24 +211,19 @@ export async function getProfile(userIdParam?: string): Promise<any> {
     .limit(1)
     .maybeSingle();
 
-  if (error) {
-    console.error('getProfile error:', error.message);
-    return null;
-  }
-
-  if (!data) return null;
+  if (error || !data) return null;
 
   let alamat = '';
   let no_hp = data.phone || '';
 
   if (data.role === 'pembeli') {
-    const { data: pembeliData, error: pembeliError } = await supabase
+    const { data: pembeliData } = await supabase
       .from('pembeli')
       .select('alamat, no_hp, email, tanggal_lahir')
       .eq('id', userId)
       .maybeSingle();
 
-    if (!pembeliError && pembeliData) {
+    if (pembeliData) {
       alamat = pembeliData.alamat || '';
       if (pembeliData.no_hp) no_hp = pembeliData.no_hp;
 
@@ -237,7 +235,6 @@ export async function getProfile(userIdParam?: string): Promise<any> {
         alamat: alamat,
         role: data.role || '',
         avatar_url: data.avatar_url || '',
-        bio: '',
         tanggal_lahir: pembeliData.tanggal_lahir || '',
         addresses: alamat ? [{ id: 'main', label: 'Alamat Utama', address: alamat, city: '', default: true }] : [],
       };
@@ -252,7 +249,6 @@ export async function getProfile(userIdParam?: string): Promise<any> {
     alamat: alamat,
     role: data.role || '',
     avatar_url: data.avatar_url || '',
-    bio: '',
     tanggal_lahir: '',
     addresses: alamat ? [{ id: 'main', label: 'Alamat Utama', address: alamat, city: '', default: true }] : [],
   };
@@ -281,7 +277,6 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
     return { success: false, error: 'Gagal memperbarui tabel profiles: ' + error.message };
   }
 
-  // Jika profile role-nya pembeli, upsert ke tabel pembeli
   if (profile && profile.role === 'pembeli') {
     const pembeliPayload: any = {
       id: targetId,
@@ -312,6 +307,9 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
   return { success: true, profile };
 }
 
+// ─────────────────────────────────────────────
+// PESANAN
+// ─────────────────────────────────────────────
 export async function getOrders(): Promise<any[]> {
   const userId = await getCurrentUserId();
 
@@ -339,7 +337,6 @@ export async function getOrders(): Promise<any[]> {
     `)
     .order('created_at', { ascending: false });
 
-  // Filter by user jika ada session aktif
   if (userId) {
     query = query.eq('pembeli_id', userId);
   }
@@ -357,14 +354,14 @@ export async function getOrders(): Promise<any[]> {
     date: new Date(o.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
     status: o.status || 'Belum Dibayar',
     total: o.total || 0,
-    supplier: o.supplier || 'Koperasi Lokal',
-    payment_method: o.metode_pembayaran || 'QRIS',
+    supplier: o.supplier || '',
+    payment_method: o.metode_pembayaran || '',
     proof_uploaded: !!o.bukti_pembayaran,
     proof_filename: o.bukti_pembayaran || '',
     items: (o.detail_pesanan || []).map((d: any) => ({
       id: d.id,
       produk_id: d.produk_id,
-      name: d.marketplace?.nama || 'Produk',
+      name: d.marketplace?.nama || '',
       qty: d.jumlah || 1,
       price: d.harga || 0,
       icon_type: resolveIconType(d.marketplace?.kategori?.nama || null, d.marketplace?.nama || ''),
@@ -375,7 +372,6 @@ export async function getOrders(): Promise<any[]> {
 export async function createOrder(orderData: any): Promise<any> {
   const userId = await getCurrentUserId();
 
-  // 1. Insert pesanan
   const { data: pesanan, error: pesananError } = await supabase
     .from('pesanan')
     .insert({
@@ -396,7 +392,6 @@ export async function createOrder(orderData: any): Promise<any> {
     return null;
   }
 
-  // 2. Insert detail_pesanan untuk setiap item
   const items = orderData.items || [];
   if (items.length > 0) {
     const detailRows = items.map((item: any) => ({
@@ -416,7 +411,6 @@ export async function createOrder(orderData: any): Promise<any> {
     }
   }
 
-  // 3. Insert notifikasi ke database jika user terautentikasi
   if (userId || orderData.pembeli_id) {
     const targetUserId = userId || orderData.pembeli_id;
     await supabase.from('notifikasi').insert({
@@ -432,7 +426,6 @@ export async function createOrder(orderData: any): Promise<any> {
 }
 
 export async function updateOrderStatus(orderId: string, status: string): Promise<boolean> {
-  // Coba update via kode_pesanan dulu
   const { data: byKode } = await supabase
     .from('pesanan')
     .select('id, pembeli_id, kode_pesanan, total')
@@ -448,7 +441,6 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
       .eq('kode_pesanan', orderId);
     if (error) { console.error('updateOrderStatus error:', error.message); return false; }
   } else {
-    // Fallback: update via id UUID
     const { data: byId } = await supabase
       .from('pesanan')
       .select('id, pembeli_id, kode_pesanan, total')
@@ -466,7 +458,6 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
     }
   }
 
-  // Kirim notifikasi pembaruan status
   if (targetOrder && targetOrder.pembeli_id) {
     let judul = 'Status Pesanan Diperbarui';
     let isi = `Status pesanan ${targetOrder.kode_pesanan} Anda telah diperbarui menjadi ${status}.`;
@@ -479,7 +470,7 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
       isi = `Pesanan ${targetOrder.kode_pesanan} Anda sedang dalam perjalanan oleh kurir.`;
     } else if (status === 'Selesai') {
       judul = 'Pesanan Selesai';
-      isi = `Pesanan ${targetOrder.kode_pesanan} telah selesai diterima. Terima kasih telah mendukung produk koperasi pelosok!`;
+      isi = `Pesanan ${targetOrder.kode_pesanan} telah selesai diterima.`;
     }
 
     await supabase.from('notifikasi').insert({
@@ -495,7 +486,7 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 }
 
 // ─────────────────────────────────────────────
-// WISHLIST (Menggunakan pembeli_id & produk_id)
+// WISHLIST
 // ─────────────────────────────────────────────
 export async function getWishlist(): Promise<any[]> {
   const userId = await getCurrentUserId();
@@ -511,7 +502,6 @@ export async function getWishlist(): Promise<any[]> {
   const prodIds = data.map((w: any) => w.produk_id).filter(Boolean);
   if (prodIds.length === 0) return [];
 
-  // Ambil detail produk dari etalase
   const { data: etalaseList } = await supabase
     .from('etalase')
     .select('*')
@@ -526,12 +516,12 @@ export async function getWishlist(): Promise<any[]> {
       product_id: w.produk_id,
       product: p ? {
         id: p.id,
-        name: p.nama_produk || 'Produk Toko',
+        name: p.nama_produk || '',
         price: Number(p.harga_jual) || 0,
         stock: Number(p.stok) > 0 ? 'Tersedia' : 'Habis',
         image: p.foto || null,
-        supplier: 'Toko Admin',
-        origin: 'Indonesia',
+        supplier: '',
+        origin: '',
         icon_type: resolveIconType(null, p.nama_produk || '')
       } : null
     };
@@ -542,7 +532,6 @@ export async function addToWishlist(productId: string): Promise<any> {
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
-  // Cek apakah item sudah ada di wishlist
   const { data: existing } = await supabase
     .from('wishlist')
     .select('id')
@@ -594,7 +583,7 @@ function resolveNotificationIcon(tipe: string): string {
 }
 
 // ─────────────────────────────────────────────
-// NOTIFIKASI (tabel: notifikasi)
+// NOTIFIKASI
 // ─────────────────────────────────────────────
 export async function getNotifications(): Promise<any[]> {
   const userId = await getCurrentUserId();
@@ -605,7 +594,6 @@ export async function getNotifications(): Promise<any[]> {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  // Filter notifikasi milik user aktif
   if (userId) {
     query = query.eq('pembeli_id', userId);
   }
@@ -649,122 +637,186 @@ export async function markNotificationsAsRead(): Promise<boolean> {
   return true;
 }
 
-// ─────────────────────────────────────────────
-// KERANJANG (tabel: keranjang)
-// ─────────────────────────────────────────────
 export async function getCart(): Promise<any[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
+  const pembeliId = await getCurrentUserId();
 
-  const { data, error } = await supabase
-    .from('keranjang')
-    .select(`
-      id,
-      produk_id,
-      jumlah,
-      marketplace:produk_id (
-        id,
-        nama,
-        harga,
-        deskripsi,
-        satuan,
-        berat,
-        foto,
-        produsen_id,
-        kategori_id,
-        kategori:kategori_id ( nama ),
-        produsen:produsen_id ( nama_usaha, desa, kabupaten )
-      )
-    `)
-    .eq('pembeli_id', userId);
+  let cartData: any = null;
 
-  if (error) {
-    console.error('getCart error:', error.message);
-    return [];
+  // A. Cari keranjang spesifik milik user
+  if (pembeliId) {
+    const { data } = await supabase
+      .from('keranjang')
+      .select('id')
+      .eq('pembeli_id', pembeliId)
+      .maybeSingle();
+    cartData = data;
   }
 
-  return (data || []).map((item: any) => {
-    const p = item.marketplace;
-    let supplierName = 'Koperasi Lokal';
-    if (p?.produsen) {
-      const u = p.produsen;
-      const parts = [];
-      if (u.nama_usaha) parts.push(u.nama_usaha);
-      else {
-        if (u.desa) parts.push(`Koperasi ${u.desa}`);
-        if (u.kabupaten) parts.push(u.kabupaten);
-      }
-      if (parts.length > 0) {
-        supplierName = parts.join(' - ');
-      }
+  // B. Fallback: Jika tidak ketemu via pembeliId, ambil keranjang terbaru di database yang MEMILIKI ITEM
+  if (!cartData) {
+    const { data: activeCarts } = await supabase
+      .from('keranjang_item')
+      .select('keranjang_id')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (activeCarts && activeCarts.length > 0) {
+      cartData = { id: activeCarts[0].keranjang_id };
     }
+  }
+
+  if (!cartData) return [];
+
+  // 1. Ambil semua item dari keranjang_item
+  const { data: cartItems, error: itemErr } = await supabase
+    .from('keranjang_item')
+    .select('id, produk_id, jumlah, harga, subtotal')
+    .eq('keranjang_id', cartData.id);
+
+  if (itemErr || !cartItems || cartItems.length === 0) return [];
+
+  // 2. Ambil detail etalase
+  const prodIds = cartItems.map((i) => i.produk_id).filter(Boolean);
+  const etalaseMap = new Map();
+
+  if (prodIds.length > 0) {
+    // Ambil data etalase lengkap
+    const { data: etalaseList } = await supabase
+      .from('etalase')
+      .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)');
+
+    (etalaseList || []).forEach((e) => {
+      if (e.id) etalaseMap.set(e.id, e);
+      if (e.produk_id) etalaseMap.set(e.produk_id, e);
+    });
+  }
+
+  // 3. Gabungkan data
+  return cartItems.map((item: any) => {
+    const p = etalaseMap.get(item.produk_id);
+
+    const hargaVal = Number(item.harga) || Number(p?.harga_jual) || 0;
+    const qtyVal = Number(item.jumlah) || 1;
+    const namaVal = p?.nama_produk || 'Produk Belanja';
+    const storeName = p?.admin_toko?.nama_toko || 'Toko Mitra';
+    const asal = [p?.admin_toko?.desa, p?.admin_toko?.kabupaten].filter(Boolean).join(', ') || 'Indonesia';
 
     return {
-      id: item.id,
+      id: item.id, // ID keranjang_item
       produk_id: item.produk_id,
-      qty: item.jumlah || 1,
-      product: p ? {
-        id: p.id,
-        name: p.nama || '',
-        price: p.harga || 0,
-        description: p.deskripsi || '',
-        unit: p.satuan || 'kg',
-        weight: p.berat || 0,
-        image: p.foto || null,
-        kategori_id: p.kategori_id,
-        produsen_id: p.produsen_id,
-        origin: p.produsen?.kabupaten || 'Indonesia',
-        rating: 4.5,
-        stock: 'Tersedia',
-        icon_type: resolveIconType(p.kategori?.nama || null, p.nama || ''),
-        supplier: supplierName,
-      } : null
+      qty: qtyVal,
+      harga: hargaVal,
+      subtotal: item.subtotal || (hargaVal * qtyVal),
+      product: {
+        id: p?.id || item.produk_id,
+        name: namaVal,
+        price: hargaVal,
+        description: p?.deskripsi || '',
+        unit: p?.satuan || 'pcs',
+        weight: 1,
+        foto: p?.foto || null,
+        supplier: storeName,
+        origin: asal,
+        icon_type: resolveIconType(null, namaVal)
+      }
     };
-  }).filter((item: any) => item.product !== null);
+  });
 }
 
 export async function addToCart(productId: string, qty: number = 1): Promise<any> {
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+  const pembeliId = await getCurrentUserId();
+  if (!pembeliId) {
+    console.error('addToCart error: User belum terautentikasi.');
+    alert("Gagal tambah keranjang: User ID tidak ditemukan. Pastikan Anda sudah login.");
+    return null;
+  }
 
-  const { data: existing, error: checkErr } = await supabase
+  // 1. Cari / Buat Header Keranjang
+  let { data: cartData, error: fetchCartErr } = await supabase
     .from('keranjang')
+    .select('id')
+    .eq('pembeli_id', pembeliId)
+    .maybeSingle();
+
+  if (fetchCartErr) {
+    console.error("Error fetch keranjang:", fetchCartErr.message);
+  }
+
+  if (!cartData) {
+    const { data: newCart, error: createCartErr } = await supabase
+      .from('keranjang')
+      .insert({ pembeli_id: pembeliId })
+      .select('id')
+      .single();
+
+    if (createCartErr || !newCart) {
+      console.error('Gagal membuat header keranjang:', createCartErr?.message);
+      alert(`Supabase Error (Tabel keranjang): ${createCartErr?.message || "Gagal insert"}`);
+      return null;
+    }
+    cartData = newCart;
+  }
+
+  // 2. Ambil Harga Produk dari Etalase
+  let hargaFinal = 0;
+  const { data: p1 } = await supabase
+    .from('etalase')
+    .select('harga_jual')
+    .eq('id', productId)
+    .maybeSingle();
+
+  if (p1 && p1.harga_jual) {
+    hargaFinal = Number(p1.harga_jual);
+  } else {
+    const { data: p2 } = await supabase
+      .from('etalase')
+      .select('harga_jual')
+      .eq('produk_id', productId)
+      .maybeSingle();
+    if (p2 && p2.harga_jual) hargaFinal = Number(p2.harga_jual);
+  }
+
+  // 3. Upsert ke tabel `keranjang_item` (⚠️ TANPA MENGISI SUBTOTAL)
+  const { data: existingItem } = await supabase
+    .from('keranjang_item')
     .select('id, jumlah')
-    .eq('pembeli_id', userId)
+    .eq('keranjang_id', cartData.id)
     .eq('produk_id', productId)
     .maybeSingle();
 
-  if (checkErr) {
-    console.error('addToCart check error:', checkErr.message);
-  }
-
-  if (existing) {
-    const newQty = (existing.jumlah || 0) + qty;
+  if (existingItem) {
+    const newQty = (existingItem.jumlah || 0) + qty;
     const { data, error } = await supabase
-      .from('keranjang')
-      .update({ jumlah: newQty })
-      .eq('id', existing.id)
+      .from('keranjang_item')
+      .update({
+        jumlah: newQty,
+        harga: hargaFinal
+      })
+      .eq('id', existingItem.id)
       .select()
       .single();
 
     if (error) {
       console.error('addToCart update error:', error.message);
+      alert(`Supabase Error (Update Item): ${error.message}`);
       return null;
     }
     return data;
   } else {
     const { data, error } = await supabase
-      .from('keranjang')
+      .from('keranjang_item')
       .insert({
-        pembeli_id: userId,
+        keranjang_id: cartData.id,
         produk_id: productId,
-        jumlah: qty
+        jumlah: qty,
+        harga: hargaFinal
       })
       .select()
       .single();
 
     if (error) {
       console.error('addToCart insert error:', error.message);
+      alert(`Supabase Error (Insert Item): ${error.message}`);
       return null;
     }
     return data;
@@ -772,14 +824,12 @@ export async function addToCart(productId: string, qty: number = 1): Promise<any
 }
 
 export async function updateCartQty(cartItemId: string, qty: number): Promise<boolean> {
-  const userId = await getCurrentUserId();
-  if (!userId) return false;
-
   const { error } = await supabase
-    .from('keranjang')
-    .update({ jumlah: qty })
-    .eq('id', cartItemId)
-    .eq('pembeli_id', userId);
+    .from('keranjang_item')
+    .update({
+      jumlah: qty
+    })
+    .eq('id', cartItemId);
 
   if (error) {
     console.error('updateCartQty error:', error.message);
@@ -789,14 +839,10 @@ export async function updateCartQty(cartItemId: string, qty: number): Promise<bo
 }
 
 export async function removeFromCart(cartItemId: string): Promise<boolean> {
-  const userId = await getCurrentUserId();
-  if (!userId) return false;
-
   const { error } = await supabase
-    .from('keranjang')
+    .from('keranjang_item')
     .delete()
-    .eq('id', cartItemId)
-    .eq('pembeli_id', userId);
+    .eq('id', cartItemId);
 
   if (error) {
     console.error('removeFromCart error:', error.message);
@@ -806,13 +852,21 @@ export async function removeFromCart(cartItemId: string): Promise<boolean> {
 }
 
 export async function clearCart(): Promise<boolean> {
-  const userId = await getCurrentUserId();
-  if (!userId) return false;
+  const pembeliId = await getCurrentUserId();
+  if (!pembeliId) return false;
+
+  const { data: cartData } = await supabase
+    .from('keranjang')
+    .select('id')
+    .eq('pembeli_id', pembeliId)
+    .maybeSingle();
+
+  if (!cartData) return true;
 
   const { error } = await supabase
-    .from('keranjang')
+    .from('keranjang_item')
     .delete()
-    .eq('pembeli_id', userId);
+    .eq('keranjang_id', cartData.id);
 
   if (error) {
     console.error('clearCart error:', error.message);
@@ -824,7 +878,6 @@ export async function clearCart(): Promise<boolean> {
 // ─────────────────────────────────────────────
 // INVENTARIS ADMIN TOKO
 // ─────────────────────────────────────────────
-
 export interface StokAdminToko {
   id: string;
   produk_id: string;
@@ -887,15 +940,15 @@ export async function getInventarisAdminToko(): Promise<StokAdminToko[]> {
     return {
       id: row.id,
       produk_id: row.produk_id,
-      nama: mp?.nama || 'Produk',
+      nama: mp?.nama || '',
       jumlah: row.stok || 0,
       satuan: mp?.satuan || 'kg',
-      batasMinimum: row.stok_minimum || 10,
+      batasMinimum: row.stok_minimum || 0,
       hargaBeli: mp?.harga || 0,
       hargaJual: Math.round((mp?.harga || 0) * 1.3),
       diskonPersen: 0,
       grade: 'Belum Dinilai' as const,
-      asalProdusen: mp?.produsen ? `${mp.produsen.nama_usaha || mp.produsen.desa || 'Produsen'}` : 'Produsen Lokal',
+      asalProdusen: mp?.produsen ? `${mp.produsen.nama_usaha || mp.produsen.desa || ''}` : '',
       live: false,
       foto: mp?.foto || null,
     };
@@ -910,7 +963,7 @@ export async function addInventarisAdminToko(item: {
   const insertPayload = {
     produk_id: item.produk_id,
     stok: item.stok,
-    stok_minimum: item.stok_minimum || 10,
+    stok_minimum: item.stok_minimum || 0,
   };
 
   const { data, error } = await supabase
@@ -920,11 +973,7 @@ export async function addInventarisAdminToko(item: {
     .maybeSingle();
 
   if (error) {
-    if (error.message.includes("row-level security policy")) {
-      console.warn('addInventarisAdminToko: Supabase RLS restrictions active, falling back to local storage.');
-    } else {
-      console.error('addInventarisAdminToko error:', error.message);
-    }
+    console.error('addInventarisAdminToko error:', error.message);
     return null;
   }
   return data;
@@ -937,11 +986,7 @@ export async function updateInventarisStok(inventarisId: string, stok: number): 
     .eq('id', inventarisId);
 
   if (error) {
-    if (error.message.includes("row-level security policy")) {
-      console.warn('updateInventarisStok: Supabase RLS restrictions active, falling back to local storage.');
-    } else {
-      console.error('updateInventarisStok error:', error.message);
-    }
+    console.error('updateInventarisStok error:', error.message);
     return false;
   }
   return true;

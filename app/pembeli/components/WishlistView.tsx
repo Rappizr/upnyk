@@ -135,22 +135,29 @@ export default function WishlistView({
     }
   };
 
-  const handleCheckoutAll = async () => {
-    try {
-      for (const item of items) {
-        const p = item.product;
-        if (!p) continue;
-        await addToCartAction(p.id, 1);
-        await removeFromWishlistAction(item.product_id || p.id);
-      }
+const handleCheckoutAll = async () => {
+  try {
+    setLoading(true);
+    // PERBAIKAN: Gunakan Promise.all untuk eksekusi paralel instan
+    await Promise.all(
+      items.map(async (item) => {
+        if (item.product) {
+          await addToCartAction(item.product.id, 1);
+          await removeFromWishlistAction(item.product_id || item.product.id);
+        }
+      })
+    );
 
-      setItems([]);
-      if (onCartUpdated) onCartUpdated();
-      alert("Semua item berhasil dipindahkan ke keranjang!");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    setItems([]);
+    if (onCartUpdated) onCartUpdated();
+    alert("Semua item berhasil dipindahkan ke keranjang!");
+  } catch (err) {
+    console.error("Error batch checkout wishlist:", err);
+    alert("Gagal memindahkan sebagian item ke keranjang.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>

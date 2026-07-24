@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   createOrderAction,
   getCartAction,
@@ -184,6 +184,7 @@ interface CartViewProps {
 
 export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCartCount }: CartViewProps) {
   const [cartItems, setCartItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [step, setStep] = useState<"cart" | "payment" | "success">("cart");
   const [selectedPayment, setSelectedPayment] = useState<"qris" | "bank">("qris");
   const [submitting, setSubmitting] = useState(false);
@@ -191,18 +192,34 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const [showReceipt, setShowReceipt] = useState(false);
   const [paymentProof, setPaymentProof] = useState<string>("");
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
+    setLoading(true);
     try {
       const items = await getCartAction();
       setCartItems(items || []);
-      onUpdateCartCount?.(items?.length || 0);
+      const totalCount = (items || []).reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
+      onUpdateCartCount?.(totalCount);
     } catch (e) {
-      console.error(e);
+      console.error("Gagal load keranjang:", e);
+    } finally {
+      setLoading(false);
     }
+  }, [onUpdateCartCount]);
+
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
+
+  const getItemPrice = (item: any) => {
+    return Number(item.harga) || Number(item.product?.price) || 0;
+  };
+
+  const getItemName = (item: any) => {
+    return item.product?.name || item.nama_produk || "Produk Belanja";
+  };
+
+  const getItemImage = (item: any) => {
+    return item.product?.foto || item.product?.image || item.foto || null;
   };
 
   const updateQty = async (id: any, newQty: number) => {
@@ -210,18 +227,11 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
     try {
       const ok = await updateCartQtyAction(id, newQty);
       if (ok) {
-        const updated = cartItems.map((item) => {
-          if (item.id === id) {
-            return { ...item, qty: newQty };
-          }
-          return item;
-        });
-        setCartItems(updated);
+        await loadCart();
         onCartUpdated();
-        onUpdateCartCount?.(updated.length);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error updateQty:", e);
     }
   };
 
@@ -229,22 +239,25 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
     try {
       const ok = await removeFromCartAction(id);
       if (ok) {
-        const updated = cartItems.filter((item) => item.id !== id);
-        setCartItems(updated);
+        await loadCart();
         onCartUpdated();
-        onUpdateCartCount?.(updated.length);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error removeItem:", e);
     }
   };
 
   // Calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * (item.qty || 1), 0);
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = getItemPrice(item);
+    const qty = item.qty || 1;
+    return sum + (price * qty);
+  }, 0);
+
   const shippingFee = subtotal > 0 ? 10000 : 0;
   const discount = 0;
   const grandTotal = Math.max(0, subtotal + shippingFee - discount);
-  const totalWeight = cartItems.reduce((sum, item) => sum + ((item.product?.weight || 0) * (item.qty || 1)), 0);
+  const totalWeight = cartItems.reduce((sum, item) => sum + ((item.product?.weight || 1) * (item.qty || 1)), 0);
 
   const handleConfirmOrder = () => {
     if (cartItems.length === 0) return;
@@ -254,20 +267,19 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const handleCheckoutPayment = async () => {
     setSubmitting(true);
     try {
-      // Group items by supplier
       const grouped: Record<string, any[]> = {};
       cartItems.forEach((item) => {
-        const storeName = item.product?.supplier || "Koperasi Pelosok Pilihan";
+        const storeName = item.product?.supplier || "Toko Mitra";
         if (!grouped[storeName]) {
           grouped[storeName] = [];
         }
         grouped[storeName].push({
-          produk_id: item.product?.id,
-          id: item.product?.id,
+          produk_id: item.produk_id || item.product?.id,
+          id: item.produk_id || item.product?.id,
           icon_type: item.product?.icon_type,
-          name: item.product?.name,
+          name: getItemName(item),
           qty: item.qty || 1,
-          price: item.product?.price || 0
+          price: getItemPrice(item)
         });
       });
 
@@ -286,7 +298,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
 
       await Promise.all(orderPromises);
       
-      // Store summary for success page
       setOrderSummary({
         itemsCount: cartItems.reduce((sum, item) => sum + (item.qty || 1), 0),
         subtotal,
@@ -296,26 +307,33 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         supplierCount: Object.keys(grouped).length,
         totalWeight,
         items: cartItems.map(item => ({
-          name: item.product?.name,
+          name: getItemName(item),
           qty: item.qty || 1,
-          price: item.product?.price || 0,
-          weight: (item.product?.weight || 0) * (item.qty || 1),
+          price: getItemPrice(item),
+          weight: (item.product?.weight || 1) * (item.qty || 1),
           icon_type: item.product?.icon_type
         }))
       });
 
-      // Clear Cart
       await clearCartAction();
       setCartItems([]);
       onCartUpdated();
       setStep("success");
     } catch (e) {
-      console.error(e);
+      console.error("Gagal checkout:", e);
       alert("Terjadi kesalahan saat memproses pesanan. Silakan coba lagi.");
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", padding: "4rem 2rem", color: "#64748B" }}>
+        Memuat keranjang belanja Anda...
+      </div>
+    );
+  }
 
   if (step === "success" && orderSummary) {
     return (
@@ -477,7 +495,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         </h1>
 
         <div className="grid-2" style={{ marginBottom: "2rem" }}>
-          {/* QRIS Card */}
           <div 
             onClick={() => setSelectedPayment("qris")}
             className="card card-hover" 
@@ -496,7 +513,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             </p>
           </div>
 
-          {/* Bank Transfer Card */}
           <div 
             onClick={() => setSelectedPayment("bank")}
             className="card card-hover" 
@@ -517,7 +533,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         </div>
 
         <div className="grid-3" style={{ gap: "2rem", alignItems: "start" }}>
-          {/* Payment Detail Details (Left side) */}
           <div className="card" style={{ gridColumn: "span 2", padding: "1.5rem" }}>
             {selectedPayment === "qris" && (
               <div style={{ textAlign: "center" }}>
@@ -569,7 +584,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               </div>
             )}
 
-            {/* Upload Bukti Pembayaran */}
             {(selectedPayment === "qris" || selectedPayment === "bank") && (
               <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px dashed var(--color-border)" }}>
                 <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.95rem", fontWeight: 700 }}>Unggah Bukti Pembayaran</h4>
@@ -619,7 +633,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             )}
           </div>
 
-          {/* Checkout billing column (Right side) */}
           <div className="card" style={{ padding: "1.25rem" }}>
             <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.1rem" }}>Rangkuman Pembayaran</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.875rem" }}>
@@ -684,20 +697,21 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         </div>
       ) : (
         <div className="cart-layout">
-          
-          {/* Cart Items List */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {cartItems.map((item) => {
               const p = item.product || {};
-              const storeName = p.supplier || "Koperasi Pelosok Pilihan";
+              const itemName = getItemName(item);
+              const itemPrice = getItemPrice(item);
+              const itemImg = getItemImage(item);
+              const storeName = p.supplier || "Toko Mitra";
+              const qty = item.qty || 1;
+
               return (
                 <div key={item.id} className="cart-item-card">
                   <div className="cart-item-info" style={{ display: "flex", gap: "1rem", flex: 1, alignItems: "center" }}>
-                    
-                    {/* Gambar atau Ikon Produk */}
                     <div style={{ width: 80, height: 80, background: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-sm)", flexShrink: 0, overflow: "hidden" }}>
-                      {p.foto ? (
-                        <img src={p.foto} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      {itemImg ? (
+                        <img src={itemImg} alt={itemName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <IconRenderer type={p.icon_type} size={36} className="text-amber-600" />
                       )}
@@ -708,7 +722,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                         <span className="badge badge-info" style={{ fontSize: "0.65rem" }}>Toko Koperasi</span>
                         <span className="text-xs text-primary font-bold">{storeName}</span>
                       </div>
-                      <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{p.name || "Produk"}</div>
+                      <div className="font-semibold" style={{ fontSize: "0.95rem" }}>{itemName}</div>
                       <div className="text-xs text-muted" style={{ display: "flex", alignItems: "center", gap: "0.15rem", marginTop: "0.15rem" }}>
                         <LocationIcon size={12} /> {p.origin || "Indonesia"}
                       </div>
@@ -716,17 +730,16 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                   </div>
 
                   <div className="cart-item-actions" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-                    {/* Quantity Controls */}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", border: "1px solid var(--color-border)", borderRadius: "4px", padding: "2px" }}>
                       <button 
-                        onClick={() => updateQty(item.id, (item.qty || 1) - 1)}
+                        onClick={() => updateQty(item.id, qty - 1)}
                         style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
                       >
                         -
                       </button>
-                      <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{item.qty || 1}</span>
+                      <span style={{ minWidth: "20px", textAlign: "center", fontSize: "0.9rem" }}>{qty}</span>
                       <button 
-                        onClick={() => updateQty(item.id, (item.qty || 1) + 1)}
+                        onClick={() => updateQty(item.id, qty + 1)}
                         style={{ border: "none", background: "transparent", cursor: "pointer", padding: "4px 8px", fontWeight: "bold" }}
                       >
                         +
@@ -734,9 +747,9 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                     </div>
 
                     <div style={{ textAlign: "right", minWidth: "100px" }}>
-                      <div className="text-xs text-muted">Rp {(p.price || 0).toLocaleString("id-ID")}</div>
+                      <div className="text-xs text-muted">Rp {itemPrice.toLocaleString("id-ID")}</div>
                       <div className="font-bold text-primary" style={{ fontSize: "1rem" }}>
-                        Rp {((p.price || 0) * (item.qty || 1)).toLocaleString("id-ID")}
+                        Rp {(itemPrice * qty).toLocaleString("id-ID")}
                       </div>
                     </div>
 
@@ -754,7 +767,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
             })}
           </div>
 
-          {/* Cart Summary Card */}
           <div className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
             <h3 style={{ margin: 0, fontSize: "1.1rem", borderBottom: "1px solid var(--color-border-light)", paddingBottom: "0.5rem" }}>
               Ringkasan Belanja
@@ -787,7 +799,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               <TruckIcon size={16} /> Konfirmasi Pemesanan
             </button>
           </div>
-
         </div>
       )}
     </>

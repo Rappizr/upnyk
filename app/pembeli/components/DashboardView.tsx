@@ -6,7 +6,8 @@ import {
   getWishlistAction, 
   getProfileAction, 
   addToWishlistAction, 
-  removeFromWishlistAction 
+  removeFromWishlistAction,
+  addToCartAction
 } from "@/app/actions";
 
 function RiceIcon({ size = 24, className = "", ...props }: any) {
@@ -105,6 +106,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
           reviews: 88,
           desc: `Toko resmi ${t.nama_toko} memproduksi dan menyediakan komoditas olahan unggulan.`,
           bg_color: "var(--color-primary-light)",
+          foto: t.foto || null, // ✅ TAMBAHKAN PEMETAAN FOTO PROFIL TOKO
         }));
         setCoopStores(mappedStores);
       } else {
@@ -138,6 +140,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
 
           return {
             id: e.id,
+            produk_id: e.produk_id || e.id,
             name: e.nama_produk || "Produk Toko",
             origin: asal,
             stock: Number(e.stok) > 0 ? "Tersedia" : "Habis",
@@ -204,30 +207,24 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
     }
   };
 
-  const handleAddOrder = (p: any) => {
+  const handleAddOrder = async (p: any) => {
     try {
-      const saved = localStorage.getItem("cartItems");
-      let currentItems = [];
-      if (saved) {
-        try { currentItems = JSON.parse(saved); } catch (e) {}
+      const targetProductId = p.id || p.produk_id;
+      if (!targetProductId) {
+        alert("Gagal: ID Produk tidak ditemukan.");
+        return;
       }
 
-      const existingIdx = currentItems.findIndex((item: any) => item.product.id === p.id);
-      if (existingIdx > -1) {
-        currentItems[existingIdx].qty += 1;
+      const res = await addToCartAction(targetProductId, 1);
+      if (res) {
+        if (onCartUpdated) onCartUpdated();
+        alert(`"${p.name}" berhasil dimasukkan ke keranjang belanja.`);
       } else {
-        currentItems.push({
-          id: Date.now() + Math.random(),
-          product: p,
-          qty: 1
-        });
+        alert("Gagal menambahkan produk ke keranjang. Silakan coba lagi.");
       }
-
-      localStorage.setItem("cartItems", JSON.stringify(currentItems));
-      if (onCartUpdated) onCartUpdated();
-      alert(`"${p.name}" dimasukkan ke keranjang belanja.`);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Error handleAddOrder:", err);
+      alert("Terjadi kesalahan: " + (err?.message || "Gagal memasukkan keranjang"));
     }
   };
 
@@ -316,8 +313,13 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
             <div key={c.id} className="card card-hover" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                  <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-primary-light)", borderRadius: "8px", fontSize: "1.2rem" }}>
-                    🏪
+                  {/* ✅ TAMPILKAN FOTO PROFIL UMKM JIKA ADA, JIKA TIDAK TAMPILKAN FALLBACK */}
+                  <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-primary-light)", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+                    {c.foto ? (
+                      <img src={c.foto} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "1.2rem" }}>🏪</span>
+                    )}
                   </div>
                   <div>
                     <div className="font-semibold text-sm">{c.name}</div>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/db";
 import { getProfileAction, getNotificationsAction, getCartAction } from "@/app/actions";
@@ -21,18 +21,18 @@ export default function PembeliMasterPage() {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
 
-  const updateCartCount = async () => {
+  const updateCartCount = useCallback(async () => {
     try {
       const items = await getCartAction();
-      const totalQty = items.reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
+      const totalQty = (items || []).reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
       setCartCount(totalQty);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to fetch cart count:", e);
       setCartCount(0);
     }
-  };
+  }, []);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       let userId = typeof window !== "undefined" ? localStorage.getItem('supabase_user_id') : null;
       if (!userId) {
@@ -61,30 +61,31 @@ export default function PembeliMasterPage() {
     } finally {
       setIsProfileLoading(false);
     }
-  };
+  }, []);
 
-  const loadUnreadNotifCount = async () => {
+  const loadUnreadNotifCount = useCallback(async () => {
     try {
       const data = await getNotificationsAction();
       if (data && data.length > 0) {
-        const dbUnread = data.filter((n: any) => n.unread).length;
-        setUnreadNotifCount(dbUnread + 2);
+        // PERBAIKAN: Gunakan properti dibaca asli tanpa tambahan hardcoded '+ 2'
+        const dbUnread = data.filter((n: any) => !n.dibaca && !n.unread).length;
+        setUnreadNotifCount(dbUnread);
       } else {
         setUnreadNotifCount(0);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Failed to load notifications count:", e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     updateCartCount();
     loadProfile();
     loadUnreadNotifCount();
-    // Periodically sync or listen to storage changes
+
     window.addEventListener("storage", updateCartCount);
     return () => window.removeEventListener("storage", updateCartCount);
-  }, []);
+  }, [updateCartCount, loadProfile, loadUnreadNotifCount]);
 
   const sidebarItems = [
     { 
@@ -146,7 +147,6 @@ export default function PembeliMasterPage() {
     }
   ];
 
-  // Blokir akses ke UI sampai pengecekan profil selesai
   if (isProfileLoading) {
     return (
       <div style={{
@@ -356,7 +356,7 @@ export default function PembeliMasterPage() {
               <span>Keluar Akun</span>
             </Link>
             <div style={{ fontSize: "0.75rem", color: "var(--color-text-subtle)" }}>
-              © 2025 Lural Commerce
+              © {new Date().getFullYear()} PasarNusa Commerce
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--color-text-subtle)", marginTop: "2px" }}>
               v1.0.0 — UMKM Edition
