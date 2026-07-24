@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import type { FormEvent, ChangeEvent, CSSProperties } from "react";
 import { supabase } from "@/lib/db";
+import { getCoordsFromAddress } from "@/lib/geocoding";
 
 const IconMapPin = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const IconMail = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2Z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>;
@@ -48,7 +49,7 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
     phone_user: "",
     fotoAvatarPemilik: "",
     nama_usaha: "",
-    kategori: "Belum memilih kategori", // internal saja, tidak lagi ditanyakan ke user
+    kategori: "Belum memilih kategori",
     alamat: "",
     desa: "",
     kecamatan: "",
@@ -105,8 +106,6 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
     setLoading(false);
   }
 
-  // Data profil selalu diambil sekali di awal, terlepas dari popup dibuka atau tidak —
-  // supaya status "wajib lengkapi" bisa diketahui sejak awal render.
   useEffect(() => {
     ambilDataProfil();
   }, []);
@@ -146,6 +145,15 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
       }
     }
 
+    // 🌐 AUTOMATIC GEOCODING: Mencari koordinat latitude & longitude dari alamat
+    const coords = await getCoordsFromAddress({
+      alamat: form.alamat,
+      desa: form.desa,
+      kecamatan: form.kecamatan,
+      kabupaten: form.kabupaten,
+      provinsi: form.provinsi,
+    });
+
     const payload = {
       nama_usaha: form.nama_usaha,
       kategori: form.kategori === "Belum memilih kategori" ? "Umum" : form.kategori,
@@ -155,16 +163,20 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
       kabupaten: form.kabupaten,
       provinsi: form.provinsi,
       foto: finalFotoUsahaUrl,
-      status: "aktif"
+      status: "aktif",
+      latitude: coords ? coords.lat : null,
+      longitude: coords ? coords.lng : null,
     };
 
     const { data: cekExist } = await supabase.from("produsen").select("id").eq("profile_id", user.id).maybeSingle();
-    const { error } = cekExist ? await supabase.from("produsen").update(payload).eq("profile_id", user.id) : await supabase.from("produsen").insert({ profile_id: user.id, ...payload });
+    const { error } = cekExist 
+      ? await supabase.from("produsen").update(payload).eq("profile_id", user.id) 
+      : await supabase.from("produsen").insert({ profile_id: user.id, ...payload });
 
     if (error) {
       pemicuToast("Gagal menyimpan data usaha!", "gagal");
     } else {
-      pemicuToast("Data Toko Sukses Diperbarui!", "sukses");
+      pemicuToast("Data Toko & Koordinat Peta Sukses Diperbarui!", "sukses");
 
       const { data: freshProdusen } = await supabase.from("produsen").select("*").eq("profile_id", user.id).maybeSingle();
       if (freshProdusen) {
@@ -238,8 +250,6 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
     setLoading(false);
   }
 
-  // Belum ada data usaha sama sekali → popup wajib tampil & tidak bisa ditutup sampai diisi,
-  // terlepas dari halaman mana pun yang sedang dibuka di belakangnya.
   const wajibLengkapi = !loading && !isDataLengkap;
   const tampilkanPopup = open || wajibLengkapi;
 
