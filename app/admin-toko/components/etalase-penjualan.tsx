@@ -249,55 +249,80 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     }
   }
 
-  // BUAT PRODUK BARU MANDIRI
-  async function handleBuatProdukBaru(e: FormEvent) {
-    e.preventDefault();
-    if (!formBaru.nama.trim() || submitting) return;
+// BUAT PRODUK BARU MANDIRI (SEKALIGUS MASUK INVENTARIS & ETALASE)
+async function handleBuatProdukBaru(e: FormEvent) {
+  e.preventDefault();
+  if (!formBaru.nama.trim() || submitting) return;
 
-    setSubmitting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  setSubmitting(true);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { data: adminToko } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
+    const { data: adminToko } = await supabase
+      .from("admin_toko")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle();
 
-      if (!adminToko) {
-        showToast("⚠️ Data Admin Toko belum terdaftar!");
-        setSubmitting(false);
-        return;
-      }
+    if (!adminToko) {
+      showToast("⚠️ Data Admin Toko belum terdaftar!");
+      setSubmitting(false);
+      return;
+    }
 
-      const hargaJualVal = Number(formBaru.hargaJual) || 0;
-      const stokVal = Number(formBaru.jumlah) || 1;
-      const diskonVal = Math.min(90, Math.max(0, Number(formBaru.diskonPersen) || 0));
+    const hargaJualVal = Number(formBaru.hargaJual) || 0;
+    const hargaBeliVal = Number(formBaru.hargaBeli) || 0;
+    const stokVal = Number(formBaru.jumlah) || 1;
+    const diskonVal = Math.min(90, Math.max(0, Number(formBaru.diskonPersen) || 0));
 
-      const { error: errEtalase } = await supabase.from("etalase").insert({
+    // 1. SIMPAN KE TABEL INVENTARIS
+    const { data: invData, error: errInv } = await supabase
+      .from("inventaris")
+      .insert({
         admin_toko_id: adminToko.id,
-        nama_produk: formBaru.nama.trim(),
-        harga_jual: hargaJualVal,
+        nama_produk: formBaru.nama.trim(), // Simpan nama langsung di inventaris
         stok: stokVal,
         satuan: formBaru.satuan || "pcs",
-        diskon_persen: diskonVal,
-        deskripsi: formBaru.deskripsi.trim() || "Produk berkualitas tinggi tersedia di toko kami.",
-        foto: fotoPreview || null,
-        status: "tayang",
-      });
+        harga_beli: hargaBeliVal,
+        stok_minimum: 5,
+        stok_maksimum: 100,
+        lokasi_rak: "Gudang Utama",
+        grade: "A",
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
-      if (errEtalase) throw errEtalase;
-
-      showToast(`Produk "${formBaru.nama}" berhasil ditambahkan ke Etalase!`);
-      closeModalTambah();
-      await muatDataEtalase();
-    } catch (err: any) {
-      showToast(`Gagal menyimpan produk: ${err.message || "Terjadi kesalahan"}`);
-    } finally {
-      setSubmitting(false);
+    if (errInv) {
+      console.warn("Peringatan simpan ke inventaris:", errInv.message);
     }
+
+    // 2. SIMPAN KE TABEL ETALASE
+    const { error: errEtalase } = await supabase.from("etalase").insert({
+      admin_toko_id: adminToko.id,
+      produk_id: null, // Biarkan null jika bukan berasal dari katalog produk umum
+      nama_produk: formBaru.nama.trim(),
+      harga_jual: hargaJualVal,
+      stok: stokVal,
+      satuan: formBaru.satuan || "pcs",
+      diskon_persen: diskonVal,
+      deskripsi: formBaru.deskripsi.trim() || "Produk berkualitas tinggi tersedia di toko kami.",
+      foto: fotoPreview || null,
+      status: "tayang",
+    });
+
+    if (errEtalase) throw errEtalase;
+
+    showToast(`Produk "${formBaru.nama}" berhasil ditambahkan ke Etalase & Gudang!`);
+    closeModalTambah();
+    await muatDataEtalase();
+  } catch (err: any) {
+    showToast(`Gagal menyimpan produk: ${err.message || "Terjadi kesalahan"}`);
+  } finally {
+    setSubmitting(false);
   }
+}
 
   function closeModalTambah() {
     setShowAddModal(false);
@@ -423,7 +448,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         })}
       </div>
 
-      {/* MODAL POPUP TAMBAH PRODUK KE TABEL `etalase` */}
+      {/* MODAL POPUP TAMBAH PRODUK KE TABEL `etalase` & `inventaris` */}
       {showAddModal && (
         <div onClick={closeModalTambah} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "450px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", maxHeight: "90vh", overflowY: "auto" }}>

@@ -169,73 +169,79 @@ export default function InventarisGrading({
     setTimeout(() => setToastMessage(null), 3500);
   }
 
-  // 1. MUAT DATA INVENTARIS DARI SUPABASE
-  const muatInventarisFromDb = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+// 1. MUAT DATA INVENTARIS DARI SUPABASE
+const muatInventarisFromDb = useCallback(async () => {
+  setLoading(true);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { data: adminToko } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
+    const { data: adminToko } = await supabase
+      .from("admin_toko")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle();
 
-      if (!adminToko) return;
+    if (!adminToko) return;
 
-      const { data: invData, error: errInv } = await supabase
-        .from("inventaris")
-        .select("*")
-        .eq("admin_toko_id", adminToko.id)
-        .order("updated_at", { ascending: false });
+    const { data: invData, error: errInv } = await supabase
+      .from("inventaris")
+      .select("*")
+      .eq("admin_toko_id", adminToko.id)
+      .order("updated_at", { ascending: false });
 
-      if (errInv) throw errInv;
+    if (errInv) throw errInv;
 
-      if (invData && invData.length > 0) {
-        const prodIds = invData.map((i) => i.produk_id).filter(Boolean);
-        let prodMap = new Map();
+    if (invData && invData.length > 0) {
+      // Ambil ID produk yang VALID dari tabel produk (jika ada)
+      const prodIds = invData.map((i) => i.produk_id).filter(Boolean);
+      let prodMap = new Map();
 
-        if (prodIds.length > 0) {
-          const { data: prodList } = await supabase
-            .from("produk")
-            .select("id, nama, harga, satuan, produsen_id")
-            .in("id", prodIds);
+      if (prodIds.length > 0) {
+        const { data: prodList } = await supabase
+          .from("produk")
+          .select("id, nama, harga, satuan, produsen_id")
+          .in("id", prodIds);
 
-          if (prodList) {
-            prodMap = new Map(prodList.map((pr) => [pr.id, pr]));
-          }
+        if (prodList) {
+          prodMap = new Map(prodList.map((pr) => [pr.id, pr]));
         }
-
-        const mapped: StokToko[] = invData.map((item: any) => {
-          const prodObj = prodMap.get(item.produk_id);
-          const hBeli = Number(prodObj?.harga) || Number(item.harga_beli) || 0;
-          return {
-            id: item.id,
-            produk_id: item.produk_id,
-            nama: prodObj?.nama || item.nama_produk || "Komoditas Panen",
-            jumlah: Number(item.stok) || 0,
-            satuan: prodObj?.satuan || item.satuan || "pcs",
-            hargaBeli: hBeli,
-            hargaJual: Math.round(hBeli * 1.3),
-            diskonPersen: 0,
-            grade: "A",
-            asalProdusen: "Produsen Mitra",
-            live: true,
-            lokasiRak: item.lokasi_rak || "Gudang Utama",
-          };
-        });
-
-        setInventarisDb(mapped);
-      } else {
-        setInventarisDb([]);
       }
-    } catch (err) {
-      console.error("Gagal muat inventaris:", err);
-    } finally {
-      setLoading(false);
+
+      const mapped: StokToko[] = invData.map((item: any) => {
+        const prodObj = prodMap.get(item.produk_id);
+        
+        // Prioritas Ambil Data: Tabel Produk -> Kolom Inventaris -> Default Fallback
+        const namaProduk = prodObj?.nama || item.nama_produk || "Komoditas Panen";
+        const hBeli = Number(prodObj?.harga) || Number(item.harga_beli) || 0;
+        const satuanProduk = prodObj?.satuan || item.satuan || "pcs";
+
+        return {
+          id: item.id,
+          produk_id: item.produk_id,
+          nama: namaProduk,
+          jumlah: Number(item.stok) || 0,
+          satuan: satuanProduk,
+          hargaBeli: hBeli,
+          hargaJual: Math.round(hBeli * 1.3),
+          diskonPersen: 0,
+          grade: "A",
+          asalProdusen: "Gudang / Input Manual",
+          live: true,
+          lokasiRak: item.lokasi_rak || "Gudang Utama",
+        };
+      });
+
+      setInventarisDb(mapped);
+    } else {
+      setInventarisDb([]);
     }
-  }, []);
+  } catch (err) {
+    console.error("Gagal muat inventaris:", err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     muatInventarisFromDb();

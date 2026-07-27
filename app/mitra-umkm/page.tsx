@@ -11,7 +11,7 @@ import { supabase } from "@/lib/db";
 interface Mitra {
   id: string;
   nama: string;
-  tipe: "Admin Toko / Koperasi" | "Produsen Hulu";
+  tipe: "Toko UMKM" | "Produsen Hulu";
   lokasi: string;
   komoditas: string;
   rating: number;
@@ -20,11 +20,7 @@ interface Mitra {
   fotoUrl?: string;
 }
 
-const filterTipe = ["Semua", "Admin Toko / Koperasi", "Produsen Hulu"] as const;
-
-/* ============================================================
-   PALET WARNA — Identitas Hijau PasarNusa
-   ============================================================ */
+const filterTipe = ["Semua", "Toko UMKM", "Produsen Hulu"] as const;
 const C = {
   deep: "#08170E",       // forest paling gelap (hero / footer)
   forest: "#0E2A1B",     // forest gelap
@@ -76,7 +72,6 @@ export default function MitraUmkmPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // MEMUAT MITRA DARI SUPABASE DATABASE (PRODUSEN & ADMIN TOKO)
   const muatMitraDatabase = useCallback(async () => {
     setLoading(true);
     try {
@@ -117,7 +112,7 @@ export default function MitraUmkmPage() {
           daftarDiolah.push({
             id: a.id,
             nama: a.nama_toko || "Admin Toko UMKM",
-            tipe: "Admin Toko / Koperasi",
+            tipe: "Toko UMKM",
             lokasi: lokasi,
             komoditas: "Koperasi & Komoditas Grosir",
             rating: 4.8,
@@ -148,7 +143,7 @@ export default function MitraUmkmPage() {
   });
 
   const totalProdusen = daftarMitra.filter((m) => m.tipe === "Produsen Hulu").length;
-  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Admin Toko / Koperasi").length;
+  const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Toko UMKM").length;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
@@ -332,7 +327,7 @@ export default function MitraUmkmPage() {
           <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.1rem", maxWidth: "660px", marginLeft: "auto", marginRight: "auto" }}>
             {[
               { icon: Sprout, label: "Produsen Binaan", value: `${totalProdusen}` },
-              { icon: Store, label: "Koperasi / Toko", value: `${totalKoperasi}` },
+              { icon: Store, label: "Toko UMKM", value: `${totalKoperasi}` },
               { icon: TrendingUp, label: "Total Mitra", value: `${daftarMitra.length}` },
             ].map((s, i) => (
               <div key={i} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(163,230,53,0.16)", borderRadius: "1.1rem", padding: "1.15rem 0.75rem", backdropFilter: "blur(8px)" }}>

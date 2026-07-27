@@ -275,7 +275,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="hero-section" style={{ minHeight: "92vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "6rem 1.5rem 4rem" }}>
+      <section className="hero-section" style={{ minHeight: "87vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "6rem 1.5rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} style={{
             position: "absolute", top: 0, left: 0, width: "100%", height: "100%",

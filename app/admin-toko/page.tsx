@@ -69,6 +69,9 @@ export interface Penjualan {
   jumlah: number;
   total: number;
   tanggal: string;
+  status?: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
+  alamatPembeli?: string;
+  noResi?: string;
 }
 
 const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
@@ -84,21 +87,43 @@ const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="non
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
-const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
 
-interface MenuItemDef { key: string; label: string; icon: () => ReactElement }
-interface MenuGroupDef { title: string; items: MenuItemDef[] }
+interface MenuItemDef {
+  key: string;
+  label: string;
+  icon: () => ReactElement;
+  children?: { key: string; label: string }[];
+}
+
+interface MenuGroupDef {
+  title: string;
+  items: MenuItemDef[];
+}
 
 const menuGroups: MenuGroupDef[] = [
   { title: "Main", items: [{ key: "dashboard", label: "Dashboard", icon: IconDashboard }] },
-  { title: "Belanja Bahan Baku", items: [
-    { key: "marketplace", label: "Marketplace Produsen", icon: IconStore },
-    { key: "pelacakan", label: "Pelacakan Pesanan", icon: IconTruck },
-  ] },
-  { title: "Manajemen Stok", items: [
-    { key: "inventaris", label: "Inventaris", icon: IconBox },
-    { key: "restock", label: "Smart Restock", icon: IconRefresh },
-  ] },
+  {
+    title: "Belanja Bahan Baku",
+    items: [
+      { key: "marketplace", label: "Marketplace Produsen", icon: IconStore },
+      {
+        key: "pelacakan",
+        label: "Pelacakan Pesanan",
+        icon: IconTruck,
+        children: [
+          { key: "pelacakan-produsen-toko", label: "Produsen ke Toko" },
+          { key: "pelacakan-toko-pembeli", label: "Toko ke Pembeli" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Manajemen Stok",
+    items: [
+      { key: "inventaris", label: "Inventaris", icon: IconBox },
+      { key: "restock", label: "Smart Restock", icon: IconRefresh },
+    ],
+  },
   { title: "Penjualan", items: [{ key: "etalase", label: "Etalase Penjualan", icon: IconTag }] },
   { title: "Laporan", items: [{ key: "laporan", label: "Buku Kas", icon: IconBook }] },
 ];
@@ -115,6 +140,8 @@ const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   marketplace: "Marketplace Produsen",
   pelacakan: "Pelacakan Pesanan",
+  "pelacakan-produsen-toko": "Pelacakan Pesanan (Produsen ke Toko)",
+  "pelacakan-toko-pembeli": "Pelacakan Pesanan (Toko ke Pembeli)",
   inventaris: "Inventaris",
   restock: "Smart Restock",
   etalase: "Etalase Penjualan",
@@ -123,6 +150,7 @@ const pageTitles: Record<string, string> = {
 
 export default function AdminTokoDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>("pelacakan");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
 
@@ -134,7 +162,7 @@ export default function AdminTokoDashboard() {
     namaPemilik: "Admin PasarNusa",
     namaToko: "Toko Baru Admin",
     inisial: "AT",
-    fotoUrl: ""
+    fotoUrl: "",
   });
   const [alamatToko, setAlamatToko] = useState("");
 
@@ -143,58 +171,56 @@ export default function AdminTokoDashboard() {
   const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
   const [penjualanList] = useState<Penjualan[]>([]);
 
-  // DETEKSI KELENGKAPAN SERTA STATUS SUSPEND AKUN
   const periksaKelengkapanAdmin = useCallback(async () => {
-    setLoadingProfil(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoadingProfil(false); return; }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { 
+        setLoadingProfil(false); 
+        return; 
+      }
 
-    const { data: profile } = await supabase.from("profiles").select("nama, avatar_url, status").eq("id", user.id).maybeSingle();
-    const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat, desa, kecamatan, kabupaten, provinsi, status").eq("profile_id", user.id).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("nama, avatar_url, status").eq("id", user.id).maybeSingle();
+      const { data: adminToko } = await supabase.from("admin_toko").select("nama_toko, alamat, desa, kecamatan, kabupaten, provinsi, status").eq("profile_id", user.id).maybeSingle();
 
-    if (profile?.status === "suspended" || profile?.status === "nonaktif" || adminToko?.status === "suspended" || adminToko?.status === "nonaktif") {
-      setIsSuspended(true);
-    } else {
-      setIsSuspended(false);
+      if (profile?.status === "suspended" || profile?.status === "nonaktif" || adminToko?.status === "suspended" || adminToko?.status === "nonaktif") {
+        setIsSuspended(true);
+      } else {
+        setIsSuspended(false);
+      }
+
+      const lengkap = !!(adminToko && adminToko.alamat && adminToko.nama_toko);
+      setIsDataLengkap(lengkap);
+
+      if (adminToko) {
+        const alamatLengkap = [adminToko.alamat, adminToko.desa, adminToko.kecamatan, adminToko.kabupaten, adminToko.provinsi].filter(Boolean).join(", ");
+        if (alamatLengkap) setAlamatToko(alamatLengkap);
+      }
+
+      setHeaderProfil({
+        namaPemilik: profile?.nama || "Admin Toko",
+        namaToko: adminToko?.nama_toko || "Nama Toko Belum Diisi",
+        inisial: adminToko?.nama_toko ? adminToko.nama_toko.slice(0, 2).toUpperCase() : "AT",
+        fotoUrl: profile?.avatar_url || "",
+      });
+    } catch (error) {
+      console.error("Gagal memeriksa kelengkapan admin:", error);
+    } finally {
+      setLoadingProfil(false);
     }
-
-    const lengkap = !!(adminToko && adminToko.alamat && adminToko.nama_toko);
-    setIsDataLengkap(lengkap);
-
-    if (adminToko) {
-      const alamatLengkap = [adminToko.alamat, adminToko.desa, adminToko.kecamatan, adminToko.kabupaten, adminToko.provinsi].filter(Boolean).join(", ");
-      if (alamatLengkap) setAlamatToko(alamatLengkap);
-    }
-
-    if (!lengkap) {
-      setActiveMenu("dashboard");
-    }
-
-    setHeaderProfil({
-      namaPemilik: profile?.nama || "Admin Toko",
-      namaToko: adminToko?.nama_toko || "Nama Toko Belum Diisi",
-      inisial: adminToko?.nama_toko ? adminToko.nama_toko.slice(0, 2).toUpperCase() : "AT",
-      fotoUrl: profile?.avatar_url || ""
-    });
-    setLoadingProfil(false);
   }, []);
 
   const fetchInventaris = useCallback(async () => {
     try {
       const dbItems = await getInventarisAdminToko();
-      
       let localInv: any[] = [];
       if (typeof window !== "undefined") {
         try {
           const stored = localStorage.getItem("admin_inventaris_list");
           if (stored) localInv = JSON.parse(stored);
-        } catch {
-          console.error("Gagal membaca localStorage admin_inventaris_list");
-        }
+        } catch {}
       }
 
       const mergedMap = new Map();
-
       localInv.forEach((item) => {
         mergedMap.set(item.produk_id || item.id, item);
       });
@@ -224,7 +250,6 @@ export default function AdminTokoDashboard() {
           live: localMeta.live !== undefined ? localMeta.live : item.live,
           foto: item.foto || null,
         };
-        
         mergedMap.set(item.produk_id || item.id, mappedItem);
       });
 
@@ -241,20 +266,13 @@ export default function AdminTokoDashboard() {
 
   const fetchProdusenList = useCallback(async () => {
     try {
-      const { data: produsenData } = await supabase
-        .from("produsen")
-        .select("id, nama_usaha, desa, kabupaten, kategori")
-        .eq("status", "aktif");
-      
-      const { data: produkData } = await supabase
-        .from("produk")
-        .select("id, nama, harga, satuan, produsen_id");
+      const { data: produsenData } = await supabase.from("produsen").select("id, nama_usaha, desa, kabupaten, kategori").eq("status", "aktif");
+      const { data: produkData } = await supabase.from("produk").select("id, nama, harga, satuan, produsen_id");
         
       if (produsenData) {
         const mapped = produsenData.map((p) => {
           const relatedProduk = (produkData || []).filter((prod) => prod.produsen_id === p.id);
           const komoditas = relatedProduk.map((r) => r.nama).join(", ") || p.kategori || "Bahan Pangan";
-          
           return {
             id: p.id,
             nama: p.nama_usaha || "Produsen",
@@ -270,108 +288,20 @@ export default function AdminTokoDashboard() {
     }
   }, []);
 
-  const sinkronisasiBarangDiterima = useCallback(async () => {
-    const diterimaList = pembelianList.filter((p) => p.status === "Diterima");
-    if (diterimaList.length === 0) return;
-
-    let updatedDb = false;
-    for (const po of diterimaList) {
-      const inStok = stokList.some((s) => s.nama.toLowerCase() === po.item.toLowerCase());
-      if (!inStok) {
-        let produkId = "";
-        try {
-          const { data: mpProd } = await supabase
-            .from("marketplace")
-            .select("id")
-            .eq("produsen_id", po.produsenId)
-            .ilike("nama", `%${po.item}%`)
-            .limit(1)
-            .maybeSingle();
-
-          if (mpProd) {
-            produkId = mpProd.id;
-          } else {
-            const { data: b2bProd } = await supabase
-              .from("produk")
-              .select("*")
-              .eq("produsen_id", po.produsenId)
-              .ilike("nama", `%${po.item}%`)
-              .limit(1)
-              .maybeSingle();
-
-            let targetB2b = b2bProd;
-            if (!targetB2b) {
-              const { data: fallbackB2b } = await supabase
-                .from("produk")
-                .select("*")
-                .eq("produsen_id", po.produsenId)
-                .limit(1)
-                .maybeSingle();
-              targetB2b = fallbackB2b;
-            }
-
-            if (targetB2b) {
-              const b2cPrice = Math.round(targetB2b.harga * 1.3);
-              const { data: newB2c, error: createError } = await supabase
-                .from("marketplace")
-                .insert({
-                  nama: targetB2b.nama,
-                  harga: b2cPrice,
-                  deskripsi: targetB2b.deskripsi || "",
-                  satuan: targetB2b.satuan || "kg",
-                  berat: targetB2b.berat || 0,
-                  foto: targetB2b.foto || null,
-                  kategori_id: targetB2b.kategori_id || null,
-                  produsen_id: targetB2b.produsen_id || null,
-                })
-                .select("id")
-                .single();
-
-              if (!createError && newB2c) {
-                produkId = newB2c.id;
-              }
-            }
-          }
-
-          if (produkId) {
-            await addInventarisAdminToko({
-              produk_id: produkId,
-              stok: po.jumlah,
-              stok_minimum: 10,
-            });
-            updatedDb = true;
-          }
-        } catch (err) {
-          console.error("Gagal sinkronisasi produk diterima:", err);
-        }
-      }
-    }
-
-    if (updatedDb) {
-      await fetchInventaris();
-    }
-  }, [pembelianList, stokList, fetchInventaris]);
-
-  useEffect(() => {
-    sinkronisasiBarangDiterima();
-  }, [stokList, sinkronisasiBarangDiterima]);
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedPembelian = localStorage.getItem("admin_pembelian_list");
       if (storedPembelian) {
-        try {
-          setPembelianList(JSON.parse(storedPembelian));
-        } catch {}
+        try { setPembelianList(JSON.parse(storedPembelian)); } catch {}
       }
     }
     fetchProdusenList();
   }, [fetchProdusenList]);
 
   useEffect(() => {
-    periksaKelengkapanAdmin();
-    fetchInventaris();
-  }, [activeMenu, periksaKelengkapanAdmin, fetchInventaris]);
+  periksaKelengkapanAdmin();
+  fetchInventaris();
+}, []);
 
   function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
     const produsen = produsenList.find((p) => p.id === produsenId);
@@ -392,95 +322,6 @@ export default function AdminTokoDashboard() {
   }
 
   async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
-    const po = pembelianList.find((p) => p.id === id);
-    if (!po) return;
-
-    let targetB2b = null;
-    try {
-      const { data: b2bProd } = await supabase
-        .from("produk")
-        .select("*")
-        .eq("produsen_id", po.produsenId)
-        .ilike("nama", `%${po.item}%`)
-        .limit(1)
-        .maybeSingle();
-      
-      targetB2b = b2bProd;
-      if (!targetB2b) {
-        const { data: fallbackB2b } = await supabase
-          .from("produk")
-          .select("*")
-          .eq("produsen_id", po.produsenId)
-          .limit(1)
-          .maybeSingle();
-        targetB2b = fallbackB2b;
-      }
-    } catch (err) {
-      console.error("Gagal mencocokkan produk B2B:", err);
-    }
-
-    const matchedB2bId = targetB2b?.id || `local-${Date.now()}`;
-    const matchedB2bNama = targetB2b?.nama || po.item;
-    const matchedB2bHarga = targetB2b?.harga || po.hargaSatuan;
-    const matchedB2bSatuan = targetB2b?.satuan || po.satuan || "kg";
-    const matchedB2bFoto = targetB2b?.foto || null;
-
-    const asalProdusen = po.produsen || 'Produsen Lokal';
-
-    let localInv: any[] = [];
-    if (typeof window !== "undefined") {
-      try {
-        localInv = JSON.parse(localStorage.getItem("admin_inventaris_list") || "[]");
-      } catch {}
-    }
-
-    const existingIndex = localInv.findIndex((s) => s.produk_id === matchedB2bId || s.nama === po.item);
-    let updatedItem: any;
-    if (existingIndex > -1) {
-      localInv[existingIndex].jumlah += po.jumlah;
-      localInv[existingIndex].grade = grade;
-      updatedItem = localInv[existingIndex];
-    } else {
-      updatedItem = {
-        id: `inv-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        produk_id: matchedB2bId,
-        nama: matchedB2bNama,
-        jumlah: po.jumlah,
-        satuan: matchedB2bSatuan,
-        batasMinimum: 10,
-        hargaBeli: matchedB2bHarga,
-        hargaJual: Math.round(matchedB2bHarga * 1.3),
-        diskonPersen: 0,
-        grade: grade,
-        asalProdusen: asalProdusen,
-        live: false,
-        foto: matchedB2bFoto
-      };
-      localInv.push(updatedItem);
-    }
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem("admin_inventaris_list", JSON.stringify(localInv));
-      
-      const metaKey = `inventaris_meta_${matchedB2bId}`;
-      try {
-        const stored = localStorage.getItem(metaKey) || "{}";
-        const meta = JSON.parse(stored);
-        meta.grade = grade;
-        localStorage.setItem(metaKey, JSON.stringify(meta));
-      } catch {}
-    }
-
-    try {
-      await addInventarisAdminToko({
-        produk_id: matchedB2bId,
-        stok: updatedItem.jumlah,
-        stok_minimum: updatedItem.batasMinimum
-      });
-    } catch (dbErr) {
-      console.warn("Background DB sync ignored:", dbErr);
-    }
-
     setPembelianList((prev) => {
       const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const, rating, fotoUlasan, keteranganUlasan } : p));
       if (typeof window !== "undefined") {
@@ -488,28 +329,13 @@ export default function AdminTokoDashboard() {
       }
       return updated;
     });
-
     await fetchInventaris();
   }
 
   async function updateStok(id: string, patch: Partial<StokToko>) {
     let updatedList = stokList.map((item) => {
       if (item.id === id || item.produk_id === id) {
-        const updated = { ...item, ...patch };
-        const metaKey = `inventaris_meta_${item.produk_id || item.id}`;
-        if (typeof window !== "undefined") {
-          try {
-            const stored = localStorage.getItem(metaKey) || "{}";
-            const meta = JSON.parse(stored);
-            if (patch.hargaJual !== undefined) meta.hargaJual = patch.hargaJual;
-            if (patch.diskonPersen !== undefined) meta.diskonPersen = patch.diskonPersen;
-            if (patch.live !== undefined) meta.live = patch.live;
-            if (patch.grade !== undefined) meta.grade = patch.grade;
-            if (patch.batasMinimum !== undefined) meta.batasMinimum = patch.batasMinimum;
-            localStorage.setItem(metaKey, JSON.stringify(meta));
-          } catch {}
-        }
-        return updated;
+        return { ...item, ...patch };
       }
       return item;
     });
@@ -518,24 +344,10 @@ export default function AdminTokoDashboard() {
     if (typeof window !== "undefined") {
       localStorage.setItem("admin_inventaris_list", JSON.stringify(updatedList));
     }
-
-    const item = stokList.find((s) => s.id === id);
-    if (item && patch.jumlah !== undefined) {
-      try {
-        await updateInventarisStok(item.id, patch.jumlah);
-      } catch (err) {
-        console.warn("Background DB update ignored:", err);
-      }
-    }
   }
 
-  const totalStokNilai = stokList.reduce((s, x) => s + x.jumlah * x.hargaJual, 0);
   const pesananMenunggu = pembelianList.filter((p) => p.status === "Menunggu" || p.status === "Dikirim").length;
   const totalOmset = penjualanList.reduce((s, p) => s + p.total, 0);
-  const totalBelanja = pembelianList.reduce((s, p) => s + p.total, 0);
-  const labaBersih = totalOmset - totalBelanja;
-  const restockMendesak = produsenList.filter((p) => p.estimasiPanenHari <= 7).length;
-  const produkLive = stokList.filter((s) => s.live).length;
 
   function selectMenu(key: string) {
     if (isSuspended) {
@@ -573,26 +385,21 @@ export default function AdminTokoDashboard() {
         @media (max-width: 480px) { .at-user-name { display: none; } }
       `}} />
 
-      {/* MODAL / LOCKSCREEN JIKA AKUN DIBEKUKAN / SUSPENDED */}
+      {/* MODAL SUSPENDED */}
       {isSuspended && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "16px", padding: "2rem", width: "420px", maxWidth: "100%", textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}>
-            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FEE2E2", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem auto", fontSize: "1.5rem", fontWeight: 800 }}>
-              🚫
-            </div>
+          <div style={{ background: "white", borderRadius: "16px", padding: "2rem", width: "420px", maxWidth: "100%", textAlign: "center" }}>
+            <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#FEE2E2", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem auto", fontSize: "1.5rem", fontWeight: 800 }}>🚫</div>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1E293B", margin: "0 0 0.5rem 0" }}>Akun Toko Ditangguhkan</h2>
-            <p style={{ fontSize: "0.85rem", color: "#64748B", lineHeight: 1.5, margin: "0 0 1.5rem 0" }}>
-              Akses akun Admin Toko Anda telah dibekukan sementara oleh Admin Platform PasarNusa. Silakan hubungi pusat bantuan untuk tindak lanjut.
-            </p>
-            <Link href="/login" style={{ display: "inline-block", width: "100%", padding: "0.75rem", borderRadius: "8px", background: "#EF4444", color: "white", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem", boxSizing: "border-box" }}>
-              Keluar Ke Halaman Login
-            </Link>
+            <p style={{ fontSize: "0.85rem", color: "#64748B", lineHeight: 1.5, margin: "0 0 1.5rem 0" }}>Akses akun Admin Toko Anda telah dibekukan sementara oleh Admin Platform PasarNusa.</p>
+            <Link href="/login" style={{ display: "inline-block", width: "100%", padding: "0.75rem", borderRadius: "8px", background: "#EF4444", color: "white", fontWeight: 700, textDecoration: "none", fontSize: "0.9rem" }}>Keluar Ke Halaman Login</Link>
           </div>
         </div>
       )}
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
+      {/* SIDEBAR NAVIGATION */}
       <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -609,14 +416,54 @@ export default function AdminTokoDashboard() {
               <div style={{ fontSize: "10px", fontWeight: 700, color: "#94A3B8", letterSpacing: ".04em", textTransform: "uppercase", padding: "0 8px 6px" }}>{group.title}</div>
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = activeMenu === item.key;
                 const menuTerpaku = !isDataLengkap && item.key !== "dashboard";
-                
+                const isParentActive = activeMenu.startsWith(item.key);
+
+                if (item.children) {
+                  const isOpen = openSubmenu === item.key;
+                  return (
+                    <div key={item.key} style={{ marginBottom: "2px" }}>
+                      <div
+                        onClick={() => {
+                          if (menuTerpaku) return;
+                          setOpenSubmenu(isOpen ? null : item.key);
+                          if (item.children?.[0]) {
+                            selectMenu(item.children[0].key);
+                          }
+                        }}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 10px", borderRadius: "8px", background: isParentActive ? "#FEF3C7" : "transparent", color: menuTerpaku ? "#CBD5E1" : isParentActive ? "#D97706" : "#334155", fontSize: "13px", cursor: menuTerpaku ? "not-allowed" : "pointer", fontWeight: isParentActive ? 700 : 500 }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                          <Icon /> <span>{item.label}</span>
+                        </div>
+                        <span style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><IconChevronDown /></span>
+                      </div>
+                      {isOpen && (
+                        <div style={{ paddingLeft: "28px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                          {item.children.map((sub) => {
+                            const activeSub = activeMenu === sub.key;
+                            return (
+                              <div
+                                key={sub.key}
+                                onClick={() => selectMenu(sub.key)}
+                                style={{ padding: "7px 10px", borderRadius: "6px", background: activeSub ? "#F59E0B" : "transparent", color: activeSub ? "#fff" : "#64748B", fontSize: "12px", cursor: "pointer", fontWeight: activeSub ? 700 : 500 }}
+                              >
+                                {sub.label}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                const active = activeMenu === item.key;
                 return (
                   <div
                     key={item.key}
                     onClick={() => selectMenu(item.key)}
-                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#F59E0B" : "transparent", color: menuTerpaku ? "#CBD5E1" : active ? "#fff" : "#334155", fontSize: "13px", cursor: menuTerpaku ? "not-allowed" : "pointer", marginBottom: "1px", fontWeight: active ? 700 : 500, opacity: menuTerpaku ? 0.5 : 1 }}
+                    style={{ display: "flex", alignItems: "center", gap: "9px", padding: "9px 10px", borderRadius: "8px", background: active ? "#F59E0B" : "transparent", color: menuTerpaku ? "#CBD5E1" : active ? "#fff" : "#334155", fontSize: "13px", cursor: menuTerpaku ? "not-allowed" : "pointer", marginBottom: "1px", fontWeight: active ? 700 : 500 }}
                   >
                     <Icon /> <span style={{ flex: 1 }}>{item.label}</span>
                   </div>
@@ -630,11 +477,12 @@ export default function AdminTokoDashboard() {
         </div>
       </aside>
 
+      {/* BODY CONTENT */}
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="at-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
-            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
+            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu] || "Dashboard"}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div onClick={() => setProfilPopupOpen(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
@@ -652,132 +500,48 @@ export default function AdminTokoDashboard() {
 
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            
-            {!isDataLengkap && (
-              <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: "#991B1B", padding: "1rem", borderRadius: "10px", fontSize: "0.85rem", fontWeight: 600, marginBottom: "1.25rem", lineHeight: "1.4", textAlign: "center" }}>
-                ⚠️ Akun Admin Toko Anda mendeteksi data legalitas belum terdaftar lengkap. Silakan klik tombol profil di pojok kanan atas atau tombol lengkapi di bawah untuk mengisi nama toko & alamat cabang operasional agar fitur belanja hulu serta kasir penjualan dapat diaktifkan kembali.
-              </div>
-            )}
-
             <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.2)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Platform UMKM #1 Indonesia</span>
                 <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {headerProfil.namaPemilik.split(" ")[0]}!</div>
                 <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.9)", marginTop: "0.3rem", maxWidth: "440px" }}>Pantau arus kas, analisis prediktif restock komoditas, dan kelola rantai pasok dari hulu ke hilir.</div>
               </div>
-              <button onClick={() => isDataLengkap ? selectMenu("laporan") : setProfilPopupOpen(true)} style={{ background: "#fff", color: "#D97706", border: "none", padding: "0.65rem 1.1rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-                {isDataLengkap ? "Lihat Buku Kas" : "Lengkapi Profil Sekarang"} <IconArrowRight />
-              </button>
             </div>
 
             <div className="at-stats-grid" style={{ marginBottom: "1.25rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>OMSET PENJUALAN</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalOmset)}</div>
-                <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>{penjualanList.length} transaksi</div>
               </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: isDataLengkap ? "pointer" : "not-allowed" }} onClick={() => isDataLengkap && selectMenu("etalase")}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PRODUK LIVE</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{produkLive}</div>
-                <div style={{ fontSize: "0.68rem", color: "#F59E0B", marginTop: "0.15rem" }}>Lihat etalase →</div>
-              </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: isDataLengkap ? "pointer" : "not-allowed" }} onClick={() => isDataLengkap && selectMenu("pelacakan")}>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => selectMenu("pelacakan-produsen-toko")}>
                 <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>PESANAN MENUNGGU</div>
                 <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananMenunggu}</div>
                 <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Lacak pesanan →</div>
-              </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>NILAI STOK GUDANG</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalStokNilai)}</div>
-                <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>{stokList.length} jenis produk</div>
-              </div>
-              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem" }}>
-                <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", letterSpacing: ".03em", marginBottom: "0.4rem" }}>LABA BERSIH</div>
-                <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{formatRupiahRingkas(labaBersih)}</div>
-                <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Margin {totalOmset ? Math.round((labaBersih / totalOmset) * 100) : 0}%</div>
-              </div>
-            </div>
-
-            <div className="at-panels-grid">
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem", flexWrap: "wrap", gap: "0.4rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Smart restock alert</div>
-                  {restockMendesak > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>Butuh tindakan</span>}
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis jadwal panen produsen binaan</div>
-                {produsenList.filter((p) => p.estimasiPanenHari <= 7).length === 0 ? (
-                  <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Belum ada produsen yang mendekati waktu panen atau data masih kosong.</p>
-                ) : (
-                  produsenList.filter((p) => p.estimasiPanenHari <= 7).sort((a, b) => a.estimasiPanenHari - b.estimasiPanenHari).map((p) => (
-                    <div key={p.id} style={{ background: "#FFFBEB", borderRadius: "8px", padding: "0.6rem 0.7rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{p.nama}</div><div style={{ fontSize: "0.68rem", color: "#B45309" }}>{p.komoditas} • Prediksi panen {p.estimasiPanenHari} hari lagi</div></div>
-                      <button onClick={() => isDataLengkap ? selectMenu("marketplace") : setProfilPopupOpen(true)} style={{ background: "#F59E0B", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.77rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Pesan Sekarang</button>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Penjualan terbaru</div>
-                <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Transaksi ke pembeli kota</div>
-                {penjualanList.length === 0 ? (
-                  <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Belum ada data penjualan tercatat.</p>
-                ) : (
-                  penjualanList.slice(0, 3).map((s, i) => (
-                    <div key={s.id} style={{ padding: "0.5rem 0", borderBottom: i < penjualanList.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{s.pembeli}</span>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#10B981" }}>{formatRupiah(s.total)}</span>
-                      </div>
-                      <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{s.produk} × {s.jumlah}</div>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
           </main>
         )}
 
         {/* SUB HALAMAN OPERASIONAL */}
-        {activeMenu === "marketplace" && isDataLengkap && (
-          <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />
-        )}
-        {activeMenu === "pelacakan" && isDataLengkap && (
+        {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
+        
+        {(activeMenu === "pelacakan" || activeMenu === "pelacakan-produsen-toko" || activeMenu === "pelacakan-toko-pembeli") && isDataLengkap && (
           <PelacakanPesanan 
             pembelianList={pembelianList} 
+            penjualanList={penjualanList}
             terimaPesanan={terimaPembelian} 
             alamatToko={alamatToko} 
+            tabDefault={activeMenu === "pelacakan-toko-pembeli" ? "toko-pembeli" : "produsen-toko"}
           />
         )}
-        {activeMenu === "inventaris" && isDataLengkap && (
-          <InventarisGrading 
-            stokList={stokList} 
-            pembelianList={pembelianList} 
-            produsenList={produsenList} 
-            terimaPembelian={terimaPembelian} 
-            updateStok={updateStok} 
-          />
-        )}
-        {activeMenu === "restock" && isDataLengkap && (
-          <SmartRestock 
-            produsenList={produsenList} 
-            stokList={stokList} 
-            updateStok={updateStok} 
-            onPesan={() => selectMenu("marketplace")} 
-          />
-        )}
-        {activeMenu === "etalase" && isDataLengkap && (
-          <EtalasePenjualan stokList={stokList} updateStok={updateStok} />
-        )}
-        {activeMenu === "laporan" && isDataLengkap && (
-          <LaporanBukuKas pembelianList={pembelianList} penjualanList={penjualanList} />
-        )}
+
+        {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
+        {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
+        {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}
+        {activeMenu === "laporan" && isDataLengkap && <LaporanBukuKas />}
       </div>
 
-      <ProfilTokoPage
-        open={profilPopupOpen}
-        onClose={() => setProfilPopupOpen(false)}
-        onProfileUpdate={periksaKelengkapanAdmin}
-      />
+      <ProfilTokoPage open={profilPopupOpen} onClose={() => setProfilPopupOpen(false)} onProfileUpdate={periksaKelengkapanAdmin} />
     </div>
   );
 }
