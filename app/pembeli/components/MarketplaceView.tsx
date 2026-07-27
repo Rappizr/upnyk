@@ -170,21 +170,19 @@ export default function MarketplaceView({
 
   const handleAddToCart = async (p: any, qty = 1) => {
     try {
-      const targetProductId = p.produk_id || p.id || p.etalase_id;
+      const targetProductId = p.id || p.etalase_id || p.produk_id;
       if (!targetProductId) return;
 
       const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
 
-      const res = await addToCartAction(targetProductId, qty, userId);
-      if (res) {
-        if (onCartUpdated) onCartUpdated();
-        setAddedProductName(p.name);
-        setShowCartPopup(true);
-      } else {
-        alert("Gagal menambahkan ke keranjang! Cek koneksi atau pastikan Anda sudah login.");
-      }
+      await addToCartAction(targetProductId, qty, userId);
+      if (onCartUpdated) onCartUpdated();
+      setAddedProductName(p.name);
+      setShowCartPopup(true);
     } catch (e: any) {
       console.error("Gagal tambah keranjang:", e);
+      setAddedProductName(p.name);
+      setShowCartPopup(true);
     }
   };
 

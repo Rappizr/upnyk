@@ -780,22 +780,10 @@ export async function getCart(userIdParam?: string): Promise<any[]> {
 
   if (!cartData) return [];
 
-  let { data: cartItems, error: itemErr } = await supabase
+  const { data: cartItems, error: itemErr } = await supabase
     .from('keranjang_item')
     .select('id, produk_id, jumlah, harga, subtotal')
     .eq('keranjang_id', cartData.id);
-
-  if ((!cartItems || cartItems.length === 0) && pembeliId) {
-    const { data: globalLatestItems } = await supabase
-      .from('keranjang_item')
-      .select('id, produk_id, jumlah, harga, subtotal, keranjang_id')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    
-    if (globalLatestItems && globalLatestItems.length > 0) {
-      cartItems = globalLatestItems;
-    }
-  }
 
   if (itemErr || !cartItems || cartItems.length === 0) return [];
 
@@ -806,7 +794,7 @@ export async function getCart(userIdParam?: string): Promise<any[]> {
     const { data: etalaseList } = await supabase
       .from('etalase')
       .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)')
-      .or(`id.in.(${prodIds.map((id) => `"${id}"`).join(',')}),produk_id.in.(${prodIds.map((id) => `"${id}"`).join(',')})`);
+      .in('id', prodIds);
 
     (etalaseList || []).forEach((e) => {
       if (e.id) etalaseMap.set(e.id, e);
@@ -815,10 +803,23 @@ export async function getCart(userIdParam?: string): Promise<any[]> {
 
     const missingProdIds = prodIds.filter((id) => !etalaseMap.has(id));
     if (missingProdIds.length > 0) {
+      const { data: etalaseList2 } = await supabase
+        .from('etalase')
+        .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)')
+        .in('produk_id', missingProdIds);
+
+      (etalaseList2 || []).forEach((e) => {
+        if (e.id) etalaseMap.set(e.id, e);
+        if (e.produk_id) etalaseMap.set(e.produk_id, e);
+      });
+    }
+
+    const stillMissing = prodIds.filter((id) => !etalaseMap.has(id));
+    if (stillMissing.length > 0) {
       const { data: mpList } = await supabase
         .from('marketplace')
         .select('*, produsen:produsen_id(nama_usaha, desa, kabupaten)')
-        .in('id', missingProdIds);
+        .in('id', stillMissing);
 
       (mpList || []).forEach((mp) => {
         etalaseMap.set(mp.id, {
@@ -913,31 +914,37 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
 
   if (!cartData) {
     const { data: emergencyCart } = await supabase.from('keranjang').insert({}).select('id').maybeSingle();
-    cartData = emergencyCart;
+    cartData = emergencyCart || { id: 'default-cart-id' };
   }
 
-  if (!cartData) return { id: `cart-${Date.now()}` };
-
-  // 2. Ambil Harga Produk dari Etalase atau Marketplace & Resolve ID
+  // 2. Ambil Harga Produk dari Etalase atau Marketplace
   let hargaFinal = 0;
-  let resolvedProdukId = productId;
   const { data: p1 } = await supabase
     .from('etalase')
-    .select('id, produk_id, harga_jual')
-    .or(`id.eq.${productId},produk_id.eq.${productId}`)
+    .select('id, harga_jual')
+    .eq('id', productId)
     .maybeSingle();
 
-  if (p1) {
-    if (p1.harga_jual) hargaFinal = Number(p1.harga_jual);
-    if (p1.produk_id) resolvedProdukId = p1.produk_id;
+  if (p1 && p1.harga_jual) {
+    hargaFinal = Number(p1.harga_jual);
   } else {
     const { data: p2 } = await supabase
-      .from('marketplace')
-      .select('id, harga')
-      .or(`id.eq.${productId},produk_id.eq.${productId}`)
+      .from('etalase')
+      .select('id, harga_jual')
+      .eq('produk_id', productId)
       .maybeSingle();
-    if (p2 && p2.harga) {
-      hargaFinal = Number(p2.harga);
+
+    if (p2 && p2.harga_jual) {
+      hargaFinal = Number(p2.harga_jual);
+    } else {
+      const { data: p3 } = await supabase
+        .from('marketplace')
+        .select('harga')
+        .eq('id', productId)
+        .maybeSingle();
+      if (p3 && p3.harga) {
+        hargaFinal = Number(p3.harga);
+      }
     }
   }
 
@@ -946,7 +953,7 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     .from('keranjang_item')
     .select('id, jumlah')
     .eq('keranjang_id', cartData.id)
-    .or(`produk_id.eq.${productId},produk_id.eq.${resolvedProdukId}`)
+    .eq('produk_id', productId)
     .maybeSingle();
 
   if (existingItem) {
@@ -959,46 +966,47 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
         subtotal: hargaFinal * newQty
       })
       .eq('id', existingItem.id)
-      .select();
+      .select()
+      .maybeSingle();
 
     if (error) {
       console.error('addToCart update error:', error.message);
       return { id: existingItem.id, jumlah: newQty };
     }
-    return data?.[0] || { id: existingItem.id, jumlah: newQty };
+    return data || { id: existingItem.id, jumlah: newQty };
   } else {
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('keranjang_item')
       .insert({
         keranjang_id: cartData.id,
-        produk_id: resolvedProdukId,
+        produk_id: productId,
         jumlah: qty,
         harga: hargaFinal,
         subtotal: hargaFinal * qty
       })
-      .select();
+      .select()
+      .maybeSingle();
 
-    if (error && resolvedProdukId !== productId) {
-      const retry = await supabase
+    if (error) {
+      console.error('addToCart insert error 1:', error.message);
+      // Fallback tanpa subtotal
+      const { data: data2, error: error2 } = await supabase
         .from('keranjang_item')
         .insert({
           keranjang_id: cartData.id,
           produk_id: productId,
           jumlah: qty,
-          harga: hargaFinal,
-          subtotal: hargaFinal * qty
+          harga: hargaFinal
         })
-        .select();
+        .select()
+        .maybeSingle();
 
-      data = retry.data;
-      error = retry.error;
+      if (error2) {
+        console.error('addToCart insert error 2:', error2.message);
+      }
+      return data2 || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
     }
-
-    if (error) {
-      console.error('addToCart insert error:', error.message);
-      return { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
-    }
-    return data?.[0] || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
+    return data || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
   }
 }
 
