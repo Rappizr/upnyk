@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import type { ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/db";
 
 export type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
 export interface Pembelian {
   id: string;
+  rawId: String;
   produsenId?: string;
+  produkId?: string;
   produsen: string;
   item: string;
   jumlah: number;
@@ -71,10 +72,11 @@ const LANGKAH = [
 ] as const;
 
 function indeksLangkah(status?: string) {
-  if (status === "Menunggu" || status === "Baru" || status === "Belum Dibayar") return 0;
-  if (status === "Diproses") return 1;
-  if (status === "Dikirim") return 2;
-  if (status === "Diterima" || status === "Selesai") return 3;
+  const st = String(status || "").toLowerCase();
+  if (st === "menunggu" || st === "baru" || st === "belum dibayar" || st === "pending") return 0;
+  if (st === "diproses") return 1;
+  if (st === "dikirim") return 2;
+  if (st === "diterima" || st === "selesai") return 3;
   return 0;
 }
 
@@ -89,25 +91,32 @@ interface Props {
   updateStatusPenjualan?: (orderId: string, status: string, noResi?: string) => Promise<void>;
   alamatToko?: string;
   tabDefault?: "produsen-toko" | "toko-pembeli";
+  onRefreshData?: () => void;
 }
 
 export default function PelacakanPesanan({
-  pembelianList,
+  pembelianList = [],
   penjualanList = [],
   terimaPesanan,
   updateStatusPenjualan,
-  alamatToko,
   tabDefault = "produsen-toko",
+  onRefreshData,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"produsen-toko" | "toko-pembeli">(tabDefault);
-  const [modalTerimaId, setModalTerimaId] = useState<string | null>(null);
+  const [modalTerimaItem, setModalTerimaItem] = useState<Pembelian | null>(null);
   const [gradeInput, setGradeInput] = useState<Grade>("A");
   const [ratingInput, setRatingInput] = useState(5);
   const [keteranganInput, setKeteranganInput] = useState("");
   const [fotoUlasanInput, setFotoUlasanInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // State untuk Tab Toko ke Pembeli
+  const [notifState, setNotifState] = useState<{ open: boolean; title: string; message: string; type: "success" | "error" }>({
+    open: false,
+    title: "",
+    message: "",
+    type: "success"
+  });
+
   const [filterPenjualan, setFilterPenjualan] = useState<string>("Semua");
   const [modalResiOrder, setModalResiOrder] = useState<Penjualan | null>(null);
   const [inputNoResi, setInputNoResi] = useState("");
@@ -118,32 +127,182 @@ export default function PelacakanPesanan({
     setActiveTab(tabDefault);
   }, [tabDefault]);
 
-  function bukaModalTerima(id: string) {
+  useEffect(() => {
+    if (!onRefreshData) return;
+
+    const channel = supabase
+      .channel("realtime-pelacakan-pesanan")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => onRefreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "transaksi" }, () => onRefreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "inventaris" }, () => onRefreshData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [onRefreshData]);
+
+  function bukaModalTerima(item: Pembelian) {
     setGradeInput("A");
     setRatingInput(5);
     setKeteranganInput("");
     setFotoUlasanInput("");
-    setModalTerimaId(id);
+    setModalTerimaItem(item);
   }
 
-  async function kirimTerimaPesanan() {
-    if (!modalTerimaId || submitting) return;
-    setSubmitting(true);
-    try {
-      terimaPesanan(modalTerimaId, gradeInput, ratingInput, fotoUlasanInput || undefined, keteranganInput || undefined);
-      setModalTerimaId(null);
-    } catch (err) {
-      console.error("Gagal mengirim ulasan:", err);
-    } finally {
-      setSubmitting(false);
+async function kirimTerimaPesanan() {
+  if (!modalTerimaItem || submitting) return;
+  setSubmitting(true);
+
+  try {
+    const targetPesananId = modalTerimaItem.rawId || modalTerimaItem.id.replace(/^#PO-/, "");
+
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) throw new Error(authErr?.message || "Autentikasi user gagal.");
+
+    const { data: adminToko, error: adminErr } = await supabase
+      .from("admin_toko")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle();
+
+    if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
+
+    // 1. UPDATE STATUS PESANAN MENGGUNAKAN UUID ASLI
+    const { error: errUpdatePesanan } = await supabase
+      .from("pesanan")
+      .update({ 
+        status: "selesai", 
+        rating: ratingInput,
+        ulasan: keteranganInput || null,
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", targetPesananId);
+
+    if (errUpdatePesanan) throw errUpdatePesanan;
+
+    // 2. MASUKKAN / TAMBAHKAN STOK KE TABEL INVENTARIS
+    let existingInv = null;
+
+    // A. CARI PRODUK ID SECARA GLOBAL (TANPA FILTER admin_toko_id)
+    // Ini cegah error "unique constraint" jika baris inventaris sudah ada di DB tetapi admin_toko_id bernilai NULL
+    if (modalTerimaItem.produkId) {
+      const { data } = await supabase
+        .from("inventaris")
+        .select("id, stok, admin_toko_id")
+        .eq("produk_id", modalTerimaItem.produkId)
+        .maybeSingle();
+      existingInv = data;
     }
+
+    // B. Fallback pencarian nama_produk jika produk_id kosong
+    if (!existingInv && modalTerimaItem.item) {
+      const { data } = await supabase
+        .from("inventaris")
+        .select("id, stok, admin_toko_id")
+        .ilike("nama_produk", modalTerimaItem.item)
+        .maybeSingle();
+      existingInv = data;
+    }
+
+    if (existingInv) {
+      // JIKA PRODUK SUDAH ADA (Termasuk yang admin_toko_id-nya NULL), LAKUKAN UPDATE!
+      const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
+      
+      const updateData: any = {
+        stok: stokBaru,
+        updated_at: new Date().toISOString()
+      };
+
+      // Sekalian perbaiki admin_toko_id jika sebelumnya NULL
+      if (!existingInv.admin_toko_id) {
+        updateData.admin_toko_id = adminToko.id;
+      }
+
+      const { error: errUpdateInv } = await supabase
+        .from("inventaris")
+        .update(updateData)
+        .eq("id", existingInv.id);
+
+      if (errUpdateInv) throw errUpdateInv;
+    } else {
+      // BARU BIKIN BARIS BARU JIKA DIBUTUHKAN
+      const { error: errInsertInv } = await supabase
+        .from("inventaris")
+        .insert({
+          admin_toko_id: adminToko.id,
+          produk_id: modalTerimaItem.produkId || null,
+          nama_produk: modalTerimaItem.item,
+          stok: modalTerimaItem.jumlah,
+          harga_beli: modalTerimaItem.hargaSatuan || 0,
+          grade: gradeInput || "A",
+          satuan: modalTerimaItem.satuan || "pcs",
+          updated_at: new Date().toISOString()
+        });
+
+      if (errInsertInv) throw errInsertInv;
+    }
+
+    // 3. REKALKULASI RATING
+    if (modalTerimaItem.produkId) {
+      const { data: listPesananProduk } = await supabase
+        .from("pesanan")
+        .select("rating")
+        .eq("produk_id", modalTerimaItem.produkId)
+        .not("rating", "is", null);
+
+      if (listPesananProduk && listPesananProduk.length > 0) {
+        const totalUlasan = listPesananProduk.length;
+        const totalRatingSum = listPesananProduk.reduce((acc, curr) => acc + Number(curr.rating || 0), 0);
+        const avgRating = Number((totalRatingSum / totalUlasan).toFixed(1));
+
+        await supabase
+          .from("produk")
+          .update({
+            rating: avgRating,
+            total_ulasan: totalUlasan
+          })
+          .eq("id", modalTerimaItem.produkId);
+      }
+    }
+
+    const itemNama = modalTerimaItem.item;
+    const itemId = modalTerimaItem.id;
+
+    setModalTerimaItem(null);
+
+    if (terimaPesanan) {
+      await terimaPesanan(itemId, gradeInput, ratingInput, fotoUlasanInput || undefined, keteranganInput || undefined);
+    }
+    if (onRefreshData) onRefreshData();
+
+    setNotifState({
+      open: true,
+      type: "success",
+      title: "Pesanan Berhasil Diterima!",
+      message: `Stok ${itemNama} telah berhasil ditambahkan ke Inventaris Gudang, dan ulasan Anda telah terkirim.`
+    });
+  } catch (err: any) {
+    const errorMsg = err?.message || err?.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
+    console.error("Detail Error penerimaan pesanan:", errorMsg, err);
+    
+    setNotifState({
+      open: true,
+      type: "error",
+      title: "Gagal Memproses Pesanan",
+      message: errorMsg || "Terjadi kesalahan sistem saat memproses penerimaan barang."
+    });
+  } finally {
+    setSubmitting(false);
   }
+}
 
   async function handleUbahStatusPenjualan(orderId: string, status: string, resi?: string) {
     if (!updateStatusPenjualan) return;
     setActionLoadingId(orderId);
     try {
       await updateStatusPenjualan(orderId, status, resi);
+      if (onRefreshData) onRefreshData();
     } catch (e) {
       console.error("Error ubah status:", e);
     } finally {
@@ -165,7 +324,7 @@ export default function PelacakanPesanan({
   });
 
   return (
-    <div style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+    <div style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       {/* TABS SUBNAVIGATION */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", borderBottom: "1px solid #E2E8F0", paddingBottom: "0.5rem" }}>
         <button
@@ -219,6 +378,7 @@ export default function PelacakanPesanan({
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {pembelianList.map((p) => {
               const langkahAktif = indeksLangkah(p.status);
+
               return (
                 <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
@@ -258,9 +418,12 @@ export default function PelacakanPesanan({
                   </div>
 
                   <div style={{ padding: "0 1.1rem 1.1rem" }}>
-                    {p.status === "Dikirim" && (
-                      <button onClick={() => bukaModalTerima(p.id)} style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}>
-                        Pesanan Diterima & Beri Ulasan
+                    {(p.status === "Dikirim" || p.status === "Selesai" || p.status === "Diterima") && (
+                      <button 
+                        onClick={() => bukaModalTerima(p)} 
+                        style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}
+                      >
+                        {p.status === "Dikirim" ? "Pesanan Diterima & Beri Ulasan" : "Terima Barang, Beri Ulasan & Tambahkan ke Inventaris"}
                       </button>
                     )}
                   </div>
@@ -274,7 +437,6 @@ export default function PelacakanPesanan({
       {/* TAB 2: TOKO KE PEMBELI */}
       {activeTab === "toko-pembeli" && (
         <div>
-          {/* FILTER STATUS PESANAN PEMBELI */}
           <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
             {["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"].map((st) => {
               const count = st === "Semua" ? penjualanList.length : penjualanList.filter(p => (p.status || "Belum Dibayar") === st).length;
@@ -324,7 +486,6 @@ export default function PelacakanPesanan({
 
                 return (
                   <div key={pj.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                    {/* Header Card */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.5rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{pj.kodePesanan || pj.id}</span>
@@ -335,10 +496,8 @@ export default function PelacakanPesanan({
                       </span>
                     </div>
 
-                    {/* Content Detail */}
                     <div style={{ padding: "1.1rem" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-                        {/* Info Pembeli & Alamat */}
                         <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.4rem" }}>
                             <IconUser /> {pj.pembeli} {pj.noHpPembeli && <span style={{ fontWeight: 400, color: "#64748B", fontSize: "0.75rem" }}>({pj.noHpPembeli})</span>}
@@ -349,7 +508,6 @@ export default function PelacakanPesanan({
                           </div>
                         </div>
 
-                        {/* Info Pembayaran & Total */}
                         <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
                             <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".02em" }}>METODE PEMBAYARAN</div>
@@ -370,7 +528,6 @@ export default function PelacakanPesanan({
                         </div>
                       </div>
 
-                      {/* Rincian Barang */}
                       <div style={{ marginBottom: "1rem" }}>
                         <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Rincian Barang Dipesan:</div>
                         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px", overflow: "hidden" }}>
@@ -389,14 +546,12 @@ export default function PelacakanPesanan({
                         </div>
                       </div>
 
-                      {/* No Resi jika ada */}
                       {pj.noResi && (
                         <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "0.6rem 0.85rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.8rem", color: "#1E40AF" }}>
                           📦 <strong>No. Resi Pengiriman:</strong> <code style={{ background: "#DBEAFE", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>{pj.noResi}</code>
                         </div>
                       )}
 
-                      {/* TOMBOL AKSI PROSES PESANAN */}
                       <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
                         {pj.status === "Belum Dibayar" && (
                           <>
@@ -488,14 +643,77 @@ export default function PelacakanPesanan({
         </div>
       )}
 
-      {/* MODAL TERIMA PESANAN (PRODUSEN KE TOKO) */}
-      {modalTerimaId && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "440px" }}>
-            <div style={{ fontWeight: 700, fontSize: "1.05rem", marginBottom: "1rem" }}>Konfirmasi Pesanan Diterima</div>
-            <button onClick={kirimTerimaPesanan} style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}>
-              Konfirmasi & Selesaikan
-            </button>
+      {/* MODAL TERIMA PESANAN, RATING & ULASAN PRODUSEN */}
+      {modalTerimaItem && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "460px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#1E293B", marginBottom: "0.25rem" }}>
+              Konfirmasi Terima & Ulas Produk
+            </div>
+            <p style={{ fontSize: "0.8rem", color: "#64748B", marginBottom: "1rem" }}>
+              Terima <strong>{modalTerimaItem.item}</strong> ({modalTerimaItem.jumlah} {modalTerimaItem.satuan || "pcs"}). Stok akan langsung masuk ke Inventaris Gudang Toko.
+            </p>
+
+            {/* INPUT RATING BINTANG */}
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                Rating Kualitas Komoditas
+              </label>
+              <div style={{ display: "flex", gap: "6px" }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    onClick={() => setRatingInput(star)}
+                    style={{
+                      fontSize: "1.5rem",
+                      cursor: "pointer",
+                      color: star <= ratingInput ? "#F59E0B" : "#CBD5E1",
+                      transition: "color 0.15s"
+                    }}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* INPUT KETERANGAN ULASAN */}
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                Ulasan / Catatan Kualitas
+              </label>
+              <textarea
+                rows={3}
+                value={keteranganInput}
+                onChange={(e) => setKeteranganInput(e.target.value)}
+                placeholder="Contoh: Barang bagus, kualitas renyah dan kemasan rapi..."
+                style={{
+                  width: "100%",
+                  padding: "0.6rem",
+                  borderRadius: "8px",
+                  border: "1px solid #CBD5E1",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  boxSizing: "border-box"
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => setModalTerimaItem(null)}
+                style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 600, cursor: "pointer" }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={kirimTerimaPesanan}
+                disabled={submitting}
+                style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}
+              >
+                {submitting ? "Memproses..." : "Konfirmasi & Masukkan Stok"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -515,6 +733,57 @@ export default function PelacakanPesanan({
           </div>
         </div>
       )}
+
+      {/* MODAL NOTIFIKASI MODERN */}
+      {notifState.open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
+            
+            <div style={{ 
+              width: "64px", 
+              height: "64px", 
+              borderRadius: "50%", 
+              background: notifState.type === "success" ? "#D1FAE5" : "#FEE2E2", 
+              color: notifState.type === "success" ? "#059669" : "#DC2626", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              margin: "0 auto 1.25rem",
+              fontSize: "1.75rem",
+              fontWeight: 800
+            }}>
+              {notifState.type === "success" ? "✓" : "✕"}
+            </div>
+
+            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.5rem", margin: 0 }}>
+              {notifState.title}
+            </h3>
+
+            <p style={{ fontSize: "0.85rem", color: "#64748B", marginTop: "0.5rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+              {notifState.message}
+            </p>
+
+            <button
+              onClick={() => setNotifState({ ...notifState, open: false })}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                borderRadius: "10px",
+                border: "none",
+                background: notifState.type === "success" ? "#10B981" : "#EF4444",
+                color: "white",
+                fontWeight: 700,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)"
+              }}
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

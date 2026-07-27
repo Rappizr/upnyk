@@ -46,6 +46,15 @@ function hargaSetelahDiskon(harga: number, diskon: number) {
   return Math.round(harga * (1 - diskon / 100));
 }
 
+function formatInputRupiah(value: string) {
+  const angka = value.replace(/\D/g, "");
+  return angka ? Number(angka).toLocaleString("id-ID") : "";
+}
+
+function unformatInputRupiah(value: string) {
+  return value.replace(/\./g, "");
+}
+
 export default function EtalasePenjualan({ stokList = [], updateStok, onTambahProdukBaru }: Props) {
   const [itemsEtalase, setItemsEtalase] = useState<StokToko[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,7 +258,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     }
   }
 
-// BUAT PRODUK BARU MANDIRI (SEKALIGUS MASUK INVENTARIS & ETALASE)
+// BUAT PRODUK BARU MANDIRI (SEKALIGUS OTOMATIS MASUK INVENTARIS & ETALASE)
 async function handleBuatProdukBaru(e: FormEvent) {
   e.preventDefault();
   if (!formBaru.nama.trim() || submitting) return;
@@ -276,32 +285,30 @@ async function handleBuatProdukBaru(e: FormEvent) {
     const stokVal = Number(formBaru.jumlah) || 1;
     const diskonVal = Math.min(90, Math.max(0, Number(formBaru.diskonPersen) || 0));
 
-    // 1. SIMPAN KE TABEL INVENTARIS
+    // 1. LANGKAH PERTAMA: Simpan dulu ke Inventaris (Stok Gudang)
     const { data: invData, error: errInv } = await supabase
       .from("inventaris")
       .insert({
         admin_toko_id: adminToko.id,
-        nama_produk: formBaru.nama.trim(), // Simpan nama langsung di inventaris
+        nama_produk: formBaru.nama.trim(),
         stok: stokVal,
-        satuan: formBaru.satuan || "pcs",
         harga_beli: hargaBeliVal,
+        satuan: formBaru.satuan || "pcs",
         stok_minimum: 5,
         stok_maksimum: 100,
-        lokasi_rak: "Gudang Utama",
+        lokasi_rak: "Gudang Utama (Input Manual)",
         grade: "A",
         updated_at: new Date().toISOString(),
       })
-      .select("id")
+      .select("id") // Mengambil ID dari baris inventaris yang baru saja dibuat
       .single();
 
-    if (errInv) {
-      console.warn("Peringatan simpan ke inventaris:", errInv.message);
-    }
+    if (errInv) throw new Error(`Gagal ke inventaris: ${errInv.message}`);
 
-    // 2. SIMPAN KE TABEL ETALASE
+    // 2. LANGKAH KEDUA: Simpan ke Etalase & Hubungkan dengan ID Inventaris tadi
     const { error: errEtalase } = await supabase.from("etalase").insert({
       admin_toko_id: adminToko.id,
-      produk_id: null, // Biarkan null jika bukan berasal dari katalog produk umum
+      produk_id: invData.id, // ID inventaris disimpan sebagai referensi produk
       nama_produk: formBaru.nama.trim(),
       harga_jual: hargaJualVal,
       stok: stokVal,
@@ -312,9 +319,9 @@ async function handleBuatProdukBaru(e: FormEvent) {
       status: "tayang",
     });
 
-    if (errEtalase) throw errEtalase;
+    if (errEtalase) throw new Error(`Gagal ke etalase: ${errEtalase.message}`);
 
-    showToast(`Produk "${formBaru.nama}" berhasil ditambahkan ke Etalase & Gudang!`);
+    showToast(`Produk "${formBaru.nama}" berhasil ditambahkan ke Etalase & Inventaris!`);
     closeModalTambah();
     await muatDataEtalase();
   } catch (err: any) {
@@ -477,7 +484,18 @@ async function handleBuatProdukBaru(e: FormEvent) {
                   <>
                     <div>
                       <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Harga Jual ke Pembeli (Rp) *</label>
-                      <input required type="number" min="0" value={addGudangForm.hargaJual} onChange={(e) => setAddGudangForm({ ...addGudangForm, hargaJual: e.target.value })} style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
+                     <input
+    required
+    type="text"
+    inputMode="numeric"
+    value={formatInputRupiah(addGudangForm.hargaJual)}
+    onChange={(e) =>
+        setAddGudangForm({
+            ...addGudangForm,
+            hargaJual: unformatInputRupiah(e.target.value),
+        })
+    }
+ style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }} />
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Diskon Toko (%)</label>
@@ -525,11 +543,33 @@ async function handleBuatProdukBaru(e: FormEvent) {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>Harga Beli/Modal (Rp)</label>
-                    <input type="number" min="0" placeholder="0" value={formBaru.hargaBeli} onChange={(e) => setFormBaru({ ...formBaru, hargaBeli: e.target.value })} style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} />
+                   <input
+  type="text"
+  inputMode="numeric"
+  placeholder="0"
+  value={formatInputRupiah(formBaru.hargaBeli)}
+  onChange={(e) =>
+    setFormBaru({
+      ...formBaru,
+      hargaBeli: unformatInputRupiah(e.target.value),
+    })
+  }
+ style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>Harga Jual (Rp) *</label>
-                    <input required type="number" min="0" placeholder="0" value={formBaru.hargaJual} onChange={(e) => setFormBaru({ ...formBaru, hargaJual: e.target.value })} style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} />
+                   <input
+  type="text"
+  inputMode="numeric"
+  placeholder="0"
+  value={formatInputRupiah(formBaru.hargaJual)}
+  onChange={(e) =>
+    setFormBaru({
+      ...formBaru,
+      hargaJual: unformatInputRupiah(e.target.value),
+    })
+  }
+ style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} />
                   </div>
                 </div>
 
@@ -566,7 +606,17 @@ async function handleBuatProdukBaru(e: FormEvent) {
             <form onSubmit={handleSubmitEdit} style={{ display: "flex", flexDirection: "column", gap: "0.9rem", marginTop: "1rem" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>Harga Jual (Rp)</label>
-                <input type="number" min="0" value={editForm.hargaJual} onChange={(e) => setEditForm({ ...editForm, hargaJual: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }} />
+                <input
+    type="text"
+    inputMode="numeric"
+    value={formatInputRupiah(editForm.hargaJual)}
+    onChange={(e) =>
+        setEditForm({
+            ...editForm,
+            hargaJual: unformatInputRupiah(e.target.value),
+        })
+    }
+ style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }} />
               </div>
 
               <div>

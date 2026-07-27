@@ -6,8 +6,6 @@ import Link from "next/link";
 import {
   supabase,
   getInventarisAdminToko,
-  addInventarisAdminToko,
-  updateInventarisStok,
 } from "@/lib/db";
 import { getPenjualanAdminTokoAction, updateOrderStatusAction } from "@/app/actions";
 
@@ -46,6 +44,8 @@ export interface StokToko {
 
 export interface Pembelian {
   id: string;
+  rawId: String;
+  produkId?: string;
   produsenId: string;
   produsen: string;
   item: string;
@@ -198,6 +198,98 @@ export default function AdminTokoDashboard() {
     }
   }, []);
 
+const fetchPembelianLive = useCallback(async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Ambil admin_toko
+    const { data: adminToko } = await supabase
+      .from("admin_toko")
+      .select("id")
+      .eq("profile_id", user.id)
+      .maybeSingle();
+
+    // Buat daftar ID yang mungkin dicatat di tabel pesanan (admin_toko.id dan user.id)
+    const possibleAdminIds = [user.id];
+    if (adminToko?.id) {
+      possibleAdminIds.push(adminToko.id);
+    }
+
+    // 2. Ambil data pesanan dengan filter .in() agar mencakup kedua kemungkinan ID
+    const { data: pesananData, error: pesananError } = await supabase
+      .from("pesanan")
+      .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id")
+      .in("admin_toko_id", possibleAdminIds)
+      .order("created_at", { ascending: false });
+
+    if (pesananError) {
+      console.error("Error Fetch Pesanan:", JSON.stringify(pesananError, null, 2));
+      return;
+    }
+
+    if (!pesananData || pesananData.length === 0) {
+      setPembelianList([]);
+      return;
+    }
+
+    // 3. Ambil ID produsen & produk unik
+    const produsenIds = Array.from(new Set(pesananData.map((p) => p.produsen_id).filter(Boolean)));
+    const produkIds = Array.from(new Set(pesananData.map((p) => p.produk_id).filter(Boolean)));
+
+    // 4. Fetch produsen & produk secara kolektif
+    const [{ data: produsenData }, { data: produkData }] = await Promise.all([
+      produsenIds.length > 0
+        ? supabase.from("produsen").select("id, nama_usaha").in("id", produsenIds)
+        : Promise.resolve({ data: [] }),
+      produkIds.length > 0
+        ? supabase.from("produk").select("id, nama, harga, satuan").in("id", produkIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    // Map untuk lookup cepat
+    const produsenMap = new Map((produsenData || []).map((p) => [p.id, p]));
+    const produkMap = new Map((produkData || []).map((p) => [p.id, p]));
+
+    // 5. Gabungkan data
+    const mapped: Pembelian[] = pesananData.map((p) => {
+      const rawStatus = String(p.status || "").toLowerCase().trim();
+      let statusFormat: Pembelian["status"] = "Menunggu";
+
+      if (rawStatus === "diproses") statusFormat = "Diproses";
+      else if (rawStatus === "dikirim") statusFormat = "Dikirim";
+      else if (rawStatus === "selesai" || rawStatus === "diterima") statusFormat = "Selesai";
+      else if (rawStatus === "dibatalkan" || rawStatus === "batal") statusFormat = "Dibatalkan";
+
+      const prodObj = produsenMap.get(p.produsen_id);
+      const prodObjProduk = produkMap.get(p.produk_id);
+
+      return {
+        id: `#PO-${p.id.slice(0, 8).toUpperCase()}`,
+        rawId: p.id,
+        produkId: p.produk_id,
+        produsenId: p.produsen_id || "",
+        produsen: prodObj?.nama_usaha || "Produsen Mitra",
+        item: prodObjProduk?.nama || "Komoditas",
+        jumlah: Number(p.jumlah) || 1,
+        satuan: prodObjProduk?.satuan || "pcs",
+        hargaSatuan: Number(prodObjProduk?.harga) || 0,
+        total: Number(p.total_harga) || 0,
+        status: statusFormat,
+        tanggal: new Date(p.created_at).toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+      };
+    });
+
+    setPembelianList(mapped);
+  } catch (err) {
+    console.error("fetchPembelianLive Unexpected Error:", err);
+  }
+}, []);
+
   const fetchInventaris = useCallback(async () => {
     try {
       const dbItems = await getInventarisAdminToko();
@@ -244,10 +336,6 @@ export default function AdminTokoDashboard() {
 
       const finalItems = Array.from(mergedMap.values());
       setStokList(finalItems);
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem("admin_inventaris_list", JSON.stringify(finalItems));
-      }
     } catch (err) {
       console.error("fetchInventaris error:", err);
     }
@@ -287,47 +375,31 @@ export default function AdminTokoDashboard() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedPembelian = localStorage.getItem("admin_pembelian_list");
-      if (storedPembelian) {
-        try { setPembelianList(JSON.parse(storedPembelian)); } catch {}
-      }
-    }
-    fetchProdusenList();
-  }, [fetchProdusenList]);
-
-  useEffect(() => {
     periksaKelengkapanAdmin();
     fetchInventaris();
     fetchPenjualan();
-  }, [periksaKelengkapanAdmin, fetchInventaris, fetchPenjualan]);
+    fetchProdusenList();
+    fetchPembelianLive();
+
+    const channel = supabase
+      .channel("realtime-admin-toko")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => {
+        fetchPembelianLive();
+        fetchPenjualan();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [periksaKelengkapanAdmin, fetchInventaris, fetchPenjualan, fetchProdusenList, fetchPembelianLive]);
 
   function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
-    const produsen = produsenList.find((p) => p.id === produsenId);
-    if (!produsen) return;
-    const id = `PO-${4400 + pembelianList.length + 1}`;
-    const total = jumlah * hargaSatuan;
-    const newPo: Pembelian = { 
-      id, produsenId, produsen: produsen.nama, item, jumlah, satuan, hargaSatuan, total, status: "Menunggu", tanggal: todayLabel() 
-    };
-    
-    setPembelianList((prev) => {
-      const updated = [newPo, ...prev];
-      if (typeof window !== "undefined") {
-        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
-      }
-      return updated;
-    });
+    fetchPembelianLive();
   }
 
   async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
-    setPembelianList((prev) => {
-      const updated = prev.map((p) => (p.id === id ? { ...p, status: "Diterima" as const, rating, fotoUlasan, keteranganUlasan } : p));
-      if (typeof window !== "undefined") {
-        localStorage.setItem("admin_pembelian_list", JSON.stringify(updated));
-      }
-      return updated;
-    });
+    await fetchPembelianLive();
     await fetchInventaris();
   }
 
@@ -347,9 +419,6 @@ export default function AdminTokoDashboard() {
     });
 
     setStokList(updatedList);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("admin_inventaris_list", JSON.stringify(updatedList));
-    }
   }
 
   const pesananMenunggu = penjualanList.filter((p) => p.status === "Belum Dibayar" || p.status === "Diproses").length;
@@ -531,6 +600,13 @@ export default function AdminTokoDashboard() {
         {/* SUB HALAMAN OPERASIONAL */}
         {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
         
+        {/* HALAMAN INVENTARIS */}
+        {activeMenu === "inventaris" && isDataLengkap && (
+          <InventarisGrading 
+            stokList={stokList} 
+          />
+        )}
+
         {(activeMenu === "pelacakan" || activeMenu === "pelacakan-produsen-toko" || activeMenu === "pelacakan-toko-pembeli") && isDataLengkap && (
           <PelacakanPesanan 
             pembelianList={pembelianList} 
@@ -539,10 +615,10 @@ export default function AdminTokoDashboard() {
             updateStatusPenjualan={handleUpdateStatusPenjualan}
             alamatToko={alamatToko} 
             tabDefault={activeMenu === "pelacakan-toko-pembeli" ? "toko-pembeli" : "produsen-toko"}
+            onRefreshData={fetchPembelianLive}
           />
         )}
 
-        {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} pembelianList={pembelianList} produsenList={produsenList} terimaPembelian={terimaPembelian} updateStok={updateStok} />}
         {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
         {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}
         {activeMenu === "laporan" && isDataLengkap && <LaporanBukuKas />}

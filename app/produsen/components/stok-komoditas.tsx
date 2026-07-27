@@ -6,7 +6,12 @@ import { supabase } from "@/lib/db";
 
 type StokStatus = "Aman" | "Menipis" | "Habis";
 
-interface Ulasan { pembeli: string; rating: number; komentar: string }
+interface Ulasan { 
+  pembeli: string; 
+  rating: number; 
+  komentar: string; 
+}
+
 interface StokItem {
   id: string;
   nama: string;
@@ -80,6 +85,7 @@ export default function StokKomoditas() {
     return () => clearTimeout(timer);
   }, [toast.tampil]);
 
+  // FETCH DATA PRODUK + ULASAN/RATING DARI SUPABASE
   const muatStok = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -92,6 +98,7 @@ export default function StokKomoditas() {
 
     if (!produsen) return;
 
+    // 1. Fetch Produk Milik Produsen
     const { data: produkData, error: prodError } = await supabase
       .from("produk")
       .select(`
@@ -105,6 +112,35 @@ export default function StokKomoditas() {
       return;
     }
 
+    const produkIds = (produkData || []).map((p) => p.id);
+
+    // 2. Fetch Ulasan/Rating dari Tabel Pesanan berdasarkan produk_id
+    let ulasanMap = new Map<string, Ulasan[]>();
+    if (produkIds.length > 0) {
+      const { data: pesananData } = await supabase
+        .from("pesanan")
+        .select(`
+          produk_id, rating, ulasan,
+          admin_toko ( nama_toko )
+        `)
+        .in("produk_id", produkIds)
+        .not("rating", "is", null);
+
+      if (pesananData) {
+        pesananData.forEach((ps: any) => {
+          const listLama = ulasanMap.get(ps.produk_id) || [];
+          const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+          listLama.push({
+            pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
+            rating: Number(ps.rating) || 5,
+            komentar: ps.ulasan || "Produk dalam kondisi baik dan sesuai pesanan."
+          });
+          ulasanMap.set(ps.produk_id, listLama);
+        });
+      }
+    }
+
+    // 3. Mapping Data Produk Beserta List Ulasannya
     const mapped: StokItem[] = (produkData || []).map((p: any) => {
       const stokMurni = Number(p.stok) || 0; 
       
@@ -121,7 +157,7 @@ export default function StokKomoditas() {
         status,
         kategori: p.kategori?.nama ?? "Lainnya",
         fotoUrl: p.foto ?? undefined,
-        ulasan: []
+        ulasan: ulasanMap.get(p.id) || []
       };
     });
 
@@ -130,6 +166,17 @@ export default function StokKomoditas() {
 
   useEffect(() => {
     muatStok();
+
+    // Listen Perubahan Realtime di Tabel Pesanan
+    const channel = supabase
+      .channel("realtime-rating-stok")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatStok())
+      .on("postgres_changes", { event: "*", schema: "public", table: "produk" }, () => muatStok())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [muatStok]);
 
   const filtered = useMemo(() => {
@@ -463,7 +510,7 @@ export default function StokKomoditas() {
                   <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(detailItem.hargaSatuan)}</div>
                 </div>
               </div>
-              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>Ulasan pembeli ({detailItem.ulasan.length})</div>
+              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>Ulasan Pembeli ({detailItem.ulasan.length})</div>
               {detailItem.ulasan.length === 0 ? (
                 <p style={{ fontSize: "0.8rem", color: "#94A3B8" }}>Belum ada ulasan untuk produk ini.</p>
               ) : (

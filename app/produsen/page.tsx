@@ -65,7 +65,7 @@ export default function ProdusenDashboard() {
   });
 
   const [stokList, setStokList] = useState<StokItem[]>([]);
-  const [pesananList] = useState<Pesanan[]>([]);
+  const [pesananList, setPesananList] = useState<Pesanan[]>([]);
   const [pengeluaranList] = useState<Pengeluaran[]>([]);
 
   const muatDataDashboard = useCallback(async () => {
@@ -94,6 +94,7 @@ export default function ProdusenDashboard() {
     });
 
     if (produsen) {
+      // 1. Fetch Produk & Stok
       const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
       if (produk) {
         setStokList((produk as ProdukRow[]).map((p) => {
@@ -105,12 +106,64 @@ export default function ProdusenDashboard() {
           };
         }));
       }
+
+      // 2. Fetch Pesanan B2B Live dari Supabase (Solusi agar status ter-update)
+      const { data: pesananData } = await supabase
+        .from("pesanan")
+        .select(`
+          id, jumlah, total_harga, status, created_at, admin_toko_id,
+          produk ( id, nama, satuan ),
+          admin_toko ( nama_toko, alamat, kabupaten )
+        `)
+        .eq("produsen_id", produsen.id)
+        .order("created_at", { ascending: false });
+
+      if (pesananData) {
+        const mappedPesanan: Pesanan[] = pesananData.map((p: any) => {
+          const st = String(p.status || "").toLowerCase();
+          let statusFormat: Pesanan["status"] = "Baru";
+          if (st === "diproses") statusFormat = "Diproses";
+          else if (st === "dikirim") statusFormat = "Dikirim";
+          else if (st === "selesai" || st === "diterima") statusFormat = "Selesai";
+          else if (st === "dibatalkan") statusFormat = "Dibatalkan";
+
+          const adminObj = Array.isArray(p.admin_toko) ? p.admin_toko[0] : p.admin_toko;
+          const lokasi = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Alamat tidak diisi";
+
+          return {
+            id: p.id.slice(0, 8).toUpperCase(),
+            pembeli: adminObj?.nama_toko || "Admin Toko",
+            itemId: p.produk?.id || "",
+            item: p.produk?.nama || "Komoditas Panen",
+            jumlah: Number(p.jumlah) || 1,
+            satuan: p.produk?.satuan || "pcs",
+            total: Number(p.total_harga) || 0,
+            status: statusFormat,
+            tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
+            alamatKirim: lokasi,
+          };
+        });
+
+        setPesananList(mappedPesanan);
+      }
     }
   }, []);
 
- useEffect(() => {
-  muatDataDashboard();
-}, [activeMenu]);
+  // Realtime Subscriptions
+  useEffect(() => {
+    muatDataDashboard();
+
+    const channel = supabase
+      .channel("realtime-dashboard-produsen")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => {
+        muatDataDashboard();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [muatDataDashboard, activeMenu]);
 
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
   const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");

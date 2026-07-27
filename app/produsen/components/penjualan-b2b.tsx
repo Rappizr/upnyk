@@ -16,7 +16,7 @@ interface Pesanan {
   status: PesananStatus;
   tanggal: string;
   alamatKirim: string;
-  rawId: string; // ID UUID dari tabel pesanan
+  rawId: string;
   noResi?: string;
 }
 
@@ -48,7 +48,6 @@ export default function PenjualanB2B() {
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pesanan | null>(null);
 
-  // MEMBACA PESANAN GROSIR DARI TABEL SUPABASE 'pesanan'
   const muatPesananB2B = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,7 +67,6 @@ export default function PenjualanB2B() {
       return;
     }
 
-    // 1. Ambil data pesanan beserta detail produknya
     const { data: pesananData, error: pesananError } = await supabase
       .from("pesanan")
       .select(`
@@ -84,14 +82,12 @@ export default function PenjualanB2B() {
       return;
     }
 
-    // 2. Ambil data admin_toko untuk pemetaan nama & lokasi pembeli
     const { data: adminList } = await supabase
       .from("admin_toko")
       .select("id, nama_toko, alamat, kabupaten");
       
     const adminMap = new Map((adminList || []).map((a) => [a.id, a]));
 
-    // 3. Pemetaan data
     const mapped: Pesanan[] = (pesananData || []).map((p: any) => {
       const tgl = new Date(p.created_at).toLocaleDateString("id-ID", {
         day: "2-digit",
@@ -102,11 +98,14 @@ export default function PenjualanB2B() {
       const lokasiKirim = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Alamat belum disetel";
       const codeId = p.id.slice(0, 8).toUpperCase();
 
-      // Normalisasi status "Menunggu" menjadi "Baru" untuk tampilan UI
-      let statusFormat: PesananStatus = (p.status as PesananStatus) || "Baru";
-      if ((p.status as string) === "Menunggu") {
-        statusFormat = "Baru";
-      }
+      const st = String(p.status || "").toLowerCase();
+      let statusFormat: PesananStatus = "Baru";
+
+      if (st === "diproses") statusFormat = "Diproses";
+      else if (st === "dikirim") statusFormat = "Dikirim";
+      else if (st === "selesai") statusFormat = "Selesai";
+      else if (st === "dibatalkan" || st === "batal") statusFormat = "Dibatalkan";
+      else statusFormat = "Baru";
 
       return {
         id: codeId,
@@ -132,10 +131,8 @@ export default function PenjualanB2B() {
     muatPesananB2B();
   }, [muatPesananB2B]);
 
-  // UPDATE STATUS DENGAN POTONG STOK DI DATABASE
   async function updatePesananStatusInDb(rawId: string, status: PesananStatus) {
     try {
-      // A. Ambil data pesanan saat ini untuk mengetahui produk_id & jumlah
       const { data: pesananDetail } = await supabase
         .from("pesanan")
         .select("produk_id, jumlah, status")
@@ -147,7 +144,6 @@ export default function PenjualanB2B() {
         const isTarget = targetStatus.includes(status);
         const isLamaTarget = targetStatus.includes(pesananDetail.status);
 
-        // Potong stok jika berubah dari 'Baru'/'Menunggu' ke 'Diproses'/'Selesai'
         if (isTarget && !isLamaTarget) {
           const { data: produkData } = await supabase
             .from("produk")
@@ -160,32 +156,19 @@ export default function PenjualanB2B() {
             const jumlahBeli = Number(pesananDetail.jumlah) || 0;
             const stokBaru = Math.max(0, stokSaatIni - jumlahBeli);
 
-            const { error: errStok } = await supabase
+            await supabase
               .from("produk")
               .update({ stok: stokBaru })
               .eq("id", pesananDetail.produk_id);
-
-            if (errStok) {
-              console.error("Gagal memotong stok:", errStok);
-              alert(`Gagal memotong stok produk di database: ${errStok.message}`);
-            }
           }
         }
       }
 
-      // B. Update status di tabel `pesanan`
-      const { error: errPesanan } = await supabase
+      await supabase
         .from("pesanan")
         .update({ status: status })
         .eq("id", rawId);
 
-      if (errPesanan) {
-        console.error("Gagal update status pesanan:", errPesanan);
-        alert(`Gagal mengubah status: ${errPesanan.message}`);
-        return;
-      }
-
-      // C. Sinkronkan status di tabel `transaksi`
       let statusTx = "Pending";
       if (status === "Selesai") statusTx = "Lunas";
       if (status === "Dibatalkan") statusTx = "Gagal";
@@ -201,7 +184,6 @@ export default function PenjualanB2B() {
     }
   }
 
-  // FUNGSI CETAK RESI PENGIRIMAN
   function cetakResi(pesanan: Pesanan) {
     const windowCetak = window.open("", "_blank");
     if (!windowCetak) return;
@@ -280,9 +262,9 @@ export default function PenjualanB2B() {
     [pesananList]
   );
 
-  function ubahStatus(status: PesananStatus) {
+  async function ubahStatus(status: PesananStatus) {
     if (!detail) return;
-    updatePesananStatusInDb(detail.rawId, status);
+    await updatePesananStatusInDb(detail.rawId, status);
     setDetail({ ...detail, status });
   }
 
@@ -363,7 +345,8 @@ export default function PenjualanB2B() {
                 <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "#94A3B8" }}>Belum ada pesanan masuk dari Admin Toko.</td></tr>
               )}
               {filtered.map((p) => {
-                const s = statusStyle[p.status];
+                const s = statusStyle[p.status] || statusStyle.Baru;
+
                 return (
                   <tr key={p.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                     <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>
@@ -374,14 +357,22 @@ export default function PenjualanB2B() {
                     <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</td>
                     <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
                     <td style={{ padding: "1rem", textAlign: "center" }}>
-                      {p.status === "Baru" ? (
-                        <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center" }}>
-                          <button onClick={() => updatePesananStatusInDb(p.rawId, "Diproses")} style={{ background: "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Terima</button>
-                          <button onClick={() => updatePesananStatusInDb(p.rawId, "Dibatalkan")} style={{ background: "#FEE2E2", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tolak</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setDetail(p)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.8rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
-                      )}
+                      {/* HANYA TOMBOL KELOLA KELUAR UNTUK SEMUA PESANAN */}
+                      <button
+                        onClick={() => setDetail(p)}
+                        style={{
+                          background: "#F1F5F9",
+                          border: "none",
+                          padding: "0.35rem 0.85rem",
+                          borderRadius: "6px",
+                          fontSize: "0.8rem",
+                          color: "#334155",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Kelola
+                      </button>
                     </td>
                   </tr>
                 );

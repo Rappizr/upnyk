@@ -116,9 +116,8 @@ export default function Pengiriman() {
   const [tab, setTab] = useState<"Diproses" | "Dikirim" | "Selesai">("Diproses");
   const [petaId, setPetaId] = useState<string | null>(null);
 
-  // MUAT PESANAN DARI DATABASE SUPABASE
+  // MUAT PESANAN DAN DATA PENGIRIMAN DARI SUPABASE
   const muatPengiriman = useCallback(async () => {
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
@@ -137,7 +136,7 @@ export default function Pengiriman() {
         produk ( id, nama, satuan )
       `)
       .eq("produsen_id", produsen.id)
-      .in("status", ["Diproses", "Dikirim", "Selesai"])
+      .not("status", "eq", "Dibatalkan")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -149,10 +148,35 @@ export default function Pengiriman() {
     const { data: adminList } = await supabase.from("admin_toko").select("id, nama_toko, alamat, kabupaten");
     const adminMap = new Map((adminList || []).map((a) => [a.id, a]));
 
+    // Fetch nomor resi dari tabel pengiriman
+    const pesananIds = (pesananData || []).map((p) => p.id);
+    let pengirimanMap = new Map();
+    if (pesananIds.length > 0) {
+      const { data: pengirimanData } = await supabase
+        .from("pengiriman")
+        .select("pesanan_id, nomor_resi")
+        .in("pesanan_id", pesananIds);
+
+      if (pengirimanData) {
+        pengirimanMap = new Map(pengirimanData.map((pg) => [pg.pesanan_id, pg.nomor_resi]));
+      }
+    }
+
     const mapped: Pesanan[] = (pesananData || []).map((p: any) => {
       const adminObj = adminMap.get(p.admin_toko_id);
       const lokasiKirim = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Malang, Jawa Timur";
       const shortId = p.id.slice(0, 8).toUpperCase();
+
+      const st = String(p.status || "").toLowerCase();
+      let statusFormat: PesananStatus = "Baru";
+
+      if (st === "diproses") statusFormat = "Diproses";
+      else if (st === "dikirim") statusFormat = "Dikirim";
+      else if (st === "selesai") statusFormat = "Selesai";
+      else if (st === "dibatalkan" || st === "batal") statusFormat = "Dibatalkan";
+      else statusFormat = "Baru";
+
+      const existingResi = pengirimanMap.get(p.id);
 
       return {
         id: `#${shortId}`,
@@ -163,10 +187,10 @@ export default function Pengiriman() {
         jumlah: Number(p.jumlah) || 1,
         satuan: p.produk?.satuan || "pcs",
         total: Number(p.total_harga) || 0,
-        status: p.status as PesananStatus,
+        status: statusFormat,
         tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
         alamatKirim: lokasiKirim,
-        noResi: p.status === "Dikirim" || p.status === "Selesai" ? `JNT-${shortId}` : undefined
+        noResi: existingResi || (statusFormat === "Dikirim" || statusFormat === "Selesai" ? `PN-${shortId}` : undefined)
       };
     });
 
@@ -176,19 +200,68 @@ export default function Pengiriman() {
 
   useEffect(() => {
     muatPengiriman();
+
+    const channel = supabase
+      .channel("realtime-pengiriman")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatPengiriman())
+      .on("postgres_changes", { event: "*", schema: "public", table: "pengiriman" }, () => muatPengiriman())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [muatPengiriman]);
 
-  // UPDATE STATUS DI DATABASE
-  async function updatePesananStatus(rawId: string, statusBaru: PesananStatus) {
-    const { error } = await supabase.from("pesanan").update({ status: statusBaru }).eq("id", rawId);
-    if (!error) {
-      muatPengiriman();
-    } else {
-      console.error("Gagal update status pengiriman:", error);
+  // PRODUSEN MENGIRIM PESANAN (MENGUBAH KE DIKIRIM & MENYIMPAN KE TABEL PENGIRIMAN)
+  async function handleKirimOlehProdusen(rawId: string, shortId: string) {
+    try {
+      const generatedResi = `PN-${shortId.replace("#", "")}`;
+
+      // 1. Update status pesanan di database menjadi "dikirim"
+      const { error: errPesanan } = await supabase
+        .from("pesanan")
+        .update({ status: "dikirim", updated_at: new Date().toISOString() })
+        .eq("id", rawId);
+
+      if (errPesanan) throw errPesanan;
+
+      // 2. Insert / Update data ke tabel pengiriman
+      const { data: existingPengiriman } = await supabase
+        .from("pengiriman")
+        .select("id")
+        .eq("pesanan_id", rawId)
+        .maybeSingle();
+
+      if (existingPengiriman) {
+        await supabase
+          .from("pengiriman")
+          .update({
+            nomor_resi: generatedResi,
+            status: "dikirim",
+            tanggal_kirim: new Date().toISOString(),
+          })
+          .eq("pesanan_id", rawId);
+      } else {
+        await supabase
+          .from("pengiriman")
+          .insert({
+            pesanan_id: rawId,
+            nomor_resi: generatedResi,
+            ekspedisi: "Kurir Internal / Reguler",
+            status: "dikirim",
+            tanggal_kirim: new Date().toISOString(),
+          });
+      }
+
+      await muatPengiriman();
+      alert(`Pesanan ${shortId} berhasil dikirim! Resi: ${generatedResi}`);
+    } catch (err: any) {
+      console.error("Gagal mengirim pesanan:", err);
+      alert("Gagal memperbarui status pengiriman: " + err.message);
     }
   }
 
-  const diproses = pesananList.filter((p) => p.status === "Diproses");
+  const diproses = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses");
   const dikirim = pesananList.filter((p) => p.status === "Dikirim");
   const selesai = pesananList.filter((p) => p.status === "Selesai");
 
@@ -196,6 +269,7 @@ export default function Pengiriman() {
 
   function copyResi(resi: string) {
     navigator.clipboard?.writeText(resi);
+    alert(`Nomor resi ${resi} disalin ke clipboard!`);
   }
 
   if (loading) {
@@ -203,10 +277,10 @@ export default function Pengiriman() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Pengiriman</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau status pengemasan dan pengantaran pesanan ke pembeli.</p>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau status pengemasan dan pengantaran pesanan ke pembeli secara realtime.</p>
       </div>
 
       <div className="shipment-tabs-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -235,6 +309,7 @@ export default function Pengiriman() {
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700, color: "#1E293B" }}>{p.id}</span>
                   <span style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pembeli}</span>
+                  <span style={{ fontSize: "0.72rem", background: "#F1F5F9", color: "#475569", fontWeight: 600, padding: "0.15rem 0.45rem", borderRadius: "4px" }}>Status: {p.status}</span>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{p.item} — {p.jumlah} {p.satuan}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.78rem", color: "#94A3B8" }}><IconMapPin /> {p.alamatKirim}</div>
@@ -245,9 +320,21 @@ export default function Pengiriman() {
                 )}
               </div>
               <div className="shipment-control-side" style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
-                {p.status === "Diproses" && <button onClick={() => updatePesananStatus(p.rawId, "Dikirim")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Kirim Sekarang</button>}
-                {p.status === "Dikirim" && <button onClick={() => updatePesananStatus(p.rawId, "Selesai")} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tandai Sampai</button>}
-                {p.status === "Selesai" && <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#10B981" }}>✓ Sudah sampai</span>}
+                {(p.status === "Baru" || p.status === "Diproses") && (
+                  <button onClick={() => handleKirimOlehProdusen(p.rawId, p.id)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
+                    Kirim Sekarang & Generate Resi
+                  </button>
+                )}
+                {p.status === "Dikirim" && (
+                  <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#0284C7", background: "#E0F2FE", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
+                    🚚 Dalam Pengiriman
+                  </span>
+                )}
+                {p.status === "Selesai" && (
+                  <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#10B981", background: "#D1FAE5", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
+                    ✓ Pesanan Selesai & Diterima Toko
+                  </span>
+                )}
                 <button onClick={() => setPetaId(petaId === p.id ? null : p.id)} style={{ display: "flex", alignItems: "center", gap: "5px", background: "none", border: "1px solid #CBD5E1", padding: "0.4rem 0.7rem", borderRadius: "8px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>
                   <IconRoute /> {petaId === p.id ? "Tutup peta" : "Lacak di peta"}
                 </button>
@@ -257,7 +344,7 @@ export default function Pengiriman() {
               <div style={{ marginTop: "1rem" }}>
                 <MiniMap
                   markers={[
-                    { lat: gudangAsal[0], lng: gudangAsal[1], label: "Titik penjemputan (JNT terdekat)", color: "#10B981" },
+                    { lat: gudangAsal[0], lng: gudangAsal[1], label: "Titik penjemputan (Gudang)", color: "#10B981" },
                     { lat: coordFromAlamat(p.alamatKirim)[0], lng: coordFromAlamat(p.alamatKirim)[1], label: `Tujuan: ${p.alamatKirim}`, color: "#2563EB" },
                   ]}
                 />
