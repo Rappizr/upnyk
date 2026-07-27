@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-  supabase, 
-  getWishlist, 
-  addToWishlist, 
-  removeFromWishlist, 
-  addToCart 
+import {
+  supabase,
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist
 } from "@/lib/db";
+import { addToCartAction } from "@/app/actions";
 
 // ==================== ICONS ====================
 function StarIcon({ size = 12, className = "", style }: any) {
@@ -55,8 +55,8 @@ interface MarketplaceViewProps {
   searchQuery?: string; // Prop opsional jika ingin menghubungkan search dari topbar utama
 }
 
-export default function MarketplaceView({ 
-  onCartUpdated, 
+export default function MarketplaceView({
+  onCartUpdated,
   onNavigateToCart,
   initialStoreFilter,
   clearInitialStoreFilter,
@@ -88,7 +88,7 @@ export default function MarketplaceView({
       const { data: etalaseData, error: errEtalase } = await supabase
         .from("etalase")
         .select("*")
-        .eq("status", "tayang")
+        .or("status.eq.tayang,status.eq.Tayang,status.eq.live,status.eq.aktif,status.is.null")
         .order("created_at", { ascending: false });
 
       if (errEtalase) console.error("Error load etalase:", errEtalase.message);
@@ -170,10 +170,12 @@ export default function MarketplaceView({
 
   const handleAddToCart = async (p: any, qty = 1) => {
     try {
-      const targetProductId = p.id || p.produk_id || p.etalase_id;
+      const targetProductId = p.produk_id || p.id || p.etalase_id;
       if (!targetProductId) return;
 
-      const res = await addToCart(targetProductId, qty);
+      const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+
+      const res = await addToCartAction(targetProductId, qty, userId);
       if (res) {
         if (onCartUpdated) onCartUpdated();
         setAddedProductName(p.name);
@@ -206,7 +208,7 @@ export default function MarketplaceView({
 
   return (
     <div style={{ width: "100%", paddingBottom: "2rem", fontFamily: "inherit" }}>
-      
+
       {/* FILTER PILAN WILAYAH */}
       <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "1rem", scrollbarWidth: "none" }}>
         {locationOptions.map((loc) => (
@@ -234,7 +236,7 @@ export default function MarketplaceView({
 
       {/* BAR FILTER TOKO & SORTING */}
       <div style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", padding: "0.75rem 1rem", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-        
+
         {/* TOKO SELECTOR */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: "1 1 200px" }}>
           <StoreIcon size={16} style={{ color: "#64748B" }} />
@@ -277,7 +279,7 @@ export default function MarketplaceView({
               {[selectedStoreObj.desa, selectedStoreObj.kabupaten, selectedStoreObj.provinsi].filter(Boolean).join(", ")}
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setSelectedStoreId("")}
             style={{ background: "#F1F5F9", border: "none", padding: "0.4rem 0.75rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}
           >
@@ -304,8 +306,8 @@ export default function MarketplaceView({
             const hargaFinal = p.diskon > 0 ? Math.round(p.price * (1 - p.diskon / 100)) : p.price;
 
             return (
-              <div 
-                key={p.etalase_id || p.id} 
+              <div
+                key={p.etalase_id || p.id}
                 style={{
                   backgroundColor: "#FFFFFF",
                   borderRadius: "10px",
@@ -327,19 +329,19 @@ export default function MarketplaceView({
                     e.stopPropagation();
                     handleToggleWishlist(p.id);
                   }}
-                  style={{ 
-                    position: "absolute", 
-                    top: "8px", 
-                    right: "8px", 
-                    zIndex: 10, 
-                    backgroundColor: "rgba(255, 255, 255, 0.9)", 
-                    border: "none", 
-                    borderRadius: "50%", 
-                    width: "28px", 
-                    height: "28px", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center", 
+                  style={{
+                    position: "absolute",
+                    top: "8px",
+                    right: "8px",
+                    zIndex: 10,
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "28px",
+                    height: "28px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                     cursor: "pointer",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
                   }}
@@ -366,7 +368,7 @@ export default function MarketplaceView({
 
                 {/* DETAILS */}
                 <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", flex: 1 }}>
-                  
+
                   <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B", height: "2.4rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.2rem", marginBottom: "0.4rem" }}>
                     {p.name}
                   </div>
@@ -432,8 +434,8 @@ export default function MarketplaceView({
       {selectedProduct && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.5)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", width: "450px", maxWidth: "100%", overflow: "hidden", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", position: "relative" }}>
-            
-            <button 
+
+            <button
               onClick={() => setSelectedProduct(null)}
               style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, background: "#F1F5F9", border: "none", width: "28px", height: "28px", borderRadius: "50%", cursor: "pointer", fontSize: "0.9rem", color: "#64748B" }}
             >
@@ -515,17 +517,17 @@ export default function MarketplaceView({
               <strong>{addedProductName}</strong> dimasukkan ke keranjang.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              <button 
+              <button
                 onClick={() => {
                   setShowCartPopup(false);
                   if (onNavigateToCart) onNavigateToCart();
-                }} 
+                }}
                 style={{ width: "100%", padding: "0.55rem", borderRadius: "6px", border: "none", backgroundColor: "#10B981", color: "#FFFFFF", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
               >
                 Lihat Keranjang
               </button>
-              <button 
-                onClick={() => setShowCartPopup(false)} 
+              <button
+                onClick={() => setShowCartPopup(false)}
                 style={{ width: "100%", padding: "0.55rem", borderRadius: "6px", border: "1px solid #E2E8F0", backgroundColor: "#FFFFFF", color: "#475569", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
               >
                 Lanjut Belanja

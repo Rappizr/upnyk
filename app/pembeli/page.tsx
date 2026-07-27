@@ -23,7 +23,8 @@ export default function PembeliMasterPage() {
 
   const updateCartCount = useCallback(async () => {
     try {
-      const items = await getCartAction();
+      const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+      const items = await getCartAction(userId);
       const totalQty = (items || []).reduce((sum: number, item: any) => sum + (item.qty || 1), 0);
       setCartCount(totalQty);
     } catch (e) {

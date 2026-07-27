@@ -6,6 +6,7 @@ import {
   getProducts, 
   saveProduct, 
   getOrders, 
+  getPenjualanAdminToko,
   createOrder, 
   updateOrderStatus, 
   getWishlist, 
@@ -84,6 +85,15 @@ export async function getOrdersAction() {
   }
 }
 
+export async function getPenjualanAdminTokoAction() {
+  try {
+    return await getPenjualanAdminToko();
+  } catch (e) {
+    console.error("getPenjualanAdminTokoAction:", e);
+    return [];
+  }
+}
+
 export async function createOrderAction(order: {
   supplier?: string;
   items?: any[];
@@ -103,9 +113,9 @@ export async function createOrderAction(order: {
   }
 }
 
-export async function updateOrderStatusAction(orderId: string, status: string) {
+export async function updateOrderStatusAction(orderId: string, status: string, noResi?: string) {
   try {
-    return await updateOrderStatus(orderId, status);
+    return await updateOrderStatus(orderId, status, noResi);
   } catch (e) {
     console.error("updateOrderStatusAction:", e);
     return false;
@@ -166,18 +176,18 @@ export async function markNotificationsAsReadAction() {
 // ─────────────────────────────────────────────
 // KERANJANG
 // ─────────────────────────────────────────────
-export async function getCartAction() {
+export async function getCartAction(userId?: string) {
   try {
-    return await getCart();
+    return await getCart(userId);
   } catch (e) {
     console.error("getCartAction:", e);
     return [];
   }
 }
 
-export async function addToCartAction(productId: string, qty: number = 1) {
+export async function addToCartAction(productId: string, qty: number = 1, userId?: string) {
   try {
-    return await addToCart(productId, qty);
+    return await addToCart(productId, qty, userId);
   } catch (e) {
     console.error("addToCartAction:", e);
     return null;
