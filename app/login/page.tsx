@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/db";
 
@@ -77,6 +77,8 @@ const roleConfigs: Record<Role, RoleConfig> = {
   },
 };
 
+const heroImages = ["/logo1.png", "/logo2.png", "/logo3.png"];
+
 interface UserEntry {
   name: string;
   phone: string;
@@ -88,6 +90,7 @@ interface UserEntry {
 export default function LoginPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<Role>("pembeli");
+  const [currentBg, setCurrentBg] = useState(0);
 
   const activeConfig = roleConfigs[selectedRole];
 
@@ -108,6 +111,13 @@ export default function LoginPage() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBg((prev) => (prev + 1) % heroImages.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   const getRegisteredUsers = (): UserEntry[] => {
     if (typeof window === "undefined") return [];
@@ -194,7 +204,7 @@ export default function LoginPage() {
 
         if (profileStatus?.status === "suspended" || profileStatus?.status === "nonaktif") {
           await supabase.auth.signOut();
-          setError("⛔ Akun Anda telah ditangguhkan (Terblokir). Silakan hubungi Admin Platform.");
+          setError("Akun Anda telah ditangguhkan (terblokir). Silakan hubungi Admin Platform.");
           setIsLoading(false);
           return;
         }
@@ -208,7 +218,7 @@ export default function LoginPage() {
 
           if (toko?.status === "suspended" || toko?.status === "nonaktif") {
             await supabase.auth.signOut();
-            setError("⛔ Akun Toko Anda telah ditangguhkan oleh Admin Platform.");
+            setError("Akun Toko Anda telah ditangguhkan oleh Admin Platform.");
             setIsLoading(false);
             return;
           }
@@ -290,7 +300,7 @@ export default function LoginPage() {
       }
 
       if (authData.user) {
-        // Berhasil daftar di Supabase — simpan profil ke tabel profiles
+        // Berhasil daftar di Supabase, simpan profil ke tabel profiles
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           nama: regName.trim(),
@@ -383,687 +393,525 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page-wrapper" style={{ minHeight: "100vh", padding: "1.5rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", background: "#F8FAFC" }}>
+    <div style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "1.05fr 1fr", fontFamily: "var(--font-sans), system-ui, sans-serif" }}>
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        .login-container {
-          display: grid;
-          grid-template-columns: 1.1fr 1fr;
-          gap: 2.5rem;
-          width: 100%;
-          max-width: 1000px;
-          background: #ffffff;
-          border-radius: 1.5rem;
-          border: 1px solid rgba(226,232,240,0.8);
-          box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05);
-          padding: 2.5rem;
-          box-sizing: border-box;
-          z-index: 5;
+        .login-back-link {
+          display: inline-flex; align-items: center; gap: 0.5rem; color: #fff;
+          text-decoration: none; font-size: 0.85rem; font-weight: 600;
+          background: rgba(10,32,24,0.45); backdrop-filter: blur(8px);
+          padding: 0.5rem 1rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.15);
+          transition: background 0.2s ease;
         }
-        .form-group {
+        .login-back-link:hover { background: rgba(10,32,24,0.65); }
+
+        .role-row {
+          position: relative;
           display: flex;
-          flex-direction: column;
-        }
-        .form-label {
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: #475569;
-          margin-bottom: 0.4rem;
-        }
-        .form-input {
+          align-items: center;
+          gap: 0.7rem;
+          padding: 0.85rem 1rem;
+          border-radius: 0.85rem;
+          cursor: pointer;
+          text-align: left;
+          background: none;
           width: 100%;
-          padding: 0.75rem 1rem;
-          border: 1px solid #E2E8F0;
-          border-radius: 0.5rem;
-          font-size: 0.95rem;
-          outline: none;
           box-sizing: border-box;
-          transition: all 0.2s;
+          transition: all 0.25s ease;
         }
-        .form-input:focus {
-          border-color: #2563EB;
-          box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+        .role-row:hover { background: rgba(255,255,255,0.05); }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-label { font-size: 0.85rem; font-weight: 700; color: #0C1F17; margin-bottom: 0.4rem; }
+        .form-input {
+          width: 100%; padding: 0.75rem 1rem; border: 1px solid #E6E8E2; border-radius: 0.7rem;
+          font-size: 0.95rem; outline: none; box-sizing: border-box; color: #0C1F17;
+          transition: all 0.2s ease; background: #FCFDFC;
         }
         .btn-primary {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          border: none;
-          color: white;
-          font-weight: 700;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s;
+          display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+          border: none; color: white; font-weight: 700; border-radius: 0.7rem; cursor: pointer;
+          transition: all 0.25s ease;
         }
-        .btn-primary:hover {
-          transform: translateY(-1px);
-          opacity: 0.95;
-        }
+        .btn-primary:hover:not(:disabled) { filter: brightness(1.06); }
+        .btn-primary:disabled { opacity: 0.75; cursor: default; }
         .badge {
-          padding: 0.625rem;
-          border-radius: 0.35rem;
-          font-size: 0.85rem;
-          font-weight: 600;
-          text-align: center;
-          box-sizing: border-box;
+          padding: 0.65rem 0.9rem; border-radius: 0.6rem; font-size: 0.85rem; font-weight: 600;
+          text-align: center; box-sizing: border-box;
         }
-        .badge-success { background: #DCFCE7; color: #166534; }
-        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        .badge-success { background: #E7F3EC; color: #12864E; }
+        .badge-danger { background: #FDEDEA; color: #B3401F; }
 
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        @media (max-width: 768px) {
-          .login-page-wrapper {
-            padding: 1rem 0.5rem !important;
-          }
-          .login-container {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-            padding: 1.25rem 1rem !important;
-            border-radius: 1rem !important;
-          }
-          .login-left-panel h2 {
-            font-size: 1.35rem !important;
-          }
-          .login-left-panel p {
-            font-size: 0.8rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          .login-left-panel button {
-            padding: 0.75rem !important;
-            gap: 0.75rem !important;
-          }
-          .login-left-panel button span {
-            width: 36px !important;
-            height: 36px !important;
-          }
-          .login-left-panel button span svg {
-            width: 18px !important;
-            height: 18px !important;
-          }
-          .login-left-panel button div div:first-child {
-            font-size: 0.85rem !important;
-          }
-          .login-left-panel button div div:last-child {
-            font-size: 0.72rem !important;
-          }
-          .login-right-panel span:first-child {
-            width: 44px !important;
-            height: 44px !important;
-          }
-          .login-right-panel span:first-child svg {
-            width: 20px !important;
-            height: 20px !important;
-          }
-          .login-right-panel h3 {
-            font-size: 1.1rem !important;
-          }
-          .login-right-panel p {
-            font-size: 0.75rem !important;
-          }
-          .form-input {
-            padding: 0.6rem 0.75rem !important;
-            font-size: 0.85rem !important;
-          }
-          .btn-primary {
-            padding: 0.65rem !important;
-            font-size: 0.85rem !important;
-          }
+        @media (max-width: 860px) {
+          .login-shell { grid-template-columns: 1fr !important; }
+          .login-left-panel { min-height: 42vh !important; padding: 4.5rem 1.5rem 2.5rem !important; }
+          .login-right-panel { padding: 2.25rem 1.5rem !important; }
+          .login-left-panel p:first-of-type { font-size: 1.4rem !important; }
         }
       `}} />
 
-      <div
-        style={{
-          position: "absolute",
-          top: "10%",
-          left: "15%",
-          width: "200px",
-          height: "200px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(30px)",
-          zIndex: 0,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "10%",
-          right: "15%",
-          width: "250px",
-          height: "250px",
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, rgba(255,255,255,0) 70%)",
-          filter: "blur(40px)",
-          zIndex: 0,
-        }}
-      />
+      <div className="login-shell" style={{ display: "contents" }}>
+        {/* LEFT: PHOTOGRAPHIC HERO, SAME TREATMENT AS THE HOMEPAGE */}
+        <div className="login-left-panel" style={{ position: "relative", overflow: "hidden", padding: "3rem 2.75rem", display: "flex", flexDirection: "column", justifyContent: "center", color: "#fff" }}>
+          {heroImages.map((img, index) => (
+            <div key={index} style={{
+              position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+              backgroundImage: `linear-gradient(180deg, rgba(6,18,13,0.78) 0%, rgba(6,18,13,0.88) 50%, rgba(6,18,13,0.96) 100%), url('${img}')`,
+              backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat",
+              opacity: currentBg === index ? 1 : 0,
+              transition: "opacity 2s ease-in-out",
+            }} />
+          ))}
 
-      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "1rem", zIndex: 2, paddingLeft: "0.25rem" }}>
-        <a
-          href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            color: "#64748B",
-            textDecoration: "none",
-            fontSize: "0.9rem",
-            fontWeight: 600,
-            transition: "color 0.15s ease",
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "#2563EB"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "#64748B"}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          Kembali ke Beranda
-        </a>
-      </div>
+          <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "linear-gradient(90deg, rgba(4,12,9,0.55) 0%, rgba(4,12,9,0.22) 60%, rgba(4,12,9,0) 90%)" }} />
 
-      <div className="login-container">
-        <div className="login-left-panel">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "2rem" }}>
-            <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
-              <rect width="28" height="28" rx="8" fill="#2563EB" />
-              <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" />
+          <a href="/" className="login-back-link" style={{ position: "absolute", top: "2rem", left: "2.75rem", zIndex: 3 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
             </svg>
-            <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "#2563EB" }}>
-              Pasar<span style={{ color: "#10B981" }}>Nusa</span>
-            </span>
-          </div>
+            Kembali ke Beranda
+          </a>
 
-          <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.5rem" }}>
-            Selamat Datang Kembali
-          </h2>
-          <p style={{ color: "#64748B", fontSize: "0.9rem", marginBottom: "2rem" }}>
-            Pilih jenis akun Anda untuk masuk ke sistem PasarNusa &amp; Supply Chain.
-          </p>
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "2rem" }}>
+              <img src="/logo.png" alt="Logo PasarNusa" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
+              <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "-0.02em", textShadow: "0 1px 6px rgba(0,0,0,0.45)" }}>
+                Pasar<span style={{ color: "#34D399" }}>Nusa</span>
+              </span>
+            </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {(Object.keys(roleConfigs) as Role[]).map((roleKey) => {
-              const config = roleConfigs[roleKey];
-              const isSelected = selectedRole === roleKey;
-              return (
-                <button
-                  key={roleKey}
-                  onClick={() => handleRoleSelect(roleKey)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1.25rem",
-                    padding: "1.25rem",
-                    borderRadius: "0.75rem",
-                    border: isSelected ? `2.5px solid ${config.color}` : "1.5px solid #E2E8F0",
-                    background: isSelected ? config.bgColor : "transparent",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "all 0.2s ease",
-                    transform: isSelected ? "scale(1.02)" : "scale(1)",
-                  }}
-                  id={`role-btn-${roleKey}`}
-                >
-                  <span
+            <p style={{ fontSize: "1.9rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.5rem", letterSpacing: "-0.02em", lineHeight: 1.25, maxWidth: "420px", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+              Satu portal untuk seluruh rantai pasok
+            </p>
+            <p style={{ color: "#E3EBE6", fontSize: "0.9rem", marginBottom: "1rem", lineHeight: 1.6, maxWidth: "380px", textShadow: "0 1px 6px rgba(0,0,0,0.45)" }}>
+              Pilih peran akun Anda untuk masuk ke sistem PasarNusa &amp; Supply Chain.
+            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "1.5rem" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+              <span style={{ fontSize: "0.78rem", color: "#D7E3DA", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>Dipercaya 2.400+ mitra produsen di seluruh Indonesia</span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {(Object.keys(roleConfigs) as Role[]).map((roleKey) => {
+                const config = roleConfigs[roleKey];
+                const isSelected = selectedRole === roleKey;
+                return (
+                  <button
+                    key={roleKey}
+                    onClick={() => handleRoleSelect(roleKey)}
+                    className="role-row"
                     style={{
-                      width: "50px",
-                      height: "50px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: isSelected ? "#FFFFFF" : "#F8FAFC",
-                      borderRadius: "50%",
-                      color: isSelected ? config.color : "#94A3B8",
-                      transition: "all 0.2s ease"
+                      background: isSelected ? "rgba(8,20,15,0.72)" : "rgba(8,20,15,0.48)",
+                      border: isSelected ? "1px solid rgba(255,255,255,0.28)" : "1px solid rgba(255,255,255,0.1)",
                     }}
+                    id={`role-btn-${roleKey}`}
                   >
-                    {config.icon}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1E293B" }}>
-                      {config.title}
+                    <span style={{ width: "30px", height: "30px", borderRadius: "8px", background: isSelected ? `${config.color}30` : "rgba(255,255,255,0.06)", color: isSelected ? config.color : "#9CA9A2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.25s ease" }}>
+                      {config.icon}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#FFFFFF" }}>{config.title}</div>
+                      <div style={{ fontSize: "0.74rem", color: "#9CA9A2", marginTop: "1px" }}>{config.description}</div>
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "#64748B", marginTop: "0.15rem" }}>
-                      {config.description}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+                    {isSelected && (
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={config.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="login-right-panel">
-          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "60px",
-                height: "60px",
-                borderRadius: "50%",
-                background: "#EFF6FF",
-                color: "#2563EB",
-                marginBottom: "1rem",
-              }}
-            >
-              {isForgotPassword ? (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
-              ) : isRegistering ? (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" y1="8" x2="19" y2="14" />
-                  <line x1="22" y1="11" x2="16" y2="11" />
-                </svg>
-              ) : (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              )}
-            </span>
-            <h3 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#1E293B" }}>
-              {isForgotPassword ? "Atur Ulang Kata Sandi" : isRegistering ? `Registrasi ${activeConfig.title}` : `Autentikasi ${activeConfig.title}`}
-            </h3>
-            <p style={{ fontSize: "0.8rem", color: "#64748B", marginTop: "0.25rem" }}>
-              {isForgotPassword ? "Masukkan email terdaftar Anda untuk instruksi pemulihan" : isRegistering ? "Buat akun baru untuk mengakses platform" : "Akses cepat telah dikonfigurasi secara otomatis"}
-            </p>
-          </div>
+        {/* RIGHT: FORM */}
+        <div className="login-right-panel" style={{ background: "#fff", padding: "3rem 3.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ maxWidth: "380px", width: "100%", marginLeft: "auto", marginRight: "auto" }}>
 
-          {isForgotPassword ? (
-            <>
-              <form onSubmit={handleForgotPassword}>
-                <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                  <label className="form-label">Alamat Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                    id="reset-email-input"
-                    placeholder="nama@email.com"
-                  />
-                </div>
-
-                {resetSuccess && (
-                  <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-                    {resetSuccess}
-                  </div>
+            <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: "56px", height: "56px", borderRadius: "16px",
+                  background: activeConfig.bgColor, color: activeConfig.color,
+                  marginBottom: "1rem", transition: "all 0.3s ease",
+                }}
+              >
+                {isForgotPassword ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                  </svg>
+                ) : isRegistering ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
                 )}
+              </span>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0C1F17", margin: 0 }}>
+                {isForgotPassword ? "Atur Ulang Kata Sandi" : isRegistering ? `Registrasi ${activeConfig.title}` : `Autentikasi ${activeConfig.title}`}
+              </h3>
+              <p style={{ fontSize: "0.82rem", color: "#5B6B60", marginTop: "0.35rem" }}>
+                {isForgotPassword ? "Masukkan email terdaftar Anda untuk instruksi pemulihan" : isRegistering ? "Buat akun baru untuk mengakses platform" : "Akses cepat telah dikonfigurasi secara otomatis"}
+              </p>
+            </div>
 
-                {error && (
-                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-                    {error}
+            {isForgotPassword ? (
+              <>
+                <form onSubmit={handleForgotPassword}>
+                  <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                    <label className="form-label">Alamat Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      id="reset-email-input"
+                      placeholder="nama@email.com"
+                    />
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={isLoading}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    justifyContent: "center",
-                    background: activeConfig.color,
-                    fontSize: "0.95rem"
-                  }}
-                  id="btn-reset-submit"
-                >
-                  {isLoading ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                        <path d="M4 12a8 8 0 0 1 8-8" />
-                      </svg>
-                      Mengirim instruksi...
-                    </span>
-                  ) : (
-                    "Kirim Instruksi Reset"
+                  {resetSuccess && (
+                    <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+                      {resetSuccess}
+                    </div>
                   )}
-                </button>
-              </form>
 
-              <div style={{ marginTop: "2rem", textAlign: "center" }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsForgotPassword(false);
-                    setError("");
-                    setResetSuccess("");
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    color: activeConfig.color,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    fontSize: "0.8rem"
-                  }}
-                  id="btn-back-to-login"
-                >
-                  Kembali ke Login
-                </button>
-              </div>
-            </>
-          ) : !isRegistering ? (
-            <>
-              <form onSubmit={handleLogin}>
-                <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                  <label className="form-label">Alamat Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    id="login-email-input"
-                  />
+                  {error && (
+                    <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading}
+                    style={{ width: "100%", padding: "0.85rem", background: activeConfig.color, fontSize: "0.95rem" }}
+                    id="btn-reset-submit"
+                  >
+                    {isLoading ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                          <path d="M4 12a8 8 0 0 1 8-8" />
+                        </svg>
+                        Mengirim instruksi...
+                      </span>
+                    ) : (
+                      "Kirim Instruksi Reset"
+                    )}
+                  </button>
+                </form>
+
+                <div style={{ marginTop: "2rem", textAlign: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setError("");
+                      setResetSuccess("");
+                    }}
+                    style={{ background: "none", border: "none", padding: 0, color: activeConfig.color, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: "0.8rem" }}
+                    id="btn-back-to-login"
+                  >
+                    Kembali ke Login
+                  </button>
+                </div>
+              </>
+            ) : !isRegistering ? (
+              <>
+                <form onSubmit={handleLogin}>
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Alamat Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      id="login-email-input"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.375rem" }}>
+                      <label className="form-label" style={{ margin: "0px" }}>Kata Sandi</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(true);
+                          setError("");
+                        }}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: "0.78rem", color: activeConfig.color, textDecoration: "underline", cursor: "pointer", fontWeight: 700 }}
+                        id="btn-goto-forgot"
+                      >
+                        Lupa Sandi?
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      id="login-password-input"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading}
+                    style={{ width: "100%", padding: "0.85rem", background: activeConfig.color, fontSize: "0.95rem" }}
+                    id="btn-login-submit"
+                  >
+                    {isLoading ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                          <path d="M4 12a8 8 0 0 1 8-8" />
+                        </svg>
+                        Menghubungkan...
+                      </span>
+                    ) : (
+                      `Masuk sebagai ${activeConfig.title}`
+                    )}
+                  </button>
+                </form>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginTop: "1.25rem" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6B60" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  <span style={{ fontSize: "0.75rem", color: "#5B6B60" }}>Sesi login terenkripsi dan diaudit sistem</span>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.375rem" }}>
-                    <label className="form-label" style={{ margin: "0px" }}>
-                      Kata Sandi
-                    </label>
+                <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+                  <span style={{ fontSize: "0.8rem", color: "#5B6B60" }}>
+                    Belum terdaftar di server?{" "}
                     <button
                       type="button"
                       onClick={() => {
-                        setIsForgotPassword(true);
+                        setIsRegistering(true);
                         setError("");
                       }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        fontSize: "0.75rem",
-                        color: "#2563EB",
-                        textDecoration: "underline",
-                        cursor: "pointer",
-                        fontWeight: 600
-                      }}
-                      id="btn-goto-forgot"
+                      style={{ background: "none", border: "none", padding: 0, color: activeConfig.color, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: "0.8rem" }}
+                      id="btn-goto-register"
                     >
-                      Lupa Sandi?
+                      Daftar disini
                     </button>
-                  </div>
-                  <input
-                    type="password"
-                    className="form-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    id="login-password-input"
-                  />
+                  </span>
                 </div>
+              </>
+            ) : (
+              <>
+                <form onSubmit={handleRegister}>
+                  {/* PILIH AVATAR (PROFILE PICTURE) */}
+                  <div className="form-group" style={{ marginBottom: "1.25rem", alignItems: "center" }}>
+                    <label className="form-label" style={{ width: "100%", textAlign: "left" }}>Foto Profil / Avatar</label>
 
-                {error && (
-                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-                    {error}
-                  </div>
-                )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", width: "100%", marginTop: "0.25rem" }}>
+                      <div
+                        style={{
+                          width: "56px", height: "56px", borderRadius: "50%", border: "2px solid #E6E8E2",
+                          overflow: "hidden", background: "#F1F5F9", display: "flex", alignItems: "center",
+                          justifyContent: "center", flexShrink: 0
+                        }}
+                      >
+                        {regAvatarUrl ? (
+                          <img src={regAvatarUrl} alt="Preview Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "#94A3B8" }}>?</span>
+                        )}
+                      </div>
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={isLoading}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    justifyContent: "center",
-                    background: activeConfig.color,
-                    fontSize: "0.95rem"
-                  }}
-                  id="btn-login-submit"
-                >
-                  {isLoading ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                        <path d="M4 12a8 8 0 0 1 8-8" />
-                      </svg>
-                      Menghubungkan...
-                    </span>
-                  ) : (
-                    `Masuk sebagai ${activeConfig.title}`
-                  )}
-                </button>
-              </form>
-
-              <div style={{ marginTop: "2rem", textAlign: "center" }}>
-                <span style={{ fontSize: "0.8rem", color: "#64748B" }}>
-                  Belum terdaftar di server?{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegistering(true);
-                      setError("");
-                    }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      color: "#2563EB",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      fontSize: "0.8rem"
-                    }}
-                    id="btn-goto-register"
-                  >
-                    Daftar disini
-                  </button>
-                </span>
-              </div>
-            </>
-          ) : (
-            <>
-              <form onSubmit={handleRegister}>
-                {/* PILIH AVATAR (PROFILE PICTURE) */}
-                <div className="form-group" style={{ marginBottom: "1.25rem", alignItems: "center" }}>
-                  <label className="form-label" style={{ width: "100%", textAlign: "left" }}>Foto Profil / Avatar</label>
-                  
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", width: "100%", marginTop: "0.25rem" }}>
-                    <div 
-                      style={{ 
-                        width: "56px", 
-                        height: "56px", 
-                        borderRadius: "50%", 
-                        border: "2px solid #E2E8F0", 
-                        overflow: "hidden", 
-                        background: "#F1F5F9",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0
-                      }}
-                    >
-                      {regAvatarUrl ? (
-                        <img src={regAvatarUrl} alt="Preview Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : (
-                        <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "#94A3B8" }}>?</span>
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                      <div style={{ display: "flex", gap: "0.35rem" }}>
-                        {[
-                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
-                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka",
-                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack",
-                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Bella",
-                          "https://api.dicebear.com/7.x/adventurer/svg?seed=Lily"
-                        ].map((url, index) => {
-                          const isSelected = regAvatarUrl === url;
-                          return (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => setRegAvatarUrl(url)}
-                              style={{
-                                width: "28px",
-                                height: "28px",
-                                borderRadius: "50%",
-                                overflow: "hidden",
-                                border: isSelected ? "2px solid #2563EB" : "1px solid #E2E8F0",
-                                padding: 0,
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                                transform: isSelected ? "scale(1.1)" : "scale(1)",
-                              }}
-                            >
-                              <img src={url} alt={`Avatar option ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            </button>
-                          );
-                        })}
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        <div style={{ display: "flex", gap: "0.35rem" }}>
+                          {[
+                            "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix",
+                            "https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka",
+                            "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack",
+                            "https://api.dicebear.com/7.x/adventurer/svg?seed=Bella",
+                            "https://api.dicebear.com/7.x/adventurer/svg?seed=Lily"
+                          ].map((url, index) => {
+                            const isSelected = regAvatarUrl === url;
+                            return (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={() => setRegAvatarUrl(url)}
+                                style={{
+                                  width: "28px", height: "28px", borderRadius: "50%", overflow: "hidden",
+                                  border: isSelected ? `2px solid ${activeConfig.color}` : "1px solid #E6E8E2",
+                                  padding: 0, cursor: "pointer", transition: "all 0.2s ease",
+                                  transform: isSelected ? "scale(1.1)" : "scale(1)",
+                                }}
+                              >
+                                <img src={url} alt={`Avatar option ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                  <label className="form-label">Nama Lengkap</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    required
-                    id="reg-name-input"
-                    placeholder="Masukkan nama lengkap Anda"
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                  <label className="form-label">Nomor Telepon</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    required
-                    id="reg-phone-input"
-                    placeholder="Contoh: 081234567890"
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                  <label className="form-label">Alamat Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    required
-                    id="reg-email-input"
-                    placeholder="nama@email.com"
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                  <label className="form-label">Kata Sandi</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    required
-                    id="reg-password-input"
-                    placeholder="Minimal 8 karakter"
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: "1.5rem" }}>
-                  <label className="form-label">Konfirmasi Kata Sandi</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    value={regConfirmPassword}
-                    onChange={(e) => setRegConfirmPassword(e.target.value)}
-                    required
-                    id="reg-confirm-password-input"
-                    placeholder="Ulangi kata sandi"
-                  />
-                </div>
-
-                {regSuccess && (
-                  <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-                    {regSuccess}
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Nama Lengkap</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      required
+                      id="reg-name-input"
+                      placeholder="Masukkan nama lengkap Anda"
+                    />
                   </div>
-                )}
 
-                {error && (
-                  <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
-                    {error}
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Nomor Telepon</label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      required
+                      id="reg-phone-input"
+                      placeholder="Contoh: 081234567890"
+                    />
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={isLoading}
-                  style={{
-                    width: "100%",
-                    padding: "0.75rem",
-                    justifyContent: "center",
-                    background: activeConfig.color,
-                    fontSize: "0.95rem"
-                  }}
-                  id="btn-register-submit"
-                >
-                  {isLoading ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                        <path d="M4 12a8 8 0 0 1 8-8" />
-                      </svg>
-                      Mendaftarkan ke server...
-                    </span>
-                  ) : (
-                    `Daftar sebagai ${activeConfig.title}`
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Alamat Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      required
+                      id="reg-email-input"
+                      placeholder="nama@email.com"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: "1.25rem" }}>
+                    <label className="form-label">Kata Sandi</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      id="reg-password-input"
+                      placeholder="Minimal 8 karakter"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                    <label className="form-label">Konfirmasi Kata Sandi</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      onFocus={(e) => (e.currentTarget.style.borderColor = activeConfig.color)}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "#E6E8E2")}
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      id="reg-confirm-password-input"
+                      placeholder="Ulangi kata sandi"
+                    />
+                  </div>
+
+                  {regSuccess && (
+                    <div className="badge badge-success" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+                      {regSuccess}
+                    </div>
                   )}
-                </button>
-              </form>
 
-              <div style={{ marginTop: "2rem", textAlign: "center" }}>
-                <span style={{ fontSize: "0.8rem", color: "#64748B" }}>
-                  Sudah memiliki akun?{" "}
+                  {error && (
+                    <div className="badge badge-danger" style={{ width: "100%", marginBottom: "1rem", display: "flex", justifyContent: "center" }}>
+                      {error}
+                    </div>
+                  )}
+
                   <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegistering(false);
-                      setError("");
-                    }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      color: activeConfig.color,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      fontSize: "0.8rem"
-                    }}
-                    id="btn-goto-login"
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading}
+                    style={{ width: "100%", padding: "0.85rem", background: activeConfig.color, fontSize: "0.95rem" }}
+                    id="btn-register-submit"
                   >
-                    Masuk disini
+                    {isLoading ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <svg style={{ animation: "spin 1s linear infinite" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                          <path d="M4 12a8 8 0 0 1 8-8" />
+                        </svg>
+                        Mendaftarkan ke server...
+                      </span>
+                    ) : (
+                      `Daftar sebagai ${activeConfig.title}`
+                    )}
                   </button>
-                </span>
-              </div>
-            </>
-          )}
+                </form>
+
+                <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
+                  <span style={{ fontSize: "0.8rem", color: "#5B6B60" }}>
+                    Sudah memiliki akun?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRegistering(false);
+                        setError("");
+                      }}
+                      style={{ background: "none", border: "none", padding: 0, color: activeConfig.color, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: "0.8rem" }}
+                      id="btn-goto-login"
+                    >
+                      Masuk disini
+                    </button>
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
