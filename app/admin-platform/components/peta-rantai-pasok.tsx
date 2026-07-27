@@ -154,8 +154,8 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
-export default function PetaRantaiPasok({ transaksiList = [] }: { transaksiList?: EscrowTx[] }) {
-  const [entitasList, setEntitasList] = useState<Entitas[]>([]);
+export default function PetaRantaiPasok({ entitasList: initialEntitasList, transaksiList = [] }: { entitasList?: Entitas[]; transaksiList?: EscrowTx[] }) {
+  const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitasList || []);
   const [loading, setLoading] = useState(true);
   const [tipeFilter, setTipeFilter] = useState<TipeEntitas | "">("");
   const [detail, setDetail] = useState<Entitas | null>(null);

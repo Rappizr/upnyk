@@ -284,9 +284,12 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         });
       });
 
+      const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
         const supplierTotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
         return await createOrderAction({
+          pembeli_id: userId,
           supplier,
           items,
           total: supplierTotal,

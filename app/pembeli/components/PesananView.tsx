@@ -136,7 +136,8 @@ export default function PesananView() {
   const loadOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getOrdersAction();
+      const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+      const data = await getOrdersAction(userId);
       setOrders(data || []);
       if (data && data.length > 0 && !expanded) {
         setExpanded(data[0].id);

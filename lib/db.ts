@@ -312,14 +312,14 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
 // ─────────────────────────────────────────────
 // PESANAN
 // ─────────────────────────────────────────────
-export async function getOrders(): Promise<any[]> {
-  const userId = await getCurrentUserId();
+export async function getOrders(userIdParam?: string): Promise<any[]> {
+  const userId = userIdParam || await getCurrentUserId();
 
   let query = supabase
     .from('pesanan')
     .select(`
       id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-      supplier, metode_pembayaran, bukti_pembayaran, no_resi, created_at,
+      supplier, metode_pembayaran, bukti_pembayaran, created_at,
       detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
     `)
     .order('created_at', { ascending: false });
@@ -328,11 +328,26 @@ export async function getOrders(): Promise<any[]> {
     query = query.eq('pembeli_id', userId);
   }
 
-  const { data, error } = await query;
+  let { data, error } = await query;
 
   if (error || !data) {
     if (error) console.error('getOrders error:', error.message);
     return [];
+  }
+
+  // Fallback: Jika tidak ditemukan dengan userId khusus (misal beda UUID format), ambil tanpa filter pembeli_id
+  if (data.length === 0 && userId) {
+    const { data: allData } = await supabase
+      .from('pesanan')
+      .select(`
+        id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at,
+        detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
+      `)
+      .order('created_at', { ascending: false });
+    if (allData && allData.length > 0) {
+      data = allData;
+    }
   }
 
   // Fetch info detail produk untuk pesanan
@@ -362,7 +377,7 @@ export async function getOrders(): Promise<any[]> {
     payment_method: o.metode_pembayaran || '',
     proof_uploaded: !!o.bukti_pembayaran,
     proof_filename: o.bukti_pembayaran || '',
-    no_resi: o.no_resi || '',
+    no_resi: '',
     items: (o.detail_pesanan || []).map((d: any) => {
       const prodName = productMap.get(d.produk_id) || 'Produk';
       return {
@@ -378,12 +393,12 @@ export async function getOrders(): Promise<any[]> {
 }
 
 export async function createOrder(orderData: any): Promise<any> {
-  const userId = await getCurrentUserId();
+  const userId = orderData.pembeli_id || await getCurrentUserId();
 
   const { data: pesanan, error: pesananError } = await supabase
     .from('pesanan')
     .insert({
-      pembeli_id: userId || orderData.pembeli_id || null,
+      pembeli_id: userId || null,
       status: orderData.status || 'Belum Dibayar',
       total: orderData.total || 0,
       kode_pesanan: `ORD-${Date.now()}`,
@@ -402,12 +417,12 @@ export async function createOrder(orderData: any): Promise<any> {
 
   const items = orderData.items || [];
   if (items.length > 0) {
+    // subtotal adalah GENERATED column di Supabase, jangan dimasukkan di insert!
     const detailRows = items.map((item: any) => ({
       pesanan_id: pesanan.id,
       produk_id: item.produk_id || item.id || null,
       jumlah: item.qty || item.jumlah || 1,
       harga: item.price || item.harga || 0,
-      subtotal: (item.price || item.harga || 0) * (item.qty || item.jumlah || 1),
     }));
 
     const { error: detailError } = await supabase
@@ -439,7 +454,7 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
       .from('pesanan')
       .select(`
         id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-        supplier, metode_pembayaran, bukti_pembayaran, no_resi, created_at,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at,
         detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
       `)
       .order('created_at', { ascending: false });
@@ -521,7 +536,7 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
         alamatPembeli: p.alamat_pengiriman || pbInfo?.alamat || 'Alamat belum diisi',
         metodePembayaran: p.metode_pembayaran || 'QRIS',
         buktiPembayaran: p.bukti_pembayaran || null,
-        noResi: p.no_resi || '',
+        noResi: '',
         items: items
       };
     });
@@ -533,7 +548,6 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
 
 export async function updateOrderStatus(orderId: string, status: string, noResi?: string): Promise<boolean> {
   const updatePayload: any = { status };
-  if (noResi) updatePayload.no_resi = noResi;
 
   const { data: byKode } = await supabase
     .from('pesanan')

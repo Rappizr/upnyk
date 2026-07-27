@@ -76,9 +76,9 @@ export async function updateProfileAction(profileData: {
 // ─────────────────────────────────────────────
 // PESANAN
 // ─────────────────────────────────────────────
-export async function getOrdersAction() {
+export async function getOrdersAction(userId?: string) {
   try {
-    return await getOrders();
+    return await getOrders(userId);
   } catch (e) {
     console.error("getOrdersAction:", e);
     return [];
