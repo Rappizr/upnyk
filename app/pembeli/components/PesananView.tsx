@@ -318,8 +318,15 @@ export default function PesananView() {
                 {/* Timeline */}
                 {expanded === order.id && timeline.length > 0 && (
                   <div style={{ padding: "1rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)" }}>
-                    <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-                      <LocationIcon size={16} /> Lini Masa Pelacakan Pesanan
+                    <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                        <LocationIcon size={16} /> Lini Masa Pelacakan Pesanan
+                      </span>
+                      {order.no_resi && (
+                        <span style={{ fontSize: "0.75rem", background: "#DBEAFE", color: "#1E40AF", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                          No. Resi: {order.no_resi}
+                        </span>
+                      )}
                     </div>
                     <div className="timeline">
                       {timeline.map((step: any, idx: number) => (

@@ -113,11 +113,11 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         setCoopStores([]);
       }
 
-      // 2. Ambil Produk Jualan dari tabel etalase yang status = 'tayang'
+      // 2. Ambil Produk Jualan dari tabel etalase
       const { data: etalaseData } = await supabase
         .from("etalase")
         .select("*")
-        .eq("status", "tayang")
+        .or("status.eq.tayang,status.eq.Tayang,status.eq.live,status.eq.aktif,status.is.null")
         .order("created_at", { ascending: false });
 
       if (etalaseData && etalaseData.length > 0) {

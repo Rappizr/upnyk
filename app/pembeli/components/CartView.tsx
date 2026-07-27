@@ -195,7 +195,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const loadCart = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await getCartAction();
+      const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+      const items = await getCartAction(userId);
       setCartItems(items || []);
       const totalCount = (items || []).reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
       onUpdateCartCount?.(totalCount);
@@ -538,18 +539,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
               <div style={{ textAlign: "center" }}>
                 <h3 style={{ margin: "0 0 0.5rem 0" }}>Pembayaran via QRIS</h3>
                 <p className="text-xs text-muted" style={{ marginBottom: "1.5rem" }}>Pindai kode QRIS di bawah ini untuk membayar instan</p>
-                <div style={{ margin: "0 auto 1.5rem auto", width: "180px", height: "180px", border: "1px solid var(--color-border)", padding: "8px", background: "white", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px", width: "100%", height: "100%" }}>
-                    {Array.from({ length: 16 }).map((_, idx) => (
-                      <div 
-                        key={idx} 
-                        style={{ 
-                          background: (idx % 2 === 0 && idx % 3 !== 0) || idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "#000000" : "#ffffff",
-                          border: idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "2px solid #000000" : "none" 
-                        }} 
-                      />
-                    ))}
-                  </div>
+                <div style={{ margin: "0 auto 1.5rem auto", width: "220px", border: "1px solid var(--color-border)", borderRadius: "12px", padding: "12px", background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                  <img src="/qris.png" alt="QRIS PasarNusa" style={{ width: "100%", height: "auto", borderRadius: "8px", objectFit: "contain" }} />
                 </div>
                 <div className="badge badge-warning" style={{ fontWeight: 600 }}>PasarNusa Merchant ID: PN90218</div>
               </div>

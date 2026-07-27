@@ -9,6 +9,7 @@ import {
   addInventarisAdminToko,
   updateInventarisStok,
 } from "@/lib/db";
+import { getPenjualanAdminTokoAction, updateOrderStatusAction } from "@/app/actions";
 
 import MarketplaceProdusen from "./components/marketplace-produsen";
 import InventarisGrading from "./components/inventaris-grading";
@@ -16,7 +17,7 @@ import SmartRestock from "./components/smart-restock";
 import EtalasePenjualan from "./components/etalase-penjualan";
 import LaporanBukuKas from "./components/laporan-buku-kas";
 import ProfilTokoPage from "./components/profil-toko";
-import PelacakanPesanan from "./components/pelacakan-pesanan";
+import PelacakanPesanan, { Penjualan } from "./components/pelacakan-pesanan";
 
 export type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -60,18 +61,6 @@ export interface Pembelian {
   fotoUlasan?: string;
   keteranganUlasan?: string;
   lokasiProdusen?: string;
-}
-
-export interface Penjualan {
-  id: string;
-  pembeli: string;
-  produk: string;
-  jumlah: number;
-  total: number;
-  tanggal: string;
-  status?: "Menunggu" | "Diproses" | "Dikirim" | "Diterima" | "Selesai" | "Dibatalkan";
-  alamatPembeli?: string;
-  noResi?: string;
 }
 
 const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
@@ -169,7 +158,7 @@ export default function AdminTokoDashboard() {
   const [produsenList, setProdusenList] = useState<Produsen[]>([]);
   const [stokList, setStokList] = useState<StokToko[]>([]);
   const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
-  const [penjualanList] = useState<Penjualan[]>([]);
+  const [penjualanList, setPenjualanList] = useState<Penjualan[]>([]);
 
   const periksaKelengkapanAdmin = useCallback(async () => {
     try {
@@ -264,6 +253,15 @@ export default function AdminTokoDashboard() {
     }
   }, []);
 
+  const fetchPenjualan = useCallback(async () => {
+    try {
+      const list = await getPenjualanAdminTokoAction();
+      setPenjualanList(list || []);
+    } catch (err) {
+      console.error("fetchPenjualan error:", err);
+    }
+  }, []);
+
   const fetchProdusenList = useCallback(async () => {
     try {
       const { data: produsenData } = await supabase.from("produsen").select("id, nama_usaha, desa, kabupaten, kategori").eq("status", "aktif");
@@ -299,9 +297,10 @@ export default function AdminTokoDashboard() {
   }, [fetchProdusenList]);
 
   useEffect(() => {
-  periksaKelengkapanAdmin();
-  fetchInventaris();
-}, []);
+    periksaKelengkapanAdmin();
+    fetchInventaris();
+    fetchPenjualan();
+  }, [periksaKelengkapanAdmin, fetchInventaris, fetchPenjualan]);
 
   function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
     const produsen = produsenList.find((p) => p.id === produsenId);
@@ -332,6 +331,13 @@ export default function AdminTokoDashboard() {
     await fetchInventaris();
   }
 
+  async function handleUpdateStatusPenjualan(orderId: string, status: string, noResi?: string) {
+    const ok = await updateOrderStatusAction(orderId, status, noResi);
+    if (ok) {
+      await fetchPenjualan();
+    }
+  }
+
   async function updateStok(id: string, patch: Partial<StokToko>) {
     let updatedList = stokList.map((item) => {
       if (item.id === id || item.produk_id === id) {
@@ -346,8 +352,8 @@ export default function AdminTokoDashboard() {
     }
   }
 
-  const pesananMenunggu = pembelianList.filter((p) => p.status === "Menunggu" || p.status === "Dikirim").length;
-  const totalOmset = penjualanList.reduce((s, p) => s + p.total, 0);
+  const pesananMenunggu = penjualanList.filter((p) => p.status === "Belum Dibayar" || p.status === "Diproses").length;
+  const totalOmset = penjualanList.filter((p) => p.status === "Selesai" || p.status === "Dikirim" || p.status === "Diproses").reduce((s, p) => s + p.total, 0);
 
   function selectMenu(key: string) {
     if (isSuspended) {
@@ -530,6 +536,7 @@ export default function AdminTokoDashboard() {
             pembelianList={pembelianList} 
             penjualanList={penjualanList}
             terimaPesanan={terimaPembelian} 
+            updateStatusPenjualan={handleUpdateStatusPenjualan}
             alamatToko={alamatToko} 
             tabDefault={activeMenu === "pelacakan-toko-pembeli" ? "toko-pembeli" : "produsen-toko"}
           />

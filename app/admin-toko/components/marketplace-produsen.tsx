@@ -648,16 +648,8 @@ export default function MarketplaceProdusen({
                   {selectedPayment === "qris" ? (
                     <div style={{ textAlign: "center" }}>
                       <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.5rem" }}>Pindai QRIS PasarNusa</div>
-                      <div style={{ margin: "0 auto 0.75rem auto", width: "120px", height: "120px", border: "1px solid #CBD5E1", padding: "6px", background: "white", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "3px" }}>
-                        {Array.from({ length: 16 }).map((_, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              background: (idx % 2 === 0 && idx % 3 !== 0) || idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "#000000" : "#ffffff",
-                              border: idx === 0 || idx === 3 || idx === 12 || idx === 15 ? "2px solid #000000" : "none"
-                            }}
-                          />
-                        ))}
+                      <div style={{ margin: "0 auto 0.75rem auto", width: "180px", border: "1px solid #CBD5E1", borderRadius: "10px", padding: "8px", background: "white", boxShadow: "0 2px 6px rgba(0,0,0,0.05)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <img src="/qris.png" alt="QRIS PasarNusa" style={{ width: "100%", height: "auto", borderRadius: "6px", objectFit: "contain" }} />
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "#64748B", fontWeight: 600 }}>PasarNusa Merchant ID: PN-PRD-902</div>
                     </div>
