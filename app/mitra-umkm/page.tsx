@@ -321,7 +321,7 @@ export default function MitraUmkmPage() {
           </h1>
 
           <p className="hero-desc" style={{ fontSize: "1.18rem", color: "#CFE7D6", lineHeight: 1.7, maxWidth: "680px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
-            Setiap mitra di direktori ini adalah toko dan produsen binaan PasarNusa yang terdaftar resmi dan terverifikasi di sistem kami — transparan, terukur, dan bisa diaudit.
+            Setiap mitra di direktori ini adalah toko dan produsen binaan PasarNusa yang terdaftar resmi dan terverifikasi di sistem kami: transparan, terukur, dan bisa diaudit.
           </p>
 
           <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.1rem", maxWidth: "660px", marginLeft: "auto", marginRight: "auto" }}>

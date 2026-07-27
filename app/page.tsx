@@ -32,7 +32,6 @@ export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const mitraCount = useCountUp(2400, 1800, statsVisible);
   const indeksCount = useCountUp(82, 1800, statsVisible);
@@ -42,33 +41,6 @@ export default function LandingPage() {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = 0.4;
-
-    const tryPlay = () => { audio.play().catch(() => {}); };
-    tryPlay();
-
-    const onFirstInteraction = () => {
-      tryPlay();
-      window.removeEventListener("click", onFirstInteraction);
-      window.removeEventListener("scroll", onFirstInteraction);
-      window.removeEventListener("keydown", onFirstInteraction);
-      window.removeEventListener("touchstart", onFirstInteraction);
-    };
-    window.addEventListener("click", onFirstInteraction);
-    window.addEventListener("scroll", onFirstInteraction);
-    window.addEventListener("keydown", onFirstInteraction);
-    window.addEventListener("touchstart", onFirstInteraction);
-    return () => {
-      window.removeEventListener("click", onFirstInteraction);
-      window.removeEventListener("scroll", onFirstInteraction);
-      window.removeEventListener("keydown", onFirstInteraction);
-      window.removeEventListener("touchstart", onFirstInteraction);
-    };
   }, []);
 
   useEffect(() => {
@@ -124,8 +96,6 @@ export default function LandingPage() {
 
   return (
     <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden", scrollBehavior: "smooth" }}>
-
-      <audio ref={audioRef} src="/bgm.mp3" loop autoPlay style={{ display: "none" }} />
 
       <style dangerouslySetInnerHTML={{__html: `
         .pn-root {
@@ -275,7 +245,7 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SECTION */}
-      <section className="hero-section" style={{ minHeight: "87vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "6rem 1.5rem 4rem" }}>
+      <section className="hero-section" style={{ minHeight: "92vh", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", position: "relative", overflow: "hidden", padding: "6rem 1.5rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} style={{
             position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
@@ -298,7 +268,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="hero-desc" style={{ fontSize: "clamp(0.85rem, 2vw, 1.15rem)", color: "#C7D6CC", maxWidth: "680px", margin: "0 auto 2.5rem", lineHeight: 1.6, fontWeight: 400 }}>
-            PasarNusa memutus rantai tengkulak dan mengubah perantara informal menjadi koperasi digital yang transparan — setiap harga, transaksi, dan margin bisa diaudit sistem.
+            PasarNusa memutus rantai tengkulak dan mengubah perantara informal menjadi koperasi digital yang transparan. Setiap harga, transaksi, dan margin bisa diaudit sistem.
           </p>
 
           <div className="hero-btn-group" style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "nowrap" }}>

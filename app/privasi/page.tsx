@@ -145,7 +145,7 @@ export default function PrivasiPage() {
             Kebijakan Privasi <br /><span className="gradient-text">Ekosistem PasarNusa</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
-            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok — dan aset itu paling mudah disalahgunakan kalau kebijakannya cuma basa-basi. Berikut yang kami kumpulkan, kami pakai, dan kami lindungi, secara eksplisit tanpa istilah kabur.
+            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok, dan aset itu paling mudah disalahgunakan kalau kebijakannya cuma basa-basi. Berikut yang kami kumpulkan, kami pakai, dan kami lindungi, secara eksplisit tanpa istilah kabur.
           </p>
         </div>
       </section>
@@ -157,7 +157,7 @@ export default function PrivasiPage() {
           <div className="intro-block" style={{ marginBottom: "3.5rem", textAlign: "left" }}>
             <h3 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0F172A", marginBottom: "1rem", letterSpacing: "-0.02em" }}>Komitmen Privasi Kami</h3>
             <p style={{ color: "#475569", fontSize: "1.05rem", lineHeight: 1.7, margin: 0 }}>
-              PasarNusa mengoperasikan platform manajemen rantai pasok rural yang menghubungkan produsen pelosok, Admin Toko/koperasi, dan pembeli kota. Karena data yang kami kumpulkan langsung dari lapangan — koordinat lahan, riwayat panen, saldo digital — kebijakan ini menjelaskan secara spesifik apa yang kami kumpulkan, untuk apa, dan siapa yang bisa mengaksesnya. Tidak ada klausul yang sengaja dibuat kabur.
+              PasarNusa mengoperasikan platform manajemen rantai pasok rural yang menghubungkan produsen pelosok, Admin Toko/koperasi, dan pembeli kota. Karena data yang kami kumpulkan langsung dari lapangan, koordinat lahan, riwayat panen, saldo digital, kebijakan ini menjelaskan secara spesifik apa yang kami kumpulkan, untuk apa, dan siapa yang bisa mengaksesnya. Tidak ada klausul yang sengaja dibuat kabur.
             </p>
           </div>
         </Reveal>
@@ -193,7 +193,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>2. Bagaimana Kami Menggunakan Data Anda</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, marginBottom: "1.25rem" }}>
-              Informasi yang dikumpulkan dipakai untuk menggerakkan efisiensi rantai pasok secara proaktif — bukan untuk tujuan lain, dan bukan untuk dijual ke pihak ketiga mana pun:
+              Informasi yang dikumpulkan dipakai untuk menggerakkan efisiensi rantai pasok secara proaktif, bukan untuk tujuan lain, dan bukan untuk dijual ke pihak ketiga mana pun:
             </p>
             <div className="list-item">
               <CheckCircle2 size={18} color="#10B981" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
@@ -217,7 +217,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>3. Perlindungan &amp; Keamanan Data</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
-              Seluruh jejak transaksi digital, laporan audit keuangan, dan saldo Wallet Produsen dilindungi dengan enkripsi tingkat server. Dana dari pembeli dikunci oleh sistem Escrow dan baru didepositkan ke Wallet pihak yang berhak setelah status pengiriman dikonfirmasi selesai — bukan begitu transaksi dibuat, dan bukan berdasarkan kepercayaan sepihak.
+              Seluruh jejak transaksi digital, laporan audit keuangan, dan saldo Wallet Produsen dilindungi dengan enkripsi tingkat server. Dana dari pembeli dikunci oleh sistem Escrow dan baru didepositkan ke Wallet pihak yang berhak setelah status pengiriman dikonfirmasi selesai, bukan begitu transaksi dibuat dan bukan berdasarkan kepercayaan sepihak.
             </p>
           </div>
         </Reveal>
@@ -229,7 +229,7 @@ export default function PrivasiPage() {
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>4. Keterbukaan Data Pihak Ketiga &amp; Lembaga</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
-              Sebagai bentuk dukungan pada inklusi keuangan, riwayat kredit dan buku kas digital produsen hulu dapat dibagikan kepada lembaga keuangan mitra (seperti penyedia kredit mikro) <strong>hanya jika</strong> pengguna yang bersangkutan memberi persetujuan eksplisit. Kami tidak menjual data pribadi kepada broker iklan komersial mana pun — titik, tanpa pengecualian tersembunyi di baris kecil.
+              Sebagai bentuk dukungan pada inklusi keuangan, riwayat kredit dan buku kas digital produsen hulu dapat dibagikan kepada lembaga keuangan mitra (seperti penyedia kredit mikro) <strong>hanya jika</strong> pengguna yang bersangkutan memberi persetujuan eksplisit. Kami tidak menjual data pribadi kepada broker iklan komersial mana pun. Titik. Tanpa pengecualian tersembunyi di baris kecil.
             </p>
           </div>
         </Reveal>

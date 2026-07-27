@@ -18,9 +18,9 @@ export default function TentangKamiPage() {
   ];
 
   const pilar = [
-    { icon: Scale, accent: "#12864E", soft: "#E7F3EC", title: "Indeks Harga Adil", desc: "Metrik kuantitatif yang membandingkan harga platform terhadap estimasi harga tengkulak — mengubah \u201charga adil\u201d dari slogan menjadi angka yang bisa diverifikasi siapa pun." },
+    { icon: Scale, accent: "#12864E", soft: "#E7F3EC", title: "Indeks Harga Adil", desc: "Metrik kuantitatif yang membandingkan harga platform terhadap estimasi harga tengkulak, mengubah \u201charga adil\u201d dari slogan menjadi angka yang bisa diverifikasi siapa pun." },
     { icon: Zap, accent: "#D98A2B", soft: "#FBF0DF", title: "Smart Restock Proaktif", desc: "Sistem pengingat otomatis berbasis jadwal panen riil, memungkinkan koperasi digital menjemput hasil panen lebih dulu daripada tengkulak konvensional." },
-    { icon: Globe2, accent: "#0E7490", soft: "#E1F1F4", title: "Escrow System Terjamin", desc: "Dana pembeli ditahan aman hingga barang diterima, baru dibagi otomatis ke dompet digital produsen dan toko — menghilangkan risiko gagal bayar sepenuhnya." }
+    { icon: Globe2, accent: "#0E7490", soft: "#E1F1F4", title: "Escrow System Terjamin", desc: "Dana pembeli ditahan aman hingga barang diterima, baru dibagi otomatis ke dompet digital produsen dan toko, sehingga menghilangkan risiko gagal bayar sepenuhnya." }
   ];
 
   const tim = [
@@ -206,7 +206,7 @@ export default function TentangKamiPage() {
             Memutus Rantai Tengkulak,<br />Membangun <span className="grad-text">Harga yang Adil</span>
           </h1>
           <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#C7D6CC", lineHeight: 1.7, fontWeight: 400, maxWidth: "720px", margin: "0 auto" }}>
-            PasarNusa mengubah peran perantara informal yang tidak transparan menjadi koperasi digital yang setiap margin, harga, dan transaksinya tercatat sistem dan dapat diaudit — dibuktikan lewat Indeks Harga Adil yang terukur, bukan sekadar janji.
+            PasarNusa mengubah peran perantara informal yang tidak transparan menjadi koperasi digital yang setiap margin, harga, dan transaksinya tercatat sistem dan dapat diaudit & dibuktikan lewat Indeks Harga Adil yang terukur, bukan sekadar janji.
           </p>
         </div>
       </section>
@@ -234,7 +234,7 @@ export default function TentangKamiPage() {
             <span style={{ color: "var(--rust)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>Akar Permasalahan</span>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--ink)", marginTop: "0.5rem", letterSpacing: "-0.03em", lineHeight: 1.18 }}>Mengapa PasarNusa Harus Ada?</h2>
             <p style={{ color: "var(--muted)", fontSize: "1.05rem", lineHeight: 1.7, marginTop: "1rem" }}>
-              Empat kesenjangan berikut saling mengunci satu sama lain di lapangan — menjebak produsen pelosok dalam siklus ketergantungan pada tengkulak selama puluhan tahun.
+              Empat kesenjangan berikut saling mengunci satu sama lain di lapangan, menjebak produsen pelosok dalam siklus ketergantungan pada tengkulak selama puluhan tahun.
             </p>
           </div>
           <div className="problem-grid-cards" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
@@ -264,7 +264,7 @@ export default function TentangKamiPage() {
             </div>
             <h3 style={{ fontSize: "1.7rem", fontWeight: 800, color: "var(--ink)", marginBottom: "1.1rem", letterSpacing: "-0.02em" }}>Visi Kami</h3>
             <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: "1.08rem", margin: 0 }}>
-              Menjadi infrastruktur rantai pasok rural paling dipercaya di Indonesia — tempat harga yang adil bukan lagi janji pemasaran, melainkan angka yang bisa dibuktikan setiap hari oleh sistemnya sendiri.
+              Menjadi infrastruktur rantai pasok rural paling dipercaya di Indonesia, tempat harga yang adil bukan lagi janji pemasaran, melainkan angka yang bisa dibuktikan setiap hari oleh sistemnya sendiri.
             </p>
           </div>
 
