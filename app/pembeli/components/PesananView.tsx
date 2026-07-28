@@ -158,7 +158,6 @@ export default function PesananView() {
       const success = await updateOrderStatusAction(orderId, status);
       if (success) {
         await loadOrders();
-        alert(`Status pesanan berhasil diupdate menjadi: ${status}`);
       } else {
         alert("Gagal memperbarui status pesanan.");
       }

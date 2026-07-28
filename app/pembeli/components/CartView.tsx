@@ -300,8 +300,12 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
         });
       });
 
-      await Promise.all(orderPromises);
-      
+      const createdOrders = await Promise.all(orderPromises);
+      if (createdOrders.length > 0 && createdOrders.every(res => res === null)) {
+        alert("Gagal memproses pesanan ke database. Silakan coba lagi.");
+        return;
+      }
+
       setOrderSummary({
         itemsCount: cartItems.reduce((sum, item) => sum + (item.qty || 1), 0),
         subtotal,
@@ -321,7 +325,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
 
       await clearCartAction();
       setCartItems([]);
-      onCartUpdated();
+      if (onCartUpdated) onCartUpdated();
+      if (onUpdateCartCount) onUpdateCartCount(0);
       setStep("success");
     } catch (e) {
       console.error("Gagal checkout:", e);

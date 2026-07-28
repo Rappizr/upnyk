@@ -125,7 +125,13 @@ export default function MarketplaceView({
 
       const wlData = await getWishlist();
       if (wlData) {
-        setWishlistedIds(wlData.map((w: any) => w.product_id || w.id));
+        const ids: string[] = [];
+        wlData.forEach((w: any) => {
+          if (w.product_id) ids.push(w.product_id);
+          if (w.id) ids.push(w.id);
+          if (w.product?.id) ids.push(w.product.id);
+        });
+        setWishlistedIds(Array.from(new Set(ids)));
       }
 
     } catch (err) {

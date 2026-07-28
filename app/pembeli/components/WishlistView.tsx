@@ -41,10 +41,12 @@ function LocationIcon({ size = 16, className = "", ...props }: any) {
 
 export default function WishlistView({ 
   onCartUpdated, 
-  onNavigateMarketplace 
+  onNavigateMarketplace,
+  onNavigateToCart
 }: { 
   onCartUpdated?: () => void;
   onNavigateMarketplace?: () => void;
+  onNavigateToCart?: () => void;
 }) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,51 +58,20 @@ export default function WishlistView({
       const wishData = await getWishlistAction();
       
       if (wishData && wishData.length > 0) {
-        const prodIds = wishData.map((w: any) => w.product_id).filter(Boolean);
-
-        // Fetch detail etalase
-        let etalaseMap = new Map();
-        let tokoMap = new Map();
-
-        if (prodIds.length > 0) {
-          const { data: etalaseList } = await supabase
-            .from("etalase")
-            .select("*")
-            .in("id", prodIds);
-
-          if (etalaseList && etalaseList.length > 0) {
-            etalaseMap = new Map(etalaseList.map((e) => [e.id, e]));
-
-            const tokoIds = etalaseList.map((e) => e.admin_toko_id).filter(Boolean);
-            if (tokoIds.length > 0) {
-              const { data: tokoList } = await supabase
-                .from("admin_toko")
-                .select("id, nama_toko, desa, kabupaten")
-                .in("id", tokoIds);
-
-              if (tokoList) {
-                tokoMap = new Map(tokoList.map((t) => [t.id, t]));
-              }
-            }
-          }
-        }
-
         const formattedItems = wishData.map((w: any) => {
-          const etalaseObj = etalaseMap.get(w.product_id) || w.product || {};
-          const tokoObj = tokoMap.get(etalaseObj.admin_toko_id);
-          const lokasi = [tokoObj?.desa, tokoObj?.kabupaten].filter(Boolean).join(", ") || "Indonesia";
-
+          const p = w.product || {};
           return {
             id: w.id || w.product_id,
             product_id: w.product_id,
             product: {
-              id: etalaseObj.id || w.product_id,
-              name: etalaseObj.nama_produk || etalaseObj.name || "Produk Toko",
-              price: Number(etalaseObj.harga_jual) || Number(etalaseObj.price) || 0,
-              stock: Number(etalaseObj.stok || etalaseObj.stock) > 0 ? "Tersedia" : "Habis",
-              supplier: tokoObj?.nama_toko || etalaseObj.supplier || "Toko Mitra",
-              origin: lokasi,
-              foto: etalaseObj.foto || null,
+              id: p.id || w.product_id,
+              name: p.name || p.nama_produk || "Produk Favorit",
+              price: Number(p.price) || Number(p.harga_jual) || 0,
+              stock: p.stock || "Tersedia",
+              supplier: p.supplier || "Toko Mitra",
+              origin: p.origin || "Indonesia",
+              foto: p.foto || p.image || null,
+              icon_type: p.icon_type || "rice"
             },
             price_dropped: false,
             saved_at: "Baru saja"
@@ -138,19 +109,23 @@ export default function WishlistView({
 const handleCheckoutAll = async () => {
   try {
     setLoading(true);
-    // PERBAIKAN: Gunakan Promise.all untuk eksekusi paralel instan
     await Promise.all(
       items.map(async (item) => {
-        if (item.product) {
-          await addToCartAction(item.product.id, 1);
-          await removeFromWishlistAction(item.product_id || item.product.id);
+        const prodId = item.product_id || item.product?.id || item.id;
+        if (prodId) {
+          await addToCartAction(prodId, 1);
+          await removeFromWishlistAction(prodId);
         }
       })
     );
 
     setItems([]);
     if (onCartUpdated) onCartUpdated();
-    alert("Semua item berhasil dipindahkan ke keranjang!");
+    if (onNavigateToCart) onNavigateToCart();
+
+    setTimeout(() => {
+      alert("Semua item berhasil dipindahkan! Anda sekarang berada di Keranjang Belanja.");
+    }, 150);
   } catch (err) {
     console.error("Error batch checkout wishlist:", err);
     alert("Gagal memindahkan sebagian item ke keranjang.");
@@ -247,9 +222,11 @@ const handleCheckoutAll = async () => {
                     <button 
                       className="btn-secondary" 
                       onClick={async () => {
-                        await addToCartAction(p.id, 1);
+                        const targetId = item.product_id || p.id || item.id;
+                        await addToCartAction(targetId, 1);
                         await remove(item.product_id, item.id);
                         if (onCartUpdated) onCartUpdated();
+                        if (onNavigateToCart) onNavigateToCart();
                       }}
                       style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} 
                       id={`btn-wl-cart-${item.id}`}

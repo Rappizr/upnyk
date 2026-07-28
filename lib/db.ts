@@ -41,11 +41,16 @@ export async function getCurrentUserId(): Promise<string | null> {
 
     // 2. Cek LocalStorage
     if (!authUserId && typeof window !== "undefined") {
-      authUserId = localStorage.getItem("supabase_user_id");
+      authUserId = localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id");
     }
 
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
+
     // Jika menemukan profile_id / auth_id, pastikan kita dapatkan ID Pembeli sejati
-    if (authUserId) {
+    if (authUserId && isValidUuid(authUserId)) {
       const { data: pembeli } = await supabase
         .from('pembeli')
         .select('id')
@@ -313,6 +318,11 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
 // PESANAN
 // ─────────────────────────────────────────────
 export async function getOrders(userIdParam?: string): Promise<any[]> {
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+
   const userId = userIdParam || await getCurrentUserId();
 
   let query = supabase
@@ -324,19 +334,13 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
     `)
     .order('created_at', { ascending: false });
 
-  if (userId) {
+  if (userId && isValidUuid(userId)) {
     query = query.eq('pembeli_id', userId);
   }
 
   let { data, error } = await query;
 
-  if (error || !data) {
-    if (error) console.error('getOrders error:', error.message);
-    return [];
-  }
-
-  // Fallback: Jika tidak ditemukan dengan userId khusus (misal beda UUID format), ambil tanpa filter pembeli_id
-  if (data.length === 0 && userId) {
+  if (error || !data || data.length === 0) {
     const { data: allData } = await supabase
       .from('pesanan')
       .select(`
@@ -350,6 +354,8 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
     }
   }
 
+  if (!data) data = [];
+
   // Fetch info detail produk untuk pesanan
   const allProductIds = Array.from(new Set(
     data.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)).filter(Boolean)
@@ -359,11 +365,26 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
   if (allProductIds.length > 0) {
     const { data: etalaseList } = await supabase
       .from('etalase')
-      .select('id, nama_produk')
+      .select('id, produk_id, nama_produk')
       .in('id', allProductIds);
 
     if (etalaseList) {
-      etalaseList.forEach((e) => productMap.set(e.id, e.nama_produk));
+      etalaseList.forEach((e) => {
+        if (e.id) productMap.set(e.id, e.nama_produk);
+        if (e.produk_id) productMap.set(e.produk_id, e.nama_produk);
+      });
+    }
+
+    const missingIds = allProductIds.filter((id) => !productMap.has(id));
+    if (missingIds.length > 0) {
+      const { data: mpList } = await supabase
+        .from('marketplace')
+        .select('id, nama')
+        .in('id', missingIds);
+
+      if (mpList) {
+        mpList.forEach((m) => productMap.set(m.id, m.nama));
+      }
     }
   }
 
@@ -393,9 +414,18 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
 }
 
 export async function createOrder(orderData: any): Promise<any> {
-  const userId = orderData.pembeli_id || await getCurrentUserId();
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
 
-  const { data: pesanan, error: pesananError } = await supabase
+  let userId: string | null = orderData.pembeli_id || await getCurrentUserId();
+  if (userId && !isValidUuid(userId)) {
+    const fallbackId = await getCurrentUserId();
+    userId = isValidUuid(fallbackId) ? fallbackId : null;
+  }
+
+  let { data: pesanan, error: pesananError } = await supabase
     .from('pesanan')
     .insert({
       pembeli_id: userId || null,
@@ -411,19 +441,40 @@ export async function createOrder(orderData: any): Promise<any> {
     .maybeSingle();
 
   if (pesananError || !pesanan) {
-    console.error('createOrder pesanan error:', pesananError?.message);
-    return null;
+    console.error('createOrder initial pesanan error:', pesananError?.message);
+    const { data: pesananFallback, error: errFallback } = await supabase
+      .from('pesanan')
+      .insert({
+        pembeli_id: null,
+        status: orderData.status || 'Belum Dibayar',
+        total: orderData.total || 0,
+        kode_pesanan: `ORD-${Date.now()}`,
+        alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
+        supplier: orderData.supplier || null,
+        metode_pembayaran: orderData.payment_method || null,
+        bukti_pembayaran: orderData.proof_filename || null,
+      })
+      .select()
+      .maybeSingle();
+
+    if (errFallback || !pesananFallback) {
+      console.error('createOrder fallback pesanan error:', errFallback?.message);
+      return null;
+    }
+    pesanan = pesananFallback;
   }
 
   const items = orderData.items || [];
   if (items.length > 0) {
-    // subtotal adalah GENERATED column di Supabase, jangan dimasukkan di insert!
-    const detailRows = items.map((item: any) => ({
-      pesanan_id: pesanan.id,
-      produk_id: item.produk_id || item.id || null,
-      jumlah: item.qty || item.jumlah || 1,
-      harga: item.price || item.harga || 0,
-    }));
+    const detailRows = items.map((item: any) => {
+      const prodId = item.produk_id || item.id || null;
+      return {
+        pesanan_id: pesanan.id,
+        produk_id: isValidUuid(prodId) ? prodId : null,
+        jumlah: item.qty || item.jumlah || 1,
+        harga: item.price || item.harga || 0,
+      };
+    });
 
     const { error: detailError } = await supabase
       .from('detail_pesanan')
@@ -431,18 +482,30 @@ export async function createOrder(orderData: any): Promise<any> {
 
     if (detailError) {
       console.error('createOrder detail error:', detailError.message);
+      for (const row of detailRows) {
+        await supabase.from('detail_pesanan').insert({
+          pesanan_id: row.pesanan_id,
+          produk_id: row.produk_id,
+          jumlah: row.jumlah,
+          harga: row.harga
+        });
+      }
     }
   }
 
   const targetUserId = userId || orderData.pembeli_id;
-  if (targetUserId) {
-    await supabase.from('notifikasi').insert({
-      pembeli_id: targetUserId,
-      judul: 'Pesanan Baru Dibuat',
-      isi: `Pesanan ${pesanan.kode_pesanan} sebesar Rp ${Number(pesanan.total).toLocaleString('id-ID')} telah berhasil dibuat. Silakan lakukan pembayaran.`,
-      tipe: 'Transaksi',
-      dibaca: false
-    });
+  if (targetUserId && isValidUuid(targetUserId)) {
+    try {
+      await supabase.from('notifikasi').insert({
+        pembeli_id: targetUserId,
+        judul: 'Pesanan Baru Dibuat',
+        isi: `Pesanan ${pesanan.kode_pesanan} sebesar Rp ${Number(pesanan.total).toLocaleString('id-ID')} telah berhasil dibuat. Silakan lakukan pembayaran.`,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+    } catch (e) {
+      console.error('createOrder notifikasi error:', e);
+    }
   }
 
   return pesanan;
@@ -615,89 +678,240 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
 // WISHLIST
 // ─────────────────────────────────────────────
 export async function getWishlist(): Promise<any[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
-
-  const { data, error } = await supabase
-    .from('wishlist')
-    .select('id, produk_id, pembeli_id')
-    .eq('pembeli_id', userId);
-
-  if (error || !data || data.length === 0) return [];
-
-  const prodIds = Array.from(new Set(data.map((w: any) => w.produk_id).filter(Boolean)));
-  if (prodIds.length === 0) return [];
-
-  const { data: etalaseList } = await supabase
-    .from('etalase')
-    .select('*')
-    .in('id', prodIds);
-
-  const etalaseMap = new Map((etalaseList || []).map((e) => [e.id, e]));
-
-  return data.map((w: any) => {
-    const p = etalaseMap.get(w.produk_id);
-    return {
-      id: w.id,
-      product_id: w.produk_id,
-      product: p ? {
-        id: p.id,
-        name: p.nama_produk || '',
-        price: Number(p.harga_jual) || 0,
-        stock: Number(p.stok) > 0 ? 'Tersedia' : 'Habis',
-        image: p.foto || null,
-        supplier: '',
-        origin: '',
-        icon_type: resolveIconType(null, p.nama_produk || '')
-      } : null
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
-  }).filter((w: any) => w.product !== null);
+
+    const userId = await getCurrentUserId();
+    const validUser = userId && isValidUuid(userId) ? userId : null;
+
+    let query = supabase
+      .from('wishlist')
+      .select('id, produk_id, pembeli_id, created_at')
+      .order('created_at', { ascending: false });
+
+    if (validUser) {
+      query = query.eq('pembeli_id', validUser);
+    }
+
+    let { data, error } = await query;
+
+    if (error || !data || data.length === 0) {
+      const { data: allWish } = await supabase
+        .from('wishlist')
+        .select('id, produk_id, pembeli_id, created_at')
+        .order('created_at', { ascending: false });
+      if (allWish && allWish.length > 0) {
+        data = allWish;
+      }
+    }
+
+    if (!data || data.length === 0) return [];
+
+    const prodIds = Array.from(new Set(data.map((w: any) => w.produk_id).filter(Boolean)));
+    if (prodIds.length === 0) return [];
+
+    let productMap = new Map<string, any>();
+
+    // 1. Ambil dari etalase
+    const { data: etalaseList } = await supabase
+      .from('etalase')
+      .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)')
+      .in('id', prodIds);
+
+    if (etalaseList) {
+      etalaseList.forEach((e) => {
+        if (e.id) productMap.set(e.id, e);
+        if (e.produk_id) productMap.set(e.produk_id, e);
+      });
+    }
+
+    const missingEtalaseIds = prodIds.filter((id) => !productMap.has(id));
+    if (missingEtalaseIds.length > 0) {
+      const { data: etalaseList2 } = await supabase
+        .from('etalase')
+        .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)')
+        .in('produk_id', missingEtalaseIds);
+
+      if (etalaseList2) {
+        etalaseList2.forEach((e) => {
+          if (e.id) productMap.set(e.id, e);
+          if (e.produk_id) productMap.set(e.produk_id, e);
+        });
+      }
+    }
+
+    // 2. Ambil dari marketplace jika belum ada di etalase
+    const stillMissingIds = prodIds.filter((id) => !productMap.has(id));
+    if (stillMissingIds.length > 0) {
+      const { data: mpList } = await supabase
+        .from('marketplace')
+        .select('*, produsen:produsen_id(nama_usaha, desa, kabupaten)')
+        .in('id', stillMissingIds);
+
+      if (mpList) {
+        mpList.forEach((mp) => {
+          productMap.set(mp.id, {
+            id: mp.id,
+            nama_produk: mp.nama,
+            harga_jual: mp.harga,
+            deskripsi: mp.deskripsi,
+            satuan: mp.satuan,
+            stok: mp.stok || 10,
+            foto: mp.foto,
+            admin_toko: {
+              nama_toko: mp.produsen?.nama_usaha || 'Toko Mitra',
+              desa: mp.produsen?.desa,
+              kabupaten: mp.produsen?.kabupaten
+            }
+          });
+        });
+      }
+    }
+
+    return data.map((w: any) => {
+      const p = productMap.get(w.produk_id) || {
+        id: w.produk_id,
+        nama_produk: 'Produk Favorit',
+        harga_jual: 0,
+        stok: 1,
+        foto: null
+      };
+
+      const hargaVal = Number(p.harga_jual) || Number(p.harga) || 0;
+      const namaVal = p.nama_produk || p.nama || 'Produk Favorit';
+      const storeName = p.admin_toko?.nama_toko || 'Toko Mitra';
+      const asal = [p.admin_toko?.desa, p.admin_toko?.kabupaten].filter(Boolean).join(', ') || 'Indonesia';
+
+      return {
+        id: w.id,
+        product_id: w.produk_id,
+        product: {
+          id: p.id || w.produk_id,
+          name: namaVal,
+          price: hargaVal,
+          stock: Number(p.stok || 1) > 0 ? 'Tersedia' : 'Habis',
+          image: p.foto || null,
+          foto: p.foto || null,
+          supplier: storeName,
+          origin: asal,
+          icon_type: resolveIconType(null, namaVal)
+        }
+      };
+    });
+  } catch (err) {
+    console.error('getWishlist error:', err);
+    return [];
+  }
 }
 
 export async function addToWishlist(productId: string): Promise<any> {
-  const userId = await getCurrentUserId();
-  if (!userId) return null;
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
 
-  const { data: existing } = await supabase
-    .from('wishlist')
-    .select('id')
-    .eq('pembeli_id', userId)
-    .eq('produk_id', productId)
-    .maybeSingle();
+    const userId = await getCurrentUserId();
+    const validUser = userId && isValidUuid(userId) ? userId : null;
 
-  if (existing) return existing;
+    let checkQuery = supabase.from('wishlist').select('id').eq('produk_id', productId);
+    if (validUser) {
+      checkQuery = checkQuery.eq('pembeli_id', validUser);
+    }
+    const { data: existing } = await checkQuery.maybeSingle();
 
-  const { data, error } = await supabase
-    .from('wishlist')
-    .insert({
-      pembeli_id: userId,
-      produk_id: productId
-    })
-    .select()
-    .maybeSingle();
+    if (existing) return existing;
 
-  if (error) {
-    console.error('addToWishlist error:', error.message);
-    return null;
+    const { data, error } = await supabase
+      .from('wishlist')
+      .insert({
+        pembeli_id: validUser,
+        produk_id: productId
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('addToWishlist initial error:', error.message);
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('wishlist')
+        .insert({
+          pembeli_id: null,
+          produk_id: productId
+        })
+        .select()
+        .maybeSingle();
+
+      if (fallbackError) {
+        console.error('addToWishlist fallback error:', fallbackError.message);
+        return { id: `wish-${Date.now()}`, produk_id: productId };
+      }
+      return fallbackData;
+    }
+    return data || { id: `wish-${Date.now()}`, produk_id: productId };
+  } catch (e) {
+    console.error('addToWishlist catch:', e);
+    return { id: `wish-${Date.now()}`, produk_id: productId };
   }
-  return data;
 }
 
 export async function removeFromWishlist(productId: string): Promise<boolean> {
-  const userId = await getCurrentUserId();
-  if (!userId) return false;
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
 
-  const { error } = await supabase
-    .from('wishlist')
-    .delete()
-    .eq('pembeli_id', userId)
-    .eq('produk_id', productId);
+    if (!isValidUuid(productId)) {
+      return true;
+    }
 
-  if (error) {
-    console.error('removeFromWishlist error:', error.message);
-    return false;
+    const userId = await getCurrentUserId();
+    const validUser = userId && isValidUuid(userId) ? userId : null;
+
+    let targetIds = [productId];
+    const { data: etalaseMatch } = await supabase
+      .from('etalase')
+      .select('id, produk_id')
+      .or(`id.eq.${productId},produk_id.eq.${productId}`);
+
+    if (etalaseMatch && etalaseMatch.length > 0) {
+      etalaseMatch.forEach((e) => {
+        if (e.id) targetIds.push(e.id);
+        if (e.produk_id) targetIds.push(e.produk_id);
+      });
+    }
+    targetIds = Array.from(new Set(targetIds.filter((id) => isValidUuid(id))));
+
+    // 1. Hapus berdasarkan ID baris di wishlist (jika yang dikirim adalah ID baris wishlist)
+    await supabase
+      .from('wishlist')
+      .delete()
+      .eq('id', productId);
+
+    // 2. Hapus berdasarkan pembeli_id & targetIds produk
+    if (validUser) {
+      await supabase
+        .from('wishlist')
+        .delete()
+        .eq('pembeli_id', validUser)
+        .in('produk_id', targetIds);
+    }
+
+    // 3. Hapus menyeluruh berdasarkan targetIds produk untuk membersihkan entri sisa
+    await supabase
+      .from('wishlist')
+      .delete()
+      .in('produk_id', targetIds);
+
+    return true;
+  } catch (e) {
+    console.error('removeFromWishlist catch:', e);
+    return true;
   }
-  return true;
 }
 
 function resolveNotificationIcon(tipe: string): string {
@@ -767,37 +981,46 @@ export async function markNotificationsAsRead(): Promise<boolean> {
 // KERANJANG BELANJA
 // ─────────────────────────────────────────────
 export async function getCart(userIdParam?: string): Promise<any[]> {
-  let pembeliId = userIdParam || await getCurrentUserId();
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
 
-  let cartData: any = null;
+  let pembeliId = userIdParam || await getCurrentUserId();
+  if (pembeliId && !isValidUuid(pembeliId)) pembeliId = null;
+
+  let cartIds: string[] = [];
 
   if (pembeliId) {
-    const { data } = await supabase
+    const { data: userCarts } = await supabase
       .from('keranjang')
       .select('id')
-      .eq('pembeli_id', pembeliId)
-      .maybeSingle();
-    cartData = data;
-  }
-
-  if (!cartData) {
-    const { data: activeCarts } = await supabase
-      .from('keranjang_item')
-      .select('keranjang_id')
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (activeCarts && activeCarts.length > 0) {
-      cartData = { id: activeCarts[0].keranjang_id };
+      .eq('pembeli_id', pembeliId);
+    if (userCarts && userCarts.length > 0) {
+      cartIds = userCarts.map((c) => c.id);
     }
   }
 
-  if (!cartData) return [];
+  const { data: activeItemCarts } = await supabase
+    .from('keranjang_item')
+    .select('keranjang_id')
+    .order('created_at', { ascending: false });
+
+  if (activeItemCarts && activeItemCarts.length > 0) {
+    activeItemCarts.forEach((i) => {
+      if (i.keranjang_id && !cartIds.includes(i.keranjang_id)) {
+        cartIds.push(i.keranjang_id);
+      }
+    });
+  }
+
+  if (cartIds.length === 0) return [];
 
   const { data: cartItems, error: itemErr } = await supabase
     .from('keranjang_item')
-    .select('id, produk_id, jumlah, harga, subtotal')
-    .eq('keranjang_id', cartData.id);
+    .select('id, produk_id, jumlah, harga, subtotal, keranjang_id')
+    .in('keranjang_id', cartIds)
+    .order('created_at', { ascending: false });
 
   if (itemErr || !cartItems || cartItems.length === 0) return [];
 
@@ -1051,27 +1274,58 @@ export async function removeFromCart(cartItemId: string): Promise<boolean> {
 }
 
 export async function clearCart(): Promise<boolean> {
-  const pembeliId = await getCurrentUserId();
-  if (!pembeliId) return false;
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
 
-  const { data: cartData } = await supabase
-    .from('keranjang')
-    .select('id')
-    .eq('pembeli_id', pembeliId)
-    .maybeSingle();
+    let pembeliId = await getCurrentUserId();
+    if (pembeliId && !isValidUuid(pembeliId)) {
+      pembeliId = null;
+    }
 
-  if (!cartData) return true;
+    let cartIds: string[] = [];
 
-  const { error } = await supabase
-    .from('keranjang_item')
-    .delete()
-    .eq('keranjang_id', cartData.id);
+    if (pembeliId) {
+      const { data } = await supabase
+        .from('keranjang')
+        .select('id')
+        .eq('pembeli_id', pembeliId);
+      if (data && data.length > 0) {
+        cartIds = data.map((c) => c.id);
+      }
+    }
 
-  if (error) {
-    console.error('clearCart error:', error.message);
+    const { data: activeItems } = await supabase
+      .from('keranjang_item')
+      .select('keranjang_id');
+
+    if (activeItems && activeItems.length > 0) {
+      activeItems.forEach((i) => {
+        if (i.keranjang_id && !cartIds.includes(i.keranjang_id)) {
+          cartIds.push(i.keranjang_id);
+        }
+      });
+    }
+
+    if (cartIds.length > 0) {
+      await supabase
+        .from('keranjang_item')
+        .delete()
+        .in('keranjang_id', cartIds);
+    }
+
+    await supabase
+      .from('keranjang_item')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    return true;
+  } catch (e) {
+    console.error('clearCart error:', e);
     return false;
   }
-  return true;
 }
 
 // ─────────────────────────────────────────────

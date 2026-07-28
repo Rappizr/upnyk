@@ -415,6 +415,7 @@ export default function PembeliMasterPage() {
             <WishlistView 
               onCartUpdated={updateCartCount} 
               onNavigateMarketplace={() => setActiveTab("Marketplace")}
+              onNavigateToCart={() => setActiveTab("Keranjang")}
             />
           )}
           {activeTab === "Pesanan" && <PesananView />}
