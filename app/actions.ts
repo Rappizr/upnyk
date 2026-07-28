@@ -18,7 +18,11 @@ import {
   addToCart,
   updateCartQty,
   removeFromCart,
-  clearCart
+  clearCart,
+  submitReview,
+  getCurrentUserId,
+  supabase,
+  supabaseAdmin
 } from "@/lib/db";
 
 // ─────────────────────────────────────────────
@@ -173,6 +177,114 @@ export async function markNotificationsAsReadAction() {
   }
 }
 
+/**
+ * Server action utama untuk fetch notifikasi pembeli yang sedang login.
+ * Menggunakan supabaseAdmin (service role) agar bisa bypass RLS.
+ */
+export async function fetchNotificationsAction() {
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
+
+    // Dapatkan auth user ID langsung dari Supabase (ini yang masuk ke profile_id)
+    const { data: authData } = await supabase.auth.getUser();
+    const authUserId = authData?.user?.id || null;
+
+    // Coba juga via getCurrentUserId sebagai fallback
+    const currentUserId = await getCurrentUserId();
+
+    // Gunakan supabaseAdmin (service role) agar tidak diblokir RLS
+    const query = supabaseAdmin
+      .from('notifikasi')
+      .select('id, judul, isi, dibaca, tipe, created_at, profile_id, pembeli_id')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    const { data: allData, error } = await query;
+
+    if (error) {
+      console.error('fetchNotificationsAction error:', error.message, error);
+      return [];
+    }
+
+    if (!allData || allData.length === 0) return [];
+
+    // Filter client-side: tampilkan notif yang profile_id cocok dengan user
+    // atau yang profile_id dan pembeli_id keduanya NULL (notif global/sistem)
+    const filtered = allData.filter((n: any) => {
+      const hasProfileId = n.profile_id !== null && n.profile_id !== undefined;
+      const hasPembeliId = n.pembeli_id !== null && n.pembeli_id !== undefined;
+
+      // Notif global (tidak ada pemilik): tampilkan ke semua user
+      if (!hasProfileId && !hasPembeliId) return true;
+
+      // Cocokkan dengan auth user ID
+      if (authUserId && isValidUuid(authUserId)) {
+        if (n.profile_id === authUserId) return true;
+      }
+
+      // Cocokkan dengan pembeli ID
+      if (currentUserId && isValidUuid(currentUserId)) {
+        if (n.profile_id === currentUserId) return true;
+        if (n.pembeli_id === currentUserId) return true;
+      }
+
+      // Jika tidak ada userId valid, tampilkan semua
+      if (!authUserId && !currentUserId) return true;
+
+      return false;
+    });
+
+    return filtered.map((n: any) => ({
+      id: n.id,
+      tipe: n.tipe || 'Transaksi',
+      judul: n.judul || 'Notifikasi',
+      isi: n.isi || '',
+      created_at: n.created_at || new Date().toISOString(),
+      dibaca: n.dibaca ?? false,
+    }));
+  } catch (e) {
+    console.error('fetchNotificationsAction catch:', e);
+    return [];
+  }
+}
+
+/**
+ * Tandai satu notifikasi sebagai sudah dibaca
+ */
+export async function markOneNotifReadAction(notifId: string) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('notifikasi')
+      .update({ dibaca: true })
+      .eq('id', notifId);
+    if (error) console.error('markOneNotifReadAction error:', error.message);
+    return !error;
+  } catch (e) {
+    console.error('markOneNotifReadAction catch:', e);
+    return false;
+  }
+}
+
+/**
+ * Tandai semua notifikasi user sebagai sudah dibaca
+ */
+export async function markAllNotifReadAction() {
+  try {
+    const { error } = await supabaseAdmin
+      .from('notifikasi')
+      .update({ dibaca: true })
+      .eq('dibaca', false);
+    if (error) console.error('markAllNotifReadAction error:', error.message);
+    return !error;
+  } catch (e) {
+    console.error('markAllNotifReadAction catch:', e);
+    return false;
+  }
+}
+
 // ─────────────────────────────────────────────
 // KERANJANG
 // ─────────────────────────────────────────────
@@ -217,6 +329,15 @@ export async function clearCartAction() {
     return await clearCart();
   } catch (e) {
     console.error("clearCartAction:", e);
+    return false;
+  }
+}
+
+export async function submitReviewAction(orderId: string, rating: number, comment?: string, notifId?: string) {
+  try {
+    return await submitReview(orderId, rating, comment, notifId);
+  } catch (e) {
+    console.error("submitReviewAction:", e);
     return false;
   }
 }

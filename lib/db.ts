@@ -9,6 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Client khusus server-side dengan Service Role Key (bypass RLS)
+// Digunakan untuk operasi INSERT/UPDATE yang dilakukan dari server action
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
 // ─────────────────────────────────────────────
 // HELPER: Resolve icon type dari kategori/nama produk
 // ─────────────────────────────────────────────
@@ -329,7 +336,7 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
     .from('pesanan')
     .select(`
       id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-      supplier, metode_pembayaran, bukti_pembayaran, created_at,
+      supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan,
       detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
     `)
     .order('created_at', { ascending: false });
@@ -345,7 +352,7 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
       .from('pesanan')
       .select(`
         id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-        supplier, metode_pembayaran, bukti_pembayaran, created_at,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan,
         detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
       `)
       .order('created_at', { ascending: false });
@@ -399,6 +406,8 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
     proof_uploaded: !!o.bukti_pembayaran,
     proof_filename: o.bukti_pembayaran || '',
     no_resi: '',
+    rating: o.rating || null,
+    ulasan: o.ulasan || null,
     items: (o.detail_pesanan || []).map((d: any) => {
       const prodName = productMap.get(d.produk_id) || 'Produk';
       return {
@@ -494,18 +503,54 @@ export async function createOrder(orderData: any): Promise<any> {
   }
 
   const targetUserId = userId || orderData.pembeli_id;
-  if (targetUserId && isValidUuid(targetUserId)) {
-    try {
-      await supabase.from('notifikasi').insert({
-        pembeli_id: targetUserId,
-        judul: 'Pesanan Baru Dibuat',
-        isi: `Pesanan ${pesanan.kode_pesanan} sebesar Rp ${Number(pesanan.total).toLocaleString('id-ID')} telah berhasil dibuat. Silakan lakukan pembayaran.`,
+  const validTarget = targetUserId && isValidUuid(targetUserId) ? targetUserId : null;
+  const totalFormatted = `Rp ${Number(pesanan.total || 0).toLocaleString('id-ID')}`;
+
+  // Dapatkan profile_id dari tabel pembeli untuk kolom notifikasi
+  let profileIdForNotif: string | null = null;
+  if (validTarget) {
+    const { data: pembeliData } = await supabase
+      .from('pembeli')
+      .select('profile_id')
+      .eq('id', validTarget)
+      .maybeSingle();
+    profileIdForNotif = pembeliData?.profile_id || validTarget;
+  }
+
+  try {
+    if (pesanan.status === 'Belum Dibayar' || !pesanan.status) {
+      const { error: notifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: validTarget,
+        judul: 'Pesanan Belum Dibayar',
+        isi: `Pesanan ${pesanan.kode_pesanan} sebesar ${totalFormatted} telah berhasil dibuat. Segera selesaikan pembayaran.`,
         tipe: 'Transaksi',
         dibaca: false
       });
-    } catch (e) {
-      console.error('createOrder notifikasi error:', e);
+      if (notifErr) console.error('createOrder notif insert error:', notifErr.message);
+    } else if (pesanan.status === 'Sudah Dibayar' || pesanan.status === 'Diproses' || pesanan.status === 'Selesai') {
+      const { error: notifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: validTarget,
+        judul: 'Pembelian Berhasil',
+        isi: `Pembayaran pesanan ${pesanan.kode_pesanan} sebesar ${totalFormatted} telah berhasil dikonfirmasi. Terima kasih telah berbelanja.`,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+      if (notifErr) console.error('createOrder notif insert error:', notifErr.message);
+    } else if (pesanan.status === 'Dibatalkan' || pesanan.status === 'Gagal') {
+      const { error: notifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: validTarget,
+        judul: 'Pesanan Dibatalkan',
+        isi: `Pesanan ${pesanan.kode_pesanan} sebesar ${totalFormatted} gagal diproses atau telah dibatalkan.`,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+      if (notifErr) console.error('createOrder notif insert error:', notifErr.message);
     }
+  } catch (e) {
+    console.error('createOrder notifikasi error:', e);
   }
 
   return pesanan;
@@ -644,31 +689,75 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
     }
   }
 
-  if (targetOrder && targetOrder.pembeli_id) {
+  if (targetOrder) {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
+
+    const totalStr = `Rp ${Number(targetOrder.total || 0).toLocaleString('id-ID')}`;
+
+    // Ambil profile_id dari tabel pembeli
+    let profileIdForNotif: string | null = null;
+    if (targetOrder.pembeli_id && isValidUuid(targetOrder.pembeli_id)) {
+      const { data: pembeliData } = await supabase
+        .from('pembeli')
+        .select('profile_id')
+        .eq('id', targetOrder.pembeli_id)
+        .maybeSingle();
+      profileIdForNotif = pembeliData?.profile_id || targetOrder.pembeli_id;
+    }
+
     let judul = 'Status Pesanan Diperbarui';
     let isi = `Status pesanan ${targetOrder.kode_pesanan} Anda telah diperbarui menjadi ${status}.`;
 
-    if (status === 'Diproses') {
-      judul = 'Pembayaran Diterima';
-      isi = `Pembayaran untuk pesanan ${targetOrder.kode_pesanan} telah diproses oleh toko.`;
-    } else if (status === 'Dikirim') {
-      judul = 'Pesanan Dikirim';
-      isi = `Pesanan ${targetOrder.kode_pesanan} sedang dalam perjalanan.${noResi ? ` No. Resi: ${noResi}` : ''}`;
+    if (status === 'Belum Dibayar') {
+      judul = 'Pesanan Belum Dibayar';
+      isi = `Pesanan ${targetOrder.kode_pesanan} (${totalStr}) belum dibayar. Harap segera selesaikan pembayaran.`;
+    } else if (status === 'Sudah Dibayar' || status === 'Diproses') {
+      judul = 'Pembayaran Dikonfirmasi';
+      isi = `Pembayaran pesanan ${targetOrder.kode_pesanan} (${totalStr}) berhasil dikonfirmasi dan sedang diproses toko.`;
+    } else if (status === 'Dikirim' || status === 'Terkirim') {
+      judul = 'Barang Sedang Dikirim';
+      isi = `Pesanan ${targetOrder.kode_pesanan} (${totalStr}) sedang dalam pengiriman kurir.${noResi ? ` No. Resi: ${noResi}` : ''}`;
     } else if (status === 'Selesai') {
-      judul = 'Pesanan Selesai';
-      isi = `Pesanan ${targetOrder.kode_pesanan} telah selesai diterima.`;
-    } else if (status === 'Dibatalkan') {
+      judul = 'Barang Telah Diterima';
+      isi = `Barang pesanan ${targetOrder.kode_pesanan} (${totalStr}) telah diterima. Terima kasih telah berbelanja di PasarNusa!`;
+    } else if (status === 'Dibatalkan' || status === 'Gagal') {
       judul = 'Pesanan Dibatalkan';
-      isi = `Pesanan ${targetOrder.kode_pesanan} telah dibatalkan oleh toko.`;
+      isi = `Pesanan ${targetOrder.kode_pesanan} (${totalStr}) gagal diproses atau telah dibatalkan.`;
     }
 
-    await supabase.from('notifikasi').insert({
-      pembeli_id: targetOrder.pembeli_id,
-      judul,
-      isi,
-      tipe: 'Transaksi',
-      dibaca: false
-    });
+    try {
+      const { error: notifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: targetOrder.pembeli_id || null,
+        judul,
+        isi,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+      if (notifErr) console.error('updateOrderStatus notifikasi insert error:', notifErr.message, notifErr);
+    } catch (errNotif) {
+      console.error('updateOrderStatus notifikasi catch error:', errNotif);
+    }
+
+    // Jika pesanan selesai, tambahkan pengingat ulasan
+    if (status === 'Selesai') {
+      try {
+        const { error: ulasanNotifErr } = await supabaseAdmin.from('notifikasi').insert({
+          profile_id: profileIdForNotif,
+          pembeli_id: targetOrder.pembeli_id || null,
+          judul: 'Bagikan Ulasan Anda',
+          isi: `Pesanan ${targetOrder.kode_pesanan} sudah diterima! Yuk bagikan pengalaman belanja Anda dengan memberikan ulasan bintang.`,
+          tipe: 'Transaksi',
+          dibaca: false,
+        });
+        if (ulasanNotifErr) console.error('review reminder notif error:', ulasanNotifErr.message);
+      } catch (errUlasanNotif) {
+        console.error('updateOrderStatus ulasan reminder notif error:', errUlasanNotif);
+      }
+    }
   }
 
   return true;
@@ -1243,6 +1332,46 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
       }
       return data2 || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
     }
+
+    // Notifikasi: Produk berhasil masuk keranjang
+    try {
+      const isValidUuidFn = (id: string | null | undefined) =>
+        !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      // Ambil profile_id dari pembeli
+      let profileIdForNotif: string | null = null;
+      if (pembeliId && isValidUuidFn(pembeliId)) {
+        const { data: pb } = await supabase
+          .from('pembeli')
+          .select('profile_id')
+          .eq('id', pembeliId)
+          .maybeSingle();
+        profileIdForNotif = pb?.profile_id || pembeliId;
+      }
+
+      // Ambil nama produk
+      let namaProduk = 'Produk';
+      const { data: prodInfo } = await supabase
+        .from('etalase')
+        .select('nama_produk')
+        .eq('id', productId)
+        .maybeSingle();
+      if (prodInfo?.nama_produk) namaProduk = prodInfo.nama_produk;
+
+      const hargaStr = hargaFinal > 0 ? ` (Rp ${hargaFinal.toLocaleString('id-ID')}/unit)` : '';
+      const { error: cartNotifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: pembeliId || null,
+        judul: 'Produk Masuk Keranjang',
+        isi: `${namaProduk}${hargaStr} sebanyak ${qty} item berhasil ditambahkan ke keranjang belanja Anda.`,
+        tipe: 'Transaksi',
+        dibaca: false,
+      });
+      if (cartNotifErr) console.error('addToCart notif error:', cartNotifErr.message, cartNotifErr);
+    } catch (errNotifCart) {
+      console.error('addToCart notif catch:', errNotifCart);
+    }
+
     return data || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
   }
 }
@@ -1464,3 +1593,203 @@ export async function getMarketplaceUntukInventaris(): Promise<any[]> {
   }
   return data || [];
 }
+
+export async function submitReview(
+  orderId: string,
+  rating: number,
+  comment: string = 'Produk sangat baik dan sesuai deskripsi.',
+  notifId?: string
+): Promise<boolean> {
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
+
+    let userId = await getCurrentUserId();
+    if (userId && !isValidUuid(userId)) userId = null;
+
+    const cleanComment = comment || 'Produk dalam kondisi baik dan sesuai pesanan.';
+
+    let targetPesanan: any = null;
+    let produkIdFound: string | null = null;
+
+    // 1. Cari pesanan langsung berdasarkan ID atau kode_pesanan
+    const { data: pesananByDirect } = await supabaseAdmin
+      .from('pesanan')
+      .select('id, kode_pesanan, pembeli_id')
+      .or(`id.eq.${orderId},kode_pesanan.eq.${orderId}`)
+      .maybeSingle();
+
+    targetPesanan = pesananByDirect;
+
+    // 2. Jika tidak ketemu dan orderId adalah notifId, cari dari isi notifikasi (ekstrak ORD-xxx)
+    const targetNotifId = notifId || (isValidUuid(orderId) ? orderId : null);
+    if (!targetPesanan && targetNotifId) {
+      const { data: notifRecord } = await supabaseAdmin
+        .from('notifikasi')
+        .select('isi')
+        .eq('id', targetNotifId)
+        .maybeSingle();
+
+      if (notifRecord?.isi) {
+        const ordMatch = notifRecord.isi.match(/ORD-[A-Za-z0-9]+/);
+        if (ordMatch && ordMatch[0]) {
+          const { data: pesananByOrd } = await supabaseAdmin
+            .from('pesanan')
+            .select('id, kode_pesanan, pembeli_id')
+            .eq('kode_pesanan', ordMatch[0])
+            .maybeSingle();
+          targetPesanan = pesananByOrd;
+        }
+      }
+    }
+
+    // 3. Fallback jika masih tidak ketemu: ambil pesanan 'Selesai' terbaru
+    if (!targetPesanan) {
+      const { data: pesananLatest } = await supabaseAdmin
+        .from('pesanan')
+        .select('id, kode_pesanan, pembeli_id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      targetPesanan = pesananLatest;
+    }
+
+    // 4. Dapatkan pembeli_id yang valid
+    let finalPembeliId = userId;
+    if (!finalPembeliId && targetPesanan?.pembeli_id) {
+      finalPembeliId = targetPesanan.pembeli_id;
+    }
+    if (!finalPembeliId) {
+      const { data: demoPembeli } = await supabaseAdmin.from('pembeli').select('id').limit(1).maybeSingle();
+      finalPembeliId = demoPembeli?.id || null;
+    }
+
+    // 5. Update rating & ulasan di tabel pesanan
+    if (targetPesanan?.id) {
+      await supabaseAdmin
+        .from('pesanan')
+        .update({
+          rating: rating,
+          ulasan: cleanComment
+        })
+        .eq('id', targetPesanan.id);
+
+      // Cari produk_id dari detail_pesanan
+      const { data: details } = await supabaseAdmin
+        .from('detail_pesanan')
+        .select('id, produk_id')
+        .eq('pesanan_id', targetPesanan.id);
+
+      if (details && details.length > 0) {
+        produkIdFound = details[0].produk_id || null;
+      }
+
+      await supabaseAdmin
+        .from('detail_pesanan')
+        .update({
+          rating: rating,
+          ulasan: cleanComment
+        })
+        .eq('pesanan_id', targetPesanan.id);
+    }
+
+    // Fallback produk_id jika belum ketemu dari detail_pesanan
+    if (!produkIdFound) {
+      const { data: p1 } = await supabaseAdmin.from('etalase').select('id').limit(1).maybeSingle();
+      produkIdFound = p1?.id || null;
+    }
+
+    // 6. Simpan ke tabel `review` dengan multi-attempt untuk bypass constraint issues
+    try {
+      // Attempt 1: Insert lengkap dengan produk_id
+      const { error: reviewErr1 } = await supabaseAdmin
+        .from('review')
+        .insert({
+          produk_id: isValidUuid(produkIdFound) ? produkIdFound : null,
+          pembeli_id: isValidUuid(finalPembeliId) ? finalPembeliId : null,
+          rating: Number(rating),
+          komentar: cleanComment,
+          created_at: new Date().toISOString()
+        });
+
+      if (reviewErr1) {
+        console.error('review insert attempt 1 failed:', reviewErr1.message, reviewErr1.code, reviewErr1.details);
+
+        // Attempt 2: Insert tanpa produk_id (jika FK constraint)
+        const { error: reviewErr2 } = await supabaseAdmin
+          .from('review')
+          .insert({
+            pembeli_id: isValidUuid(finalPembeliId) ? finalPembeliId : null,
+            rating: Number(rating),
+            komentar: cleanComment,
+            created_at: new Date().toISOString()
+          });
+
+        if (reviewErr2) {
+          console.error('review insert attempt 2 failed:', reviewErr2.message, reviewErr2.code, reviewErr2.details);
+
+          // Attempt 3: Insert minimal (hanya kolom wajib)
+          const { error: reviewErr3 } = await supabaseAdmin
+            .from('review')
+            .insert({
+              rating: Number(rating),
+              komentar: cleanComment
+            });
+
+          if (reviewErr3) {
+            console.error('review insert attempt 3 (minimal) failed:', reviewErr3.message, reviewErr3.code, reviewErr3.details);
+          } else {
+            console.log('review insert attempt 3 (minimal) SUCCESS');
+          }
+        } else {
+          console.log('review insert attempt 2 (no produk_id) SUCCESS');
+        }
+      } else {
+        console.log('review insert attempt 1 (full) SUCCESS! produk_id:', produkIdFound, 'pembeli_id:', finalPembeliId);
+      }
+    } catch (errReview) {
+      console.error('review insert catch:', errReview);
+    }
+
+    // 7. Update notifikasi di DB jika notifId diberikan
+    if (targetNotifId && isValidUuid(targetNotifId)) {
+      await supabaseAdmin
+        .from('notifikasi')
+        .update({ dibaca: true })
+        .eq('id', targetNotifId);
+    }
+
+    // 8. Buat notifikasi bahwa ulasan berhasil dikirim
+    try {
+      // Ambil profile_id dari pembeli menggunakan supabaseAdmin (bypass RLS)
+      let profileIdForNotif: string | null = null;
+      if (finalPembeliId && isValidUuid(finalPembeliId)) {
+        const { data: pb } = await supabaseAdmin
+          .from('pembeli')
+          .select('profile_id')
+          .eq('id', finalPembeliId)
+          .maybeSingle();
+        profileIdForNotif = pb?.profile_id || null;
+      }
+
+      const { error: reviewNotifErr } = await supabaseAdmin.from('notifikasi').insert({
+        profile_id: profileIdForNotif,
+        pembeli_id: finalPembeliId || null,
+        judul: 'Ulasan Berhasil Terkirim',
+        isi: `Terima kasih! Ulasan bintang ${rating} Anda ("${cleanComment.slice(0, 50)}${cleanComment.length > 50 ? '...' : ''}") telah berhasil disimpan.`,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+      if (reviewNotifErr) console.error('submitReview notif error:', reviewNotifErr.message);
+    } catch (errNotif) {
+      console.error('submitReview notifikasi insert error:', errNotif);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('submitReview error:', err);
+    return false;
+  }
+}

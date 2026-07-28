@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { getOrdersAction, updateOrderStatusAction } from "@/app/actions";
+import { getOrdersAction, updateOrderStatusAction, submitReviewAction } from "@/app/actions";
 
 function RiceIcon({ size = 24, className = "", ...props }: any) {
   return (
@@ -132,6 +132,44 @@ export default function PesananView() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
+  const [reviewModalOrder, setReviewModalOrder] = useState<any | null>(null);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewText, setReviewText] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<string[]>([]);
+
+  const handleOpenReviewModal = (order: any) => {
+    setReviewModalOrder(order);
+    setReviewRating(5);
+    setReviewText("Produk sangat baik, fresh, dan pengiriman tepat waktu.");
+  };
+
+  const handleSaveReviewModal = async () => {
+    if (!reviewModalOrder) return;
+    try {
+      setSubmittingReview(true);
+      const targetId = reviewModalOrder.id || reviewModalOrder.kode_pesanan || reviewModalOrder.originalId;
+      const ok = await submitReviewAction(targetId, reviewRating, reviewText);
+      if (ok) {
+        setReviewedOrderIds((prev) => [
+          ...prev,
+          String(reviewModalOrder.id),
+          String(reviewModalOrder.kodePesanan || ''),
+          String(reviewModalOrder.originalId || ''),
+          String(targetId)
+        ]);
+        setReviewModalOrder(null);
+        await loadOrders();
+      } else {
+        alert("Gagal menyimpan ulasan ke database.");
+      }
+    } catch (e) {
+      console.error("Gagal menyimpan ulasan:", e);
+      alert("Terjadi kesalahan saat menyimpan ulasan.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -197,11 +235,11 @@ export default function PesananView() {
   const filtered = activeTab === "Semua"
     ? orders.filter(o => o.status !== "Dibatalkan")
     : orders.filter((o) => {
-        if (activeTab === "Sudah Dibayar") {
-          return o.status === "Belum Dibayar" || o.status === "Diproses" || o.status === "Sudah Dibayar";
-        }
-        return o.status === activeTab;
-      });
+      if (activeTab === "Sudah Dibayar") {
+        return o.status === "Belum Dibayar" || o.status === "Diproses" || o.status === "Sudah Dibayar";
+      }
+      return o.status === activeTab;
+    });
 
   return (
     <>
@@ -213,10 +251,10 @@ export default function PesananView() {
       {/* Tabs */}
       <div className="tabs">
         {tabs.map((t) => (
-          <button 
-            key={t} 
-            className={`tab-btn${activeTab === t ? " active" : ""}`} 
-            onClick={() => setActiveTab(t)} 
+          <button
+            key={t}
+            className={`tab-btn${activeTab === t ? " active" : ""}`}
+            onClick={() => setActiveTab(t)}
             id={`tab-${t.replace(/\s/g, "-").toLowerCase()}`}
           >
             {t}
@@ -240,15 +278,14 @@ export default function PesananView() {
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
                       <span className="font-semibold text-sm">{order.id}</span>
-                      <span className={`badge ${
-                        order.status === "Belum Dibayar" || order.status === "Diproses" || order.status === "Sudah Dibayar"
+                      <span className={`badge ${order.status === "Belum Dibayar" || order.status === "Diproses" || order.status === "Sudah Dibayar"
                           ? "badge-warning"
                           : order.status === "Dikirim"
-                          ? "badge-info"
-                          : order.status === "Selesai"
-                          ? "badge-success"
-                          : "badge-gray"
-                      }`}>
+                            ? "badge-info"
+                            : order.status === "Selesai"
+                              ? "badge-success"
+                              : "badge-gray"
+                        }`}>
                         {order.status === "Belum Dibayar" || order.status === "Diproses"
                           ? "Sudah Dibayar"
                           : order.status}
@@ -291,18 +328,45 @@ export default function PesananView() {
                     </button>
                   )}
                   {order.status === "Selesai" && (
-                    <button className="btn-secondary" onClick={() => alert("Terima kasih atas ulasan Anda!")} style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-ulasan-${order.id}`}>
-                      <StarIcon size={14} fill="currentColor" /> Beri Ulasan
-                    </button>
+                    (order.rating || order.ulasan || reviewedOrderIds.includes(String(order.id)) || reviewedOrderIds.includes(String(order.kodePesanan || '')) || reviewedOrderIds.includes(String(order.originalId || ''))) ? (
+                      <button
+                        className="btn-secondary"
+                        disabled
+                        style={{
+                          fontSize: "0.8rem",
+                          padding: "0.4rem 0.875rem",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          opacity: 0.65,
+                          cursor: "not-allowed",
+                          backgroundColor: "#e5e7eb",
+                          color: "#6b7280",
+                          borderColor: "#d1d5db"
+                        }}
+                        id={`btn-ulasan-selesai-${order.id}`}
+                      >
+                        Selesai
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-secondary"
+                        onClick={() => handleOpenReviewModal(order)}
+                        style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
+                        id={`btn-ulasan-${order.id}`}
+                      >
+                        <StarIcon size={14} fill="currentColor" /> Beri Ulasan
+                      </button>
+                    )
                   )}
                   <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
                     Invoice
                   </button>
                   {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
-                    <button 
-                      onClick={() => setReceiptOrder(order)} 
-                      className="btn-secondary" 
-                      style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} 
+                    <button
+                      onClick={() => setReceiptOrder(order)}
+                      className="btn-secondary"
+                      style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
                       id={`btn-bukti-${order.id}`}
                     >
                       Bukti Pembayaran
@@ -373,7 +437,7 @@ export default function PesananView() {
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
             position: "relative", border: "1px solid var(--color-border)"
           }}>
-            <button 
+            <button
               onClick={() => setReceiptOrder(null)}
               style={{
                 position: "absolute", top: "1rem", right: "1rem", border: "none",
@@ -395,7 +459,7 @@ export default function PesananView() {
                 LUNAS / PAID
               </div>
             </div>
-            
+
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-muted">No. Pesanan</span>
@@ -439,6 +503,90 @@ export default function PesananView() {
             <div style={{ textAlign: "center", color: "var(--color-text-subtle)", fontSize: "0.75rem", lineHeight: 1.4 }}>
               <div>Terima kasih atas kontribusi Anda mendukung toko UMKM lokal.</div>
               <div style={{ marginTop: "0.25rem", fontFamily: "monospace", letterSpacing: "1px" }}>PN-TXN-{String(receiptOrder.id).replace("ORD-", "")}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BERIKAN ULASAN PRODUK */}
+      {reviewModalOrder && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", display: "flex", alignItems: "center",
+          justifyContent: "center", zIndex: 1000, padding: "1rem"
+        }}>
+          <div className="card" style={{ maxWidth: "450px", width: "100%", padding: "1.75rem", position: "relative" }}>
+            <button
+              onClick={() => setReviewModalOrder(null)}
+              style={{
+                position: "absolute", top: "1rem", right: "1rem", border: "none",
+                background: "transparent", fontSize: "1.5rem", cursor: "pointer",
+                color: "var(--color-text-muted)"
+              }}
+            >
+              &times;
+            </button>
+            <h3 className="font-bold text-lg" style={{ marginBottom: "0.5rem" }}>
+              Beri Ulasan &amp; Rating Produk
+            </h3>
+            <p className="text-xs text-muted" style={{ marginBottom: "1.25rem" }}>
+              Pesanan: <span className="font-semibold">{reviewModalOrder.id || reviewModalOrder.kode_pesanan}</span>
+            </p>
+
+            <div style={{ marginBottom: "1.25rem" }}>
+              <label className="text-xs text-muted font-medium" style={{ display: "block", marginBottom: "0.5rem" }}>
+                Pilih Rating (1 - 5 Bintang):
+              </label>
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    style={{ cursor: "pointer", padding: "0.25rem" }}
+                  >
+                    <StarIcon
+                      size={28}
+                      className={reviewRating >= star ? "text-amber-400 fill-amber-400" : "text-gray-300"}
+                      fill={reviewRating >= star ? "currentColor" : "none"}
+                    />
+                  </span>
+                ))}
+                <span className="font-bold text-sm text-primary" style={{ marginLeft: "0.5rem" }}>
+                  {reviewRating} / 5
+                </span>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <label className="text-xs text-muted font-medium" style={{ display: "block", marginBottom: "0.5rem" }}>
+                Tulis Ulasan Pengalaman Anda:
+              </label>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows={3}
+                className="input"
+                placeholder="Bagikan ulasan mengenai kualitas barang & pelayanan toko..."
+                style={{ width: "100%", padding: "0.6rem", fontSize: "0.85rem", borderRadius: "var(--radius-sm)" }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+              <button
+                className="btn-ghost"
+                onClick={() => setReviewModalOrder(null)}
+                style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }}
+              >
+                Batal
+              </button>
+              <button
+                className="btn-primary"
+                disabled={submittingReview}
+                onClick={handleSaveReviewModal}
+                style={{ fontSize: "0.85rem", padding: "0.5rem 1.25rem" }}
+              >
+                {submittingReview ? "Menyimpan..." : "Kirim Ulasan"}
+              </button>
             </div>
           </div>
         </div>
