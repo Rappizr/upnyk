@@ -71,15 +71,15 @@ export default function EkosistemPage() {
         }
 
         .glass-nav {
-          background: ${isScrolled ? 'rgba(246, 247, 244, 0.82)' : 'rgba(10, 32, 24, 0.15)'};
+          background: ${isScrolled ? 'rgba(246, 247, 244, 0.88)' : 'rgba(255, 255, 255, 0.45)'};
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.06)' : 'rgba(255,255,255,0.10)'};
+          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.08)' : 'rgba(255,255,255,0.20)'};
           box-shadow: ${isScrolled ? '0 6px 34px rgba(10,32,24,0.05)' : 'none'};
         }
 
         .grad-text {
-          background: linear-gradient(120deg, #6EE7B7 0%, #34D399 55%, #E1A140 130%);
+          background: linear-gradient(120deg, #12864E 0%, #0E7490 100%);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -87,8 +87,8 @@ export default function EkosistemPage() {
 
         .tab-switch {
           display: inline-flex;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.14);
+          background: rgba(10, 32, 24, 0.05);
+          border: 1px solid rgba(10, 32, 24, 0.10);
           padding: 0.3rem;
           border-radius: 999px;
           backdrop-filter: blur(8px);
@@ -101,14 +101,14 @@ export default function EkosistemPage() {
           border-radius: 999px;
           border: none;
           cursor: pointer;
-          color: #E7EFE9;
+          color: var(--muted);
           background: transparent;
           transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
         }
         .tab-btn.active {
-          background: #F6F7F4;
+          background: #FFFFFF;
           color: var(--forest-1);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+          box-shadow: 0 4px 14px rgba(10,32,24,0.12);
         }
 
         /* TIMELINE ALUR */
@@ -193,14 +193,15 @@ export default function EkosistemPage() {
       <header className="glass-nav header-container" style={{ padding: "0.9rem 3.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? "var(--ink)" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "var(--emerald)" : "var(--emerald-bright)" }}>Nusa</span>
+          <span className="nav-logo-text" style={{ fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.02em", color: "var(--ink)", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: "var(--emerald)" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             padding: "0.6rem 1.35rem", fontSize: "0.88rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "var(--emerald)" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "var(--emerald)", borderRadius: "999px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: "var(--emerald)", color: "#FFFFFF", borderRadius: "999px", textDecoration: "none", transition: "all 0.3s ease",
+            boxShadow: "0 4px 12px rgba(18,134,78,0.25)"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -208,23 +209,23 @@ export default function EkosistemPage() {
         </nav>
       </header>
 
-      {/* HERO */}
+      {/* HERO (DISELARASKAN DENGAN BG DEPAN) */}
       <section className="hero-section" style={{
         padding: "12rem 2rem 5.5rem", textAlign: "center", position: "relative",
-        backgroundImage: `linear-gradient(180deg, rgba(10,32,24,0.78) 0%, rgba(10,32,24,0.94) 60%, rgba(10,32,24,0.99) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundImage: `linear-gradient(90deg, #F6F7F4 0%, rgba(246,247,244,0.92) 40%, rgba(246,247,244,0.40) 70%, rgba(246,247,244,0.10) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
         backgroundSize: "cover", backgroundPosition: "center"
       }}>
         {/* ambient glow */}
-        <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "560px", height: "560px", background: "radial-gradient(circle, rgba(52,211,153,0.18) 0%, transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "560px", height: "560px", background: "radial-gradient(circle, rgba(18,134,78,0.08) 0%, transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: "860px", margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge fade-in" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 1.2rem", borderRadius: "999px", background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.28)", color: "var(--emerald-bright)", fontWeight: 700, fontSize: "0.78rem", letterSpacing: "0.14em", marginBottom: "1.6rem", textTransform: "uppercase" }}>
+          <div className="hero-badge fade-in" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 1.2rem", borderRadius: "999px", background: "rgba(18,134,78,0.08)", border: "1px solid rgba(18,134,78,0.20)", color: "var(--emerald)", fontWeight: 700, fontSize: "0.78rem", letterSpacing: "0.14em", marginBottom: "1.6rem", textTransform: "uppercase" }}>
             Arsitektur Ekosistem
           </div>
-          <h1 className="hero-title fade-in" style={{ fontSize: "4rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.08, marginBottom: "1.4rem", letterSpacing: "-0.035em" }}>
+          <h1 className="hero-title fade-in" style={{ fontSize: "4rem", fontWeight: 800, color: "var(--ink)", lineHeight: 1.08, marginBottom: "1.4rem", letterSpacing: "-0.035em" }}>
             Infrastruktur Rantai Pasok<br /><span className="grad-text">End-to-End</span>
           </h1>
-          <p className="hero-desc fade-in" style={{ fontSize: "1.2rem", color: "#C7D6CC", lineHeight: 1.7, fontWeight: 400, maxWidth: "660px", margin: "0 auto 2.8rem" }}>
+          <p className="hero-desc fade-in" style={{ fontSize: "1.2rem", color: "var(--muted)", lineHeight: 1.7, fontWeight: 400, maxWidth: "660px", margin: "0 auto 2.8rem" }}>
             Pemetaan jaringan logistik hulu, tata kelola koperasi digital, transparansi distribusi, hingga audit Indeks Harga Adil nasional PasarNusa.
           </p>
 

@@ -45,27 +45,23 @@ export default function PrivasiPage() {
 
       <style dangerouslySetInnerHTML={{__html: `
         .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.08)'};
+          background: ${isScrolled ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.65)'};
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.12)'};
-          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.05)' : 'none'};
+          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.3)'};
+          box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
         }
         .gradient-text {
-          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+          color: #059669;
+          background: linear-gradient(135deg, #059669 0%, #10B981 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
-        @keyframes floatBlob {
-          0%, 100% { transform: translate(0,0) scale(1); }
-          50% { transform: translate(20px,-16px) scale(1.07); }
-        }
-        .blob { position: absolute; border-radius: 50%; filter: blur(75px); pointer-events: none; animation: floatBlob 15s ease-in-out infinite; }
         .policy-card {
           background: #ffffff; padding: 2.5rem; border-radius: 1.5rem; border: 1px solid rgba(226, 232, 240, 0.8);
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); margin-bottom: 2rem; transition: box-shadow .3s ease, transform .3s ease;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); margin-bottom: 2rem; transition: all 0.3s ease;
         }
-        .policy-card:hover { box-shadow: 0 20px 40px -20px rgba(5,150,105,0.15); transform: translateY(-3px); }
+        .policy-card:hover { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.08); transform: translateY(-3px); }
         .list-item { display: flex; gap: 0.75rem; align-items: flex-start; color: #475569; font-size: 1rem; line-height: 1.6; margin-bottom: 0.75rem; }
 
         /* Media Query Responsif Seluler & Tablet */
@@ -113,14 +109,14 @@ export default function PrivasiPage() {
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
+          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0F172A", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: "#059669" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: "#059669", color: "#FFFFFF", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -128,30 +124,36 @@ export default function PrivasiPage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section dengan Gambar Latar Belakang Tepat Seperti Acuan */}
       <section className="hero-section" style={{
-        paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
+        paddingTop: "12rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(6, 30, 24, 0.82), rgba(4, 15, 12, 0.97)), url('https://images.unsplash.com/photo-1574105079631-4f915922b61b?auto=format&fit=crop&q=80&w=1920')`,
-        backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
+        backgroundColor: "#F8FAFC",
+        backgroundImage: `
+          linear-gradient(to right, #F8FAFC 0%, #F8FAFC 30%, rgba(248, 250, 252, 0.85) 50%, rgba(248, 250, 252, 0.2) 80%, rgba(248, 250, 252, 0) 100%),
+          url('https://images.unsplash.com/photo-1574105079631-4f915922b61b?q=80&w=1600&auto=format&fit=crop')
+        `,
+        backgroundSize: "cover",
+        backgroundPosition: "center right",
+        backgroundRepeat: "no-repeat"
       }}>
-        <div className="blob" style={{ width: 420, height: 420, background: "#34D399", opacity: 0.2, top: -120, left: -100 }} />
-        <div className="blob" style={{ width: 360, height: 360, background: "#059669", opacity: 0.18, bottom: -140, right: -80, animationDelay: "4s" }} />
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#34D399", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Perlindungan Data, Bukan Sekadar Formalitas
+          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", paddingLeft: "1.25rem", paddingRight: "1.25rem", paddingTop: "0.4rem", paddingBottom: "0.4rem", borderRadius: "99px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#047857", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.08em", marginBottom: "1.25rem", textTransform: "uppercase" }}>
+            <Shield size={16} /> PERLINDUNGAN DATA EKOSISTEM
           </div>
-          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
+          
+          <h1 className="hero-title" style={{ fontSize: "3.5rem", fontWeight: 900, color: "#0F172A", lineHeight: 1.15, marginBottom: "1.25rem", letterSpacing: "-0.03em" }}>
             Kebijakan Privasi <br /><span className="gradient-text">Ekosistem PasarNusa</span>
           </h1>
-          <p className="hero-desc" style={{ fontSize: "1.2rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
-            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok, dan aset itu paling mudah disalahgunakan kalau kebijakannya cuma basa-basi. Berikut yang kami kumpulkan, kami pakai, dan kami lindungi, secara eksplisit tanpa istilah kabur.
+          
+          <p className="hero-desc" style={{ fontSize: "1.1rem", color: "#475569", lineHeight: 1.7, fontWeight: 500, maxWidth: "750px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
+            Data koordinat lahan, riwayat transaksi, dan saldo Wallet adalah aset paling sensitif bagi produsen pelosok. Berikut yang kami kumpulkan, kami pakai, dan kami lindungi secara transparan.
           </p>
         </div>
       </section>
 
       {/* Main Content */}
-      <main className="main-content" style={{ paddingTop: "6rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
+      <main className="main-content" style={{ paddingTop: "4rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
 
         <Reveal>
           <div className="intro-block" style={{ marginBottom: "3.5rem", textAlign: "left" }}>
@@ -165,22 +167,22 @@ export default function PrivasiPage() {
         <Reveal delay={80}>
           <div className="policy-card">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div style={{ background: "#F0FDFA", padding: "0.5rem", borderRadius: "0.75rem", color: "#0D9488" }}><FileText size={24} /></div>
+              <div style={{ background: "rgba(5, 150, 105, 0.08)", padding: "0.75rem", borderRadius: "0.85rem", color: "#059669" }}><FileText size={24} /></div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>1. Data yang Kami Kumpulkan</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, marginBottom: "1.25rem" }}>
               Untuk menjalankan siklus transaksi hulu ke hilir secara valid, kami mengumpulkan jenis informasi berikut sesuai peran (role) akunmu:
             </p>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#059669" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Profil Produsen:</strong> nama lengkap, nomor kontak, riwayat kelompok tani/peternak, koordinat GPS lahan produksi, serta jenis hasil bumi yang diinput melalui menu Produk/Stok.</span>
             </div>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#059669" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Admin Toko/Koperasi:</strong> laporan Buku Kas digital, verifikasi legalitas usaha, margin keuntungan toko, dan hasil Quality Grading komoditas.</span>
             </div>
             <div className="list-item">
-              <CheckCircle2 size={18} color="#0D9488" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
+              <CheckCircle2 size={18} color="#059669" style={{ marginTop: "0.25rem", flexShrink: 0 }} />
               <span><strong>Data Pembeli &amp; Finansial:</strong> alamat pengiriman, riwayat transaksi Marketplace, serta mutasi dana yang diproses melalui sistem Escrow.</span>
             </div>
           </div>
@@ -189,7 +191,7 @@ export default function PrivasiPage() {
         <Reveal delay={140}>
           <div className="policy-card">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div style={{ background: "#ECFDF5", padding: "0.5rem", borderRadius: "0.75rem", color: "#10B981" }}><Eye size={24} /></div>
+              <div style={{ background: "rgba(16, 185, 129, 0.08)", padding: "0.75rem", borderRadius: "0.85rem", color: "#10B981" }}><Eye size={24} /></div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>2. Bagaimana Kami Menggunakan Data Anda</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, marginBottom: "1.25rem" }}>
@@ -213,7 +215,7 @@ export default function PrivasiPage() {
         <Reveal delay={200}>
           <div className="policy-card">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div style={{ background: "#FEF2F2", padding: "0.5rem", borderRadius: "0.75rem", color: "#EF4444" }}><Lock size={24} /></div>
+              <div style={{ background: "rgba(239, 68, 68, 0.08)", padding: "0.75rem", borderRadius: "0.85rem", color: "#EF4444" }}><Lock size={24} /></div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>3. Perlindungan &amp; Keamanan Data</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>
@@ -225,7 +227,7 @@ export default function PrivasiPage() {
         <Reveal delay={260}>
           <div className="policy-card">
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
-              <div style={{ background: "#FFFBEB", padding: "0.5rem", borderRadius: "0.75rem", color: "#D97706" }}><Scale size={24} /></div>
+              <div style={{ background: "rgba(217, 119, 6, 0.08)", padding: "0.75rem", borderRadius: "0.85rem", color: "#D97706" }}><Scale size={24} /></div>
               <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: "#0F172A", margin: 0 }}>4. Keterbukaan Data Pihak Ketiga &amp; Lembaga</h2>
             </div>
             <p style={{ color: "#475569", lineHeight: 1.7, margin: 0 }}>

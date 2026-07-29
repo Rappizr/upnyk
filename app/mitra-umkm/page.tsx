@@ -22,7 +22,7 @@ interface Mitra {
 
 const filterTipe = ["Semua", "Toko UMKM", "Produsen Hulu"] as const;
 const C = {
-  deep: "#08170E",       // forest paling gelap (hero / footer)
+  deep: "#08170E",       // forest paling gelap (footer)
   forest: "#0E2A1B",     // forest gelap
   forest2: "#123A24",    // forest medium
   green: "#16A34A",      // hijau utama (CTA)
@@ -146,36 +146,21 @@ export default function MitraUmkmPage() {
   const totalKoperasi = daftarMitra.filter((m) => m.tipe === "Toko UMKM").length;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "#F6F7F4", fontFamily: "var(--font-sans), system-ui, sans-serif", overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .glass-nav {
-          background: ${isScrolled ? 'rgba(244, 250, 245, 0.88)' : 'rgba(8, 23, 14, 0.10)'};
+          background: ${isScrolled ? 'rgba(246, 247, 244, 0.88)' : 'rgba(255, 255, 255, 0.45)'};
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(14,42,27,0.08)' : 'rgba(163,230,53,0.14)'};
+          border-bottom: 1px solid ${isScrolled ? 'rgba(12,31,23,0.08)' : 'rgba(255,255,255,0.20)'};
           box-shadow: ${isScrolled ? '0 6px 30px rgba(8, 23, 14, 0.06)' : 'none'};
         }
         .gradient-lime {
-          background: linear-gradient(135deg, ${C.emerald} 0%, ${C.lime} 100%);
+          background: linear-gradient(120deg, #12864E 0%, #0E7490 100%);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-        }
-        @keyframes floatBlob {
-          0%, 100% { transform: translate(0,0) scale(1); }
-          50% { transform: translate(24px,-18px) scale(1.08); }
-        }
-        .blob { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; animation: floatBlob 14s ease-in-out infinite; }
-
-        .ledger-grid {
-          position: absolute; inset: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(163,230,53,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(163,230,53,0.05) 1px, transparent 1px);
-          background-size: 46px 46px;
-          mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
-          -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 78%);
         }
 
         .mitra-card {
@@ -187,12 +172,11 @@ export default function MitraUmkmPage() {
         }
         .mitra-card::before {
           content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
-          background: linear-gradient(90deg, ${C.green}, ${C.lime});
+          background: linear-gradient(90deg, #12864E, #34D399);
           opacity: 0; transition: opacity .35s ease;
         }
         .mitra-card:hover { transform: translateY(-6px); box-shadow: 0 24px 46px -20px rgba(14,42,27,0.28); border-color: rgba(34,197,94,0.45); }
         .mitra-card:hover::before { opacity: 1; }
-        /* Fix grid blowout: grid items default to min-width:auto, which lets card content push past its column and get cropped by the viewport. */
         .mitra-grid > div { min-width: 0; }
 
         .filter-chip {
@@ -208,26 +192,24 @@ export default function MitraUmkmPage() {
           white-space: nowrap;
         }
         .filter-chip:hover { border-color: ${C.emerald}; color: ${C.greenDark}; }
-        .filter-chip.active { background: ${C.forest}; color: ${C.limeSoft}; border-color: ${C.forest}; }
+        .filter-chip.active { background: #0A2018; color: #BEF264; border-color: #0A2018; }
 
         .search-input:focus { border-color: ${C.emerald} !important; box-shadow: 0 0 0 4px rgba(34,197,94,0.12); }
 
         .cta-btn { transition: transform .25s ease, box-shadow .25s ease; }
         .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -10px rgba(163,230,53,0.5); }
 
-        /* ===================== RESPONSIF: TATA LETAK SAMA SEPERTI PC ===================== */
         @media (max-width: 768px) {
           .header-container { padding: 0.5rem !important; }
           .nav-logo-text { font-size: 0.9rem !important; }
           .nav-logo-img { height: 22px !important; }
           .btn-back { padding: 0.3rem 0.7rem !important; font-size: 0.62rem !important; gap: 0.25rem !important; }
           .btn-back svg { width: 12px !important; height: 12px !important; }
-          .hero-section { padding: 6.5rem 1rem 3.5rem !important; }
+          .hero-section { padding: 7rem 1rem 3.5rem !important; }
           .hero-eyebrow { font-size: 0.62rem !important; padding: 0.4rem 1rem !important; }
           .hero-title { font-size: 2.1rem !important; line-height: 1.15 !important; }
           .hero-desc { font-size: 0.9rem !important; }
 
-          /* 3 kotak statistik tetap sebaris, hanya diperkecil */
           .stats-row { grid-template-columns: repeat(3,1fr) !important; gap: 0.4rem !important; }
           .stats-row > div { padding: 0.65rem 0.4rem !important; border-radius: 0.7rem !important; }
           .stats-row svg { width: 16px !important; height: 16px !important; margin-bottom: 0.25rem !important; }
@@ -236,7 +218,6 @@ export default function MitraUmkmPage() {
 
           .main-content { padding: 2rem 0.6rem 4rem !important; }
 
-          /* Toolbar filter + search tetap sebaris, dibuat ringkas */
           .toolbar { flex-wrap: nowrap !important; gap: 0.4rem !important; margin-bottom: 1.25rem !important; align-items: center !important; }
           .filters-row { flex-wrap: nowrap !important; gap: 0.3rem !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; flex-shrink: 0 !important; }
           .filters-row::-webkit-scrollbar { display: none !important; }
@@ -245,7 +226,6 @@ export default function MitraUmkmPage() {
           .search-input { padding: 0.5rem !important; padding-left: 2.1rem !important; font-size: 0.7rem !important; }
           .search-input::placeholder { color: transparent !important; }
 
-          /* 3 kotak mitra tetap sebaris seperti versi PC, dibuat lebih kecil lagi dan gak kepotong */
           .mitra-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.3rem !important; }
           .mitra-card { padding: 0.45rem !important; border-radius: 0.55rem !important; min-width: 0 !important; }
           .mitra-card-header { gap: 0.25rem !important; margin-bottom: 0.35rem !important; align-items: flex-start !important; }
@@ -275,7 +255,7 @@ export default function MitraUmkmPage() {
         }
       `}} />
 
-      {/* ================= NAVBAR ================= */}
+      {/* ================= NAVBAR (DIselaraskan) ================= */}
       <header className="glass-nav header-container" style={{ padding: "1rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <Image
@@ -286,14 +266,15 @@ export default function MitraUmkmPage() {
             height={40}
             style={{ height: "38px", width: "auto", objectFit: "contain", borderRadius: "8px" }}
           />
-          <span className="nav-logo-text" style={{ fontSize: "1.45rem", fontWeight: 800, letterSpacing: "-0.02em", color: isScrolled ? C.ink : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? C.green : C.lime }}>Nusa</span>
+          <span className="nav-logo-text" style={{ fontSize: "1.45rem", fontWeight: 800, letterSpacing: "-0.02em", color: "#0C1F17", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: "#12864E" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             padding: "0.6rem 1.5rem", fontSize: "0.9rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? C.green : "#FFFFFF", color: isScrolled ? "#FFFFFF" : C.greenDark, borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: "#12864E", color: "#FFFFFF", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease",
+            boxShadow: "0 4px 12px rgba(18,134,78,0.25)"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -301,26 +282,25 @@ export default function MitraUmkmPage() {
         </nav>
       </header>
 
-      {/* ================= HERO ================= */}
+      {/* ================= HERO (DISAMAKAN BG DEPAN/EKOSISTEM) ================= */}
       <section className="hero-section" style={{
-        padding: "13rem 2rem 6rem",
-        textAlign: "center", position: "relative", overflow: "hidden",
-        background: `radial-gradient(120% 120% at 50% 0%, ${C.forest2} 0%, ${C.forest} 42%, ${C.deep} 100%)`,
+        padding: "12rem 2rem 5.5rem", textAlign: "center", position: "relative",
+        backgroundImage: `linear-gradient(90deg, #F6F7F4 0%, rgba(246,247,244,0.92) 40%, rgba(246,247,244,0.40) 70%, rgba(246,247,244,0.10) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundSize: "cover", backgroundPosition: "center"
       }}>
-        <div className="ledger-grid" />
-        <div className="blob" style={{ width: 440, height: 440, background: C.emerald, opacity: 0.20, top: -150, left: -110 }} />
-        <div className="blob" style={{ width: 380, height: 380, background: C.lime, opacity: 0.16, bottom: -170, right: -90, animationDelay: "3s" }} />
+        {/* ambient glow */}
+        <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "560px", height: "560px", background: "radial-gradient(circle, rgba(18,134,78,0.08) 0%, transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: "880px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1.4rem", borderRadius: "99px", background: "rgba(163, 230, 53, 0.12)", border: "1px solid rgba(163, 230, 53, 0.35)", color: C.limeSoft, fontWeight: 700, fontSize: "0.8rem", letterSpacing: "0.14em", marginBottom: "1.75rem", textTransform: "uppercase" }}>
+          <div className="hero-eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 1.2rem", borderRadius: "99px", background: "rgba(18,134,78,0.08)", border: "1px solid rgba(18,134,78,0.20)", color: "#12864E", fontWeight: 700, fontSize: "0.78rem", letterSpacing: "0.14em", marginBottom: "1.6rem", textTransform: "uppercase" }}>
             <ShieldCheck size={15} /> Jaringan Mitra Terverifikasi
           </div>
 
-          <h1 className="hero-title" style={{ fontSize: "4.4rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.08, marginBottom: "1.5rem", letterSpacing: "-0.035em" }}>
+          <h1 className="hero-title" style={{ fontSize: "4.4rem", fontWeight: 800, color: "#0C1F17", lineHeight: 1.08, marginBottom: "1.5rem", letterSpacing: "-0.035em" }}>
             Koperasi &amp; Produsen di Balik <span className="gradient-lime">Setiap Produk</span>
           </h1>
 
-          <p className="hero-desc" style={{ fontSize: "1.18rem", color: "#CFE7D6", lineHeight: 1.7, maxWidth: "680px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
+          <p className="hero-desc" style={{ fontSize: "1.18rem", color: "#5B6B60", lineHeight: 1.7, maxWidth: "680px", marginLeft: "auto", marginRight: "auto", marginBottom: "3rem" }}>
             Setiap mitra di direktori ini adalah toko dan produsen binaan PasarNusa yang terdaftar resmi dan terverifikasi di sistem kami: transparan, terukur, dan bisa diaudit.
           </p>
 
@@ -330,10 +310,10 @@ export default function MitraUmkmPage() {
               { icon: Store, label: "Toko UMKM", value: `${totalKoperasi}` },
               { icon: TrendingUp, label: "Total Mitra", value: `${daftarMitra.length}` },
             ].map((s, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(163,230,53,0.16)", borderRadius: "1.1rem", padding: "1.15rem 0.75rem", backdropFilter: "blur(8px)" }}>
-                <s.icon size={22} color={C.lime} style={{ marginBottom: "0.5rem" }} />
-                <div className="stat-value" style={{ fontSize: "1.55rem", fontWeight: 800, color: "#fff", lineHeight: 1 }}>{s.value}</div>
-                <div className="stat-label" style={{ fontSize: "0.72rem", color: "#9DBAA6", fontWeight: 600, marginTop: "0.3rem", letterSpacing: "0.02em" }}>{s.label}</div>
+              <div key={i} style={{ background: "#FFFFFF", border: "1px solid #E6E8E2", borderRadius: "1.1rem", padding: "1.15rem 0.75rem", boxShadow: "0 4px 16px rgba(10,32,24,0.04)" }}>
+                <s.icon size={22} color="#12864E" style={{ marginBottom: "0.5rem" }} />
+                <div className="stat-value" style={{ fontSize: "1.55rem", fontWeight: 800, color: "#0C1F17", lineHeight: 1 }}>{s.value}</div>
+                <div className="stat-label" style={{ fontSize: "0.72rem", color: "#5B6B60", fontWeight: 600, marginTop: "0.3rem", letterSpacing: "0.02em" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -375,7 +355,7 @@ export default function MitraUmkmPage() {
               <Reveal key={m.id} delay={i * 60}>
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
                   
-                  {/* HEADER KARTU: FOTO PROFIL & NAMA */}
+                  {/* HEADER KARTU */}
                   <div className="mitra-card-header" style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem" }}>
                     <div className="mitra-avatar" style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E3EDE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {m.fotoUrl ? (
@@ -426,7 +406,6 @@ export default function MitraUmkmPage() {
         {/* ================= CTA ================= */}
         <Reveal delay={100}>
           <div className="cta-box" style={{ marginTop: "5rem", background: `radial-gradient(120% 140% at 0% 0%, ${C.forest2} 0%, ${C.forest} 45%, ${C.deep} 100%)`, borderRadius: "2rem", padding: "3.5rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden", border: "1px solid rgba(163,230,53,0.14)" }}>
-            <div className="blob" style={{ width: 320, height: 320, background: C.lime, opacity: 0.16, top: -110, right: -70 }} />
             <div style={{ position: "relative" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.4rem 1.1rem", borderRadius: "99px", background: "rgba(163,230,53,0.12)", border: "1px solid rgba(163,230,53,0.3)", color: C.limeSoft, fontWeight: 700, fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "1.25rem" }}>
                 <Sprout size={13} /> Gabung Jaringan
@@ -446,7 +425,7 @@ export default function MitraUmkmPage() {
       </main>
 
       {/* ================= FOOTER ================= */}
-      <footer className="footer-container" style={{ padding: "3rem 4rem", background: C.deep, color: C.muted, borderTop: "1px solid rgba(163,230,53,0.06)" }}>
+      <footer className="footer-container" style={{ padding: "3rem 4rem", background: "#0A2018", color: C.muted, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#7C978A" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>
           <span style={{ color: "#5B7267" }}>Dibuat untuk Kemajuan Ekonomi UMKM Lokal Indonesia.</span>

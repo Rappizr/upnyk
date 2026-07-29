@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail, Phone, Send, CheckCircle2, ShieldAlert, HelpCircle, Clock } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Send, CheckCircle2, ShieldAlert, HelpCircle, Clock, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/db";
 
 function useReveal<T extends HTMLElement>() {
@@ -11,7 +11,12 @@ function useReveal<T extends HTMLElement>() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setInView(true); io.disconnect(); } }, { threshold: 0.12 });
+    const io = new IntersectionObserver(([entry]) => { 
+      if (entry.isIntersecting) { 
+        setInView(true); 
+        io.disconnect(); 
+      } 
+    }, { threshold: 0.12 });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -54,20 +59,17 @@ export default function KontakMitraPage() {
     setSubmitting(true);
 
     try {
-      // Ambil user auth jika pelapor sudah login
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Mapping Jenis Laporan ke Kategori DB yang Sesuai
-      let kategoriMapped = "Lainnya";
-      if (formData.jenisLaporan === "manipulasi_harga" || formData.jenisLaporan === "Manipulasi Harga") {
+      let kategoriMapped = formData.jenisLaporan;
+      if (formData.jenisLaporan === "manipulasi_harga") {
         kategoriMapped = "Manipulasi Harga";
-      } else if (formData.jenisLaporan === "bantuan_sistem" || formData.jenisLaporan === "Kendala Teknis") {
+      } else if (formData.jenisLaporan === "bantuan_sistem") {
         kategoriMapped = "Kendala Teknis";
-      } else if (formData.jenisLaporan === "kendala_wallet" || formData.jenisLaporan === "Sengketa Transaksi") {
+      } else if (formData.jenisLaporan === "kendala_wallet") {
         kategoriMapped = "Sengketa Transaksi";
       }
 
-      // Insert ke tabel `pengaduan` Supabase
       const { error } = await supabase
         .from("pengaduan")
         .insert({
@@ -87,11 +89,16 @@ export default function KontakMitraPage() {
         return;
       }
 
-      // Berhasil
       setFormSubmitted(true);
       setTimeout(() => {
         setFormSubmitted(false);
-        setFormData({ namaPelapor: '', rolePengguna: 'Produsen Hulu', kontak: '', jenisLaporan: 'Kendala Teknis', pesan: '' });
+        setFormData({ 
+          namaPelapor: '', 
+          rolePengguna: 'Produsen Hulu', 
+          kontak: '', 
+          jenisLaporan: 'Kendala Teknis', 
+          pesan: '' 
+        });
       }, 5000);
 
     } catch (err) {
@@ -107,14 +114,14 @@ export default function KontakMitraPage() {
 
       <style dangerouslySetInnerHTML={{__html: `
         .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.05)'};
+          background: ${isScrolled ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.4)'};
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)'};
+          border-bottom: 1px solid ${isScrolled ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.2)'};
           box-shadow: ${isScrolled ? '0 4px 30px rgba(0, 0, 0, 0.03)' : 'none'};
         }
         .gradient-text {
-          background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+          background: linear-gradient(135deg, #059669 0%, #10B981 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -183,14 +190,14 @@ export default function KontakMitraPage() {
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: isScrolled ? "#1E293B" : "#FFFFFF", transition: "color 0.3s" }}>
-            Pasar<span style={{ color: isScrolled ? "#059669" : "#34D399" }}>Nusa</span>
+          <span className="nav-logo-text" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0F172A", transition: "color 0.3s" }}>
+            Pasar<span style={{ color: "#059669" }}>Nusa</span>
           </span>
         </div>
         <nav style={{ display: "flex", alignItems: "center" }}>
           <Link href="/" className="btn-back" style={{
             paddingTop: "0.6rem", paddingBottom: "0.6rem", paddingLeft: "1.5rem", paddingRight: "1.5rem", fontSize: "0.9rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.5rem",
-            backgroundColor: isScrolled ? "#059669" : "#FFFFFF", color: isScrolled ? "#FFFFFF" : "#059669", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
+            backgroundColor: "#059669", color: "#FFFFFF", borderRadius: "99px", textDecoration: "none", transition: "all 0.3s ease"
           }}>
             <ArrowLeft size={16} />
             Kembali ke Beranda
@@ -200,28 +207,31 @@ export default function KontakMitraPage() {
 
       {/* HERO SECTION KONTAK */}
       <section className="hero-section" style={{
-        paddingTop: "13rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
+        paddingTop: "11rem", paddingBottom: "5rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
-        backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.97)), url('https://images.unsplash.com/photo-1560264280-88b68371db39?auto=format&fit=crop&q=80&w=1920')`,
+        backgroundImage: `linear-gradient(to bottom, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.96)), url('https://images.unsplash.com/photo-1560264280-88b68371db39?auto=format&fit=crop&q=80&w=1920')`,
         backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "scroll"
       }}>
-        <div className="blob" style={{ width: 400, height: 400, background: "#EF4444", opacity: 0.14, top: -100, left: -100 }} />
-        <div className="blob" style={{ width: 360, height: 360, background: "#34D399", opacity: 0.18, bottom: -140, right: -80, animationDelay: "3.5s" }} />
+        <div className="blob" style={{ width: 400, height: 400, background: "#34D399", opacity: 0.15, top: -100, left: -100 }} />
+        <div className="blob" style={{ width: 360, height: 360, background: "#059669", opacity: 0.12, bottom: -140, right: -80, animationDelay: "3.5s" }} />
+        
         <div style={{ maxWidth: "850px", marginLeft: "auto", marginRight: "auto", position: "relative", zIndex: 1 }}>
-          <div className="hero-badge" style={{ display: "inline-block", paddingLeft: "1.5rem", paddingRight: "1.5rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#EF4444", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.1em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            Pusat Bantuan &amp; Pengaduan
+          <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", paddingLeft: "1.25rem", paddingRight: "1.25rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", borderRadius: "99px", background: "rgba(5, 150, 105, 0.08)", border: "1px solid rgba(5, 150, 105, 0.25)", color: "#047857", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.08em", marginBottom: "1.5rem", textTransform: "uppercase" }}>
+            <ShieldCheck size={18} /> PUSAT BANTUAN &amp; PENGADUAN
           </div>
-          <h1 className="hero-title" style={{ fontSize: "4.2rem", fontWeight: 800, color: "#FFFFFF", lineHeight: 1.1, marginBottom: "1.5rem", letterSpacing: "-0.03em" }}>
+          
+          <h1 className="hero-title" style={{ fontSize: "3.5rem", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, marginBottom: "1.25rem", letterSpacing: "-0.03em" }}>
             Setiap Laporan Masuk <br />ke <span className="gradient-text">Log Audit Super Admin</span>
           </h1>
-          <p className="hero-desc" style={{ fontSize: "1.25rem", color: "#E2E8F0", lineHeight: 1.7, fontWeight: 400, maxWidth: "700px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
+          
+          <p className="hero-desc" style={{ fontSize: "1.15rem", color: "#475569", lineHeight: 1.7, fontWeight: 400, maxWidth: "750px", marginLeft: "auto", marginRight: "auto", marginBottom: "0px" }}>
             Laporkan indikasi manipulasi Indeks Harga Adil di lapangan, kendala pencairan Wallet, atau bantuan operasional lain — tiketmu langsung tercatat untuk ditindaklanjuti Super Admin, bukan hilang di kotak masuk email.
           </p>
         </div>
       </section>
 
       {/* KONTEN UTAMA */}
-      <main className="main-content" style={{ paddingTop: "5rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
+      <main className="main-content" style={{ paddingTop: "4rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         <div className="main-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "4rem", alignItems: "flex-start" }}>
 
           {/* SISI KIRI: DIRECTORY INFO */}
