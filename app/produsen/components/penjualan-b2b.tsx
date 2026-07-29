@@ -85,7 +85,7 @@ export default function PenjualanB2B() {
     const { data: adminList } = await supabase
       .from("admin_toko")
       .select("id, nama_toko, alamat, kabupaten");
-      
+
     const adminMap = new Map((adminList || []).map((a) => [a.id, a]));
 
     const mapped: Pesanan[] = (pesananData || []).map((p: any) => {
@@ -294,7 +294,7 @@ export default function PenjualanB2B() {
     () => pesananList.filter((p) => p.status === "Selesai").reduce((s, p) => s + p.total, 0),
     [pesananList]
   );
-  
+
   const totalAktif = useMemo(
     () => pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses").length,
     [pesananList]
@@ -450,8 +450,8 @@ export default function PenjualanB2B() {
             )}
 
             {detail.status !== "Dibatalkan" && (
-              <button 
-                onClick={() => cetakResi(detail)} 
+              <button
+                onClick={() => cetakResi(detail)}
                 style={{ width: "100%", background: "#F8FAFC", border: "1px dashed #CBD5E1", padding: "0.6rem", borderRadius: "8px", color: "#334155", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginBottom: "1rem" }}
               >
                 <IconPrinter /> Cetak Resi Pengiriman ({detail.noResi})
