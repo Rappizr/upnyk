@@ -187,10 +187,11 @@ export default function PembeliMasterPage() {
             setActiveTab("Beranda");
           }}
         >
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="var(--color-primary)" />
-            <path d="M7 18L10.5 11L14 15L17.5 9L21 18H7Z" fill="white" fillOpacity="0.9" />
-          </svg>
+          <img 
+            src="/logo.png" 
+            alt="Logo PasarNusa" 
+            style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "6px" }} 
+          />
           Pasar<span>Nusa</span>
         </div>
 
