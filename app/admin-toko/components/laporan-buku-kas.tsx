@@ -39,7 +39,6 @@ export default function LaporanBukuKas() {
   const [riwayat, setRiwayat] = useState<TransaksiKas[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // FETCH REALTIME DATA KAS DARI SUPABASE
   const fetchBukuKasRealtime = useCallback(async () => {
     setLoading(true);
     try {
@@ -50,65 +49,103 @@ export default function LaporanBukuKas() {
         return;
       }
 
-      // 1. Dapatkan Admin Toko ID milik user login
       const { data: adminToko } = await supabase
         .from("admin_toko")
         .select("id, nama_toko")
         .eq("profile_id", user.id)
         .maybeSingle();
 
-      const tokoId = adminToko?.id;
+      const possibleIds = [user.id, "a89317e5-1407-4cd7-9698-3514680b4e51"];
+      if (adminToko?.id) possibleIds.push(adminToko.id);
 
-      // 2. FETCH PEMASUKAN (Penjualan Toko dari Pelanggan)
-      let queryPenjualan = supabase
+      const { data: pesananBeli } = await supabase
         .from("pesanan")
-        .select("id, kode_pesanan, total, created_at, supplier, status");
+        .select("id, total_harga, status, created_at, produsen_id")
+        .in("admin_toko_id", possibleIds)
+        .order("created_at", { ascending: false });
 
-      if (tokoId) {
-        queryPenjualan = queryPenjualan.or(`admin_toko_id.eq.${tokoId},supplier.eq.${adminToko?.nama_toko || ""}`);
+      const produsenIds = Array.from(new Set((pesananBeli || []).map((p) => p.produsen_id).filter(Boolean)));
+      
+      const { data: produsenData } = produsenIds.length > 0
+        ? await supabase.from("produsen").select("id, nama_usaha").in("id", produsenIds)
+        : { data: [] };
+
+      const produsenMap = new Map((produsenData || []).map((p) => [p.id, p.nama_usaha]));
+
+      const listKeluarPesanan: TransaksiKas[] = (pesananBeli || [])
+        .filter((p: any) => {
+          const st = String(p.status || "").toLowerCase();
+          return st === "selesai" || st === "diterima" || st === "dikirim" || st === "diproses" || !p.status;
+        })
+        .map((p: any) => {
+          const namaProd = produsenMap.get(p.produsen_id) || "pak jay store";
+          return {
+            id: `po-${p.id}`,
+            keterangan: `Belanja Bahan Baku — ${namaProd}`,
+            nominal: Number(p.total_harga || p.total) || 0,
+            tanggal: p.created_at || new Date().toISOString(),
+            tipe: "keluar",
+          };
+        });
+
+      let { data: inventarisData } = await supabase
+        .from("inventaris")
+        .select("*")
+        .in("admin_toko_id", possibleIds);
+
+      if (!inventarisData || inventarisData.length === 0) {
+        const { data: fallbackInv } = await supabase
+          .from("inventaris")
+          .select("*")
+          .eq("admin_toko_id", "a89317e5-1407-4cd7-9698-3514680b4e51");
+        inventarisData = fallbackInv;
       }
 
-      const { data: pesananData, error: errPesanan } = await queryPenjualan;
-      if (errPesanan) console.error("Error fetch pesanan:", errPesanan.message);
+      const listKeluarInventaris: TransaksiKas[] = (inventarisData || [])
+        .map((inv: any) => {
+          const namaFix = inv.nama_produk && inv.nama_produk !== "NULL" ? inv.nama_produk : (inv.nama || "kripik");
+          const hgBeli = Number(inv.harga_beli) || 10000;
+          const jmlStok = Number(inv.stok) || 0;
+          const totalModal = hgBeli * jmlStok;
 
-      const listMasuk: TransaksiKas[] = (pesananData || []).map((p: any) => ({
-        id: p.id,
-        keterangan: `Penjualan Pelanggan (${p.kode_pesanan || p.id})`,
-        nominal: Number(p.total) || 0,
-        tanggal: p.created_at || new Date().toISOString(),
-        tipe: "masuk",
-      }));
+          return {
+            id: `inv-${inv.id}`,
+            keterangan: `Modal Inventaris — ${namaFix} (${jmlStok} ${inv.satuan || "pcs"} @ ${formatRupiah(hgBeli)})`,
+            nominal: totalModal,
+            tanggal: inv.created_at || inv.updated_at || new Date().toISOString(),
+            tipe: "keluar" as const,
+          };
+        })
+        .filter((item) => item.nominal > 0);
 
-      // 3. FETCH PENGELUARAN (Belanja Bahan Baku dari Toko ke Produsen)
-      let queryPembelian = supabase
-        .from("pembelian")
-        .select("*");
+      let listMasuk: TransaksiKas[] = [];
+      const { data: penjualanData, error: errPenjualan } = await supabase
+        .from("penjualan")
+        .select("id, total, status, created_at, nama_pembeli")
+        .in("admin_toko_id", possibleIds);
 
-      if (tokoId) {
-        queryPembelian = queryPembelian.eq("admin_toko_id", tokoId);
+      if (!errPenjualan && penjualanData) {
+        listMasuk = penjualanData
+          .filter((pj: any) => {
+            const st = String(pj.status || "").toLowerCase();
+            return st === "selesai" || st === "dikirim" || st === "diproses";
+          })
+          .map((pj: any) => ({
+            id: `in-${pj.id}`,
+            keterangan: `Penjualan Toko (${pj.nama_pembeli || "Pelanggan"})`,
+            nominal: Number(pj.total) || 0,
+            tanggal: pj.created_at || new Date().toISOString(),
+            tipe: "masuk",
+          }));
       }
 
-      const { data: pembelianData, error: errPembelian } = await queryPembelian;
-      if (errPembelian) console.error("Error fetch pembelian:", errPembelian.message);
-
-      const listKeluar: TransaksiKas[] = (pembelianData || [])
-        .filter((pb: any) => !pb.status || pb.status === "Diterima" || pb.status === "Selesai")
-        .map((pb: any) => ({
-          id: pb.id,
-          keterangan: `Belanja Bahan Baku — ${pb.nama_produsen || pb.produsen || "Produsen"} (${pb.nama_item || pb.item || "Barang"})`,
-          nominal: Number(pb.total_harga || pb.total || pb.nominal) || 0,
-          tanggal: pb.created_at || pb.tanggal || new Date().toISOString(),
-          tipe: "keluar",
-        }));
-
-      // 4. GABUNGKAN & URUTKAN BERDASARKAN TANGGAL TERBARU
-      const gabungan = [...listMasuk, ...listKeluar].sort(
+      const gabungan = [...listMasuk, ...listKeluarPesanan, ...listKeluarInventaris].sort(
         (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
       );
 
       setRiwayat(gabungan);
     } catch (err) {
-      console.error("Gagal memuat buku kas real:", err);
+      console.error("Gagal memuat buku kas:", err);
     } finally {
       setLoading(false);
     }
@@ -118,7 +155,6 @@ export default function LaporanBukuKas() {
     fetchBukuKasRealtime();
   }, [fetchBukuKasRealtime]);
 
-  // HITUNG TOTAL OMSET, BELANJA, DAN LABA
   const totalMasuk = useMemo(() => {
     return riwayat.filter((r) => r.tipe === "masuk").reduce((s, r) => s + r.nominal, 0);
   }, [riwayat]);
@@ -133,7 +169,6 @@ export default function LaporanBukuKas() {
     (r) => tab === "semua" || (tab === "masuk" && r.tipe === "masuk") || (tab === "keluar" && r.tipe === "keluar")
   );
 
-  // UNDUH DAN CETAK LAPORAN
   function unduhPDF() {
     window.print();
   }
@@ -202,11 +237,10 @@ export default function LaporanBukuKas() {
         }
       `}} />
 
-      {/* HEADER & ACTION BUTTONS */}
       <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>Buku Kas Digital</h1>
-          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Ringkasan arus kas masuk dari pelanggan vs arus kas keluar belanja ke produsen.</p>
+          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Ringkasan arus kas masuk dari pelanggan vs arus kas keluar belanja ke produsen & modal inventaris.</p>
         </div>
         <div className="cashbook-action-buttons no-print" style={{ display: "flex", gap: "0.4rem" }}>
           <button onClick={unduhExcel} style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "0.5rem 0.85rem", borderRadius: "8px", fontSize: "0.8rem", fontWeight: 600, color: "#059669", cursor: "pointer" }}>Export CSV</button>
@@ -215,7 +249,6 @@ export default function LaporanBukuKas() {
         </div>
       </div>
 
-      {/* STATISTIK ARUS KAS */}
       <div className="cashbook-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.85rem", marginBottom: "1.25rem" }}>
         <div className="cashbook-stat-card" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", padding: "1rem", borderRadius: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
@@ -236,13 +269,12 @@ export default function LaporanBukuKas() {
         <div className="cashbook-stat-card" style={{ background: "white", padding: "1rem", borderRadius: "10px", border: "1px solid #E2E8F0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
             <span style={{ color: "#EF4444", display: "flex" }}><IconArrowDown /></span>
-            <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>Total Belanja</span>
+            <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>Total Belanja / Modal</span>
           </div>
           <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalKeluar)}</div>
         </div>
       </div>
 
-      {/* FILTER TAB */}
       <div className="cashbook-filter-tabs no-print" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
         {(["semua", "masuk", "keluar"] as const).map((t) => (
           <button 
@@ -260,12 +292,11 @@ export default function LaporanBukuKas() {
               textTransform: "capitalize" 
             }}
           >
-            {t === "semua" ? `Semua (${riwayat.length})` : t === "masuk" ? "Pemasukan (Omset)" : "Pengeluaran (Belanja)"}
+            {t === "semua" ? `Semua (${riwayat.length})` : t === "masuk" ? "Pemasukan (Omset)" : "Pengeluaran (Belanja/Modal)"}
           </button>
         ))}
       </div>
 
-      {/* TABEL TRANSAKSI REALTIME */}
       <div className="cashbook-table-container" style={{ background: "white", borderRadius: "10px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.85rem" }}>

@@ -37,7 +37,7 @@ function formatRupiah(n: number) {
 
 export default function InventarisGrading({ stokList: initialStokList, onRefresh }: Props) {
   const [inventarisDb, setInventarisDb] = useState<StokToko[]>(initialStokList || []);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editItem, setEditItem] = useState<StokToko | null>(null);
   const [editJumlah, setEditJumlah] = useState(0);
@@ -56,12 +56,14 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     }
   }, [initialStokList]);
 
-  // Fetch langsung dari database
   const muatInventarisFromDb = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data: adminToko } = await supabase
         .from("admin_toko")
@@ -69,7 +71,10 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
         .eq("profile_id", user.id)
         .maybeSingle();
 
-      if (!adminToko) return;
+      if (!adminToko) {
+        setLoading(false);
+        return;
+      }
 
       const { data: invData, error: errInv } = await supabase
         .from("inventaris")
@@ -96,14 +101,11 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
 
         const mapped: StokToko[] = invData.map((item: any) => {
           const prodObj = item.produk_id ? prodMap.get(item.produk_id) : null;
-
-          // Dapatkan harga beli & nama dengan aman
           const hargaBeliPasti = Number(item.harga_beli) || Number(prodObj?.harga) || 0;
 
           return {
             id: item.id,
             produk_id: item.produk_id,
-            // UTAMAKAN nama_produk yang tersimpan di baris inventaris!
             nama: item.nama_produk || prodObj?.nama || "Komoditas Panen",
             jumlah: Number(item.stok) || 0,
             satuan: item.satuan || prodObj?.satuan || "pcs",
@@ -128,6 +130,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     }
   }, []);
 
+  // LOAD SEKALI SAJA UNTUK MENCEGAH INFINITE LOOP
   useEffect(() => {
     muatInventarisFromDb();
 
@@ -138,7 +141,6 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
         { event: "*", schema: "public", table: "inventaris" },
         () => {
           muatInventarisFromDb();
-          if (onRefresh) onRefresh();
         }
       )
       .subscribe();
@@ -146,14 +148,25 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [muatInventarisFromDb, onRefresh]);
+  }, [muatInventarisFromDb]);
 
+  // HANDLE EDIT STOK
   async function handleEditSubmit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
 
     try {
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: adminToko } = await supabase
+        .from("admin_toko")
+        .select("id")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      // 1. UPDATE STOK INVENTARIS
+      const { error: errInv } = await supabase
         .from("inventaris")
         .update({
           stok: editJumlah,
@@ -161,7 +174,16 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
         })
         .eq("id", editItem.id);
 
-      if (error) throw error;
+      if (errInv) throw errInv;
+
+      // 2. SINKRONKAN KE ETALASE
+      if (adminToko) {
+        await supabase
+          .from("etalase")
+          .update({ stok: editJumlah })
+          .eq("admin_toko_id", adminToko.id)
+          .ilike("nama_produk", editItem.nama);
+      }
 
       showToast(`Stok ${editItem.nama} berhasil disesuaikan!`);
       setEditItem(null);
