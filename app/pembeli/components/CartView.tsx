@@ -596,9 +596,15 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                       <div className="upload-success-title">
                         Bukti Pembayaran Terunggah!
                       </div>
-                      <div className="upload-filename">
-                        {paymentProof}
-                      </div>
+                      {paymentProof.startsWith("data:") ? (
+                        <div style={{ margin: "0.5rem 0", display: "flex", justifyContent: "center" }}>
+                          <img src={paymentProof} alt="Bukti Pembayaran" style={{ maxHeight: "120px", maxWidth: "100%", borderRadius: "8px", objectFit: "contain", border: "1px solid var(--color-border-light)" }} />
+                        </div>
+                      ) : (
+                        <div className="upload-filename">
+                          {paymentProof}
+                        </div>
+                      )}
                       <button 
                         onClick={() => setPaymentProof("")}
                         className="btn-ghost"
@@ -618,7 +624,12 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                           accept="image/*" 
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
-                              setPaymentProof(e.target.files[0].name);
+                              const file = e.target.files[0];
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setPaymentProof(reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
                             }
                           }}
                           style={{ display: "none" }}

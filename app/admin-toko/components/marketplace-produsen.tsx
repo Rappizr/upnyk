@@ -340,6 +340,24 @@ export default function MarketplaceProdusen({
         return;
       }
 
+      // 4. Kirim notifikasi otomatis ke Produsen (Relasi Toko -> Produsen)
+      if (selectedProdusen?.id) {
+        const { data: produsenInfo } = await supabase
+          .from("produsen")
+          .select("profile_id")
+          .eq("id", selectedProdusen.id)
+          .maybeSingle();
+
+        const targetProfile = produsenInfo?.profile_id || selectedProdusen.id;
+        await supabase.from("notifikasi").insert({
+          profile_id: targetProfile,
+          judul: "Pesanan Bahan Baku B2B Baru",
+          isi: `Toko Mitra telah memesan ${qty} ${selectedBarang.satuan} ${selectedBarang.nama} (Total: ${formatRupiah(totalTagihan)}). Silakan cek di menu Penjualan B2B.`,
+          tipe: "Transaksi",
+          dibaca: false
+        });
+      }
+
       setStep("sukses");
 
     } catch (err) {
@@ -677,7 +695,6 @@ export default function MarketplaceProdusen({
                 <div style={{ borderTop: "1px dashed #CBD5E1", paddingTop: "1rem", marginBottom: "1.25rem" }}>
                   <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.25rem" }}>Unggah Bukti Pembayaran</div>
                   <div style={{ fontSize: "0.7rem", color: "#64748B", marginBottom: "0.75rem" }}>Silakan unggah screenshot atau foto bukti pembayaran Anda.</div>
-
                   <div
                     style={{
                       border: "2px dashed #CBD5E1",
@@ -695,7 +712,13 @@ export default function MarketplaceProdusen({
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8"></path></svg>
                         </div>
                         <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#065F46" }}>Bukti Pembayaran Terpilih!</div>
-                        <div style={{ fontSize: "0.75rem", color: "#047857", margin: "0.25rem 0 0.5rem 0", wordBreak: "break-all" }}>{paymentProof}</div>
+                        {paymentProof.startsWith("data:") ? (
+                          <div style={{ margin: "0.5rem 0", display: "flex", justifyContent: "center" }}>
+                            <img src={paymentProof} alt="Preview Bukti" style={{ maxHeight: "100px", maxWidth: "100%", borderRadius: "6px", objectFit: "contain", border: "1px solid #A7F3D0" }} />
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: "0.75rem", color: "#047857", margin: "0.25rem 0 0.5rem 0", wordBreak: "break-all" }}>{paymentProof}</div>
+                        )}
                         <button
                           type="button"
                           onClick={() => setPaymentProof("")}
@@ -716,7 +739,12 @@ export default function MarketplaceProdusen({
                             accept="image/*"
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0]) {
-                                setPaymentProof(e.target.files[0].name);
+                                const file = e.target.files[0];
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setPaymentProof(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
                               }
                             }}
                             style={{ display: "none" }}
@@ -790,7 +818,7 @@ export default function MarketplaceProdusen({
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ color: "#64748B" }}>Bukti File:</span>
-                      <span style={{ color: "#059669", fontWeight: 600, maxWidth: "180px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }} title={paymentProof}>{paymentProof}</span>
+                      <span style={{ color: "#059669", fontWeight: 600, maxWidth: "180px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }} title={paymentProof.startsWith('data:') ? 'Foto Bukti (Terlampir)' : paymentProof}>{paymentProof.startsWith('data:') ? 'Foto Bukti (Terlampir)' : paymentProof}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed #CBD5E1", paddingTop: "0.5rem", fontSize: "0.88rem", marginTop: "0.2rem" }}>
                       <strong style={{ color: "#1E293B" }}>Total Tagihan:</strong>

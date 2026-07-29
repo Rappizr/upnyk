@@ -481,6 +481,18 @@ export default function PesananView() {
                 <span className="text-muted">Status Pembayaran</span>
                 <span style={{ color: "#10B981", fontWeight: "bold" }}>Berhasil (Terverifikasi)</span>
               </div>
+              {receiptOrder.proof_filename && (
+                <div style={{ marginTop: "0.5rem", borderTop: "1px dashed var(--color-border-light)", paddingTop: "0.5rem" }}>
+                  <div className="text-muted font-medium" style={{ fontSize: "0.75rem", marginBottom: "0.35rem" }}>Bukti Transfer Terlampir:</div>
+                  {receiptOrder.proof_filename.startsWith("data:") ? (
+                    <div style={{ display: "flex", justifyContent: "center", background: "#F8FAFC", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--color-border-light)" }}>
+                      <img src={receiptOrder.proof_filename} alt="Bukti Transfer" style={{ maxHeight: "120px", maxWidth: "100%", objectFit: "contain", borderRadius: "4px" }} />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", fontFamily: "monospace" }}>{receiptOrder.proof_filename}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ borderBottom: "1px solid var(--color-border-light)", paddingBottom: "1rem", marginBottom: "1rem" }}>

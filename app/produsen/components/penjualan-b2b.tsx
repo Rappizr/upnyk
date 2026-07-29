@@ -135,7 +135,7 @@ export default function PenjualanB2B() {
     try {
       const { data: pesananDetail } = await supabase
         .from("pesanan")
-        .select("produk_id, jumlah, status")
+        .select("produk_id, jumlah, status, admin_toko_id, produk(nama)")
         .eq("id", rawId)
         .maybeSingle();
 
@@ -177,6 +177,44 @@ export default function PenjualanB2B() {
         .from("transaksi")
         .update({ status: statusTx })
         .eq("pesanan_id", rawId);
+
+      // KIRIM NOTIFIKASI OTOMATIS KE ADMIN TOKO (Relasi Produsen -> Toko)
+      if (pesananDetail?.admin_toko_id) {
+        const { data: adminData } = await supabase
+          .from("admin_toko")
+          .select("profile_id")
+          .eq("id", pesananDetail.admin_toko_id)
+          .maybeSingle();
+
+        const targetProfileId = adminData?.profile_id || pesananDetail.admin_toko_id;
+        const namaKomoditas = (pesananDetail.produk as any)?.nama || "Komoditas";
+
+        let judul = `Status Pesanan Bahan Baku Diperbarui`;
+        let isi = `Status pesanan bahan baku (${namaKomoditas}) telah diperbarui menjadi ${status} oleh produsen.`;
+
+        if (status === "Diproses") {
+          judul = `Pesanan Bahan Baku Diproses`;
+          isi = `Produsen sedang menyiapkan pesanan bahan baku (${namaKomoditas}) untuk toko Anda.`;
+        } else if (status === "Dikirim") {
+          judul = `Bahan Baku Dalam Pengiriman`;
+          isi = `Pesanan bahan baku (${namaKomoditas}) sedang dikirim oleh produsen ke lokasi toko Anda.`;
+        } else if (status === "Selesai") {
+          judul = `Pesanan Bahan Baku Selesai`;
+          isi = `Pesanan bahan baku (${namaKomoditas}) telah selesai dan dikonfirmasi.`;
+        } else if (status === "Dibatalkan") {
+          judul = `Pesanan Bahan Baku Dibatalkan`;
+          isi = `Pesanan bahan baku (${namaKomoditas}) telah dibatalkan oleh produsen.`;
+        }
+
+        await supabase.from("notifikasi").insert({
+          profile_id: targetProfileId,
+          pembeli_id: pesananDetail.admin_toko_id,
+          judul,
+          isi,
+          tipe: "Transaksi",
+          dibaca: false
+        });
+      }
 
       await muatPesananB2B();
     } catch (err) {

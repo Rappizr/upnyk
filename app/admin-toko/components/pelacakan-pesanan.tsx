@@ -726,8 +726,26 @@ async function kirimTerimaPesanan() {
               <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>Bukti Transfer Pembayaran</div>
               <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", maxHeight: "360px", display: "flex", justifyContent: "center", background: "#F8FAFC" }}>
-              <img src={modalBuktiUrl} alt="Bukti Transfer" style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain" }} />
+            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", maxHeight: "360px", minHeight: "140px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}>
+              <img 
+                src={modalBuktiUrl} 
+                alt="Bukti Transfer" 
+                style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain" }} 
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                  const container = (e.target as HTMLElement).parentElement;
+                  if (container && !container.querySelector(".bukti-fallback-msg")) {
+                    const msg = document.createElement("div");
+                    msg.className = "bukti-fallback-msg";
+                    msg.style.padding = "1.25rem 1rem";
+                    msg.style.color = "#475569";
+                    msg.style.fontSize = "0.85rem";
+                    msg.style.lineHeight = "1.5";
+                    msg.innerHTML = `⚠️ <strong>Gambar Bukti Tidak Dapat Dimuat</strong><br/><span style="font-size: 0.75rem; color: #64748B; margin-top: 6px; display: block;">${modalBuktiUrl.startsWith('data:') ? 'Format gambar tidak valid' : 'Transaksi ini sebelumnya hanya mencatat nama file: <code>' + modalBuktiUrl + '</code>.<br/>Silakan minta pembeli mengunggah bukti gambar kembali.'}</span>`;
+                    container.appendChild(msg);
+                  }
+                }}
+              />
             </div>
             <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.5rem 1.5rem", borderRadius: "6px", border: "none", background: "#64748B", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
           </div>
