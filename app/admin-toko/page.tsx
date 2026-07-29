@@ -59,6 +59,8 @@ export interface Pembelian {
   tanggal: string;
   noResi?: string;
   fotoProduk?: string;
+  buktiPembayaran?: string | null;
+  metodePembayaran?: string | null;
   rating?: number;
   fotoUlasan?: string;
   keteranganUlasan?: string;
@@ -220,7 +222,7 @@ export default function AdminTokoDashboard() {
 
       const { data: pesananData, error: pesananError } = await supabase
         .from("pesanan")
-        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id")
+        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id, bukti_pembayaran, metode_pembayaran, no_resi")
         .in("admin_toko_id", possibleAdminIds)
         .order("created_at", { ascending: false });
 
@@ -239,7 +241,7 @@ export default function AdminTokoDashboard() {
 
       const [{ data: produsenData }, { data: produkData }] = await Promise.all([
         produsenIds.length > 0
-          ? supabase.from("produsen").select("id, nama_usaha").in("id", produsenIds)
+          ? supabase.from("produsen").select("id, nama_usaha, desa, kabupaten").in("id", produsenIds)
           : Promise.resolve({ data: [] }),
         produkIds.length > 0
           ? supabase.from("produk").select("id, nama, harga, satuan").in("id", produkIds)
@@ -260,6 +262,7 @@ export default function AdminTokoDashboard() {
 
         const prodObj = produsenMap.get(p.produsen_id);
         const prodObjProduk = produkMap.get(p.produk_id);
+        const prodLokasi = [prodObj?.desa, prodObj?.kabupaten].filter(Boolean).join(", ") || "Lokasi Produsen";
 
         return {
           id: `#PO-${p.id.slice(0, 8).toUpperCase()}`,
@@ -267,12 +270,16 @@ export default function AdminTokoDashboard() {
           produkId: p.produk_id,
           produsenId: p.produsen_id || "",
           produsen: prodObj?.nama_usaha || "Produsen Mitra",
+          lokasiProdusen: prodLokasi,
           item: prodObjProduk?.nama || "Komoditas",
           jumlah: Number(p.jumlah) || 1,
           satuan: prodObjProduk?.satuan || "pcs",
           hargaSatuan: Number(prodObjProduk?.harga) || 0,
           total: Number(p.total_harga) || 0,
           status: statusFormat,
+          noResi: p.no_resi || undefined,
+          buktiPembayaran: p.bukti_pembayaran || null,
+          metodePembayaran: p.metode_pembayaran || "QRIS",
           tanggal: new Date(p.created_at).toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "short",
