@@ -167,7 +167,7 @@ export default function StokKomoditas() {
   useEffect(() => {
     muatStok();
 
-    // Listen Perubahan Realtime di Tabel Pesanan
+   
     const channel = supabase
       .channel("realtime-rating-stok")
       .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatStok())

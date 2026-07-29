@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// Custom Hook untuk animasi count-up
 function useCountUp(target: number, durationMs: number, start: boolean) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -251,7 +250,7 @@ export default function LandingPage() {
         }
       `}} />
 
-      {/* NAVBAR */}
+   
       <header className="glass-nav header-container" style={{ padding: "0.9rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "34px", width: "auto", objectFit: "contain", borderRadius: "6px" }} />
@@ -276,7 +275,7 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION */}
+    
       <section className="hero-section" style={{ minHeight: "90vh", display: "flex", alignItems: "center", position: "relative", overflow: "hidden", padding: "7.5rem 3rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} style={{
@@ -320,7 +319,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* METRIK STATISTIK */}
+      
       <section className="stats-section" ref={statsRef} style={{ padding: "0 2rem", marginTop: "-2.5rem", position: "relative", zIndex: 10 }}>
         <div className="stats-grid" style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.25rem" }}>
           
@@ -365,7 +364,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FITUR */}
+   
       <section id="fitur" className="features-section" style={{ padding: "5rem 2rem", background: "var(--paper)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
@@ -393,7 +392,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA BANNER */}
       <section className="cta-section" style={{ padding: "3rem 1rem 4rem", background: "var(--paper)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{
@@ -459,13 +457,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FOOTER MODERN & MINIMALIS */}
+    
       <footer className="footer-section" style={{ background: "#061F15", color: "#94A3B8", paddingTop: "2.5rem", paddingBottom: "2rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.25rem" }}>
           
           <div className="footer-main-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem", marginBottom: "2rem" }}>
             
-            {/* Logo & Ringkasan */}
+          
             <div className="footer-brand-area" style={{ display: "flex", flexDirection: "column", gap: "0.35rem", maxWidth: "420px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 <img src="/logo.png" alt="PasarNusa" style={{ height: "26px", width: "auto", borderRadius: "4px" }} />
@@ -478,7 +476,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Menu Informasi */}
             <div className="footer-nav-links" style={{ display: "flex", alignItems: "center", gap: "2rem", fontSize: "0.85rem", fontWeight: 600 }}>
               <a href="/tentang-kami" className="footer-link">Tentang Kami</a>
               <a href="/pusat-bantuan" className="footer-link">Pusat Bantuan</a>
@@ -487,7 +484,7 @@ export default function LandingPage() {
 
           </div>
 
-          {/* Bottom Copyright */}
+      
           <div className="footer-bottom" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "1.25rem", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "0.75rem", color: "#64748B", textTransform: "none" }}>
             <span>© 2026 <strong style={{ color: "#CBD5E1", fontWeight: 600 }}>PasarNusa Indonesia</strong>. All rights reserved.</span>
           </div>

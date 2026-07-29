@@ -148,7 +148,7 @@ export default function Pengiriman() {
     const { data: adminList } = await supabase.from("admin_toko").select("id, nama_toko, alamat, kabupaten");
     const adminMap = new Map((adminList || []).map((a) => [a.id, a]));
 
-    // Fetch nomor resi dari tabel pengiriman
+    
     const pesananIds = (pesananData || []).map((p) => p.id);
     let pengirimanMap = new Map();
     if (pesananIds.length > 0) {
@@ -212,12 +212,12 @@ export default function Pengiriman() {
     };
   }, [muatPengiriman]);
 
-  // PRODUSEN MENGIRIM PESANAN (MENGUBAH KE DIKIRIM & MENYIMPAN KE TABEL PENGIRIMAN)
+  
   async function handleKirimOlehProdusen(rawId: string, shortId: string) {
     try {
       const generatedResi = `PN-${shortId.replace("#", "")}`;
 
-      // 1. Update status pesanan di database menjadi "dikirim"
+
       const { error: errPesanan } = await supabase
         .from("pesanan")
         .update({ status: "dikirim", updated_at: new Date().toISOString() })
@@ -225,7 +225,7 @@ export default function Pengiriman() {
 
       if (errPesanan) throw errPesanan;
 
-      // 2. Insert / Update data ke tabel pengiriman
+
       const { data: existingPengiriman } = await supabase
         .from("pengiriman")
         .select("id")

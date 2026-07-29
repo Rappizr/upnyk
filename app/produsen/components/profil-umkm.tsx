@@ -18,9 +18,9 @@ const WARNA_UTAMA_GELAP = "#059669";
 type Mode = "view" | "editUsaha" | "editPemilik";
 
 interface ProfilUMKMProps {
-  /** Dikontrol dari luar — true kalau user klik avatar/profil di header untuk membuka popup */
+  
   open: boolean;
-  /** Dipanggil saat popup ditutup (klik X atau klik area luar) */
+ 
   onClose: () => void;
   onProfileUpdate?: () => void;
 }
@@ -145,7 +145,7 @@ export default function ProfilUMKM({ open, onClose, onProfileUpdate }: ProfilUMK
       }
     }
 
-    // 🌐 AUTOMATIC GEOCODING: Mencari koordinat latitude & longitude dari alamat
+   
     const coords = await getCoordsFromAddress({
       alamat: form.alamat,
       desa: form.desa,

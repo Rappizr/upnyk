@@ -46,7 +46,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── Header / Nav ─── */
+
 .header-nav {
   background-color: var(--color-card-bg);
   border-bottom: 1px solid var(--color-border);
@@ -160,7 +160,7 @@ body {
   text-decoration: none;
 }
 
-/* ─── Sidebar Nav ─── */
+
 .app-shell {
   display: flex;
   min-height: calc(100vh - 64px);
@@ -223,7 +223,7 @@ body {
   padding: 0.75rem 0.875rem 0.25rem;
 }
 
-/* ─── Main Content ─── */
+
 .main-content {
   flex: 1;
   padding: 1.75rem 2rem;
@@ -244,7 +244,7 @@ body {
   margin-bottom: 1.5rem;
 }
 
-/* ─── Cards ─── */
+
 .card {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
@@ -263,7 +263,7 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* ─── Stat Cards ─── */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -392,7 +392,7 @@ body {
   background: var(--color-primary-light);
 }
 
-/* ─── Badges ─── */
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -428,7 +428,7 @@ body {
   color: var(--color-text-muted);
 }
 
-/* ─── Product Grid ─── */
+
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
@@ -490,7 +490,7 @@ body {
   justify-content: space-between;
 }
 
-/* ─── Inputs ─── */
+
 .form-group {
   margin-bottom: 1rem;
 }
@@ -520,7 +520,7 @@ body {
   border-color: var(--color-primary);
 }
 
-/* ─── Tabs ─── */
+
 .tabs {
   display: flex;
   gap: 0.25rem;
@@ -554,7 +554,7 @@ body {
   color: var(--color-text);
 }
 
-/* ─── Timeline ─── */
+
 .timeline {
   display: flex;
   flex-direction: column;
@@ -608,7 +608,7 @@ body {
   color: var(--color-text-subtle);
 }
 
-/* ─── Hero Banner ─── */
+
 .hero-banner {
   background: linear-gradient(135deg, var(--color-primary) 0%, #1D4ED8 50%, #4F46E5 100%);
   border-radius: var(--radius-lg);
@@ -641,7 +641,7 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* ─── Notification Item ─── */
+
 .notif-item {
   display: flex;
   gap: 0.875rem;
@@ -664,7 +664,7 @@ body {
   background: #dbeafe;
 }
 
-/* ─── Wishlist Item ─── */
+
 .wishlist-card {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
@@ -806,7 +806,7 @@ body {
   }
 }
 
-/* ─── Filter Sidebar ─── */
+
 .filter-chip {
   display: inline-flex;
   align-items: center;
@@ -852,14 +852,14 @@ body {
   gap: 0.35rem;
 }
 
-/* ─── Divider ─── */
+
 .divider {
   height: 1px;
   background: var(--color-border);
   margin: 1.25rem 0;
 }
 
-/* ─── Utilities ─── */
+
 .text-primary {
   color: var(--color-primary);
 }
@@ -984,7 +984,7 @@ body {
   border-radius: 999px;
 }
 
-/* ─── Modals (Interactive & Details) ─── */
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1122,7 +1122,7 @@ body {
   background: var(--color-border-light);
 }
 
-/* ─── Upload Area Styles ─── */
+
 .upload-zone {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-sm);
@@ -1173,7 +1173,7 @@ body {
   background: var(--color-border-light);
 }
 
-/* ─── Receipt Modal ─── */
+
 .receipt-header {
   text-align: center;
   border-bottom: 2px dashed var(--color-border);
@@ -1264,7 +1264,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* ─── Responsive Desktop defaults ─── */
+
 .bottom-nav {
   display: none;
 }
@@ -1290,7 +1290,7 @@ body {
 }
 
 
-/* ─── Login Page Responsive Classes ─── */
+
 .login-page-wrapper {
   min-height: 100vh;
   display: flex;
@@ -1328,10 +1328,10 @@ body {
   justify-content: center;
 }
 
-/* ─── Responsive Mobile Styles (max-width: 768px) ─── */
+
 @media (max-width: 768px) {
 
-  /* Layout App Shell */
+
   .app-shell {
     flex-direction: column;
     min-height: calc(100vh - 120px);
@@ -1348,10 +1348,10 @@ body {
   .main-content {
     padding: 1rem;
     padding-bottom: 80px;
-    /* space for bottom nav */
+  
   }
 
-  /* Header adjustments */
+
   .header-nav {
     padding: 0 1rem;
     height: 56px;
@@ -1380,7 +1380,7 @@ body {
     font-size: 0.75rem;
   }
 
-  /* Bottom Navigation */
+
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -1453,7 +1453,7 @@ body {
     box-shadow: 0 0 0 2px var(--color-card-bg);
   }
 
-  /* Grid Layouts overrides */
+  
   .grid-2,
   .grid-3 {
     grid-template-columns: 1fr !important;
@@ -1469,7 +1469,7 @@ body {
     gap: 0.75rem !important;
   }
 
-  /* Mobile-specific compact product cards (2-column layout) */
+  
   .product-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.75rem !important;
@@ -1552,7 +1552,7 @@ body {
     box-sizing: border-box !important;
   }
 
-  /* Specific Component Layouts */
+  
   .profile-layout {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
@@ -1575,7 +1575,7 @@ body {
     align-items: center;
   }
 
-  /* Scroll Strips for Tabs & Categories */
+ 
   .tabs {
     width: 100% !important;
     overflow-x: auto !important;
@@ -1602,7 +1602,7 @@ body {
     flex-shrink: 0 !important;
   }
 
-  /* Wishlist body responsive */
+ 
   .wishlist-summary-card {
     flex-direction: column;
     align-items: stretch;
@@ -1671,7 +1671,7 @@ body {
     justify-content: center !important;
   }
 
-  /* Cart Item Responsive card */
+
   .cart-item-card {
     flex-direction: column;
     align-items: stretch !important;
@@ -1690,7 +1690,7 @@ body {
     padding-top: 0.75rem;
   }
 
-  /* Login Page mobile adjustments */
+
   .login-page-wrapper {
     padding: 1rem !important;
   }
@@ -1711,7 +1711,7 @@ body {
   }
 }
 
-/* ─── Beranda Mobile Adjustments (max-width: 768px) ─── */
+
 @media (max-width: 768px) {
   .hero-banner {
     padding: 1.5rem !important;
@@ -1738,7 +1738,7 @@ body {
     font-size: 0.85rem !important;
   }
 
-  /* Compact 3-Column stats grid on mobile */
+
   .stats-grid {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.5rem !important;
@@ -1772,7 +1772,7 @@ body {
     line-height: 1.2 !important;
   }
 
-  /* Compact Profile details on mobile */
+
   .profile-avatar-card {
     padding: 1.25rem !important;
     margin-bottom: 0.75rem !important;
@@ -1806,7 +1806,7 @@ body {
     font-size: 0.75rem !important;
   }
 
-  /* Compacting stats grid on mobile profile view */
+
   .profile-stats-card {
     padding: 1rem !important;
   }

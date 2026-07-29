@@ -43,7 +43,7 @@ export default function PengaduanPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pengaduan | null>(null);
 
-  // FETCH DATA PENGADUAN LANGSUNG DARI SUPABASE
+ 
   const muatDataPengaduan = useCallback(async () => {
     setLoading(true);
     try {
@@ -81,7 +81,7 @@ export default function PengaduanPage() {
     muatDataPengaduan();
   }, [muatDataPengaduan]);
 
-  // UPDATE STATUS TIKET DI SUPABASE
+
   async function updateStatusPengaduan(id: string, status: Pengaduan["status"]) {
     const { error } = await supabase
       .from("pengaduan")
@@ -206,7 +206,7 @@ export default function PengaduanPage() {
         })}
       </div>
 
-      {/* DETAIL MODAL */}
+      
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "460px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

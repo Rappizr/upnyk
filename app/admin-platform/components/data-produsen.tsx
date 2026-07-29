@@ -46,11 +46,10 @@ export default function DataProdusen() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
-  // FETCH DATA PRODUSEN DARI SUPABASE
   const muatDataProdusen = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Coba kueri terelasi langsung
+    
       const { data: prodRelasi, error: errRelasi } = await supabase
         .from("produsen")
         .select(`
@@ -82,7 +81,7 @@ export default function DataProdusen() {
         return;
       }
 
-      // 2. Fallback jika Foreign Key belum terpasang di Supabase
+    
       const { data: prodData } = await supabase
         .from("produsen")
         .select("id, profile_id, nama_usaha, alamat, desa, kecamatan, kabupaten, provinsi, kategori, status");
@@ -133,7 +132,7 @@ export default function DataProdusen() {
     muatDataProdusen();
   }, [muatDataProdusen]);
 
-  // TOGGLE SUSPEND / AKTIFKAN AKUN DARI SUPABASE
+ 
   async function toggleSuspendEntitas(id: string, statusSaatIni: string) {
     const statusBaru = statusSaatIni === "Aktif" ? "suspended" : "aktif";
     const statusLabel = statusSaatIni === "Aktif" ? "Suspended" : "Aktif";
@@ -155,7 +154,6 @@ export default function DataProdusen() {
     }
   }
 
-  // KELOLA & BUKA DETAIL PRODUSEN (SINKRON TRANSAKSI DARI SUPABASE)
   async function bukaKelolaDetail(produsen: ProdusenBinaan) {
     setDetail(produsen);
     setLoadingRelasi(true);
@@ -329,7 +327,7 @@ export default function DataProdusen() {
         </div>
       </div>
 
-      {/* MODAL KELOLA & DETAIL PRODUSEN */}
+     
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

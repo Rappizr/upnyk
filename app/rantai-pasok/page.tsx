@@ -189,7 +189,7 @@ export default function EkosistemPage() {
         }
       `}} />
 
-      {/* NAVBAR */}
+    
       <header className="glass-nav header-container" style={{ padding: "0.9rem 3.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -209,13 +209,12 @@ export default function EkosistemPage() {
         </nav>
       </header>
 
-      {/* HERO (DISELARASKAN DENGAN BG DEPAN) */}
       <section className="hero-section" style={{
         padding: "12rem 2rem 5.5rem", textAlign: "center", position: "relative",
         backgroundImage: `linear-gradient(90deg, #F6F7F4 0%, rgba(246,247,244,0.92) 40%, rgba(246,247,244,0.40) 70%, rgba(246,247,244,0.10) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
         backgroundSize: "cover", backgroundPosition: "center"
       }}>
-        {/* ambient glow */}
+       
         <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "560px", height: "560px", background: "radial-gradient(circle, rgba(18,134,78,0.08) 0%, transparent 65%)", filter: "blur(30px)", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: "860px", margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -240,7 +239,7 @@ export default function EkosistemPage() {
         </div>
       </section>
 
-      {/* KONTEN */}
+     
       <main className="main-content" style={{ padding: "5.5rem 2rem", maxWidth: "1180px", margin: "0 auto" }}>
 
         {activeTab === 'alur' && (
@@ -305,7 +304,7 @@ export default function EkosistemPage() {
 
       </main>
 
-      {/* FOOTER */}
+   
       <footer className="footer-container" style={{ padding: "2.6rem 3.5rem", background: "var(--forest-1)", color: "#7C8C81", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1180px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.88rem" }}>
           <span style={{ color: "#9AA99F" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>

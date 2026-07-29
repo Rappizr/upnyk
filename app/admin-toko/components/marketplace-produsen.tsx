@@ -44,8 +44,7 @@ interface Pembelian {
   lokasiProdusen?: string;
 }
 
-/** Dipakai untuk menerima prop dari parent (page.tsx). Field dibuat longgar
- *  karena komponen ini tetap memuat produsennya sendiri dari Supabase. */
+
 interface ProdusenDariParent {
   id: string;
   nama: string;
@@ -63,8 +62,6 @@ interface Props {
     hargaSatuan: number,
     satuan: string
   ) => void;
-  /** Opsional: dikirim oleh parent. Tidak wajib dipakai karena komponen
-   *  memuat daftar produsen sendiri langsung dari database. */
   produsenList?: ProdusenDariParent[];
 }
 
@@ -180,7 +177,7 @@ export default function MarketplaceProdusen({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
     const mapped: ProdusenToko[] = (data || []).map((p: any) => ({
       id: p.id,
       namaUsaha: p.nama_usaha || "UMKM Produsen",
@@ -197,7 +194,7 @@ export default function MarketplaceProdusen({
   }, [pemicuToast]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+  
     muatProdusen();
   }, [muatProdusen]);
 
@@ -215,7 +212,7 @@ export default function MarketplaceProdusen({
       console.error("Gagal memuat katalog toko:", error);
       pemicuToast("Gagal memuat katalog produk toko", "gagal");
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    
       const mapped: ProdukKomoditas[] = (data || []).map((p: any) => ({
         id: p.id,
         nama: p.nama,
@@ -276,7 +273,7 @@ export default function MarketplaceProdusen({
         return;
       }
 
-      // 1. Cari ID Admin Toko
+    
       const { data: adminData } = await supabase
         .from("admin_toko")
         .select("id")
@@ -285,8 +282,7 @@ export default function MarketplaceProdusen({
 
       const totalTagihan = qty * selectedBarang.harga;
 
-      // 2. Buat Payload Pesanan
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
       const payloadPesanan: Record<string, any> = {
         produk_id: selectedBarang.id,
         produsen_id: selectedProdusen.id,
@@ -323,7 +319,7 @@ export default function MarketplaceProdusen({
         return;
       }
 
-      // 3. Insert ke tabel `transaksi`
+
       const { error: txError } = await supabase
         .from("transaksi")
         .insert({
@@ -340,7 +336,7 @@ export default function MarketplaceProdusen({
         return;
       }
 
-      // 4. Kirim notifikasi otomatis ke Produsen (Relasi Toko -> Produsen)
+     
       if (selectedProdusen?.id) {
         const { data: produsenInfo } = await supabase
           .from("produsen")

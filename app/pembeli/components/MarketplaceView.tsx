@@ -9,7 +9,7 @@ import {
 } from "@/lib/db";
 import { addToCartAction } from "@/app/actions";
 
-// ==================== ICONS ====================
+
 function StarIcon({ size = 12, className = "", style }: any) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} style={style}>
@@ -46,13 +46,13 @@ function StoreIcon({ size = 14, className = "", style }: any) {
   );
 }
 
-// ==================== INTERFACES ====================
+
 interface MarketplaceViewProps {
   onCartUpdated?: () => void;
   onNavigateToCart?: () => void;
   initialStoreFilter?: string;
   clearInitialStoreFilter?: () => void;
-  searchQuery?: string; // Prop opsional jika ingin menghubungkan search dari topbar utama
+  searchQuery?: string; 
 }
 
 export default function MarketplaceView({
@@ -192,7 +192,7 @@ export default function MarketplaceView({
     }
   };
 
-  // FILTER & SORT
+ 
   let filteredProducts = products.filter((p) => {
     const q = searchQuery.toLowerCase().trim();
     const matchSearch = !q || p.name.toLowerCase().includes(q) || p.storeName.toLowerCase().includes(q);
@@ -238,7 +238,7 @@ export default function MarketplaceView({
         ))}
       </div>
 
-      {/* BAR FILTER TOKO & SORTING */}
+   
       <div style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", padding: "0.75rem 1rem", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
         {/* TOKO SELECTOR */}
@@ -256,7 +256,7 @@ export default function MarketplaceView({
           </select>
         </div>
 
-        {/* SORTING DROPDOWN */}
+   
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span style={{ fontSize: "0.8rem", color: "#64748B" }}>Urutkan:</span>
           <select
@@ -272,7 +272,6 @@ export default function MarketplaceView({
 
       </div>
 
-      {/* BANNER PROFIL TOKO AKTIF */}
       {selectedStoreObj && (
         <div style={{ backgroundColor: "#FFFFFF", borderLeft: "4px solid #10B981", borderRadius: "8px", padding: "1rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div>
@@ -292,7 +291,7 @@ export default function MarketplaceView({
         </div>
       )}
 
-      {/* PRODUCT GRID */}
+      
       {loading ? (
         <div style={{ textAlign: "center", padding: "4rem", color: "#94A3B8", fontSize: "0.9rem" }}>
           Memuat Produk...
@@ -326,7 +325,7 @@ export default function MarketplaceView({
                 onClick={() => { setSelectedProduct(p); setDetailQty(1); }}
               >
 
-                {/* WISHLIST BUTTON */}
+             
                 <button
                   type="button"
                   onClick={(e) => {
@@ -353,7 +352,7 @@ export default function MarketplaceView({
                   <HeartIcon size={14} filled={isWishlisted} />
                 </button>
 
-                {/* PRODUCT IMAGE */}
+               
                 <div style={{ width: "100%", aspectRatio: "1/1", backgroundColor: "#F8FAFC", position: "relative", overflow: "hidden" }}>
                   {p.foto ? (
                     <img src={p.foto} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -370,7 +369,7 @@ export default function MarketplaceView({
                   )}
                 </div>
 
-                {/* DETAILS */}
+             
                 <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", flex: 1 }}>
 
                   <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B", height: "2.4rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.2rem", marginBottom: "0.4rem" }}>
@@ -434,7 +433,7 @@ export default function MarketplaceView({
         </div>
       )}
 
-      {/* QUICK VIEW MODAL */}
+    
       {selectedProduct && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.5)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", width: "450px", maxWidth: "100%", overflow: "hidden", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", position: "relative" }}>
@@ -509,7 +508,7 @@ export default function MarketplaceView({
         </div>
       )}
 
-      {/* POPUP SUKSES KERANJANG */}
+    
       {showCartPopup && (
         <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "1rem" }}>
           <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "1.5rem", width: "320px", maxWidth: "100%", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>

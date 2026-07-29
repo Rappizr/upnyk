@@ -273,7 +273,7 @@ export default function PesananView() {
 
             return (
               <div key={order.id || order.originalId} className="card" id={`order-${order.id}`}>
-                {/* Order Header */}
+            
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
@@ -301,7 +301,7 @@ export default function PesananView() {
                   </div>
                 </div>
 
-                {/* Items */}
+        
                 {(order.items || []).map((item: any, i: number) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
@@ -315,7 +315,7 @@ export default function PesananView() {
                   </div>
                 ))}
 
-                {/* Actions */}
+              
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
                   {order.status === "Belum Dibayar" && !order.proof_uploaded && (
                     <button onClick={() => handleUpdateStatus(order.id, "Diproses")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-bayar-${order.id}`}>
@@ -379,7 +379,7 @@ export default function PesananView() {
                   )}
                 </div>
 
-                {/* Timeline */}
+              
                 {expanded === order.id && timeline.length > 0 && (
                   <div style={{ padding: "1rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)" }}>
                     <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -424,7 +424,7 @@ export default function PesananView() {
         </div>
       )}
 
-      {/* RECEIPT / BUKTI PEMBAYARAN MODAL */}
+  
       {receiptOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -520,7 +520,7 @@ export default function PesananView() {
         </div>
       )}
 
-      {/* MODAL BERIKAN ULASAN PRODUK */}
+  
       {reviewModalOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,

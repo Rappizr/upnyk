@@ -178,7 +178,7 @@ export default function PenjualanB2B() {
         .update({ status: statusTx })
         .eq("pesanan_id", rawId);
 
-      // KIRIM NOTIFIKASI OTOMATIS KE ADMIN TOKO (Relasi Produsen -> Toko)
+      
       if (pesananDetail?.admin_toko_id) {
         const { data: adminData } = await supabase
           .from("admin_toko")

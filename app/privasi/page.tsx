@@ -105,7 +105,7 @@ export default function PrivasiPage() {
         }
       `}} />
 
-      {/* Header Bar */}
+  
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -124,7 +124,7 @@ export default function PrivasiPage() {
         </nav>
       </header>
 
-      {/* Hero Section dengan Gambar Latar Belakang Tepat Seperti Acuan */}
+    
       <section className="hero-section" style={{
         paddingTop: "12rem", paddingBottom: "6rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
@@ -152,7 +152,7 @@ export default function PrivasiPage() {
         </div>
       </section>
 
-      {/* Main Content */}
+  
       <main className="main-content" style={{ paddingTop: "4rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}>
 
         <Reveal>

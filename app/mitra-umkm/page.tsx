@@ -22,19 +22,19 @@ interface Mitra {
 
 const filterTipe = ["Semua", "Toko UMKM", "Produsen Hulu"] as const;
 const C = {
-  deep: "#08170E",       // forest paling gelap (footer)
-  forest: "#0E2A1B",     // forest gelap
-  forest2: "#123A24",    // forest medium
-  green: "#16A34A",      // hijau utama (CTA)
+  deep: "#08170E",       
+  forest: "#0E2A1B",     
+  forest2: "#123A24",    
+  green: "#16A34A",      
   greenDark: "#15803D",
   emerald: "#22C55E",
-  lime: "#A3E635",       // aksen lime terang
+  lime: "#A3E635",       
   limeSoft: "#BEF264",
-  bg: "#F4FAF5",         // latar terang kehijauan
+  bg: "#F4FAF5",         
   card: "#FFFFFF",
   border: "#E3EDE7",
-  ink: "#0B1F14",        // teks utama
-  muted: "#5B7267",      // teks sekunder
+  ink: "#0B1F14",        
+  muted: "#5B7267",      
 };
 
 function useReveal<T extends HTMLElement>() {
@@ -255,7 +255,7 @@ export default function MitraUmkmPage() {
         }
       `}} />
 
-      {/* ================= NAVBAR (DIselaraskan) ================= */}
+    
       <header className="glass-nav header-container" style={{ padding: "1rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <Image
@@ -282,7 +282,7 @@ export default function MitraUmkmPage() {
         </nav>
       </header>
 
-      {/* ================= HERO (DISAMAKAN BG DEPAN/EKOSISTEM) ================= */}
+      
       <section className="hero-section" style={{
         padding: "12rem 2rem 5.5rem", textAlign: "center", position: "relative",
         backgroundImage: `linear-gradient(90deg, #F6F7F4 0%, rgba(246,247,244,0.92) 40%, rgba(246,247,244,0.40) 70%, rgba(246,247,244,0.10) 100%), url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920')`,
@@ -320,7 +320,7 @@ export default function MitraUmkmPage() {
         </div>
       </section>
 
-      {/* ================= MAIN ================= */}
+     
       <main className="main-content" style={{ padding: "5rem 2rem 7rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         <Reveal>
           <div className="toolbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.25rem", marginBottom: "2.75rem" }}>
@@ -355,7 +355,7 @@ export default function MitraUmkmPage() {
               <Reveal key={m.id} delay={i * 60}>
                 <div className="mitra-card" style={{ padding: "1.75rem", borderRadius: "1.5rem", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
                   
-                  {/* HEADER KARTU */}
+                
                   <div className="mitra-card-header" style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.25rem" }}>
                     <div className="mitra-avatar" style={{ width: "52px", height: "52px", borderRadius: "50%", overflow: "hidden", background: "#F1F5F9", border: "2px solid #E3EDE7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {m.fotoUrl ? (
@@ -372,17 +372,17 @@ export default function MitraUmkmPage() {
                     </div>
                   </div>
 
-                  {/* LOKASI */}
+           
                   <div className="mitra-location" style={{ display: "flex", alignItems: "center", gap: "5px", color: C.muted, fontSize: "0.85rem", marginBottom: "0.9rem" }}>
                     <MapPin size={14} color={C.emerald} /> <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.lokasi}</span>
                   </div>
 
-                  {/* KOMODITAS */}
+               
                   <p className="mitra-sector" style={{ color: "#3F5A4C", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.35rem 0", flexGrow: 1 }}>
                     Sektor / Komoditas: <strong style={{ color: C.ink }}>{m.komoditas}</strong>
                   </p>
 
-                  {/* FOOTER KARTU */}
+                  
                   <div className="mitra-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: "1rem", fontSize: "0.78rem", color: C.muted, fontWeight: 600 }}>
                     <span>Mitra sejak {m.sejakTahun}</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: C.green, fontWeight: 700 }}>
@@ -403,7 +403,7 @@ export default function MitraUmkmPage() {
           </div>
         )}
 
-        {/* ================= CTA ================= */}
+
         <Reveal delay={100}>
           <div className="cta-box" style={{ marginTop: "5rem", background: `radial-gradient(120% 140% at 0% 0%, ${C.forest2} 0%, ${C.forest} 45%, ${C.deep} 100%)`, borderRadius: "2rem", padding: "3.5rem clamp(1.5rem, 5vw, 4rem)", textAlign: "center", position: "relative", overflow: "hidden", border: "1px solid rgba(163,230,53,0.14)" }}>
             <div style={{ position: "relative" }}>
@@ -424,7 +424,7 @@ export default function MitraUmkmPage() {
         </Reveal>
       </main>
 
-      {/* ================= FOOTER ================= */}
+      
       <footer className="footer-container" style={{ padding: "3rem 4rem", background: "#0A2018", color: C.muted, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#7C978A" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>

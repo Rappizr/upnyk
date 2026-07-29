@@ -104,7 +104,7 @@ export default function AdminPlatformDashboard() {
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  // STATE GATEKEEPER / VERIFIKASI DATA ADMIN
+
   const [perluLengkapiData, setPerluLengkapiData] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [submittingData, setSubmittingData] = useState(false);
@@ -132,7 +132,7 @@ export default function AdminPlatformDashboard() {
     inisial: "AP",
   });
 
-  // CEK KELENGKAPAN DATA ADMIN PLATFORM
+ 
   const cekKelengkapanAdmin = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -205,14 +205,14 @@ export default function AdminPlatformDashboard() {
     reader.readAsDataURL(file);
   }
 
-// SIMPAN DATA ADMIN (ANTI-CRASH & ERROR HANDLING DETAIL)
+
   const handleSimpanDataAwal = async (e: FormEvent) => {
     e.preventDefault();
     if (!userId || submittingData) return;
 
     setSubmittingData(true);
     try {
-      // 1. Ambil data profil user saat ini
+  
       const { data: profileData } = await supabase
         .from("profiles")
         .select("phone")
@@ -221,7 +221,6 @@ export default function AdminPlatformDashboard() {
 
       const noHpOtomatis = profileData?.phone || "-";
 
-      // 2. Simpan/Upsert ke admin_platform
       const { error: errAdmin } = await supabase
         .from("admin_platform")
         .upsert(
@@ -243,7 +242,6 @@ export default function AdminPlatformDashboard() {
         return;
       }
 
-      // 3. Update nama di tabel profiles
       const { error: errProfile } = await supabase
         .from("profiles")
         .update({ nama: formLengkapi.namaLengkap })
@@ -253,7 +251,7 @@ export default function AdminPlatformDashboard() {
         console.error("Error profiles update:", errProfile);
       }
 
-      // Berhasil
+      
       setPerluLengkapiData(false);
       await cekKelengkapanAdmin();
     } catch (err: any) {
@@ -306,23 +304,21 @@ export default function AdminPlatformDashboard() {
         }
       `}} />
 
-      {/* ============================================================ */}
-      {/* POPUP MODAL LENGKAPI PROFIL ADMIN (TANPA INPUT NO HP) */}
-      {/* ============================================================ */}
+     
       {perluLengkapiData && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(1.5px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "460px", maxWidth: "100%", boxShadow: "0 25px 50px -12px rgba(15,23,42,0.25)", boxSizing: "border-box" }}>
             
             <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1E293B", margin: "0 0 1rem 0" }}>Lengkapi Profil Admin Anda</h2>
             
-            {/* ALERT BOX KUNING DI DALAM MODAL */}
+         
             <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: "8px", padding: "0.85rem 1rem", fontSize: "0.82rem", color: "#92400E", fontWeight: 600, marginBottom: "1.25rem", lineHeight: 1.4 }}>
               Isi data pengelola di bawah ini agar seluruh fitur pengawasan platform aktif.
             </div>
 
             <form onSubmit={handleSimpanDataAwal} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               
-              {/* UPLOAD FOTO AREA */}
+           
               <div>
                 <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.4rem" }}>
                   UPLOAD FOTO PROFIL / AVATAR
@@ -340,7 +336,7 @@ export default function AdminPlatformDashboard() {
                 </div>
               </div>
 
-              {/* INPUT NAMA LENGKAP */}
+            
               <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.35rem" }}>Nama Lengkap *</label>
                 <input 
@@ -353,7 +349,6 @@ export default function AdminPlatformDashboard() {
                 />
               </div>
 
-              {/* INPUT JABATAN (FULL WIDTH - TANPA NO HP) */}
               <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.35rem" }}>Jabatan Admin *</label>
                 <select 
@@ -367,7 +362,7 @@ export default function AdminPlatformDashboard() {
                 </select>
               </div>
 
-              {/* TOMBOL SIMPAN SLATE ABU-ABU GELAP */}
+          
               <button 
                 type="submit" 
                 disabled={submittingData} 
@@ -423,10 +418,10 @@ export default function AdminPlatformDashboard() {
         </div>
       </aside>
 
-      {/* LAYOUT KONTEN UTAMA */}
+  
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
         
-        {/* HEADER TOPBAR */}
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button onClick={() => setSidebarOpen(true)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
@@ -459,11 +454,10 @@ export default function AdminPlatformDashboard() {
           </div>
         )}
 
-        {/* ISI DASHBOARD UTAMA */}
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
             
-            {/* 1. ALERT BANNER MERAH DI ATAS HERO */}
+            
             {perluLengkapiData && (
               <div style={{ background: "#FEF2F2", border: "1px solid #FECDD3", borderRadius: "10px", padding: "0.9rem 1.25rem", color: "#991B1B", fontSize: "0.83rem", fontWeight: 600, marginBottom: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.6rem", lineHeight: 1.5 }}>
                 <span style={{ color: "#EF4444", flexShrink: 0, marginTop: "2px" }}><IconAlertTriangle /></span>
@@ -497,7 +491,7 @@ export default function AdminPlatformDashboard() {
               )}
             </div>
 
-            {/* 3. GRID METRIK & STATISTIK */}
+            
             <div className="ap-stats-grid" style={{ marginBottom: "1.5rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>

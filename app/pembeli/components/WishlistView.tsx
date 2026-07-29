@@ -51,7 +51,7 @@ export default function WishlistView({
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // FETCH WISHLIST DENGAN INFORMASI ETALASE & ADMIN_TOKO REALTIME
+ 
   const loadWishlistRealtime = useCallback(async () => {
     setLoading(true);
     try {

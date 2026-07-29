@@ -172,7 +172,7 @@ export default function TentangKamiPage() {
         }
       `}} />
 
-      {/* NAVBAR */}
+    
       <header className="glass-nav header-container" style={{ padding: "0.9rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "36px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -192,7 +192,6 @@ export default function TentangKamiPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION */}
       <section className="hero-section" style={{
         padding: "12rem 2rem 5rem", textAlign: "center", position: "relative",
         backgroundImage: `linear-gradient(180deg, rgba(246,247,244,0.7) 0%, rgba(246,247,244,0.95) 100%), url('/logoTentangKami.png')`,
@@ -216,7 +215,6 @@ export default function TentangKamiPage() {
         </div>
       </section>
 
-      {/* GALERI DOKUMENTASI */}
       <section className="gallery-section" style={{ padding: "5rem 3rem 6rem", maxWidth: "1280px", margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: "2.6rem" }}>
           <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Dari Lapangan</span>
@@ -232,7 +230,6 @@ export default function TentangKamiPage() {
         </div>
       </section>
 
-      {/* SEKSI 1: AKAR PERMASALAHAN */}
       <section className="problem-section" style={{ padding: "6rem 3rem", maxWidth: "1200px", margin: "0 auto" }}>
         <div className="problem-grid-main" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "4rem", alignItems: "center" }}>
           <div className="problem-left-heading">
@@ -259,7 +256,7 @@ export default function TentangKamiPage() {
         </div>
       </section>
 
-      {/* SEKSI 2: VISI MISI */}
+    
       <section className="vision-section" style={{ padding: "6rem 3rem", backgroundColor: "var(--card)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
         <div className="vision-grid" style={{ maxWidth: "1200px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: "2.5rem" }}>
 
@@ -288,7 +285,7 @@ export default function TentangKamiPage() {
         </div>
       </section>
 
-      {/* SEKSI 3: TIGA PILAR */}
+   
       <section className="values-section" style={{ padding: "7rem 3rem", maxWidth: "1200px", margin: "0 auto" }}>
         <div className="values-header" style={{ textAlign: "center", marginBottom: "4rem" }}>
           <span style={{ color: "var(--emerald)", fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Bukan Klaim, Tapi Sistem</span>
@@ -311,7 +308,7 @@ export default function TentangKamiPage() {
         </div>
       </section>
 
-      {/* TIM PENGEMBANG */}
+  
       <section className="team-section" style={{ padding: "7rem 3rem", background: "var(--paper)", borderTop: "1px solid var(--line)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div className="team-header" style={{ textAlign: "center", marginBottom: "4rem" }}>

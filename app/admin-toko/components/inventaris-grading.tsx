@@ -130,7 +130,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     }
   }, []);
 
-  // LOAD SEKALI SAJA UNTUK MENCEGAH INFINITE LOOP
+ 
   useEffect(() => {
     muatInventarisFromDb();
 
@@ -150,7 +150,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     };
   }, [muatInventarisFromDb]);
 
-  // HANDLE EDIT STOK
+
   async function handleEditSubmit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
@@ -165,7 +165,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
         .eq("profile_id", user.id)
         .maybeSingle();
 
-      // 1. UPDATE STOK INVENTARIS
+      
       const { error: errInv } = await supabase
         .from("inventaris")
         .update({
@@ -176,7 +176,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
 
       if (errInv) throw errInv;
 
-      // 2. SINKRONKAN KE ETALASE
+   
       if (adminToko) {
         await supabase
           .from("etalase")

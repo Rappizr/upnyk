@@ -168,7 +168,7 @@ async function kirimTerimaPesanan() {
 
     if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
 
-    // 1. UPDATE STATUS PESANAN MENGGUNAKAN UUID ASLI
+   
     const { error: errUpdatePesanan } = await supabase
       .from("pesanan")
       .update({ 
@@ -181,11 +181,10 @@ async function kirimTerimaPesanan() {
 
     if (errUpdatePesanan) throw errUpdatePesanan;
 
-    // 2. MASUKKAN / TAMBAHKAN STOK KE TABEL INVENTARIS
+  
     let existingInv = null;
 
-    // A. CARI PRODUK ID SECARA GLOBAL (TANPA FILTER admin_toko_id)
-    // Ini cegah error "unique constraint" jika baris inventaris sudah ada di DB tetapi admin_toko_id bernilai NULL
+  
     if (modalTerimaItem.produkId) {
       const { data } = await supabase
         .from("inventaris")
@@ -195,7 +194,7 @@ async function kirimTerimaPesanan() {
       existingInv = data;
     }
 
-    // B. Fallback pencarian nama_produk jika produk_id kosong
+ 
     if (!existingInv && modalTerimaItem.item) {
       const { data } = await supabase
         .from("inventaris")
@@ -206,7 +205,7 @@ async function kirimTerimaPesanan() {
     }
 
     if (existingInv) {
-      // JIKA PRODUK SUDAH ADA (Termasuk yang admin_toko_id-nya NULL), LAKUKAN UPDATE!
+    
       const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
       
       const updateData: any = {
@@ -214,7 +213,7 @@ async function kirimTerimaPesanan() {
         updated_at: new Date().toISOString()
       };
 
-      // Sekalian perbaiki admin_toko_id jika sebelumnya NULL
+ 
       if (!existingInv.admin_toko_id) {
         updateData.admin_toko_id = adminToko.id;
       }
@@ -226,7 +225,7 @@ async function kirimTerimaPesanan() {
 
       if (errUpdateInv) throw errUpdateInv;
     } else {
-      // BARU BIKIN BARIS BARU JIKA DIBUTUHKAN
+     
       const { error: errInsertInv } = await supabase
         .from("inventaris")
         .insert({
@@ -243,7 +242,7 @@ async function kirimTerimaPesanan() {
       if (errInsertInv) throw errInsertInv;
     }
 
-    // 3. REKALKULASI RATING
+   
     if (modalTerimaItem.produkId) {
       const { data: listPesananProduk } = await supabase
         .from("pesanan")
@@ -434,7 +433,7 @@ async function kirimTerimaPesanan() {
         )
       )}
 
-      {/* TAB 2: TOKO KE PEMBELI */}
+   
       {activeTab === "toko-pembeli" && (
         <div>
           <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
@@ -614,7 +613,6 @@ async function kirimTerimaPesanan() {
         </div>
       )}
 
-      {/* MODAL INPUT RESI */}
       {modalResiOrder && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "420px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
@@ -643,7 +641,7 @@ async function kirimTerimaPesanan() {
         </div>
       )}
 
-      {/* MODAL TERIMA PESANAN, RATING & ULASAN PRODUSEN */}
+ 
       {modalTerimaItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "460px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
@@ -654,7 +652,7 @@ async function kirimTerimaPesanan() {
               Terima <strong>{modalTerimaItem.item}</strong> ({modalTerimaItem.jumlah} {modalTerimaItem.satuan || "pcs"}). Stok akan langsung masuk ke Inventaris Gudang Toko.
             </p>
 
-            {/* INPUT RATING BINTANG */}
+         
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                 Rating Kualitas Komoditas
@@ -677,7 +675,7 @@ async function kirimTerimaPesanan() {
               </div>
             </div>
 
-            {/* INPUT KETERANGAN ULASAN */}
+          
             <div style={{ marginBottom: "1.25rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                 Ulasan / Catatan Kualitas
@@ -718,7 +716,6 @@ async function kirimTerimaPesanan() {
         </div>
       )}
 
-      {/* MODAL PREVIEW BUKTI PEMBAYARAN */}
       {modalBuktiUrl && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "480px", textAlign: "center" }}>
@@ -752,7 +749,7 @@ async function kirimTerimaPesanan() {
         </div>
       )}
 
-      {/* MODAL NOTIFIKASI MODERN */}
+      
       {notifState.open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>

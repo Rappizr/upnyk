@@ -87,11 +87,11 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
     }
   }, [currentUserName]);
 
-  // LOAD REALTIME DATA DARI DATABASE SUPABASE
+ 
   const loadDashboardRealtime = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Ambil Toko Mitra langsung dari tabel admin_toko
+    
       const { data: adminTokoData } = await supabase
         .from("admin_toko")
         .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto");
@@ -106,14 +106,14 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
           reviews: 88,
           desc: `Toko resmi ${t.nama_toko} memproduksi dan menyediakan komoditas olahan unggulan.`,
           bg_color: "var(--color-primary-light)",
-          foto: t.foto || null, // ✅ TAMBAHKAN PEMETAAN FOTO PROFIL TOKO
+          foto: t.foto || null, // 
         }));
         setCoopStores(mappedStores);
       } else {
         setCoopStores([]);
       }
 
-      // 2. Ambil Produk Jualan dari tabel etalase
+  
       const { data: etalaseData } = await supabase
         .from("etalase")
         .select("*")
@@ -156,7 +156,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         setProducts([]);
       }
 
-      // 3. Load pesanan & profile
+      
       const [orderData, profileData, wlData] = await Promise.all([
         getOrdersAction(),
         getProfileAction(),
@@ -264,7 +264,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         </div>
       </div>
 
-      {/* Stats */}
+   
       <div className="stats-grid" style={{ marginBottom: "1.5rem" }}>
         <div className="stat-card">
           <div className="stat-icon blue"><PackageIcon size={22} /></div>
@@ -291,7 +291,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         </div>
       </div>
 
-      {/* Toko Terdaftar dari Database */}
+    
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <div>
           <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -313,7 +313,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
             <div key={c.id} className="card card-hover" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                  {/* ✅ TAMPILKAN FOTO PROFIL UMKM JIKA ADA, JIKA TIDAK TAMPILKAN FALLBACK */}
+                
                   <div style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-primary-light)", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
                     {c.foto ? (
                       <img src={c.foto} alt={c.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -347,7 +347,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         </div>
       )}
 
-      {/* Rekomendasi Produk Realtime dari Tabel etalase */}
+    
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <div>
           <div className="text-lg font-semibold" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>

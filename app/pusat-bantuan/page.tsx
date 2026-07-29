@@ -51,8 +51,7 @@ export default function KontakMitraPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // PROSES SIMPAN ADUAN SINKRON KE TABEL `pengaduan` SUPABASE
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
 
@@ -186,7 +185,7 @@ export default function KontakMitraPage() {
         }
       `}} />
 
-      {/* NAVBAR */}
+  
       <header className="glass-nav header-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "1rem", paddingBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, transition: "all 0.4s ease", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo" style={{ height: "40px", width: "auto", objectFit: "contain", borderRadius: "8px" }} />
@@ -205,7 +204,7 @@ export default function KontakMitraPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION KONTAK */}
+   
       <section className="hero-section" style={{
         paddingTop: "11rem", paddingBottom: "5rem", paddingLeft: "2rem", paddingRight: "2rem",
         textAlign: "center", position: "relative", overflow: "hidden",
@@ -230,11 +229,11 @@ export default function KontakMitraPage() {
         </div>
       </section>
 
-      {/* KONTEN UTAMA */}
+  
       <main className="main-content" style={{ paddingTop: "4rem", paddingBottom: "7rem", paddingLeft: "2rem", paddingRight: "2rem", maxWidth: "1200px", marginLeft: "auto", marginRight: "auto" }}>
         <div className="main-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "4rem", alignItems: "flex-start" }}>
 
-          {/* SISI KIRI: DIRECTORY INFO */}
+        
           <Reveal>
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               <div className="left-pane-header">
@@ -286,7 +285,7 @@ export default function KontakMitraPage() {
             </div>
           </Reveal>
 
-          {/* SISI KANAN: FORM INTERAKTIF PANEL */}
+    
           <Reveal delay={120}>
             <div className="right-form-panel" style={{ background: "#ffffff", padding: "2.5rem", borderRadius: "2rem", border: "1px solid rgba(226, 232, 240, 0.8)", boxShadow: "0 20px 40px -20px rgba(0,0,0,0.03)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#EF4444", marginBottom: "1.5rem" }}>
@@ -350,7 +349,7 @@ export default function KontakMitraPage() {
         </div>
       </main>
 
-      {/* FOOTER */}
+   
       <footer className="footer-container" style={{ paddingLeft: "4rem", paddingRight: "4rem", paddingTop: "3rem", paddingBottom: "3rem", background: "#0B1120", color: "#475569", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
         <div className="footer-wrapper" style={{ maxWidth: "1200px", marginLeft: "auto", marginRight: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", fontSize: "0.9rem" }}>
           <span style={{ color: "#64748B" }}>© 2026 PasarNusa &amp; Supply Chain Platform. Seluruh Hak Cipta Dilindungi.</span>

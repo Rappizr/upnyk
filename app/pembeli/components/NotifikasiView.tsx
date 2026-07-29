@@ -8,7 +8,7 @@ import {
   submitReviewAction,
 } from "@/app/actions";
 
-// ─── Icon components ─────────────────────────────────────────────────────────
+
 interface SVGIconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;
 }
@@ -109,7 +109,7 @@ function XCircleIcon({ size = 24, className = "", ...props }: SVGIconProps) {
   );
 }
 
-// ─── Icon resolver ───────────────────────────────────────────────────────────
+
 function resolveNotifIcon(judul: string, tipe: string) {
   const j = judul.toLowerCase();
   if (j.includes("keranjang") || j.includes("masuk keranjang")) return "cart";
@@ -156,7 +156,7 @@ function notifIconColor(judul: string, tipe: string): string {
   }
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+
 export interface NotificationItem {
   id: string;
   tipe: string;
@@ -191,14 +191,14 @@ function formatDate(isoStr: string) {
   }
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
   const [activeTab, setActiveTab] = useState("Semua");
   const [notifs, setNotifs] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Review state
+
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [reviewTexts, setReviewTexts] = useState<Record<string, string>>({});
   const [submittedReviews, setSubmittedReviews] = useState<string[]>([]);
@@ -206,7 +206,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Fetch via server action ────────────────────────────────────────────────
+  
   const loadNotifs = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -231,7 +231,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
     }
   }, []);
 
-  // Sync unread count to parent component without triggering setState during render
+ 
   useEffect(() => {
     const unread = notifs.filter((x) => !x.dibaca).length;
     onUpdateCount?.(unread);
@@ -245,13 +245,13 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
     };
   }, [loadNotifs]);
 
-  // ── Mark all read ──────────────────────────────────────────────────────────
+  
   const markAllRead = async () => {
     await markAllNotifReadAction();
     setNotifs((prev) => prev.map((n) => ({ ...n, dibaca: true })));
   };
 
-  // ── Mark one read on click ─────────────────────────────────────────────────
+ 
   const markOneRead = async (notifId: string) => {
     const notif = notifs.find((n) => n.id === notifId);
     if (!notif || notif.dibaca) return;
@@ -259,7 +259,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
     setNotifs((prev) => prev.map((n) => n.id === notifId ? { ...n, dibaca: true } : n));
   };
 
-  // ── Submit review (from ulasan reminder) ──────────────────────────────────
+ 
   const handleSubmitReview = async (notifId: string) => {
     const star = ratings[notifId] || 0;
     if (star === 0) {
@@ -280,7 +280,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
     }
   };
 
-  // ── Filtered list ──────────────────────────────────────────────────────────
+  
   const filtered =
     activeTab === "Semua"
       ? notifs
@@ -290,10 +290,10 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
   const isReviewReminder = (n: NotificationItem) =>
     resolveNotifIcon(n.judul, n.tipe) === "star" && !submittedReviews.includes(n.id);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  
   return (
     <>
-      {/* Header */}
+      
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.25rem" }}>
         <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <BellIcon size={28} className="text-primary" /> Notifikasi
@@ -341,7 +341,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
         Update pesanan, konfirmasi pembayaran, pengiriman, dan pengingat ulasan
       </p>
 
-      {/* Tabs */}
+      
       <div className="tabs" style={{ marginBottom: "1rem" }}>
         {tabs.map((t) => (
           <button
@@ -355,7 +355,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
         ))}
       </div>
 
-      {/* Content */}
+     
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {[1, 2, 3].map((i) => (
@@ -384,7 +384,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                 }}
               >
                 <div style={{ display: "flex", gap: "0.875rem", width: "100%" }}>
-                  {/* Icon */}
+                 
                   <div
                     style={{
                       width: "2.5rem",
@@ -401,7 +401,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                     <NotifIcon judul={n.judul} tipe={n.tipe} size={18} />
                   </div>
 
-                  {/* Body */}
+               
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.2rem", gap: "0.5rem" }}>
                       <span className={`badge ${typeColors[n.tipe] || "badge-gray"}`}>{n.tipe}</span>
@@ -420,7 +420,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                       {n.isi}
                     </div>
 
-                    {/* Unread dot */}
+                   
                     {!n.dibaca && (
                       <div style={{ marginTop: "0.35rem" }}>
                         <span style={{
@@ -435,7 +435,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                   </div>
                 </div>
 
-                {/* Review interaction area */}
+              
                 {isReview && !alreadySubmitted && (
                   <div
                     style={{ marginTop: "0.85rem", paddingLeft: "3.375rem" }}
@@ -459,7 +459,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                         </span>
                       ))}
                     </div>
-                    {/* Text input & submit */}
+                
                     <div style={{ display: "flex", gap: "0.5rem" }}>
                       <input
                         type="text"
@@ -482,7 +482,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
                   </div>
                 )}
 
-                {/* Already submitted */}
+           
                 {isReview && alreadySubmitted && (
                   <div
                     style={{ marginTop: "0.6rem", paddingLeft: "3.375rem", fontSize: "0.75rem", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.3rem" }}
@@ -495,7 +495,7 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
             );
           })}
 
-          {/* Empty state */}
+          
           {filtered.length === 0 && (
             <div className="card" style={{ textAlign: "center", padding: "4rem 2rem", color: "var(--color-text-subtle)" }}>
               <BellIcon size={48} style={{ margin: "0 auto 1rem", opacity: 0.3 }} />
