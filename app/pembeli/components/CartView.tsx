@@ -301,7 +301,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       });
 
       const createdOrders = await Promise.all(orderPromises);
-      if (createdOrders.length > 0 && createdOrders.every(res => res === null)) {
+      const validOrders = createdOrders.filter(Boolean);
+      if (createdOrders.length > 0 && validOrders.length === 0) {
         alert("Gagal memproses pesanan ke database. Silakan coba lagi.");
         return;
       }
@@ -626,8 +627,34 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                             if (e.target.files && e.target.files[0]) {
                               const file = e.target.files[0];
                               const reader = new FileReader();
-                              reader.onloadend = () => {
-                                setPaymentProof(reader.result as string);
+                              reader.onload = (event) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                  const canvas = document.createElement("canvas");
+                                  const maxDim = 300;
+                                  let w = img.width;
+                                  let h = img.height;
+                                  if (w > maxDim || h > maxDim) {
+                                    if (w > h) {
+                                      h = Math.round((h * maxDim) / w);
+                                      w = maxDim;
+                                    } else {
+                                      w = Math.round((w * maxDim) / h);
+                                      h = maxDim;
+                                    }
+                                  }
+                                  canvas.width = w;
+                                  canvas.height = h;
+                                  const ctx = canvas.getContext("2d");
+                                  if (ctx) {
+                                    ctx.drawImage(img, 0, 0, w, h);
+                                    setPaymentProof(canvas.toDataURL("image/jpeg", 0.5));
+                                  } else {
+                                    setPaymentProof(event.target?.result as string);
+                                  }
+                                };
+                                img.onerror = () => setPaymentProof(event.target?.result as string);
+                                img.src = event.target?.result as string;
                               };
                               reader.readAsDataURL(file);
                             }

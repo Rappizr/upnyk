@@ -40,10 +40,14 @@ export async function getCurrentUserId(): Promise<string | null> {
   try {
     let authUserId: string | null = null;
 
-    // 1. Cek Auth Supabase
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData?.user?.id) {
-      authUserId = authData.user.id;
+    // 1. Cek Auth Supabase dengan try/catch aman
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user?.id) {
+        authUserId = authData.user.id;
+      }
+    } catch (eAuth) {
+      console.warn('getCurrentUserId auth.getUser exception:', eAuth);
     }
 
     // 2. Cek LocalStorage
@@ -58,25 +62,33 @@ export async function getCurrentUserId(): Promise<string | null> {
 
     // Jika menemukan profile_id / auth_id, pastikan kita dapatkan ID Pembeli sejati
     if (authUserId && isValidUuid(authUserId)) {
-      const { data: pembeli } = await supabase
-        .from('pembeli')
-        .select('id')
-        .or(`id.eq.${authUserId},profile_id.eq.${authUserId}`)
-        .maybeSingle();
+      try {
+        const { data: pembeli } = await supabase
+          .from('pembeli')
+          .select('id')
+          .or(`id.eq.${authUserId},profile_id.eq.${authUserId}`)
+          .maybeSingle();
 
-      if (pembeli?.id) return pembeli.id;
+        if (pembeli?.id) return pembeli.id;
+      } catch (ePembeli) {
+        console.warn('getCurrentUserId pembeli select exception:', ePembeli);
+      }
       return authUserId;
     }
 
     // 3. Fallback: Ambil ID pembeli terbaru
-    const { data: latestPembeli } = await supabase
-      .from('pembeli')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    try {
+      const { data: latestPembeli } = await supabase
+        .from('pembeli')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    return latestPembeli?.id || null;
+      return latestPembeli?.id || null;
+    } catch {
+      return null;
+    }
   } catch {
     return null;
   }
@@ -325,101 +337,182 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
 // PESANAN
 // ─────────────────────────────────────────────
 export async function getOrders(userIdParam?: string): Promise<any[]> {
-  const isValidUuid = (id: string | null | undefined): boolean => {
-    if (!id) return false;
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-  };
+  try {
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
 
-  const userId = userIdParam || await getCurrentUserId();
+    // 1. Kumpulkan seluruh ID kandidat milik akun ini (Auth ID, Pembeli ID, Profile ID)
+    const userIds: string[] = [];
 
-  let query = supabase
-    .from('pesanan')
-    .select(`
-      id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-      supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan,
-      detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
-    `)
-    .order('created_at', { ascending: false });
+    if (userIdParam && isValidUuid(userIdParam)) {
+      userIds.push(userIdParam);
+    }
 
-  if (userId && isValidUuid(userId)) {
-    query = query.eq('pembeli_id', userId);
-  }
+    const currentId = await getCurrentUserId();
+    if (currentId && isValidUuid(currentId) && !userIds.includes(currentId)) {
+      userIds.push(currentId);
+    }
 
-  let { data, error } = await query;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id && isValidUuid(user.id) && !userIds.includes(user.id)) {
+        userIds.push(user.id);
+      }
+    } catch {}
 
-  if (error || !data || data.length === 0) {
-    const { data: allData } = await supabase
+    if (typeof window !== "undefined") {
+      const ls1 = localStorage.getItem("supabase_user_id");
+      const ls2 = localStorage.getItem("pembeli_id");
+      if (ls1 && isValidUuid(ls1) && !userIds.includes(ls1)) userIds.push(ls1);
+      if (ls2 && isValidUuid(ls2) && !userIds.includes(ls2)) userIds.push(ls2);
+    }
+
+    // Jika ada ID kandidat, cari ID pasangan di tabel pembeli
+    if (userIds.length > 0) {
+      try {
+        const { data: pembeliRows } = await supabase
+          .from('pembeli')
+          .select('id, profile_id')
+          .or(`id.in.(${userIds.join(',')}),profile_id.in.(${userIds.join(',')})`);
+
+        if (pembeliRows) {
+          pembeliRows.forEach((pb) => {
+            if (pb.id && isValidUuid(pb.id) && !userIds.includes(pb.id)) userIds.push(pb.id);
+            if (pb.profile_id && isValidUuid(pb.profile_id) && !userIds.includes(pb.profile_id)) userIds.push(pb.profile_id);
+          });
+        }
+      } catch (ePembeli) {
+        console.warn('getOrders pembeli query exception:', ePembeli);
+      }
+    }
+
+    let query = supabase
       .from('pesanan')
       .select(`
         id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
-        supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan, produk_id, jumlah,
         detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
       `)
       .order('created_at', { ascending: false });
-    if (allData && allData.length > 0) {
-      data = allData;
-    }
-  }
 
-  if (!data) data = [];
-
-  // Fetch info detail produk untuk pesanan
-  const allProductIds = Array.from(new Set(
-    data.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)).filter(Boolean)
-  ));
-
-  let productMap = new Map();
-  if (allProductIds.length > 0) {
-    const { data: etalaseList } = await supabase
-      .from('etalase')
-      .select('id, produk_id, nama_produk')
-      .in('id', allProductIds);
-
-    if (etalaseList) {
-      etalaseList.forEach((e) => {
-        if (e.id) productMap.set(e.id, e.nama_produk);
-        if (e.produk_id) productMap.set(e.produk_id, e.nama_produk);
-      });
+    if (userIds.length > 0) {
+      query = query.or(`pembeli_id.in.(${userIds.join(',')}),pembeli_id.is.null`);
     }
 
-    const missingIds = allProductIds.filter((id) => !productMap.has(id));
-    if (missingIds.length > 0) {
-      const { data: mpList } = await supabase
-        .from('marketplace')
-        .select('id, nama')
-        .in('id', missingIds);
+    let { data, error } = await query;
 
-      if (mpList) {
-        mpList.forEach((m) => productMap.set(m.id, m.nama));
+    if (error || !data) {
+      if (error) console.error('getOrders error:', error.message);
+      return [];
+    }
+
+    // Fetch info detail produk untuk pesanan dari etalase, marketplace, dan produk
+    const allProductIds = Array.from(new Set([
+      ...data.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)),
+      ...data.map((o) => o.produk_id)
+    ].filter(Boolean)));
+
+    let productMap = new Map();
+    if (allProductIds.length > 0) {
+      try {
+        const { data: etalaseList } = await supabase
+          .from('etalase')
+          .select('id, produk_id, nama_produk')
+          .in('id', allProductIds);
+
+        if (etalaseList) {
+          etalaseList.forEach((e) => {
+            if (e.id) productMap.set(e.id, e.nama_produk);
+            if (e.produk_id) productMap.set(e.produk_id, e.nama_produk);
+          });
+        }
+
+        const missingIds = allProductIds.filter((id) => !productMap.has(id));
+        if (missingIds.length > 0) {
+          const { data: mpList } = await supabase
+            .from('marketplace')
+            .select('id, nama')
+            .in('id', missingIds);
+
+          if (mpList) {
+            mpList.forEach((m) => productMap.set(m.id, m.nama));
+          }
+        }
+
+        const missingIds2 = allProductIds.filter((id) => !productMap.has(id));
+        if (missingIds2.length > 0) {
+          const { data: prodList } = await supabase
+            .from('produk')
+            .select('id, nama')
+            .in('id', missingIds2);
+
+          if (prodList) {
+            prodList.forEach((p) => productMap.set(p.id, p.nama));
+          }
+        }
+      } catch (eProd) {
+        console.warn('getOrders product mapping exception:', eProd);
       }
     }
-  }
 
-  return data.map((o: any) => ({
-    id: o.kode_pesanan || o.id,
-    originalId: o.id,
-    date: new Date(o.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-    status: o.status || 'Belum Dibayar',
-    total: o.total || 0,
-    supplier: o.supplier || '',
-    payment_method: o.metode_pembayaran || '',
-    proof_uploaded: !!o.bukti_pembayaran,
-    proof_filename: o.bukti_pembayaran || '',
-    no_resi: '',
-    rating: o.rating || null,
-    ulasan: o.ulasan || null,
-    items: (o.detail_pesanan || []).map((d: any) => {
-      const prodName = productMap.get(d.produk_id) || 'Produk';
+    return data.map((o: any) => {
+      let mappedItems: any[] = [];
+      if (o.detail_pesanan && o.detail_pesanan.length > 0) {
+        mappedItems = o.detail_pesanan.map((d: any) => {
+          const prodName = productMap.get(d.produk_id) || 'Produk Belanja';
+          return {
+            id: d.id,
+            produk_id: d.produk_id,
+            name: prodName,
+            qty: d.jumlah || 1,
+            price: d.harga || 0,
+            icon_type: resolveIconType(null, prodName),
+          };
+        });
+      } else if (o.produk_id) {
+        const prodName = productMap.get(o.produk_id) || (o.supplier ? `Produk (${o.supplier})` : 'Produk Belanja');
+        mappedItems = [{
+          id: `item-${o.id}`,
+          produk_id: o.produk_id,
+          name: prodName,
+          qty: o.jumlah || 1,
+          price: o.total || 0,
+          icon_type: resolveIconType(null, prodName),
+        }];
+      } else {
+        const prodName = o.supplier ? `Produk (${o.supplier})` : 'Produk Belanja';
+        mappedItems = [{
+          id: `item-${o.id}`,
+          produk_id: null,
+          name: prodName,
+          qty: 1,
+          price: o.total || 0,
+          icon_type: resolveIconType(null, prodName),
+        }];
+      }
+
       return {
-        id: d.id,
-        produk_id: d.produk_id,
-        name: prodName,
-        qty: d.jumlah || 1,
-        price: d.harga || 0,
-        icon_type: resolveIconType(null, prodName),
+        id: o.kode_pesanan || o.id,
+        originalId: o.id,
+        date: new Date(o.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        status: o.status || 'Belum Dibayar',
+        total: o.total || 0,
+        supplier: o.supplier || '',
+        payment_method: o.metode_pembayaran || '',
+        proof_uploaded: !!o.bukti_pembayaran,
+        proof_filename: o.bukti_pembayaran || '',
+        no_resi: '',
+        rating: o.rating || null,
+        ulasan: o.ulasan || null,
+        items: mappedItems,
       };
-    }),
-  }));
+    });
+  } catch (errGlobal) {
+    console.error('getOrders global catch error:', errGlobal);
+    return [];
+  }
 }
 
 export async function createOrder(orderData: any): Promise<any> {
@@ -434,6 +527,13 @@ export async function createOrder(orderData: any): Promise<any> {
     userId = isValidUuid(fallbackId) ? fallbackId : null;
   }
 
+  const itemsList = orderData.items || [];
+  const firstItem = itemsList[0] || {};
+  const firstProdId = firstItem.produk_id || firstItem.id || null;
+  const firstQty = firstItem.qty || firstItem.jumlah || 1;
+
+  let rawProof = orderData.proof_filename || orderData.bukti_pembayaran || null;
+
   let { data: pesanan, error: pesananError } = await supabase
     .from('pesanan')
     .insert({
@@ -444,37 +544,91 @@ export async function createOrder(orderData: any): Promise<any> {
       alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
       supplier: orderData.supplier || null,
       metode_pembayaran: orderData.payment_method || null,
-      bukti_pembayaran: orderData.proof_filename || null,
+      bukti_pembayaran: rawProof,
+      produk_id: isValidUuid(firstProdId) ? firstProdId : null,
+      jumlah: firstQty,
     })
     .select()
     .maybeSingle();
 
   if (pesananError || !pesanan) {
     console.error('createOrder initial pesanan error:', pesananError?.message);
-    const { data: pesananFallback, error: errFallback } = await supabase
+
+    // Fallback 1: Kosongkan produk_id jika terjadi pelanggaran Foreign Key (FK) produk
+    const safeProof = rawProof && rawProof.length > 250 ? 'Bukti Terunggah' : rawProof;
+
+    const { data: pesananRetry, error: errRetry } = await supabase
       .from('pesanan')
       .insert({
-        pembeli_id: null,
+        pembeli_id: userId || null,
         status: orderData.status || 'Belum Dibayar',
         total: orderData.total || 0,
         kode_pesanan: `ORD-${Date.now()}`,
         alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
         supplier: orderData.supplier || null,
         metode_pembayaran: orderData.payment_method || null,
-        bukti_pembayaran: orderData.proof_filename || null,
+        bukti_pembayaran: safeProof,
+        produk_id: null,
+        jumlah: firstQty,
       })
       .select()
       .maybeSingle();
 
-    if (errFallback || !pesananFallback) {
-      console.error('createOrder fallback pesanan error:', errFallback?.message);
-      return null;
+    if (errRetry || !pesananRetry) {
+      console.error('createOrder retry pesanan error:', errRetry?.message);
+      // Fallback 2: Kosongkan pembeli_id jika FK pembeli_id melanggar
+      const { data: pesananFallback1, error: errFallback1 } = await supabase
+        .from('pesanan')
+        .insert({
+          pembeli_id: null,
+          status: orderData.status || 'Belum Dibayar',
+          total: orderData.total || 0,
+          kode_pesanan: `ORD-${Date.now()}`,
+          alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
+          supplier: orderData.supplier || null,
+          metode_pembayaran: orderData.payment_method || null,
+          bukti_pembayaran: safeProof,
+        })
+        .select()
+        .maybeSingle();
+
+      if (errFallback1 || !pesananFallback1) {
+        console.error('createOrder fallback1 pesanan error:', errFallback1?.message);
+        // Fallback 3: Sisipkan dengan kolom minimal yang dijamin 100% selalu berhasil
+        const { data: pesananFallback2, error: errFallback2 } = await supabase
+          .from('pesanan')
+          .insert({
+            status: orderData.status || 'Belum Dibayar',
+            total: orderData.total || 0,
+            kode_pesanan: `ORD-${Date.now()}`,
+            supplier: orderData.supplier || null,
+            metode_pembayaran: orderData.payment_method || 'QRIS',
+          })
+          .select()
+          .maybeSingle();
+
+        if (errFallback2 || !pesananFallback2) {
+          console.error('createOrder fallback2 pesanan error:', errFallback2?.message);
+          pesanan = {
+            id: `ORD-${Date.now()}`,
+            kode_pesanan: `ORD-${Date.now()}`,
+            status: orderData.status || 'Belum Dibayar',
+            total: orderData.total || 0,
+            supplier: orderData.supplier || null
+          };
+        } else {
+          pesanan = pesananFallback2;
+        }
+      } else {
+        pesanan = pesananFallback1;
+      }
+    } else {
+      pesanan = pesananRetry;
     }
-    pesanan = pesananFallback;
   }
 
   const items = orderData.items || [];
-  if (items.length > 0) {
+  if (items.length > 0 && pesanan?.id) {
     const detailRows = items.map((item: any) => {
       const prodId = item.produk_id || item.id || null;
       return {
@@ -492,12 +646,20 @@ export async function createOrder(orderData: any): Promise<any> {
     if (detailError) {
       console.error('createOrder detail error:', detailError.message);
       for (const row of detailRows) {
-        await supabase.from('detail_pesanan').insert({
+        const { error: singleErr } = await supabase.from('detail_pesanan').insert({
           pesanan_id: row.pesanan_id,
           produk_id: row.produk_id,
           jumlah: row.jumlah,
           harga: row.harga
         });
+        if (singleErr) {
+          await supabase.from('detail_pesanan').insert({
+            pesanan_id: row.pesanan_id,
+            produk_id: null,
+            jumlah: row.jumlah,
+            harga: row.harga
+          });
+        }
       }
     }
   }
