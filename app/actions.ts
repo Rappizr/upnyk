@@ -106,6 +106,7 @@ export async function createOrderAction(order: {
   status?: string;
   proof_uploaded?: boolean;
   proof_filename?: string;
+  bukti_pembayaran?: string; // 💡 DITAMBAHKAN AGAR TIDAK ERROR TYPE DI CHECKOUT
   alamat_pengiriman?: string;
   pembeli_id?: string;
 }) {
@@ -188,14 +189,10 @@ export async function fetchNotificationsAction() {
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
 
-    // Dapatkan auth user ID langsung dari Supabase (ini yang masuk ke profile_id)
     const { data: authData } = await supabase.auth.getUser();
     const authUserId = authData?.user?.id || null;
-
-    // Coba juga via getCurrentUserId sebagai fallback
     const currentUserId = await getCurrentUserId();
 
-    // Gunakan supabaseAdmin (service role) agar tidak diblokir RLS
     const query = supabaseAdmin
       .from('notifikasi')
       .select('id, judul, isi, dibaca, tipe, created_at, profile_id, pembeli_id')
@@ -211,27 +208,21 @@ export async function fetchNotificationsAction() {
 
     if (!allData || allData.length === 0) return [];
 
-    // Filter client-side: tampilkan notif yang profile_id cocok dengan user
-    // atau yang profile_id dan pembeli_id keduanya NULL (notif global/sistem)
     const filtered = allData.filter((n: any) => {
       const hasProfileId = n.profile_id !== null && n.profile_id !== undefined;
       const hasPembeliId = n.pembeli_id !== null && n.pembeli_id !== undefined;
 
-      // Notif global (tidak ada pemilik): tampilkan ke semua user
       if (!hasProfileId && !hasPembeliId) return true;
 
-      // Cocokkan dengan auth user ID
       if (authUserId && isValidUuid(authUserId)) {
         if (n.profile_id === authUserId) return true;
       }
 
-      // Cocokkan dengan pembeli ID
       if (currentUserId && isValidUuid(currentUserId)) {
         if (n.profile_id === currentUserId) return true;
         if (n.pembeli_id === currentUserId) return true;
       }
 
-      // Jika tidak ada userId valid, tampilkan semua
       if (!authUserId && !currentUserId) return true;
 
       return false;

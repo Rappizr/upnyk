@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/db";
 import { getOrdersAction, updateOrderStatusAction, submitReviewAction } from "@/app/actions";
 
 function RiceIcon({ size = 24, className = "", ...props }: any) {
@@ -132,6 +134,7 @@ export default function PesananView() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
+  const [modalBuktiUrl, setModalBuktiUrl] = useState<string | null>(null); // State khusus modal Bukti Foto
   const [reviewModalOrder, setReviewModalOrder] = useState<any | null>(null);
   const [reviewRating, setReviewRating] = useState<number>(5);
   const [reviewText, setReviewText] = useState<string>("");
@@ -176,9 +179,114 @@ export default function PesananView() {
     try {
       const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
       const data = await getOrdersAction(userId);
-      setOrders(data || []);
-      if (data && data.length > 0 && !expanded) {
-        setExpanded(data[0].id);
+
+      const [{ data: etalaseAll }, { data: invAll }, { data: tokoAll }] = await Promise.all([
+        supabase.from("etalase").select("*"),
+        supabase.from("inventaris").select("*"),
+        supabase.from("admin_toko").select("id, nama_toko")
+      ]);
+
+      const tokoIdMap = new Map<string, string>();
+      (tokoAll || []).forEach((t: any) => {
+        if (t.nama_toko) tokoIdMap.set(t.nama_toko.toLowerCase().trim(), String(t.id));
+      });
+
+      const productMap = new Map<string, { nama: string; foto: string | null; harga: number; adminTokoId: string }>();
+
+      (etalaseAll || []).forEach((e: any) => {
+        const nama = e.nama_produk || e.nama || "";
+        const foto = e.foto || e.foto_url || null;
+        const harga = Number(e.harga_jual) || Number(e.harga) || 0;
+        const adminTokoId = String(e.admin_toko_id || "");
+
+        if (e.id) productMap.set(String(e.id), { nama, foto, harga, adminTokoId });
+        if (e.produk_id) productMap.set(String(e.produk_id), { nama, foto, harga, adminTokoId });
+      });
+
+      (invAll || []).forEach((inv: any) => {
+        const nama = inv.nama_produk || inv.nama || "";
+        const foto = inv.foto || inv.foto_url || null;
+        const harga = Number(inv.harga_jual) || Number(inv.harga_beli) || 0;
+        const adminTokoId = String(inv.admin_toko_id || "");
+
+        if (inv.id && !productMap.has(String(inv.id))) {
+          productMap.set(String(inv.id), { nama, foto, harga, adminTokoId });
+        }
+        if (inv.produk_id && !productMap.has(String(inv.produk_id))) {
+          productMap.set(String(inv.produk_id), { nama, foto, harga, adminTokoId });
+        }
+      });
+
+      const enrichedOrders = (data || []).map((ord: any) => {
+        const ordSupplier = String(ord.supplier || "").toLowerCase().trim();
+        const targetTokoId = tokoIdMap.get(ordSupplier);
+
+        const ordProdukId = ord.produk_id || ord.produkId;
+        let rawItems = ord.items && ord.items.length > 0 ? ord.items : [
+          {
+            produk_id: ordProdukId,
+            name: ord.nama_produk || ord.item || "Produk Belanja",
+            price: ord.harga || ord.total || 0,
+            qty: ord.jumlah || 1,
+            foto: ord.foto || null
+          }
+        ];
+
+        const enrichedItems = rawItems.map((it: any) => {
+          const pId = String(it.produk_id || it.id || it.product_id || ordProdukId || "");
+          let matched = productMap.get(pId);
+
+          let finalName = it.name || it.nama_produk || it.nama;
+          let finalFoto = it.foto || it.image || it.foto_produk || matched?.foto || null;
+
+          const isGenericName = !finalName || finalName.startsWith("Produk (") || finalName === "Produk" || finalName === "Produk Belanja";
+
+          if (matched && matched.nama) {
+            if (isGenericName) finalName = matched.nama;
+            if (!finalFoto) finalFoto = matched.foto;
+          } else {
+            const itemPrice = Number(it.price || it.harga || 0);
+            const rawTotal = Number(ord.total || 0);
+            const possiblePrices = [itemPrice, rawTotal, rawTotal - 10000].filter((p) => p > 0);
+
+            const etMatch = (etalaseAll || []).find((e: any) => {
+              const matchToko = !targetTokoId || String(e.admin_toko_id) === targetTokoId;
+              const hg = Number(e.harga_jual || e.harga || 0);
+              return matchToko && possiblePrices.includes(hg);
+            }) || (etalaseAll || []).find((e: any) => {
+              return !targetTokoId || String(e.admin_toko_id) === targetTokoId;
+            }) || (invAll || []).find((inv: any) => {
+              const matchToko = !targetTokoId || String(inv.admin_toko_id) === targetTokoId;
+              const hg = Number(inv.harga_jual || inv.harga_beli || 0);
+              return matchToko && possiblePrices.includes(hg);
+            });
+
+            if (etMatch) {
+              if (isGenericName && etMatch.nama_produk) {
+                finalName = etMatch.nama_produk;
+              }
+              if (!finalFoto && etMatch.foto) {
+                finalFoto = etMatch.foto;
+              }
+            }
+          }
+
+          return {
+            ...it,
+            name: finalName || "kripik",
+            foto: finalFoto
+          };
+        });
+
+        return {
+          ...ord,
+          items: enrichedItems
+        };
+      });
+
+      setOrders(enrichedOrders);
+      if (enrichedOrders.length > 0 && !expanded) {
+        setExpanded(enrichedOrders[0].id);
       }
     } catch (err) {
       console.error("Failed to load orders:", err);
@@ -270,6 +378,7 @@ export default function PesananView() {
           {filtered.map((order) => {
             const timeline = getCustomTimeline(order);
             const totalItemCount = (order.items || []).reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
+            const buktiFotoStr = order.bukti_pembayaran || order.proof_filename || null;
 
             return (
               <div key={order.id || order.originalId} className="card" id={`order-${order.id}`}>
@@ -302,18 +411,27 @@ export default function PesananView() {
                 </div>
 
                 {/* Items */}
-                {(order.items || []).map((item: any, i: number) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
-                      <IconRenderer type={item.icon_type || "rice"} size={24} />
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-sm font-medium">{item.name || "Produk"}</div>
-                      <div className="text-xs text-muted">x{item.qty || 1}</div>
+                {(order.items || []).map((item: any, i: number) => {
+                  const itemFoto = item.foto || item.image || item.foto_produk || null;
+                  const itemName = item.name || item.nama_produk || "Produk Belanja";
+
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
+                      <div style={{ width: "45px", height: "45px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {itemFoto ? (
+                          <img src={itemFoto} alt={itemName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <IconRenderer type={item.icon_type || "rice"} size={24} />
+                        )}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div className="text-sm font-semibold">{itemName}</div>
+                        <div className="text-xs text-muted">x{item.qty || item.jumlah || 1}</div>
+                      </div>
+                      <div className="font-semibold text-sm">Rp {((item.price || item.harga || 0) * (item.qty || item.jumlah || 1)).toLocaleString("id-ID")}</div>
                     </div>
-                    <div className="font-semibold text-sm">Rp {(item.price || 0).toLocaleString("id-ID")}</div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Actions */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
@@ -362,9 +480,11 @@ export default function PesananView() {
                   <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
                     Invoice
                   </button>
-                  {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
+                  
+                  {/* 💡 BUKA MODAL FOTO BUKTI PEMBAYARAN KHUSUS */}
+                  {((order.status !== "Belum Dibayar" || order.proof_uploaded || buktiFotoStr) && order.status !== "Dibatalkan") && (
                     <button
-                      onClick={() => setReceiptOrder(order)}
+                      onClick={() => setModalBuktiUrl(buktiFotoStr || "Bukti Terunggah")}
                       className="btn-secondary"
                       style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
                       id={`btn-bukti-${order.id}`}
@@ -372,6 +492,7 @@ export default function PesananView() {
                       Bukti Pembayaran
                     </button>
                   )}
+
                   {timeline.length > 0 && (
                     <button className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} onClick={() => setExpanded(expanded === order.id ? null : order.id)} id={`btn-track-${order.id}`}>
                       <LocationIcon size={14} /> {expanded === order.id ? "Sembunyikan Lacak" : "Lacak Pengiriman"}
@@ -424,7 +545,46 @@ export default function PesananView() {
         </div>
       )}
 
-      {/* RECEIPT / BUKTI PEMBAYARAN MODAL */}
+{/* MODAL PREVIEW BUKTI PEMBAYARAN FOTO SCREENSHOT RIIL */}
+      {modalBuktiUrl && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "480px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <div style={{ fontWeight: 800, fontSize: "1rem", color: "#1E293B" }}>Bukti Transfer / Pembayaran Pembeli</div>
+              <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: "1.2rem", fontWeight: 700 }}>✕</button>
+            </div>
+            
+            <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", minHeight: "200px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC", padding: "0.5rem" }}>
+              {modalBuktiUrl.startsWith("data:") || modalBuktiUrl.startsWith("http") || modalBuktiUrl.startsWith("/") ? (
+                <img 
+                  src={modalBuktiUrl} 
+                  alt="Bukti Transfer Pembeli" 
+                  style={{ maxWidth: "100%", maxHeight: "420px", objectFit: "contain", borderRadius: "6px" }} 
+                />
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", padding: "1.5rem 0.5rem" }}>
+                  <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#FEF3C7", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem", fontSize: "1.5rem", fontWeight: 800 }}>
+                    ⚠️
+                  </div>
+                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Data Foto Transaksi Lama</div>
+                  <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: "6px", lineHeight: 1.4 }}>
+                    Pesanan ini dibuat sebelum perbaikan simpan foto aktif, sehingga database hanya mencatat teks: <code>{modalBuktiUrl}</code>.
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "#059669", fontWeight: 700, marginTop: "12px", background: "#ECFDF5", padding: "8px", borderRadius: "6px" }}>
+                    💡 Silakan coba checkout <strong>Pesanan Baru</strong> &amp; upload foto bukti bayar untuk melihat foto asli!
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setModalBuktiUrl(null)} style={{ width: "100%", padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#475569", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>
+              Tutup Preview
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RECEIPT / INVOICE MODAL */}
       {receiptOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -481,18 +641,6 @@ export default function PesananView() {
                 <span className="text-muted">Status Pembayaran</span>
                 <span style={{ color: "#10B981", fontWeight: "bold" }}>Berhasil (Terverifikasi)</span>
               </div>
-              {receiptOrder.proof_filename && (
-                <div style={{ marginTop: "0.5rem", borderTop: "1px dashed var(--color-border-light)", paddingTop: "0.5rem" }}>
-                  <div className="text-muted font-medium" style={{ fontSize: "0.75rem", marginBottom: "0.35rem" }}>Bukti Transfer Terlampir:</div>
-                  {receiptOrder.proof_filename.startsWith("data:") ? (
-                    <div style={{ display: "flex", justifyContent: "center", background: "#F8FAFC", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--color-border-light)" }}>
-                      <img src={receiptOrder.proof_filename} alt="Bukti Transfer" style={{ maxHeight: "120px", maxWidth: "100%", objectFit: "contain", borderRadius: "4px" }} />
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", fontFamily: "monospace" }}>{receiptOrder.proof_filename}</span>
-                  )}
-                </div>
-              )}
             </div>
 
             <div style={{ borderBottom: "1px solid var(--color-border-light)", paddingBottom: "1rem", marginBottom: "1rem" }}>
@@ -500,8 +648,8 @@ export default function PesananView() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {(receiptOrder.items || []).map((item: any, idx: number) => (
                   <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                    <span>{item.name || "Produk"} (x{item.qty || 1})</span>
-                    <span>Rp {((item.price || 0) * (item.qty || 1)).toLocaleString("id-ID")}</span>
+                    <span>{item.name || item.nama_produk || "Produk"} (x{item.qty || item.jumlah || 1})</span>
+                    <span>Rp {((item.price || item.harga || 0) * (item.qty || item.jumlah || 1)).toLocaleString("id-ID")}</span>
                   </div>
                 ))}
               </div>

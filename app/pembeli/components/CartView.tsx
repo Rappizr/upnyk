@@ -184,7 +184,6 @@ interface CartViewProps {
 
 export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCartCount }: CartViewProps) {
   const [cartItems, setCartItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   const [step, setStep] = useState<"cart" | "payment" | "success">("cart");
   const [selectedPayment, setSelectedPayment] = useState<"qris" | "bank">("qris");
   const [submitting, setSubmitting] = useState(false);
@@ -193,7 +192,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   const [paymentProof, setPaymentProof] = useState<string>("");
 
   const loadCart = useCallback(async () => {
-    setLoading(true);
     try {
       const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
       const items = await getCartAction(userId);
@@ -202,8 +200,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       onUpdateCartCount?.(totalCount);
     } catch (e) {
       console.error("Gagal load keranjang:", e);
-    } finally {
-      setLoading(false);
     }
   }, [onUpdateCartCount]);
 
@@ -212,11 +208,11 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
   }, [loadCart]);
 
   const getItemPrice = (item: any) => {
-    return Number(item.harga) || Number(item.product?.price) || 0;
+    return Number(item.harga) || Number(item.product?.price) || Number(item.product?.harga_jual) || 0;
   };
 
   const getItemName = (item: any) => {
-    return item.product?.name || item.nama_produk || "Produk Belanja";
+    return item.product?.name || item.product?.nama_produk || item.nama_produk || "Produk Belanja";
   };
 
   const getItemImage = (item: any) => {
@@ -225,30 +221,43 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
 
   const updateQty = async (id: any, newQty: number) => {
     if (newQty < 1) return;
-    try {
-      const ok = await updateCartQtyAction(id, newQty);
-      if (ok) {
-        await loadCart();
-        onCartUpdated();
+
+    const updatedItems = cartItems.map((item) => {
+      if (item.id === id) {
+        return { ...item, qty: newQty };
       }
+      return item;
+    });
+    setCartItems(updatedItems);
+
+    const totalCount = updatedItems.reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
+    onUpdateCartCount?.(totalCount);
+
+    try {
+      await updateCartQtyAction(id, newQty);
+      onCartUpdated();
     } catch (e) {
       console.error("Error updateQty:", e);
+      loadCart();
     }
   };
 
   const removeItem = async (id: any) => {
+    const updatedItems = cartItems.filter((item) => item.id !== id);
+    setCartItems(updatedItems);
+
+    const totalCount = updatedItems.reduce((sum: number, it: any) => sum + (it.qty || 1), 0);
+    onUpdateCartCount?.(totalCount);
+
     try {
-      const ok = await removeFromCartAction(id);
-      if (ok) {
-        await loadCart();
-        onCartUpdated();
-      }
+      await removeFromCartAction(id);
+      onCartUpdated();
     } catch (e) {
       console.error("Error removeItem:", e);
+      loadCart();
     }
   };
 
-  // Calculations
   const subtotal = cartItems.reduce((sum, item) => {
     const price = getItemPrice(item);
     const qty = item.qty || 1;
@@ -270,7 +279,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
     try {
       const grouped: Record<string, any[]> = {};
       cartItems.forEach((item) => {
-        const storeName = item.product?.supplier || "Toko Mitra";
+        const storeName = item.product?.supplier || item.supplier || "Toko Mitra";
         if (!grouped[storeName]) {
           grouped[storeName] = [];
         }
@@ -280,23 +289,26 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           icon_type: item.product?.icon_type,
           name: getItemName(item),
           qty: item.qty || 1,
-          price: getItemPrice(item)
+          price: getItemPrice(item),
+          foto: getItemImage(item),
         });
       });
 
       const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
 
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
-        const supplierTotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
+        const supplierSubtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
+        const supplierGrandTotal = supplierSubtotal + 10000;
+
         return await createOrderAction({
           pembeli_id: userId,
           supplier,
           items,
-          total: supplierTotal,
+          total: supplierGrandTotal,
           payment_method: selectedPayment.toUpperCase(),
           status: "Belum Dibayar",
           proof_uploaded: true,
-          proof_filename: paymentProof
+          proof_filename: paymentProof,
         });
       });
 
@@ -320,7 +332,8 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           qty: item.qty || 1,
           price: getItemPrice(item),
           weight: (item.product?.weight || 1) * (item.qty || 1),
-          icon_type: item.product?.icon_type
+          icon_type: item.product?.icon_type,
+          foto: getItemImage(item)
         }))
       });
 
@@ -336,14 +349,6 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       setSubmitting(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "4rem 2rem", color: "#64748B" }}>
-        Memuat keranjang belanja Anda...
-      </div>
-    );
-  }
 
   if (step === "success" && orderSummary) {
     return (
@@ -826,6 +831,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
                 <strong>Total Pembayaran</strong>
                 <strong style={{ color: "var(--color-primary)" }}>Rp {grandTotal.toLocaleString("id-ID")}</strong>
               </div>
+
             </div>
 
             <button 

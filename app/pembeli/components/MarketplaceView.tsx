@@ -52,7 +52,7 @@ interface MarketplaceViewProps {
   onNavigateToCart?: () => void;
   initialStoreFilter?: string;
   clearInitialStoreFilter?: () => void;
-  searchQuery?: string; // Prop opsional jika ingin menghubungkan search dari topbar utama
+  searchQuery?: string;
 }
 
 export default function MarketplaceView({
@@ -115,6 +115,9 @@ export default function MarketplaceView({
             origin: lokasi,
             foto: e.foto || null,
             deskripsi: e.deskripsi || "",
+            // 💡 AMBIL RATING & TOTAL ULASAN DINAMIS DARI DATABASE
+            rating: Number(e.rating) || 0,
+            totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
           };
         });
 
@@ -213,7 +216,7 @@ export default function MarketplaceView({
   return (
     <div style={{ width: "100%", paddingBottom: "2rem", fontFamily: "inherit" }}>
 
-      {/* FILTER PILAN WILAYAH */}
+      {/* FILTER PILIHAN WILAYAH */}
       <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "1rem", scrollbarWidth: "none" }}>
         {locationOptions.map((loc) => (
           <button
@@ -393,10 +396,13 @@ export default function MarketplaceView({
                     <span>{p.kabupaten || "Lokal"}</span>
                   </div>
 
+                  {/* 💡 BAGIAN RATING DINAMIS SAMA DENGAN ETALASE */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.4rem", fontSize: "0.7rem", color: "#64748B" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "2px", color: "#F59E0B" }}>
                       <StarIcon size={11} />
-                      <span style={{ color: "#475569", fontWeight: 600 }}>5.0</span>
+                      <span style={{ color: "#475569", fontWeight: 600 }}>
+                        {(p.totalUlasan ?? 0) > 0 ? (p.rating ? p.rating.toFixed(1) : "0.0") : "0"}
+                      </span>
                     </div>
                     <div>
                       {p.stock > 0 ? `${p.stock} ${p.satuan}` : <span style={{ color: "#EF4444" }}>Habis</span>}

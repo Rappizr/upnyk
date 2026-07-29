@@ -10,7 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Client khusus server-side dengan Service Role Key (bypass RLS)
-// Digunakan untuk operasi INSERT/UPDATE yang dilakukan dari server action
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -40,7 +39,6 @@ export async function getCurrentUserId(): Promise<string | null> {
   try {
     let authUserId: string | null = null;
 
-    // 1. Cek Auth Supabase dengan try/catch aman
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (authData?.user?.id) {
@@ -50,7 +48,6 @@ export async function getCurrentUserId(): Promise<string | null> {
       console.warn('getCurrentUserId auth.getUser exception:', eAuth);
     }
 
-    // 2. Cek LocalStorage
     if (!authUserId && typeof window !== "undefined") {
       authUserId = localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id");
     }
@@ -60,7 +57,6 @@ export async function getCurrentUserId(): Promise<string | null> {
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
 
-    // Jika menemukan profile_id / auth_id, pastikan kita dapatkan ID Pembeli sejati
     if (authUserId && isValidUuid(authUserId)) {
       try {
         const { data: pembeli } = await supabase
@@ -76,7 +72,6 @@ export async function getCurrentUserId(): Promise<string | null> {
       return authUserId;
     }
 
-    // 3. Fallback: Ambil ID pembeli terbaru
     try {
       const { data: latestPembeli } = await supabase
         .from('pembeli')
@@ -143,7 +138,6 @@ export async function getProducts(): Promise<any[]> {
       });
     }
 
-    // Fallback ke tabel marketplace
     let { data, error } = await supabase
       .from('marketplace')
       .select(`
@@ -343,7 +337,6 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
 
-    // 1. Kumpulkan seluruh ID kandidat milik akun ini (Auth ID, Pembeli ID, Profile ID)
     const userIds: string[] = [];
 
     if (userIdParam && isValidUuid(userIdParam)) {
@@ -369,7 +362,6 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
       if (ls2 && isValidUuid(ls2) && !userIds.includes(ls2)) userIds.push(ls2);
     }
 
-    // Jika ada ID kandidat, cari ID pasangan di tabel pembeli
     if (userIds.length > 0) {
       try {
         const { data: pembeliRows } = await supabase
@@ -408,7 +400,6 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
       return [];
     }
 
-    // Fetch info detail produk untuk pesanan dari etalase, marketplace, dan produk
     const allProductIds = Array.from(new Set([
       ...data.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)),
       ...data.map((o) => o.produk_id)
@@ -503,6 +494,7 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
         payment_method: o.metode_pembayaran || '',
         proof_uploaded: !!o.bukti_pembayaran,
         proof_filename: o.bukti_pembayaran || '',
+        bukti_pembayaran: o.bukti_pembayaran || null, // 💡 KEMBALIKAN FOTO SCREENSHOT RIIL KE CLIENT
         no_resi: '',
         rating: o.rating || null,
         ulasan: o.ulasan || null,
@@ -532,7 +524,8 @@ export async function createOrder(orderData: any): Promise<any> {
   const firstProdId = firstItem.produk_id || firstItem.id || null;
   const firstQty = firstItem.qty || firstItem.jumlah || 1;
 
-  let rawProof = orderData.proof_filename || orderData.bukti_pembayaran || null;
+  // 💡 SIMPAN STRING FOTO BASE64 / URL SECARA UTUH TANPA DIPOTONG
+  let rawProof = orderData.bukti_pembayaran || orderData.proof_filename || null;
 
   let { data: pesanan, error: pesananError } = await supabase
     .from('pesanan')
@@ -544,7 +537,7 @@ export async function createOrder(orderData: any): Promise<any> {
       alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
       supplier: orderData.supplier || null,
       metode_pembayaran: orderData.payment_method || null,
-      bukti_pembayaran: rawProof,
+      bukti_pembayaran: rawProof, // 👈 SIMPAN FOTO BASE64 UTUH
       produk_id: isValidUuid(firstProdId) ? firstProdId : null,
       jumlah: firstQty,
     })
@@ -554,9 +547,7 @@ export async function createOrder(orderData: any): Promise<any> {
   if (pesananError || !pesanan) {
     console.error('createOrder initial pesanan error:', pesananError?.message);
 
-    // Fallback 1: Kosongkan produk_id jika terjadi pelanggaran Foreign Key (FK) produk
-    const safeProof = rawProof && rawProof.length > 250 ? 'Bukti Terunggah' : rawProof;
-
+    // 💡 FALLBACK 1: JIKA TERJADI ERROR DENGAN PRODUK_ID, RETRY TETAP DENGAN FOTO UTUH
     const { data: pesananRetry, error: errRetry } = await supabase
       .from('pesanan')
       .insert({
@@ -567,7 +558,7 @@ export async function createOrder(orderData: any): Promise<any> {
         alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
         supplier: orderData.supplier || null,
         metode_pembayaran: orderData.payment_method || null,
-        bukti_pembayaran: safeProof,
+        bukti_pembayaran: rawProof, // 👈 SELALU GUNAKAN FOTO UTUH
         produk_id: null,
         jumlah: firstQty,
       })
@@ -576,7 +567,8 @@ export async function createOrder(orderData: any): Promise<any> {
 
     if (errRetry || !pesananRetry) {
       console.error('createOrder retry pesanan error:', errRetry?.message);
-      // Fallback 2: Kosongkan pembeli_id jika FK pembeli_id melanggar
+
+      // 💡 FALLBACK 2: KOSONGKAN PEMBELI_ID TAPI TETAP SERTAKAN FOTO
       const { data: pesananFallback1, error: errFallback1 } = await supabase
         .from('pesanan')
         .insert({
@@ -587,14 +579,15 @@ export async function createOrder(orderData: any): Promise<any> {
           alamat_pengiriman: orderData.alamat_pengiriman || orderData.address || null,
           supplier: orderData.supplier || null,
           metode_pembayaran: orderData.payment_method || null,
-          bukti_pembayaran: safeProof,
+          bukti_pembayaran: rawProof, // 👈 FOTO UTUH
         })
         .select()
         .maybeSingle();
 
       if (errFallback1 || !pesananFallback1) {
         console.error('createOrder fallback1 pesanan error:', errFallback1?.message);
-        // Fallback 3: Sisipkan dengan kolom minimal yang dijamin 100% selalu berhasil
+
+        // FALLBACK 3: SINKRONISASI DASAR DENGAN FOTO UTUH
         const { data: pesananFallback2, error: errFallback2 } = await supabase
           .from('pesanan')
           .insert({
@@ -603,6 +596,7 @@ export async function createOrder(orderData: any): Promise<any> {
             kode_pesanan: `ORD-${Date.now()}`,
             supplier: orderData.supplier || null,
             metode_pembayaran: orderData.payment_method || 'QRIS',
+            bukti_pembayaran: rawProof, // 👈 FOTO UTUH
           })
           .select()
           .maybeSingle();
@@ -614,7 +608,8 @@ export async function createOrder(orderData: any): Promise<any> {
             kode_pesanan: `ORD-${Date.now()}`,
             status: orderData.status || 'Belum Dibayar',
             total: orderData.total || 0,
-            supplier: orderData.supplier || null
+            supplier: orderData.supplier || null,
+            bukti_pembayaran: rawProof
           };
         } else {
           pesanan = pesananFallback2;
@@ -668,7 +663,6 @@ export async function createOrder(orderData: any): Promise<any> {
   const validTarget = targetUserId && isValidUuid(targetUserId) ? targetUserId : null;
   const totalFormatted = `Rp ${Number(pesanan.total || 0).toLocaleString('id-ID')}`;
 
-  // Dapatkan profile_id dari tabel pembeli untuk kolom notifikasi
   let profileIdForNotif: string | null = null;
   if (validTarget) {
     const { data: pembeliData } = await supabase
@@ -805,7 +799,7 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
         status: p.status || 'Belum Dibayar',
         alamatPembeli: p.alamat_pengiriman || pbInfo?.alamat || 'Alamat belum diisi',
         metodePembayaran: p.metode_pembayaran || 'QRIS',
-        buktiPembayaran: p.bukti_pembayaran || null,
+        buktiPembayaran: p.bukti_pembayaran || null, // 💡 TERUSKAN FOTO BUKTI PEMBAYARAN KE ADMIN TOKO
         noResi: '',
         items: items
       };
@@ -859,7 +853,6 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
 
     const totalStr = `Rp ${Number(targetOrder.total || 0).toLocaleString('id-ID')}`;
 
-    // Ambil profile_id dari tabel pembeli
     let profileIdForNotif: string | null = null;
     if (targetOrder.pembeli_id && isValidUuid(targetOrder.pembeli_id)) {
       const { data: pembeliData } = await supabase
@@ -904,7 +897,6 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
       console.error('updateOrderStatus notifikasi catch error:', errNotif);
     }
 
-    // Jika pesanan selesai, tambahkan pengingat ulasan
     if (status === 'Selesai') {
       try {
         const { error: ulasanNotifErr } = await supabaseAdmin.from('notifikasi').insert({
@@ -966,7 +958,6 @@ export async function getWishlist(): Promise<any[]> {
 
     let productMap = new Map<string, any>();
 
-    // 1. Ambil dari etalase
     const { data: etalaseList } = await supabase
       .from('etalase')
       .select('*, admin_toko:admin_toko_id(nama_toko, desa, kabupaten)')
@@ -994,7 +985,6 @@ export async function getWishlist(): Promise<any[]> {
       }
     }
 
-    // 2. Ambil dari marketplace jika belum ada di etalase
     const stillMissingIds = prodIds.filter((id) => !productMap.has(id));
     if (stillMissingIds.length > 0) {
       const { data: mpList } = await supabase
@@ -1137,13 +1127,11 @@ export async function removeFromWishlist(productId: string): Promise<boolean> {
     }
     targetIds = Array.from(new Set(targetIds.filter((id) => isValidUuid(id))));
 
-    // 1. Hapus berdasarkan ID baris di wishlist (jika yang dikirim adalah ID baris wishlist)
     await supabase
       .from('wishlist')
       .delete()
       .eq('id', productId);
 
-    // 2. Hapus berdasarkan pembeli_id & targetIds produk
     if (validUser) {
       await supabase
         .from('wishlist')
@@ -1152,7 +1140,6 @@ export async function removeFromWishlist(productId: string): Promise<boolean> {
         .in('produk_id', targetIds);
     }
 
-    // 3. Hapus menyeluruh berdasarkan targetIds produk untuk membersihkan entri sisa
     await supabase
       .from('wishlist')
       .delete()
@@ -1373,7 +1360,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     }
   }
 
-  // 1. Cari / Buat Header Keranjang
   let cartData: any = null;
   if (pembeliId) {
     const { data } = await supabase
@@ -1405,7 +1391,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     cartData = emergencyCart || { id: 'default-cart-id' };
   }
 
-  // 2. Ambil Harga Produk dari Etalase atau Marketplace
   let hargaFinal = 0;
   const { data: p1 } = await supabase
     .from('etalase')
@@ -1436,7 +1421,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     }
   }
 
-  // 3. Upsert ke tabel `keranjang_item`
   const { data: existingItem } = await supabase
     .from('keranjang_item')
     .select('id, jumlah')
@@ -1477,7 +1461,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
 
     if (error) {
       console.error('addToCart insert error 1:', error.message);
-      // Fallback tanpa subtotal
       const { data: data2, error: error2 } = await supabase
         .from('keranjang_item')
         .insert({
@@ -1495,12 +1478,10 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
       return data2 || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
     }
 
-    // Notifikasi: Produk berhasil masuk keranjang
     try {
       const isValidUuidFn = (id: string | null | undefined) =>
         !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-      // Ambil profile_id dari pembeli
       let profileIdForNotif: string | null = null;
       if (pembeliId && isValidUuidFn(pembeliId)) {
         const { data: pb } = await supabase
@@ -1511,7 +1492,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
         profileIdForNotif = pb?.profile_id || pembeliId;
       }
 
-      // Ambil nama produk
       let namaProduk = 'Produk';
       const { data: prodInfo } = await supabase
         .from('etalase')
@@ -1776,7 +1756,6 @@ export async function submitReview(
     let targetPesanan: any = null;
     let produkIdFound: string | null = null;
 
-    // 1. Cari pesanan langsung berdasarkan ID atau kode_pesanan
     const { data: pesananByDirect } = await supabaseAdmin
       .from('pesanan')
       .select('id, kode_pesanan, pembeli_id')
@@ -1785,7 +1764,6 @@ export async function submitReview(
 
     targetPesanan = pesananByDirect;
 
-    // 2. Jika tidak ketemu dan orderId adalah notifId, cari dari isi notifikasi (ekstrak ORD-xxx)
     const targetNotifId = notifId || (isValidUuid(orderId) ? orderId : null);
     if (!targetPesanan && targetNotifId) {
       const { data: notifRecord } = await supabaseAdmin
@@ -1807,7 +1785,6 @@ export async function submitReview(
       }
     }
 
-    // 3. Fallback jika masih tidak ketemu: ambil pesanan 'Selesai' terbaru
     if (!targetPesanan) {
       const { data: pesananLatest } = await supabaseAdmin
         .from('pesanan')
@@ -1818,7 +1795,6 @@ export async function submitReview(
       targetPesanan = pesananLatest;
     }
 
-    // 4. Dapatkan pembeli_id yang valid
     let finalPembeliId = userId;
     if (!finalPembeliId && targetPesanan?.pembeli_id) {
       finalPembeliId = targetPesanan.pembeli_id;
@@ -1828,7 +1804,6 @@ export async function submitReview(
       finalPembeliId = demoPembeli?.id || null;
     }
 
-    // 5. Update rating & ulasan di tabel pesanan
     if (targetPesanan?.id) {
       await supabaseAdmin
         .from('pesanan')
@@ -1838,7 +1813,6 @@ export async function submitReview(
         })
         .eq('id', targetPesanan.id);
 
-      // Cari produk_id dari detail_pesanan
       const { data: details } = await supabaseAdmin
         .from('detail_pesanan')
         .select('id, produk_id')
@@ -1857,15 +1831,12 @@ export async function submitReview(
         .eq('pesanan_id', targetPesanan.id);
     }
 
-    // Fallback produk_id jika belum ketemu dari detail_pesanan
     if (!produkIdFound) {
       const { data: p1 } = await supabaseAdmin.from('etalase').select('id').limit(1).maybeSingle();
       produkIdFound = p1?.id || null;
     }
 
-    // 6. Simpan ke tabel `review` dengan multi-attempt untuk bypass constraint issues
     try {
-      // Attempt 1: Insert lengkap dengan produk_id
       const { error: reviewErr1 } = await supabaseAdmin
         .from('review')
         .insert({
@@ -1879,7 +1850,6 @@ export async function submitReview(
       if (reviewErr1) {
         console.error('review insert attempt 1 failed:', reviewErr1.message, reviewErr1.code, reviewErr1.details);
 
-        // Attempt 2: Insert tanpa produk_id (jika FK constraint)
         const { error: reviewErr2 } = await supabaseAdmin
           .from('review')
           .insert({
@@ -1892,7 +1862,6 @@ export async function submitReview(
         if (reviewErr2) {
           console.error('review insert attempt 2 failed:', reviewErr2.message, reviewErr2.code, reviewErr2.details);
 
-          // Attempt 3: Insert minimal (hanya kolom wajib)
           const { error: reviewErr3 } = await supabaseAdmin
             .from('review')
             .insert({
@@ -1915,7 +1884,6 @@ export async function submitReview(
       console.error('review insert catch:', errReview);
     }
 
-    // 7. Update notifikasi di DB jika notifId diberikan
     if (targetNotifId && isValidUuid(targetNotifId)) {
       await supabaseAdmin
         .from('notifikasi')
@@ -1923,9 +1891,7 @@ export async function submitReview(
         .eq('id', targetNotifId);
     }
 
-    // 8. Buat notifikasi bahwa ulasan berhasil dikirim
     try {
-      // Ambil profile_id dari pembeli menggunakan supabaseAdmin (bypass RLS)
       let profileIdForNotif: string | null = null;
       if (finalPembeliId && isValidUuid(finalPembeliId)) {
         const { data: pb } = await supabaseAdmin
@@ -1954,4 +1920,4 @@ export async function submitReview(
     console.error('submitReview error:', err);
     return false;
   }
-}
+}

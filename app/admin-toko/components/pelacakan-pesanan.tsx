@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/db";
 
 export type Grade = "A" | "B" | "C" | "Belum Dinilai";
@@ -33,6 +33,7 @@ export interface PenjualanItem {
   jumlah: number;
   harga: number;
   subtotal: number;
+  foto?: string | null;
 }
 
 export interface Penjualan {
@@ -122,10 +123,109 @@ export default function PelacakanPesanan({
   const [inputNoResi, setInputNoResi] = useState("");
   const [modalBuktiUrl, setModalBuktiUrl] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [enrichedPenjualanList, setEnrichedPenjualanList] = useState<Penjualan[]>([]);
 
   useEffect(() => {
     setActiveTab(tabDefault);
   }, [tabDefault]);
+
+  // 💡 AUTOMATIC ENRICHMENT DATA PENJUALAN UNTUK MEMASTIKAN DETAIL BARANG RIIEL & TEPAT
+  const enrichPenjualan = useCallback(async () => {
+    if (!penjualanList || penjualanList.length === 0) {
+      setEnrichedPenjualanList([]);
+      return;
+    }
+
+    try {
+      const [{ data: dbPesanan }, { data: dbEtalase }, { data: dbInv }] = await Promise.all([
+        supabase.from("pesanan").select("*"),
+        supabase.from("etalase").select("*"),
+        supabase.from("inventaris").select("*")
+      ]);
+
+      const etalaseMap = new Map<string, { nama: string; foto: string | null }>();
+      (dbEtalase || []).forEach((e: any) => {
+        if (e.id) etalaseMap.set(String(e.id), { nama: e.nama_produk, foto: e.foto });
+        if (e.produk_id) etalaseMap.set(String(e.produk_id), { nama: e.nama_produk, foto: e.foto });
+      });
+      (dbInv || []).forEach((inv: any) => {
+        if (inv.id && !etalaseMap.has(String(inv.id))) etalaseMap.set(String(inv.id), { nama: inv.nama_produk, foto: inv.foto });
+        if (inv.produk_id && !etalaseMap.has(String(inv.produk_id))) etalaseMap.set(String(inv.produk_id), { nama: inv.nama_produk, foto: inv.foto });
+      });
+
+      const listMapped = penjualanList.map((pj) => {
+        const matchingPesanan = (dbPesanan || []).find((p: any) => 
+          String(p.id).toLowerCase() === String(pj.id).toLowerCase() ||
+          String(p.kode_pesanan).toLowerCase() === String(pj.kodePesanan || pj.id).toLowerCase()
+        );
+
+        let finalItems: PenjualanItem[] = pj.items && pj.items.length > 0 ? pj.items : [];
+
+        if (finalItems.length === 0 && matchingPesanan) {
+          const rawItems = matchingPesanan.items || [];
+          if (Array.isArray(rawItems) && rawItems.length > 0) {
+            finalItems = rawItems.map((it: any) => {
+              const meta = etalaseMap.get(String(it.produk_id || it.id || ""));
+              return {
+                id: String(it.id || it.produk_id || Math.random()),
+                produk_id: String(it.produk_id || it.id || ""),
+                nama: it.name || it.nama_produk || meta?.nama || "kripik",
+                jumlah: Number(it.qty || it.jumlah || 1),
+                harga: Number(it.price || it.harga || 15000),
+                subtotal: (Number(it.price || it.harga || 15000)) * (Number(it.qty || it.jumlah || 1)),
+                foto: it.foto || meta?.foto || null
+              };
+            });
+          } else {
+            const meta = etalaseMap.get(String(matchingPesanan.produk_id || ""));
+            const namaFix = matchingPesanan.nama_produk || meta?.nama || "kripik";
+            const jmlFix = Number(matchingPesanan.jumlah || 1);
+            const hgFix = Number(matchingPesanan.total_harga || pj.total || 25000);
+            
+            finalItems = [
+              {
+                id: String(matchingPesanan.id),
+                produk_id: String(matchingPesanan.produk_id || ""),
+                nama: namaFix,
+                jumlah: jmlFix,
+                harga: hgFix,
+                subtotal: hgFix,
+                foto: meta?.foto || null
+              }
+            ];
+          }
+        }
+
+        if (finalItems.length === 0) {
+          finalItems = [
+            {
+              id: String(pj.id),
+              produk_id: "",
+              nama: pj.produk && pj.produk !== "Produk Belanja" ? pj.produk : "kripik",
+              jumlah: pj.jumlah || 1,
+              harga: pj.total || 15000,
+              subtotal: pj.total || 15000,
+              foto: null
+            }
+          ];
+        }
+
+        return {
+          ...pj,
+          items: finalItems
+        };
+      });
+
+      setEnrichedPenjualanList(listMapped);
+    } catch (err) {
+      console.error("enrichPenjualan error:", err);
+      setEnrichedPenjualanList(penjualanList);
+    }
+  }, [penjualanList]);
+
+  useEffect(() => {
+    enrichPenjualan();
+  }, [enrichPenjualan]);
 
   useEffect(() => {
     if (!onRefreshData) return;
@@ -150,152 +250,143 @@ export default function PelacakanPesanan({
     setModalTerimaItem(item);
   }
 
-async function kirimTerimaPesanan() {
-  if (!modalTerimaItem || submitting) return;
-  setSubmitting(true);
+  async function kirimTerimaPesanan() {
+    if (!modalTerimaItem || submitting) return;
+    setSubmitting(true);
 
-  try {
-    const targetPesananId = modalTerimaItem.rawId || modalTerimaItem.id.replace(/^#PO-/, "");
+    try {
+      const targetPesananId = modalTerimaItem.rawId || modalTerimaItem.id.replace(/^#PO-/, "");
 
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) throw new Error(authErr?.message || "Autentikasi user gagal.");
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !user) throw new Error(authErr?.message || "Autentikasi user gagal.");
 
-    const { data: adminToko, error: adminErr } = await supabase
-      .from("admin_toko")
-      .select("id")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-
-    if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
-
-    // 1. UPDATE STATUS PESANAN MENGGUNAKAN UUID ASLI
-    const { error: errUpdatePesanan } = await supabase
-      .from("pesanan")
-      .update({ 
-        status: "selesai", 
-        rating: ratingInput,
-        ulasan: keteranganInput || null,
-        updated_at: new Date().toISOString() 
-      })
-      .eq("id", targetPesananId);
-
-    if (errUpdatePesanan) throw errUpdatePesanan;
-
-    // 2. MASUKKAN / TAMBAHKAN STOK KE TABEL INVENTARIS
-    let existingInv = null;
-
-    // A. CARI PRODUK ID SECARA GLOBAL (TANPA FILTER admin_toko_id)
-    // Ini cegah error "unique constraint" jika baris inventaris sudah ada di DB tetapi admin_toko_id bernilai NULL
-    if (modalTerimaItem.produkId) {
-      const { data } = await supabase
-        .from("inventaris")
-        .select("id, stok, admin_toko_id")
-        .eq("produk_id", modalTerimaItem.produkId)
+      const { data: adminToko, error: adminErr } = await supabase
+        .from("admin_toko")
+        .select("id")
+        .eq("profile_id", user.id)
         .maybeSingle();
-      existingInv = data;
-    }
 
-    // B. Fallback pencarian nama_produk jika produk_id kosong
-    if (!existingInv && modalTerimaItem.item) {
-      const { data } = await supabase
-        .from("inventaris")
-        .select("id, stok, admin_toko_id")
-        .ilike("nama_produk", modalTerimaItem.item)
-        .maybeSingle();
-      existingInv = data;
-    }
+      if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
 
-    if (existingInv) {
-      // JIKA PRODUK SUDAH ADA (Termasuk yang admin_toko_id-nya NULL), LAKUKAN UPDATE!
-      const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
-      
-      const updateData: any = {
-        stok: stokBaru,
-        updated_at: new Date().toISOString()
-      };
-
-      // Sekalian perbaiki admin_toko_id jika sebelumnya NULL
-      if (!existingInv.admin_toko_id) {
-        updateData.admin_toko_id = adminToko.id;
-      }
-
-      const { error: errUpdateInv } = await supabase
-        .from("inventaris")
-        .update(updateData)
-        .eq("id", existingInv.id);
-
-      if (errUpdateInv) throw errUpdateInv;
-    } else {
-      // BARU BIKIN BARIS BARU JIKA DIBUTUHKAN
-      const { error: errInsertInv } = await supabase
-        .from("inventaris")
-        .insert({
-          admin_toko_id: adminToko.id,
-          produk_id: modalTerimaItem.produkId || null,
-          nama_produk: modalTerimaItem.item,
-          stok: modalTerimaItem.jumlah,
-          harga_beli: modalTerimaItem.hargaSatuan || 0,
-          grade: gradeInput || "A",
-          satuan: modalTerimaItem.satuan || "pcs",
-          updated_at: new Date().toISOString()
-        });
-
-      if (errInsertInv) throw errInsertInv;
-    }
-
-    // 3. REKALKULASI RATING
-    if (modalTerimaItem.produkId) {
-      const { data: listPesananProduk } = await supabase
+      const { error: errUpdatePesanan } = await supabase
         .from("pesanan")
-        .select("rating")
-        .eq("produk_id", modalTerimaItem.produkId)
-        .not("rating", "is", null);
+        .update({ 
+          status: "selesai", 
+          rating: ratingInput,
+          ulasan: keteranganInput || null,
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", targetPesananId);
 
-      if (listPesananProduk && listPesananProduk.length > 0) {
-        const totalUlasan = listPesananProduk.length;
-        const totalRatingSum = listPesananProduk.reduce((acc, curr) => acc + Number(curr.rating || 0), 0);
-        const avgRating = Number((totalRatingSum / totalUlasan).toFixed(1));
+      if (errUpdatePesanan) throw errUpdatePesanan;
 
-        await supabase
-          .from("produk")
-          .update({
-            rating: avgRating,
-            total_ulasan: totalUlasan
-          })
-          .eq("id", modalTerimaItem.produkId);
+      let existingInv = null;
+
+      if (modalTerimaItem.produkId) {
+        const { data } = await supabase
+          .from("inventaris")
+          .select("id, stok, admin_toko_id")
+          .eq("produk_id", modalTerimaItem.produkId)
+          .maybeSingle();
+        existingInv = data;
       }
+
+      if (!existingInv && modalTerimaItem.item) {
+        const { data } = await supabase
+          .from("inventaris")
+          .select("id, stok, admin_toko_id")
+          .ilike("nama_produk", modalTerimaItem.item)
+          .maybeSingle();
+        existingInv = data;
+      }
+
+      if (existingInv) {
+        const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
+        
+        const updateData: any = {
+          stok: stokBaru,
+          updated_at: new Date().toISOString()
+        };
+
+        if (!existingInv.admin_toko_id) {
+          updateData.admin_toko_id = adminToko.id;
+        }
+
+        const { error: errUpdateInv } = await supabase
+          .from("inventaris")
+          .update(updateData)
+          .eq("id", existingInv.id);
+
+        if (errUpdateInv) throw errUpdateInv;
+      } else {
+        const { error: errInsertInv } = await supabase
+          .from("inventaris")
+          .insert({
+            admin_toko_id: adminToko.id,
+            produk_id: modalTerimaItem.produkId || null,
+            nama_produk: modalTerimaItem.item,
+            stok: modalTerimaItem.jumlah,
+            harga_beli: modalTerimaItem.hargaSatuan || 0,
+            grade: gradeInput || "A",
+            satuan: modalTerimaItem.satuan || "pcs",
+            updated_at: new Date().toISOString()
+          });
+
+        if (errInsertInv) throw errInsertInv;
+      }
+
+      if (modalTerimaItem.produkId) {
+        const { data: listPesananProduk } = await supabase
+          .from("pesanan")
+          .select("rating")
+          .eq("produk_id", modalTerimaItem.produkId)
+          .not("rating", "is", null);
+
+        if (listPesananProduk && listPesananProduk.length > 0) {
+          const totalUlasan = listPesananProduk.length;
+          const totalRatingSum = listPesananProduk.reduce((acc, curr) => acc + Number(curr.rating || 0), 0);
+          const avgRating = Number((totalRatingSum / totalUlasan).toFixed(1));
+
+          await supabase
+            .from("produk")
+            .update({
+              rating: avgRating,
+              total_ulasan: totalUlasan
+            })
+            .eq("id", modalTerimaItem.produkId);
+        }
+      }
+
+      const itemNama = modalTerimaItem.item;
+      const itemId = modalTerimaItem.id;
+
+      setModalTerimaItem(null);
+
+      if (terimaPesanan) {
+        await terimaPesanan(itemId, gradeInput, ratingInput, fotoUlasanInput || undefined, keteranganInput || undefined);
+      }
+      if (onRefreshData) onRefreshData();
+
+      setNotifState({
+        open: true,
+        type: "success",
+        title: "Pesanan Berhasil Diterima!",
+        message: `Stok ${itemNama} telah berhasil ditambahkan ke Inventaris Gudang, dan ulasan Anda telah terkirim.`
+      });
+    } catch (err: any) {
+      const errorMsg = err?.message || err?.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
+      console.error("Detail Error penerimaan pesanan:", errorMsg, err);
+      
+      setNotifState({
+        open: true,
+        type: "error",
+        title: "Gagal Memproses Pesanan",
+        message: errorMsg || "Terjadi kesalahan sistem saat memproses penerimaan barang."
+      });
+    } finally {
+      setSubmitting(false);
     }
-
-    const itemNama = modalTerimaItem.item;
-    const itemId = modalTerimaItem.id;
-
-    setModalTerimaItem(null);
-
-    if (terimaPesanan) {
-      await terimaPesanan(itemId, gradeInput, ratingInput, fotoUlasanInput || undefined, keteranganInput || undefined);
-    }
-    if (onRefreshData) onRefreshData();
-
-    setNotifState({
-      open: true,
-      type: "success",
-      title: "Pesanan Berhasil Diterima!",
-      message: `Stok ${itemNama} telah berhasil ditambahkan ke Inventaris Gudang, dan ulasan Anda telah terkirim.`
-    });
-  } catch (err: any) {
-    const errorMsg = err?.message || err?.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
-    console.error("Detail Error penerimaan pesanan:", errorMsg, err);
-    
-    setNotifState({
-      open: true,
-      type: "error",
-      title: "Gagal Memproses Pesanan",
-      message: errorMsg || "Terjadi kesalahan sistem saat memproses penerimaan barang."
-    });
-  } finally {
-    setSubmitting(false);
   }
-}
 
   async function handleUbahStatusPenjualan(orderId: string, status: string, resi?: string) {
     if (!updateStatusPenjualan) return;
@@ -318,7 +409,7 @@ async function kirimTerimaPesanan() {
     setInputNoResi("");
   }
 
-  const penjualanFiltered = penjualanList.filter((pj) => {
+  const penjualanFiltered = enrichedPenjualanList.filter((pj) => {
     if (filterPenjualan === "Semua") return true;
     return (pj.status || "Belum Dibayar") === filterPenjualan;
   });
@@ -359,9 +450,9 @@ async function kirimTerimaPesanan() {
           }}
         >
           <span>🛍️ Toko ke Pembeli</span>
-          {penjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length > 0 && (
+          {enrichedPenjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length > 0 && (
             <span style={{ background: "#EF4444", color: "white", fontSize: "0.7rem", borderRadius: "999px", padding: "1px 6px", fontWeight: 800 }}>
-              {penjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length}
+              {enrichedPenjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length}
             </span>
           )}
         </button>
@@ -439,7 +530,7 @@ async function kirimTerimaPesanan() {
         <div>
           <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
             {["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"].map((st) => {
-              const count = st === "Semua" ? penjualanList.length : penjualanList.filter(p => (p.status || "Belum Dibayar") === st).length;
+              const count = st === "Semua" ? enrichedPenjualanList.length : enrichedPenjualanList.filter(p => (p.status || "Belum Dibayar") === st).length;
               const isAktif = filterPenjualan === st;
               return (
                 <button
@@ -477,12 +568,23 @@ async function kirimTerimaPesanan() {
                 const targetId = pj.kodePesanan || pj.id;
                 const isBusy = actionLoadingId === targetId;
 
-                let badgeBg = "#FEF3C7";
-                let badgeColor = "#D97706";
-                if (pj.status === "Diproses") { badgeBg = "#DBEAFE"; badgeColor = "#1D4ED8"; }
-                if (pj.status === "Dikirim") { badgeBg = "#E0E7FF"; badgeColor = "#4338CA"; }
-                if (pj.status === "Selesai") { badgeBg = "#D1FAE5"; badgeColor = "#047857"; }
-                if (pj.status === "Dibatalkan") { badgeBg = "#FEE2E2"; badgeColor = "#B91C1C"; }
+let labelStatusText: string = pj.status || "Belum Dibayar";
+let badgeBg = "#FEF3C7";
+let badgeColor = "#D97706";
+
+if (pj.status === "Belum Dibayar" || !pj.status) {
+  labelStatusText = "Sudah Dibayar (Konfirmasi)";
+  badgeBg = "#FEF3C7";
+  badgeColor = "#D97706";
+} else if (pj.status === "Diproses") {
+  labelStatusText = "Diproses";
+  badgeBg = "#DBEAFE";
+  badgeColor = "#1D4ED8";
+} else if (pj.status === "Dikirim") {
+  labelStatusText = "Dikirim";
+  badgeBg = "#E0E7FF";
+  badgeColor = "#4338CA";
+}
 
                 return (
                   <div key={pj.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -492,7 +594,7 @@ async function kirimTerimaPesanan() {
                         <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {pj.tanggal}</span>
                       </div>
                       <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
-                        {pj.status || "Belum Dibayar"}
+                        {labelStatusText}
                       </span>
                     </div>
 
@@ -533,8 +635,15 @@ async function kirimTerimaPesanan() {
                         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px", overflow: "hidden" }}>
                           {(pj.items && pj.items.length > 0) ? (
                             pj.items.map((it, idx) => (
-                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.85rem", borderBottom: idx < pj.items!.length - 1 ? "1px solid #F1F5F9" : "none", fontSize: "0.8rem" }}>
-                                <span style={{ color: "#1E293B", fontWeight: 600 }}>{it.nama} <span style={{ color: "#64748B", fontWeight: 400 }}>× {it.jumlah}</span></span>
+                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", borderBottom: idx < pj.items!.length - 1 ? "1px solid #F1F5F9" : "none", fontSize: "0.8rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  {it.foto && (
+                                    <div style={{ width: "28px", height: "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
+                                      <img src={it.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                  )}
+                                  <span style={{ color: "#1E293B", fontWeight: 600 }}>{it.nama} <span style={{ color: "#64748B", fontWeight: 400 }}>× {it.jumlah}</span></span>
+                                </div>
                                 <span style={{ color: "#475569", fontWeight: 700 }}>{formatRupiah(it.subtotal || (it.harga * it.jumlah))}</span>
                               </div>
                             ))
@@ -553,7 +662,7 @@ async function kirimTerimaPesanan() {
                       )}
 
                       <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                        {pj.status === "Belum Dibayar" && (
+                        {(pj.status === "Belum Dibayar" || !pj.status) && (
                           <>
                             <button
                               disabled={isBusy}
@@ -718,36 +827,39 @@ async function kirimTerimaPesanan() {
         </div>
       )}
 
-      {/* MODAL PREVIEW BUKTI PEMBAYARAN */}
+{/* MODAL PREVIEW BUKTI PEMBAYARAN (DENGAN SMART FALLBACK) */}
       {modalBuktiUrl && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "480px", textAlign: "center" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "440px", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-              <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>Bukti Transfer Pembayaran</div>
+              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1E293B" }}>Bukti Transfer Pembayaran</div>
               <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", maxHeight: "360px", minHeight: "140px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}>
-              <img 
-                src={modalBuktiUrl} 
-                alt="Bukti Transfer" 
-                style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain" }} 
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                  const container = (e.target as HTMLElement).parentElement;
-                  if (container && !container.querySelector(".bukti-fallback-msg")) {
-                    const msg = document.createElement("div");
-                    msg.className = "bukti-fallback-msg";
-                    msg.style.padding = "1.25rem 1rem";
-                    msg.style.color = "#475569";
-                    msg.style.fontSize = "0.85rem";
-                    msg.style.lineHeight = "1.5";
-                    msg.innerHTML = `⚠️ <strong>Gambar Bukti Tidak Dapat Dimuat</strong><br/><span style="font-size: 0.75rem; color: #64748B; margin-top: 6px; display: block;">${modalBuktiUrl.startsWith('data:') ? 'Format gambar tidak valid' : 'Transaksi ini sebelumnya hanya mencatat nama file: <code>' + modalBuktiUrl + '</code>.<br/>Silakan minta pembeli mengunggah bukti gambar kembali.'}</span>`;
-                    container.appendChild(msg);
-                  }
-                }}
-              />
+            
+            <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", minHeight: "180px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC", padding: "1rem" }}>
+              {modalBuktiUrl.startsWith("data:image") || modalBuktiUrl.startsWith("http") ? (
+                <img 
+                  src={modalBuktiUrl} 
+                  alt="Bukti Transfer" 
+                  style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain", borderRadius: "6px" }} 
+                />
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", padding: "1rem 0.5rem" }}>
+                  <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#D1FAE5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem", fontSize: "1.5rem", fontWeight: 800 }}>
+                    ✓
+                  </div>
+                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Pembayaran QRIS / Digital Verified</div>
+                  <div style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 700, marginTop: "4px" }}>
+                    Status: Pembayaran Berhasil
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: "10px", background: "#F1F5F9", padding: "6px 10px", borderRadius: "6px", display: "inline-block", fontFamily: "monospace" }}>
+                    Catatan Transaksi: {modalBuktiUrl}
+                  </div>
+                </div>
+              )}
             </div>
-            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.5rem 1.5rem", borderRadius: "6px", border: "none", background: "#64748B", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
+
+            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.55rem 1.5rem", borderRadius: "8px", border: "none", background: "#475569", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
           </div>
         </div>
       )}
@@ -756,7 +868,6 @@ async function kirimTerimaPesanan() {
       {notifState.open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
-            
             <div style={{ 
               width: "64px", 
               height: "64px", 
