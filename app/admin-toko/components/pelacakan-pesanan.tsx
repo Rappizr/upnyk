@@ -493,7 +493,7 @@ export default function PelacakanPesanan({
                         <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {pj.tanggal}</span>
                       </div>
                       <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
-                        {labelStatusText}
+                        {pj.status}
                       </span>
                     </div>
 

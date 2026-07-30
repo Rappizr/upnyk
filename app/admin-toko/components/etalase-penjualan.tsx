@@ -14,6 +14,7 @@ export interface StokToko {
   hargaBeli: number;
   hargaJual: number;
   diskonPersen: number;
+  berat?: number; // 💡 Berat per item dalam kg
   grade: Grade;
   asalProdusen: string;
   live: boolean;
@@ -115,12 +116,115 @@ async function kompresGambar(base64Data: string, maxDimensi = 600, kualitas = 0.
   });
 }
 
+function parseBeratFromEtalase(e: any): number {
+  if (typeof e?.berat === "number" && e.berat > 0) return e.berat;
+  if (typeof e?.berat_kg === "number" && e.berat_kg > 0) return e.berat_kg;
+  if (e?.deskripsi) {
+    const match = String(e.deskripsi).match(/\[BERAT:([\d.]+)(?:kg)?\]/i);
+    if (match && match[1]) {
+      const parsed = parseFloat(match[1]);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return 1.0;
+}
+
+function formatDeskripsiWithBerat(rawDeskripsi: string, beratVal: number): string {
+  const clean = (rawDeskripsi || "").replace(/\[BERAT:[\d.]+(?:kg)?\]/gi, "").trim();
+  return `[BERAT:${beratVal}kg] ${clean}`.trim();
+}
+
+function getCleanDeskripsiText(rawDeskripsi?: string): string {
+  if (!rawDeskripsi) return "";
+  return rawDeskripsi.replace(/\[BERAT:[\d.]+(?:kg)?\]/gi, "").trim();
+}
+
+async function safeInsertEtalase(payload: any) {
+  const copy = { ...payload };
+  for (let i = 0; i < 5; i++) {
+    const { error } = await supabase.from("etalase").insert(copy);
+    if (!error) return null;
+
+    const match1 = error.message?.match(/Could not find the '([^']+)' column/i);
+    const match2 = error.message?.match(/column "?(?:[a-zA-Z0-9_]+\.)?([^"' ]+)"? does not exist/i);
+    const missingCol = match1?.[1] || match2?.[1];
+
+    if (missingCol && copy.hasOwnProperty(missingCol)) {
+      delete copy[missingCol];
+    } else {
+      return error;
+    }
+  }
+  const { error: finalErr } = await supabase.from("etalase").insert(copy);
+  return finalErr;
+}
+
+async function safeUpdateEtalase(id: string, payload: any) {
+  const copy = { ...payload };
+  for (let i = 0; i < 5; i++) {
+    const { error } = await supabase.from("etalase").update(copy).eq("id", id);
+    if (!error) return null;
+
+    const match1 = error.message?.match(/Could not find the '([^']+)' column/i);
+    const match2 = error.message?.match(/column "?(?:[a-zA-Z0-9_]+\.)?([^"' ]+)"? does not exist/i);
+    const missingCol = match1?.[1] || match2?.[1];
+
+    if (missingCol && copy.hasOwnProperty(missingCol)) {
+      delete copy[missingCol];
+    } else {
+      return error;
+    }
+  }
+  const { error: finalErr } = await supabase.from("etalase").update(copy).eq("id", id);
+  return finalErr;
+}
+
+async function safeInsertInventaris(payload: any) {
+  const copy = { ...payload };
+  for (let i = 0; i < 5; i++) {
+    const { error } = await supabase.from("inventaris").insert(copy);
+    if (!error) return null;
+
+    const match1 = error.message?.match(/Could not find the '([^']+)' column/i);
+    const match2 = error.message?.match(/column "?(?:[a-zA-Z0-9_]+\.)?([^"' ]+)"? does not exist/i);
+    const missingCol = match1?.[1] || match2?.[1];
+
+    if (missingCol && copy.hasOwnProperty(missingCol)) {
+      delete copy[missingCol];
+    } else {
+      return error;
+    }
+  }
+  const { error: finalErr } = await supabase.from("inventaris").insert(copy);
+  return finalErr;
+}
+
+async function safeUpdateInventaris(id: string, payload: any) {
+  const copy = { ...payload };
+  for (let i = 0; i < 5; i++) {
+    const { error } = await supabase.from("inventaris").update(copy).eq("id", id);
+    if (!error) return null;
+
+    const match1 = error.message?.match(/Could not find the '([^']+)' column/i);
+    const match2 = error.message?.match(/column "?(?:[a-zA-Z0-9_]+\.)?([^"' ]+)"? does not exist/i);
+    const missingCol = match1?.[1] || match2?.[1];
+
+    if (missingCol && copy.hasOwnProperty(missingCol)) {
+      delete copy[missingCol];
+    } else {
+      return error;
+    }
+  }
+  const { error: finalErr } = await supabase.from("inventaris").update(copy).eq("id", id);
+  return finalErr;
+}
+
 export default function EtalasePenjualan({ stokList = [], updateStok, onTambahProdukBaru }: Props) {
   const [itemsEtalase, setItemsEtalase] = useState<StokToko[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editItem, setEditItem] = useState<StokToko | null>(null);
-  const [editForm, setEditForm] = useState({ hargaJual: "", diskonPersen: "", deskripsi: "" });
+  const [editForm, setEditForm] = useState({ hargaJual: "", diskonPersen: "", berat: "1.0", deskripsi: "" });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [modeTambah, setModeTambah] = useState<"gudang" | "baru">("baru");
@@ -135,7 +239,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
 
  
   const [selectedStokId, setSelectedStokId] = useState("");
-  const [addGudangForm, setAddGudangForm] = useState({ hargaJual: "", diskonPersen: "0", deskripsi: "" });
+  const [addGudangForm, setAddGudangForm] = useState({ hargaJual: "", diskonPersen: "0", berat: "1.0", deskripsi: "" });
 
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +251,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     hargaBeli: "",
     hargaJual: "",
     diskonPersen: "0",
+    berat: "1.0",
     deskripsi: "",
   });
 
@@ -191,11 +296,12 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
           hargaBeli: 0,
           hargaJual: Number(e.harga_jual) || 0,
           diskonPersen: Number(e.diskon_persen) || 0,
+          berat: parseBeratFromEtalase(e),
           grade: "A",
           asalProdusen: "Gudang Toko",
           live: e.status === "tayang" || Boolean(e.status),
           foto: e.foto || null,
-          deskripsi: e.deskripsi || "",
+          deskripsi: getCleanDeskripsiText(e.deskripsi),
           
           rating: Number(e.rating) || 0,
           totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
@@ -224,7 +330,8 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     setEditForm({
       hargaJual: String(item.hargaJual),
       diskonPersen: String(item.diskonPersen),
-      deskripsi: item.deskripsi || "",
+      berat: String(item.berat ?? 1.0),
+      deskripsi: getCleanDeskripsiText(item.deskripsi),
     });
   }
 
@@ -246,20 +353,25 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
 
     const hargaJualVal = Number(editForm.hargaJual) || editItem.hargaJual;
     const diskonVal = Math.min(90, Math.max(0, Number(editForm.diskonPersen) || 0));
+    const beratVal = Math.max(0.01, Number(editForm.berat) || editItem.berat || 1);
+    const formattedDeskripsi = formatDeskripsiWithBerat(editForm.deskripsi, beratVal);
 
-    await supabase
-      .from("etalase")
-      .update({
-        harga_jual: hargaJualVal,
-        diskon_persen: diskonVal,
-        deskripsi: editForm.deskripsi,
-      })
-      .eq("id", editItem.id);
+    const err = await safeUpdateEtalase(editItem.id, {
+      harga_jual: hargaJualVal,
+      diskon_persen: diskonVal,
+      berat: beratVal,
+      deskripsi: formattedDeskripsi,
+    });
+
+    if (err) {
+      showToast(`Gagal memperbarui etalase: ${err.message}`);
+      return;
+    }
 
     setItemsEtalase((prev) =>
       prev.map((item) =>
         item.id === editItem.id
-          ? { ...item, hargaJual: hargaJualVal, diskonPersen: diskonVal, deskripsi: editForm.deskripsi }
+          ? { ...item, hargaJual: hargaJualVal, diskonPersen: diskonVal, berat: beratVal, deskripsi: editForm.deskripsi }
           : item
       )
     );
@@ -309,6 +421,9 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
 
       const hargaJualVal = Number(addGudangForm.hargaJual) || item.hargaJual;
       const diskonVal = Math.min(90, Math.max(0, Number(addGudangForm.diskonPersen) || 0));
+      const beratVal = Math.max(0.01, Number(addGudangForm.berat) || item.berat || 1);
+      const rawDesk = addGudangForm.deskripsi || item.deskripsi || "Produk bahan baku segar dan terjamin.";
+      const formattedDesk = formatDeskripsiWithBerat(rawDesk, beratVal);
 
       const { data: existingEtalase } = await supabase
         .from("etalase")
@@ -318,20 +433,19 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         .maybeSingle();
 
       if (existingEtalase) {
-        const { error: errUpdate } = await supabase
-          .from("etalase")
-          .update({
-            stok: item.jumlah,
-            harga_jual: hargaJualVal > 0 ? hargaJualVal : undefined,
-            diskon_persen: diskonVal,
-            status: "tayang",
-          })
-          .eq("id", existingEtalase.id);
+        const errUpdate = await safeUpdateEtalase(existingEtalase.id, {
+          stok: item.jumlah,
+          harga_jual: hargaJualVal > 0 ? hargaJualVal : undefined,
+          diskon_persen: diskonVal,
+          berat: beratVal,
+          deskripsi: formattedDesk,
+          status: "tayang",
+        });
 
         if (errUpdate) throw errUpdate;
         showToast(`Stok "${item.nama}" di Etalase berhasil diperbarui menjadi ${item.jumlah} pcs!`);
       } else {
-        const { error: errInsert } = await supabase.from("etalase").insert({
+        const errInsert = await safeInsertEtalase({
           admin_toko_id: adminToko.id,
           produk_id: item.produk_id || null,
           nama_produk: item.nama,
@@ -339,7 +453,8 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
           satuan: "pcs",
           harga_jual: hargaJualVal,
           diskon_persen: diskonVal,
-          deskripsi: addGudangForm.deskripsi || item.deskripsi || "Produk bahan baku segar dan terjamin.",
+          berat: beratVal,
+          deskripsi: formattedDesk,
           foto: item.foto || null,
           status: "tayang",
         });
@@ -386,6 +501,8 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
       const hargaBeliVal = Number(formBaru.hargaBeli) || 0;
       const stokVal = Number(formBaru.jumlah) || 1;
       const diskonVal = Math.min(90, Math.max(0, Number(formBaru.diskonPersen) || 0));
+      const beratVal = Math.max(0.01, Number(formBaru.berat) || 1);
+      const formattedDesk = formatDeskripsiWithBerat(formBaru.deskripsi.trim() || "Produk berkualitas tinggi.", beratVal);
 
       let finalFoto = fotoPreview;
       if (finalFoto && finalFoto.length > 300000) {
@@ -401,23 +518,22 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         .maybeSingle();
 
       if (existingInv) {
-        const { error: errUpdate } = await supabase
-          .from("inventaris")
-          .update({
-            stok: (Number(existingInv.stok) || 0) + stokVal,
-            harga_beli: hargaBeliVal > 0 ? hargaBeliVal : undefined,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingInv.id);
+        const errUpdate = await safeUpdateInventaris(existingInv.id, {
+          stok: (Number(existingInv.stok) || 0) + stokVal,
+          harga_beli: hargaBeliVal > 0 ? hargaBeliVal : undefined,
+          berat: beratVal,
+          updated_at: new Date().toISOString(),
+        });
 
         if (errUpdate) throw errUpdate;
       } else {
-        const { error: errInv } = await supabase.from("inventaris").insert({
+        const errInv = await safeInsertInventaris({
           admin_toko_id: adminToko.id,
           nama_produk: formBaru.nama.trim(),
           stok: stokVal,
           harga_beli: hargaBeliVal,
           satuan: "pcs",
+          berat: beratVal,
           stok_minimum: 5,
           stok_maksimum: 100,
           lokasi_rak: "Gudang Utama",
@@ -429,7 +545,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
       }
 
     
-      const { error: errEtalase } = await supabase.from("etalase").insert({
+      const errEtalase = await safeInsertEtalase({
         admin_toko_id: adminToko.id,
         produk_id: null,
         nama_produk: formBaru.nama.trim(),
@@ -437,7 +553,8 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         stok: stokVal,
         satuan: "pcs",
         diskon_persen: diskonVal,
-        deskripsi: formBaru.deskripsi.trim() || "Produk berkualitas tinggi.",
+        berat: beratVal,
+        deskripsi: formattedDesk,
         foto: finalFoto || null,
         status: "tayang",
         rating: 0,
@@ -460,7 +577,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     setShowAddModal(false);
     setSelectedStokId("");
     setFotoPreview(null);
-    setAddGudangForm({ hargaJual: "", diskonPersen: "0", deskripsi: "" });
+    setAddGudangForm({ hargaJual: "", diskonPersen: "0", berat: "1.0", deskripsi: "" });
     setFormBaru({
       nama: "",
       jumlah: "",
@@ -468,6 +585,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
       hargaBeli: "",
       hargaJual: "",
       diskonPersen: "0",
+      berat: "1.0",
       deskripsi: "",
     });
   }
@@ -792,18 +910,35 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
                         style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
-                        Diskon Toko (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="90"
-                        value={addGudangForm.diskonPersen}
-                        onChange={(e) => setAddGudangForm({ ...addGudangForm, diskonPersen: e.target.value })}
-                        style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
-                      />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                          Diskon Toko (%)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="90"
+                          value={addGudangForm.diskonPersen}
+                          onChange={(e) => setAddGudangForm({ ...addGudangForm, diskonPersen: e.target.value })}
+                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                          Berat / Item (kg) *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          placeholder="1.0"
+                          value={addGudangForm.berat}
+                          onChange={(e) => setAddGudangForm({ ...addGudangForm, berat: e.target.value })}
+                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
+                        />
+                      </div>
                     </div>
                   </>
                 )}
@@ -959,19 +1094,36 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
-                    Diskon Toko (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="90"
-                    placeholder="0"
-                    value={formBaru.diskonPersen}
-                    onChange={(e) => setFormBaru({ ...formBaru, diskonPersen: e.target.value })}
-                    style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
-                  />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                      Diskon Toko (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="90"
+                      placeholder="0"
+                      value={formBaru.diskonPersen}
+                      onChange={(e) => setFormBaru({ ...formBaru, diskonPersen: e.target.value })}
+                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                      Berat Per Item (kg) *
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="1.0"
+                      value={formBaru.berat}
+                      onChange={(e) => setFormBaru({ ...formBaru, berat: e.target.value })}
+                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1052,18 +1204,35 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
                 />
               </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
-                  Diskon (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="90"
-                  value={editForm.diskonPersen}
-                  onChange={(e) => setEditForm({ ...editForm, diskonPersen: e.target.value })}
-                  style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
-                />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                    Diskon (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="90"
+                    value={editForm.diskonPersen}
+                    onChange={(e) => setEditForm({ ...editForm, diskonPersen: e.target.value })}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
+                    Berat Per Item (kg) *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="1.0"
+                    value={editForm.berat}
+                    onChange={(e) => setEditForm({ ...editForm, berat: e.target.value })}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                  />
+                </div>
               </div>
 
               <div>

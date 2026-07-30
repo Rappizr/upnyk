@@ -222,7 +222,7 @@ export default function AdminTokoDashboard() {
 
       const { data: pesananData, error: pesananError } = await supabase
         .from("pesanan")
-        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id, bukti_pembayaran, metode_pembayaran, no_resi")
+        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id, bukti_pembayaran, metode_pembayaran")
         .in("admin_toko_id", possibleAdminIds)
         .order("created_at", { ascending: false });
 
@@ -238,18 +238,23 @@ export default function AdminTokoDashboard() {
 
       const produsenIds = Array.from(new Set(pesananData.map((p) => p.produsen_id).filter(Boolean)));
       const produkIds = Array.from(new Set(pesananData.map((p) => p.produk_id).filter(Boolean)));
+      const pesananIds = pesananData.map((p) => p.id).filter(Boolean);
 
-      const [{ data: produsenData }, { data: produkData }] = await Promise.all([
+      const [{ data: produsenData }, { data: produkData }, { data: pengirimanData }] = await Promise.all([
         produsenIds.length > 0
           ? supabase.from("produsen").select("id, nama_usaha, desa, kabupaten").in("id", produsenIds)
           : Promise.resolve({ data: [] }),
         produkIds.length > 0
           ? supabase.from("produk").select("id, nama, harga, satuan").in("id", produkIds)
           : Promise.resolve({ data: [] }),
+        pesananIds.length > 0
+          ? supabase.from("pengiriman").select("pesanan_id, nomor_resi").in("pesanan_id", pesananIds)
+          : Promise.resolve({ data: [] }),
       ]);
 
       const produsenMap = new Map((produsenData || []).map((p) => [p.id, p]));
       const produkMap = new Map((produkData || []).map((p) => [p.id, p]));
+      const pengirimanMap = new Map((pengirimanData || []).map((pg) => [pg.pesanan_id, pg.nomor_resi]));
 
       const mapped: Pembelian[] = pesananData.map((p) => {
         const rawStatus = String(p.status || "").toLowerCase().trim();
@@ -277,7 +282,7 @@ export default function AdminTokoDashboard() {
           hargaSatuan: Number(prodObjProduk?.harga) || 0,
           total: Number(p.total_harga) || 0,
           status: statusFormat,
-          noResi: p.no_resi || undefined,
+          noResi: pengirimanMap.get(p.id) || undefined,
           buktiPembayaran: p.bukti_pembayaran || null,
           metodePembayaran: p.metode_pembayaran || "QRIS",
           tanggal: new Date(p.created_at).toLocaleDateString("id-ID", {

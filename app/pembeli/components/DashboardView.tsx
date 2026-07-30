@@ -146,6 +146,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
             stock: Number(e.stok) > 0 ? "Tersedia" : "Habis",
             rating: 5.0,
             price: Number(e.harga_jual) || 0,
+            weight: Number(e.berat) || Number(e.berat_kg) || 1,
             supplier: tokoObj?.nama_toko || "Toko Mitra",
             foto: e.foto || null,
           };

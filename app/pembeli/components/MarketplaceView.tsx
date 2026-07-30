@@ -110,6 +110,7 @@ export default function MarketplaceView({
             diskon: Number(e.diskon_persen) || 0,
             stock: Number(e.stok) || 0,
             satuan: e.satuan || "pcs",
+            weight: Number(e.berat) || Number(e.berat_kg) || 1,
             storeName: toko?.nama_toko || "",
             kabupaten: toko?.kabupaten || "",
             origin: lokasi,

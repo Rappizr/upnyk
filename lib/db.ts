@@ -30,6 +30,19 @@ function resolveIconType(namaKategori: string | null, namaProduk: string): strin
   return 'grain';
 }
 
+export function extractBeratFromItem(e: any): number {
+  if (typeof e?.berat === 'number' && e.berat > 0) return e.berat;
+  if (typeof e?.berat_kg === 'number' && e.berat_kg > 0) return e.berat_kg;
+  if (e?.deskripsi) {
+    const match = String(e.deskripsi).match(/\[BERAT:([\d.]+)(?:kg)?\]/i);
+    if (match && match[1]) {
+      const parsed = parseFloat(match[1]);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+  }
+  return 1.0;
+}
+
 
 
 export async function getCurrentUserId(): Promise<string | null> {
@@ -124,9 +137,9 @@ export async function getProducts(): Promise<any[]> {
           admin_toko_id: e.admin_toko_id,
           name: e.nama_produk || '',
           price: Number(e.harga_jual) || 0,
-          description: e.deskripsi || '',
+          description: (e.deskripsi || '').replace(/\[BERAT:[\d.]+(?:kg)?\]/gi, '').trim(),
           unit: e.satuan || 'pcs',
-          weight: 1,
+          weight: extractBeratFromItem(e),
           image: e.foto || null,
           origin: asal,
           stock: Number(e.stok) > 0 ? 'Tersedia' : 'Habis',
@@ -1303,6 +1316,7 @@ export async function getCart(userIdParam?: string): Promise<any[]> {
           deskripsi: mp.deskripsi,
           satuan: mp.satuan,
           foto: mp.foto,
+          berat: mp.berat || mp.berat_kg || 1,
           admin_toko: {
             nama_toko: mp.produsen?.nama_usaha || 'Toko Mitra',
             desa: mp.produsen?.desa,
@@ -1332,9 +1346,9 @@ export async function getCart(userIdParam?: string): Promise<any[]> {
         id: p?.id || item.produk_id,
         name: namaVal,
         price: hargaVal,
-        description: p?.deskripsi || '',
+        description: (p?.deskripsi || '').replace(/\[BERAT:[\d.]+(?:kg)?\]/gi, '').trim(),
         unit: p?.satuan || 'pcs',
-        weight: 1,
+        weight: extractBeratFromItem(p),
         foto: p?.foto || null,
         supplier: storeName,
         origin: asal,
