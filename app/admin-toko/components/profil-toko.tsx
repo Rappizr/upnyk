@@ -12,16 +12,16 @@ const IconCamera = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="n
 const IconPhone = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"></path></svg>;
 const IconX = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
-// Tema warna disamakan dengan Admin Toko Dashboard (amber)
-const WARNA_UTAMA = "#F59E0B";       // amber - aksi utama / bagian toko
-const WARNA_UTAMA_GELAP = "#D97706"; // amber tua - bagian pemilik / hover
+
+const WARNA_UTAMA = "#F59E0B";       
+const WARNA_UTAMA_GELAP = "#D97706"; 
 
 type Mode = "view" | "editToko" | "editPemilik";
 
 interface ProfilTokoPageProps {
-  /** Dikontrol dari luar — true kalau admin klik avatar/profil di header untuk membuka popup */
+  
   open: boolean;
-  /** Dipanggil saat popup ditutup (klik X atau klik area luar) */
+ 
   onClose: () => void;
   onProfileUpdate?: () => void;
 }
@@ -143,7 +143,7 @@ export default function ProfilTokoPage({ open, onClose, onProfileUpdate }: Profi
       }
     }
 
-    // 🌐 AUTOMATIC GEOCODING: Mencari koordinat latitude & longitude dari alamat toko
+    
     const coords = await getCoordsFromAddress({
       alamat: form.alamat,
       desa: form.desa,

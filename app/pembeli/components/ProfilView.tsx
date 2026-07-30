@@ -192,7 +192,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-muted)" }}>Memuat profil...</div>
       ) : (
         <div className="profile-layout">
-          {/* Left Panel */}
+       
           <div>
             <div className="card profile-avatar-card" style={{ textAlign: "center", marginBottom: "1rem" }}>
               <input 
@@ -229,7 +229,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
               </button>
             </div>
 
-            {/* Stats */}
+          
             <div className="card profile-stats-card">
               <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                 <BarChartIcon size={16} /> Statistik Saya
@@ -245,9 +245,9 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
             </div>
           </div>
 
-          {/* Right Panel */}
+       
           <div>
-            {/* Inner Tabs */}
+      
             <div className="tabs" style={{ marginBottom: "1.25rem" }}>
               {[
                 ["biodata", "Biodata", <UserIcon size={16} key="bio" />], 
@@ -259,7 +259,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
               ))}
             </div>
 
-            {/* Biodata */}
+           
             {tab === "biodata" && (
               <div className="card">
                 <div className="text-sm font-semibold" style={{ marginBottom: "1rem" }}>Informasi Pribadi</div>
@@ -301,7 +301,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
               </div>
             )}
 
-            {/* Alamat */}
+     
             {tab === "alamat" && (
               <div>
                 {addresses.length === 0 ? (
@@ -335,8 +335,7 @@ export default function ProfilView({ onProfileUpdated }: { onProfileUpdated?: ()
 
 
 
-            {/* Removed voucher history tab */}
-            {/* Mobile-only Logout Section */}
+           
             <div className="mobile-only-logout" style={{ marginTop: "1.5rem" }}>
               <a
                 href="/login"

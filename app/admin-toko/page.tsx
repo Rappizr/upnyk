@@ -542,7 +542,7 @@ export default function AdminTokoDashboard() {
         }
       `}} />
 
-      {/* MODAL SUSPENDED */}
+     
       {isSuspended && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "2rem", width: "420px", maxWidth: "100%", textAlign: "center" }}>
@@ -556,7 +556,7 @@ export default function AdminTokoDashboard() {
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
-      {/* SIDEBAR NAVIGATION */}
+    
       <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -634,7 +634,7 @@ export default function AdminTokoDashboard() {
         </div>
       </aside>
 
-      {/* BODY CONTENT */}
+ 
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -655,11 +655,11 @@ export default function AdminTokoDashboard() {
           </div>
         </div>
 
-        {/* HALAMAN DASHBOARD UTAMA (MODERN & LENGKAP) */}
+
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
             
-            {/* HERO BANNER */}
+       
             <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.2)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Platform Rantai Pasok & UMKM #1 Indonesia</span>
@@ -667,7 +667,7 @@ export default function AdminTokoDashboard() {
                 <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.9)", marginTop: "0.3rem", maxWidth: "480px" }}>Pantau arus kas, analisis prediktif restock komoditas, dan kelola distribusi toko Anda secara real-time.</div>
               </div>
 
-              {/* QUICK ACTION BUTTONS */}
+
               <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
                 <button onClick={() => selectMenu("etalase")} style={{ background: "#fff", color: "#D97706", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
                   + Tambah Etalase
@@ -678,7 +678,7 @@ export default function AdminTokoDashboard() {
               </div>
             </div>
 
-            {/* METRICS GRID 5 KOLOM */}
+
             <div className="at-stats-grid" style={{ marginBottom: "1.5rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem" }}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>OMSET PENJUALAN</div>
@@ -704,7 +704,7 @@ export default function AdminTokoDashboard() {
                 <div style={{ fontSize: "0.7rem", color: barangRestockKritis.length > 0 ? "#DC2626" : "#10B981", marginTop: "0.3rem", fontWeight: 600 }}>{barangRestockKritis.length > 0 ? "Stok ≤15 pcs" : "Stok Aman"}</div>
               </div>
 
-              {/* KARTU ETALASE TAYANG SINKRON DENGAN DRAFT & TAYANG RIIEL DARI SUPABASE */}
+             
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("etalase")}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>ETALASE PENJUALAN</div>
                 <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#1E293B" }}>{totalEtalaseTayang} Live</div>
@@ -712,10 +712,10 @@ export default function AdminTokoDashboard() {
               </div>
             </div>
 
-            {/* DASHBOARD PANELS GRID (2 KOLOM) */}
+       
             <div className="at-panels-grid">
               
-              {/* WIDGET 1: PERINGATAN RESTOCK SEGERA */}
+          
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "14px", padding: "1.25rem", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -746,7 +746,7 @@ export default function AdminTokoDashboard() {
                 )}
               </div>
 
-              {/* WIDGET 2: AKTIVITAS PESANAN TERAKHIR */}
+        
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "14px", padding: "1.25rem", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                   <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#1E293B" }}>Aktivitas Pesanan Terakhir</h3>
@@ -781,10 +781,10 @@ export default function AdminTokoDashboard() {
           </main>
         )}
 
-        {/* SUB HALAMAN OPERASIONAL */}
+      
         {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
         
-        {/* HALAMAN INVENTARIS */}
+      
         {activeMenu === "inventaris" && isDataLengkap && (
           <InventarisGrading 
             stokList={stokList} 

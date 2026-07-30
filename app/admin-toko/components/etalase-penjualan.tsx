@@ -88,7 +88,7 @@ function unformatInputRupiah(value: string) {
   return value.replace(/\./g, "");
 }
 
-// KOMPRESI GAMBAR OTOMATIS
+
 async function kompresGambar(base64Data: string, maxDimensi = 600, kualitas = 0.7): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -133,11 +133,11 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     setTimeout(() => setToastMessage(null), 3500);
   }
 
-  // FORM GUDANG
+ 
   const [selectedStokId, setSelectedStokId] = useState("");
   const [addGudangForm, setAddGudangForm] = useState({ hargaJual: "", diskonPersen: "0", deskripsi: "" });
 
-  // FORM MANUAL BARU
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [formBaru, setFormBaru] = useState({
@@ -150,7 +150,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     deskripsi: "",
   });
 
-  // 1. FETCH DATA DARI TABEL `etalase`
+
   const muatDataEtalase = useCallback(async () => {
     setLoading(true);
     try {
@@ -196,7 +196,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
           live: e.status === "tayang" || Boolean(e.status),
           foto: e.foto || null,
           deskripsi: e.deskripsi || "",
-          // 💡 Mengambil data rating & total ulasan riil dari Supabase (default 0 jika belum ada)
+          
           rating: Number(e.rating) || 0,
           totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
         }));
@@ -228,7 +228,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     });
   }
 
-  // TOGGLE STATUS LIVE DI TABEL `etalase`
+ 
   async function toggleStatusLive(id: string, currentLive: boolean) {
     const nextStatus = currentLive ? "draft" : "tayang";
 
@@ -239,7 +239,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     showToast(`Status produk diubah menjadi ${nextStatus === "tayang" ? "Tayang Live" : "Draft"}`);
   }
 
-  // EDIT HARGA & DISKON
+ 
   async function handleSubmitEdit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
@@ -281,7 +281,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     reader.readAsDataURL(file);
   }
 
-  // TAYANGKAN DARI STOK GUDANG
+
   async function handleTayangkanDariGudang(e: FormEvent) {
     e.preventDefault();
     if (!selectedStokId || submitting) return;
@@ -357,7 +357,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     }
   }
 
-  // BUAT PRODUK BARU MANDIRI
+ 
   async function handleBuatProdukBaru(e: FormEvent) {
     e.preventDefault();
     if (!formBaru.nama.trim() || submitting) return;
@@ -392,7 +392,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         finalFoto = await kompresGambar(finalFoto);
       }
 
-      // 1. Simpan ke Inventaris
+  
       const { data: existingInv } = await supabase
         .from("inventaris")
         .select("id, stok")
@@ -428,7 +428,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         if (errInv) throw new Error(`Gagal simpan ke inventaris: ${errInv.message}`);
       }
 
-      // 2. Simpan ke Etalase (produk_id: null)
+    
       const { error: errEtalase } = await supabase.from("etalase").insert({
         admin_toko_id: adminToko.id,
         produk_id: null,
@@ -591,7 +591,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
                 <div style={{ padding: "0.9rem", flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.2rem" }}>{s.nama}</div>
 
-                  {/* 💡 BAGIAN RATING DINAMIS BERDASARKAN RATA-RATA DARI DATABASE */}
+               
 <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "0.4rem" }}>
   <IconStar />
   <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#1E293B" }}>
@@ -667,7 +667,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         )}
       </div>
 
-      {/* MODAL POPUP TAMBAH PRODUK */}
+    
       {showAddModal && (
         <div
           onClick={closeModalTambah}
@@ -1019,7 +1019,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         </div>
       )}
 
-      {/* MODAL EDIT HARGA */}
+     
       {editItem && (
         <div
           onClick={() => setEditItem(null)}

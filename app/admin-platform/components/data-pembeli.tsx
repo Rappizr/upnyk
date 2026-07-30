@@ -26,7 +26,6 @@ export default function DataPembeli() {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<Pembeli | null>(null);
 
-  // FETCH DATA PEMBELI LANGSUNG DARI TABEL `pembeli`
   const muatDataPembeli = useCallback(async () => {
     setLoading(true);
     try {
@@ -62,7 +61,6 @@ export default function DataPembeli() {
     muatDataPembeli();
   }, [muatDataPembeli]);
 
-  // TOGGLE SUSPEND AKUN PEMBELI PADA TABEL `pembeli`
   async function toggleSuspendPembeli(id: string, statusSaatIni: "Aktif" | "Nonaktif") {
     const statusBaru = statusSaatIni === "Aktif" ? "suspended" : "aktif";
     const statusLabel = statusSaatIni === "Aktif" ? "Nonaktif" : "Aktif";

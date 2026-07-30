@@ -94,7 +94,7 @@ export default function ProdusenDashboard() {
     });
 
     if (produsen) {
-      // 1. Fetch Produk & Stok
+     
       const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
       if (produk) {
         setStokList((produk as ProdukRow[]).map((p) => {
@@ -107,7 +107,7 @@ export default function ProdusenDashboard() {
         }));
       }
 
-      // 2. Fetch Pesanan B2B Live dari Supabase (Solusi agar status ter-update)
+  
       const { data: pesananData } = await supabase
         .from("pesanan")
         .select(`
@@ -149,7 +149,7 @@ export default function ProdusenDashboard() {
     }
   }, []);
 
-  // Realtime Subscriptions
+ 
   useEffect(() => {
     muatDataDashboard();
 

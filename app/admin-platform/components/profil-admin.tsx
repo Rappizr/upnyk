@@ -216,7 +216,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               )}
             </div>
 
-            {/* AVATAR & INFO HEADER */}
+         
             <div style={{ padding: "0 1.5rem 1.25rem", marginTop: "-42px", textAlign: "center", position: "relative" }}>
               <div style={{ position: "relative", display: "inline-block" }}>
                 <div style={{ width: "84px", height: "84px", borderRadius: "50%", background: "#1E293B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.6rem", fontWeight: 800, border: "4px solid #ffffff", boxShadow: "0 8px 16px -2px rgba(15,23,42,0.15)", overflow: "hidden", margin: "0 auto" }}>
@@ -236,7 +236,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </span>
             </div>
 
-            {/* TAB NAVIGASI PILLS */}
+          
             <div style={{ padding: "0 1.25rem", marginBottom: "1rem" }}>
               <div style={{ display: "flex", background: "#F1F5F9", padding: "4px", borderRadius: "10px" }}>
                 <button
@@ -264,7 +264,6 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-            {/* KONTEN DETAIL */}
             <div style={{ padding: "0 1.25rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {activeTab === "jabatan" ? (
                 <>
@@ -287,14 +286,14 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
             </div>
           </div>
         ) : (
-          /* FORM EDIT MODAL */
+        
           <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #F1F5F9", paddingBottom: "0.75rem" }}>
               <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#1E293B" }}>Edit Profil Admin</h3>
               <button type="button" onClick={() => setEditing(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
 
-            {/* EDIT AVATAR */}
+           
             <div style={{ textAlign: "center", margin: "0.25rem 0" }}>
               <div style={{ position: "relative", display: "inline-block" }}>
                 <div style={{ width: "70px", height: "70px", borderRadius: "50%", background: "#1E293B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", fontWeight: 800, overflow: "hidden", margin: "0 auto" }}>
@@ -332,7 +331,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-            {/* UPDATE PASSWORD */}
+       
             <div style={{ paddingTop: "0.6rem", borderTop: "1px dashed #E2E8F0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", fontWeight: 700, color: "#64748B", marginBottom: "0.5rem" }}>
                 <IconLock /> UBAH KATA SANDI (OPSIONAL)
@@ -347,7 +346,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-            {/* BUTTONS */}
+          
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
               <button type="button" onClick={() => { setEditing(false); setPasswordBaru(""); setPasswordKonfirmasi(""); }} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
                 Batal

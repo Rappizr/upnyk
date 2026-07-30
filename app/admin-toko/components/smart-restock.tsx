@@ -135,7 +135,7 @@ export default function SmartRestock({ produsenList = [], stokList = [], updateS
         </p>
       </div>
 
-      {/* STOK GUDANG MENIPIS */}
+    
       <div
         className="restock-warehouse-box"
         style={{
@@ -270,7 +270,7 @@ export default function SmartRestock({ produsenList = [], stokList = [], updateS
         )}
       </div>
 
-      {/* METRIK STATISTIK SUPPLIER */}
+      
       <div
         className="restock-stats-grid"
         style={{
@@ -346,7 +346,7 @@ export default function SmartRestock({ produsenList = [], stokList = [], updateS
         </div>
       </div>
 
-      {/* FILTER SUPPLIER */}
+    
       <div
         className="restock-filter-row"
         style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}
@@ -372,7 +372,7 @@ export default function SmartRestock({ produsenList = [], stokList = [], updateS
         </select>
       </div>
 
-      {/* DAFTAR PRODUSEN / SUPPLIER */}
+    
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {terjadwal.length === 0 && (
           <div

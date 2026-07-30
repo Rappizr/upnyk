@@ -154,7 +154,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Cek apakah email adalah salah satu akun demo (pre-seeded)
+     
       const preseededRole = (Object.keys(roleConfigs) as Role[]).find(
         (r) => roleConfigs[r].email.toLowerCase() === email.toLowerCase()
       );
@@ -165,7 +165,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Coba login via Supabase Auth secara ketat
+
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password.trim()
@@ -181,11 +181,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Login Supabase berhasil
+   
       if (authData.user) {
-        // -------------------------------------------------------------
-        // TAMBAHAN PENGECEKAN STATUS AKUN TERBLOKIR / SUSPENDED
-        // -------------------------------------------------------------
+      
         const { data: profileStatus } = await supabase
           .from('profiles')
           .select('status, role')
@@ -213,9 +211,7 @@ export default function LoginPage() {
             return;
           }
         }
-        // -------------------------------------------------------------
-
-        // Ambil profil dari database public.profiles untuk mencocokkan peran (role)
+   
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
           .select('role')
@@ -226,7 +222,7 @@ export default function LoginPage() {
           console.error("Gagal mengambil data profil:", profileErr.message);
         }
 
-        // Validasi kecocokan role antara pilihan UI dengan database
+        
         if (profile && profile.role) {
           if (profile.role !== selectedRole) {
             const roleTitle = roleConfigs[profile.role as Role]?.title || profile.role;
@@ -269,7 +265,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Daftar via Supabase Auth
+     
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: regEmail.trim(),
         password: regPassword.trim(),
@@ -290,7 +286,7 @@ export default function LoginPage() {
       }
 
       if (authData.user) {
-        // Berhasil daftar di Supabase, simpan profil ke tabel profiles
+        
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           nama: regName.trim(),
@@ -305,7 +301,7 @@ export default function LoginPage() {
           console.error('Client-side profiles upsert failed:', profileError.message);
         }
 
-        // Simpan juga ke tabel role-specific jika tidak ditangani oleh trigger (upsert aman)
+        
         if (selectedRole === 'pembeli') {
           const { error: roleErr } = await supabase.from('pembeli').upsert({
             id: authData.user.id,
@@ -722,7 +718,7 @@ export default function LoginPage() {
           ) : (
             <>
               <form onSubmit={handleRegister}>
-                {/* PILIH AVATAR (PROFILE PICTURE) */}
+              
                 <div className="form-group" style={{ marginBottom: "1.25rem", alignItems: "center" }}>
                   <label className="form-label" style={{ width: "100%", textAlign: "left" }}>Foto Profil / Avatar</label>
 

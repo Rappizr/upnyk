@@ -68,7 +68,7 @@ export default function PembeliMasterPage() {
     try {
       const data = await getNotificationsAction();
       if (data && data.length > 0) {
-        // PERBAIKAN: Gunakan properti dibaca asli tanpa tambahan hardcoded '+ 2'
+        
         const dbUnread = data.filter((n: any) => !n.dibaca && !n.unread).length;
         setUnreadNotifCount(dbUnread);
       } else {
@@ -281,7 +281,7 @@ export default function PembeliMasterPage() {
         </div>
       </header>
 
-      {/* BODY SHELL */}
+      
       <div className="app-shell">
         <aside className="sidebar">
           <div className="nav-section-title">Menu Utama</div>
@@ -426,7 +426,7 @@ export default function PembeliMasterPage() {
         </main>
       </div>
 
-      {/* BOTTOM NAV FOR MOBILE */}
+      
       <nav className="bottom-nav">
         {sidebarItems.map((item) => {
           const isActive = activeTab === item.name;

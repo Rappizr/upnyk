@@ -9,15 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Client khusus server-side dengan Service Role Key (bypass RLS)
+
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
-// ─────────────────────────────────────────────
-// HELPER: Resolve icon type dari kategori/nama produk
-// ─────────────────────────────────────────────
+
 function resolveIconType(namaKategori: string | null, namaProduk: string): string {
   const kat = (namaKategori || namaProduk || '').toLowerCase();
   if (kat.includes('beras') || kat.includes('nasi')) return 'rice';
@@ -32,12 +30,12 @@ function resolveIconType(namaKategori: string | null, namaProduk: string): strin
   return 'grain';
 }
 
-/**
-  Mendapatkan ID user/pembeli yang valid dari Auth Supabase, LocalStorage, atau fallback DB
- */
+
+
 export async function getCurrentUserId(): Promise<string | null> {
   try {
     let authUserId: string | null = null;
+
 
     try {
       const { data: authData } = await supabase.auth.getUser();
@@ -48,6 +46,7 @@ export async function getCurrentUserId(): Promise<string | null> {
       console.warn('getCurrentUserId auth.getUser exception:', eAuth);
     }
 
+
     if (!authUserId && typeof window !== "undefined") {
       authUserId = localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id");
     }
@@ -56,6 +55,7 @@ export async function getCurrentUserId(): Promise<string | null> {
       if (!id) return false;
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
+
 
     if (authUserId && isValidUuid(authUserId)) {
       try {
@@ -71,6 +71,7 @@ export async function getCurrentUserId(): Promise<string | null> {
       }
       return authUserId;
     }
+
 
     try {
       const { data: latestPembeli } = await supabase
@@ -89,9 +90,7 @@ export async function getCurrentUserId(): Promise<string | null> {
   }
 }
 
-// ─────────────────────────────────────────────
-// PRODUK
-// ─────────────────────────────────────────────
+
 export async function getProducts(): Promise<any[]> {
   try {
     const { data: etalaseData, error: etalaseErr } = await supabase
@@ -137,6 +136,7 @@ export async function getProducts(): Promise<any[]> {
         };
       });
     }
+
 
     let { data, error } = await supabase
       .from('marketplace')
@@ -218,9 +218,8 @@ export async function saveProduct(product: any): Promise<any> {
   }
 }
 
-// ─────────────────────────────────────────────
-// PROFILE PEMBELI
-// ─────────────────────────────────────────────
+
+
 export async function getProfile(userIdParam?: string): Promise<any> {
   const userId = userIdParam || await getCurrentUserId();
   if (!userId) return null;
@@ -327,15 +326,14 @@ export async function updateProfile(profileData: any): Promise<{ success: boolea
   return { success: true, profile };
 }
 
-// ─────────────────────────────────────────────
-// PESANAN
-// ─────────────────────────────────────────────
+
 export async function getOrders(userIdParam?: string): Promise<any[]> {
   try {
     const isValidUuid = (id: string | null | undefined): boolean => {
       if (!id) return false;
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     };
+
 
     const userIds: string[] = [];
 
@@ -353,7 +351,7 @@ export async function getOrders(userIdParam?: string): Promise<any[]> {
       if (user?.id && isValidUuid(user.id) && !userIds.includes(user.id)) {
         userIds.push(user.id);
       }
-    } catch {}
+    } catch { }
 
     if (typeof window !== "undefined") {
       const ls1 = localStorage.getItem("supabase_user_id");
@@ -547,7 +545,9 @@ export async function createOrder(orderData: any): Promise<any> {
   if (pesananError || !pesanan) {
     console.error('createOrder initial pesanan error:', pesananError?.message);
 
-    // 💡 FALLBACK 1: JIKA TERJADI ERROR DENGAN PRODUK_ID, RETRY TETAP DENGAN FOTO UTUH
+
+    const safeProof = rawProof && rawProof.length > 250 ? 'Bukti Terunggah' : rawProof;
+
     const { data: pesananRetry, error: errRetry } = await supabase
       .from('pesanan')
       .insert({
@@ -568,7 +568,6 @@ export async function createOrder(orderData: any): Promise<any> {
     if (errRetry || !pesananRetry) {
       console.error('createOrder retry pesanan error:', errRetry?.message);
 
-      // 💡 FALLBACK 2: KOSONGKAN PEMBELI_ID TAPI TETAP SERTAKAN FOTO
       const { data: pesananFallback1, error: errFallback1 } = await supabase
         .from('pesanan')
         .insert({
@@ -587,7 +586,6 @@ export async function createOrder(orderData: any): Promise<any> {
       if (errFallback1 || !pesananFallback1) {
         console.error('createOrder fallback1 pesanan error:', errFallback1?.message);
 
-        // FALLBACK 3: SINKRONISASI DASAR DENGAN FOTO UTUH
         const { data: pesananFallback2, error: errFallback2 } = await supabase
           .from('pesanan')
           .insert({
@@ -662,6 +660,7 @@ export async function createOrder(orderData: any): Promise<any> {
   const targetUserId = userId || orderData.pembeli_id;
   const validTarget = targetUserId && isValidUuid(targetUserId) ? targetUserId : null;
   const totalFormatted = `Rp ${Number(pesanan.total || 0).toLocaleString('id-ID')}`;
+
 
   let profileIdForNotif: string | null = null;
   if (validTarget) {
@@ -853,6 +852,7 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
 
     const totalStr = `Rp ${Number(targetOrder.total || 0).toLocaleString('id-ID')}`;
 
+
     let profileIdForNotif: string | null = null;
     if (targetOrder.pembeli_id && isValidUuid(targetOrder.pembeli_id)) {
       const { data: pembeliData } = await supabase
@@ -897,6 +897,7 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
       console.error('updateOrderStatus notifikasi catch error:', errNotif);
     }
 
+
     if (status === 'Selesai') {
       try {
         const { error: ulasanNotifErr } = await supabaseAdmin.from('notifikasi').insert({
@@ -917,9 +918,7 @@ export async function updateOrderStatus(orderId: string, status: string, noResi?
   return true;
 }
 
-// ─────────────────────────────────────────────
-// WISHLIST
-// ─────────────────────────────────────────────
+
 export async function getWishlist(): Promise<any[]> {
   try {
     const isValidUuid = (id: string | null | undefined): boolean => {
@@ -984,6 +983,7 @@ export async function getWishlist(): Promise<any[]> {
         });
       }
     }
+
 
     const stillMissingIds = prodIds.filter((id) => !productMap.has(id));
     if (stillMissingIds.length > 0) {
@@ -1127,10 +1127,12 @@ export async function removeFromWishlist(productId: string): Promise<boolean> {
     }
     targetIds = Array.from(new Set(targetIds.filter((id) => isValidUuid(id))));
 
+
     await supabase
       .from('wishlist')
       .delete()
       .eq('id', productId);
+
 
     if (validUser) {
       await supabase
@@ -1139,6 +1141,7 @@ export async function removeFromWishlist(productId: string): Promise<boolean> {
         .eq('pembeli_id', validUser)
         .in('produk_id', targetIds);
     }
+
 
     await supabase
       .from('wishlist')
@@ -1160,9 +1163,7 @@ function resolveNotificationIcon(tipe: string): string {
   return 'bell';
 }
 
-// ─────────────────────────────────────────────
-// NOTIFIKASI
-// ─────────────────────────────────────────────
+
 export async function getNotifications(): Promise<any[]> {
   const userId = await getCurrentUserId();
 
@@ -1215,9 +1216,7 @@ export async function markNotificationsAsRead(): Promise<boolean> {
   return true;
 }
 
-// ─────────────────────────────────────────────
-// KERANJANG BELANJA
-// ─────────────────────────────────────────────
+
 export async function getCart(userIdParam?: string): Promise<any[]> {
   const isValidUuid = (id: string | null | undefined): boolean => {
     if (!id) return false;
@@ -1360,6 +1359,7 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     }
   }
 
+
   let cartData: any = null;
   if (pembeliId) {
     const { data } = await supabase
@@ -1390,7 +1390,6 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
     const { data: emergencyCart } = await supabase.from('keranjang').insert({}).select('id').maybeSingle();
     cartData = emergencyCart || { id: 'default-cart-id' };
   }
-
   let hargaFinal = 0;
   const { data: p1 } = await supabase
     .from('etalase')
@@ -1420,6 +1419,7 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
       }
     }
   }
+
 
   const { data: existingItem } = await supabase
     .from('keranjang_item')
@@ -1461,6 +1461,7 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
 
     if (error) {
       console.error('addToCart insert error 1:', error.message);
+
       const { data: data2, error: error2 } = await supabase
         .from('keranjang_item')
         .insert({
@@ -1478,9 +1479,11 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
       return data2 || { id: `item-${Date.now()}`, produk_id: productId, jumlah: qty };
     }
 
+
     try {
       const isValidUuidFn = (id: string | null | undefined) =>
         !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 
       let profileIdForNotif: string | null = null;
       if (pembeliId && isValidUuidFn(pembeliId)) {
@@ -1491,6 +1494,7 @@ export async function addToCart(productId: string, qty: number = 1, userIdParam?
           .maybeSingle();
         profileIdForNotif = pb?.profile_id || pembeliId;
       }
+
 
       let namaProduk = 'Produk';
       const { data: prodInfo } = await supabase
@@ -1599,9 +1603,7 @@ export async function clearCart(): Promise<boolean> {
   }
 }
 
-// ─────────────────────────────────────────────
-// INVENTARIS ADMIN TOKO
-// ─────────────────────────────────────────────
+
 export interface StokAdminToko {
   id: string;
   produk_id: string;
@@ -1795,6 +1797,7 @@ export async function submitReview(
       targetPesanan = pesananLatest;
     }
 
+
     let finalPembeliId = userId;
     if (!finalPembeliId && targetPesanan?.pembeli_id) {
       finalPembeliId = targetPesanan.pembeli_id;
@@ -1804,6 +1807,7 @@ export async function submitReview(
       finalPembeliId = demoPembeli?.id || null;
     }
 
+
     if (targetPesanan?.id) {
       await supabaseAdmin
         .from('pesanan')
@@ -1812,6 +1816,7 @@ export async function submitReview(
           ulasan: cleanComment
         })
         .eq('id', targetPesanan.id);
+
 
       const { data: details } = await supabaseAdmin
         .from('detail_pesanan')
@@ -1831,12 +1836,15 @@ export async function submitReview(
         .eq('pesanan_id', targetPesanan.id);
     }
 
+
     if (!produkIdFound) {
       const { data: p1 } = await supabaseAdmin.from('etalase').select('id').limit(1).maybeSingle();
       produkIdFound = p1?.id || null;
     }
 
+
     try {
+
       const { error: reviewErr1 } = await supabaseAdmin
         .from('review')
         .insert({
@@ -1850,6 +1858,7 @@ export async function submitReview(
       if (reviewErr1) {
         console.error('review insert attempt 1 failed:', reviewErr1.message, reviewErr1.code, reviewErr1.details);
 
+
         const { error: reviewErr2 } = await supabaseAdmin
           .from('review')
           .insert({
@@ -1861,6 +1870,7 @@ export async function submitReview(
 
         if (reviewErr2) {
           console.error('review insert attempt 2 failed:', reviewErr2.message, reviewErr2.code, reviewErr2.details);
+
 
           const { error: reviewErr3 } = await supabaseAdmin
             .from('review')
@@ -1884,6 +1894,7 @@ export async function submitReview(
       console.error('review insert catch:', errReview);
     }
 
+
     if (targetNotifId && isValidUuid(targetNotifId)) {
       await supabaseAdmin
         .from('notifikasi')
@@ -1891,7 +1902,9 @@ export async function submitReview(
         .eq('id', targetNotifId);
     }
 
+
     try {
+
       let profileIdForNotif: string | null = null;
       if (finalPembeliId && isValidUuid(finalPembeliId)) {
         const { data: pb } = await supabaseAdmin

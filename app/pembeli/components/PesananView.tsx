@@ -382,18 +382,18 @@ export default function PesananView() {
 
             return (
               <div key={order.id || order.originalId} className="card" id={`order-${order.id}`}>
-                {/* Order Header */}
+
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
                       <span className="font-semibold text-sm">{order.id}</span>
                       <span className={`badge ${order.status === "Belum Dibayar" || order.status === "Diproses" || order.status === "Sudah Dibayar"
-                          ? "badge-warning"
-                          : order.status === "Dikirim"
-                            ? "badge-info"
-                            : order.status === "Selesai"
-                              ? "badge-success"
-                              : "badge-gray"
+                        ? "badge-warning"
+                        : order.status === "Dikirim"
+                          ? "badge-info"
+                          : order.status === "Selesai"
+                            ? "badge-success"
+                            : "badge-gray"
                         }`}>
                         {order.status === "Belum Dibayar" || order.status === "Diproses"
                           ? "Sudah Dibayar"
@@ -410,30 +410,21 @@ export default function PesananView() {
                   </div>
                 </div>
 
-                {/* Items */}
-                {(order.items || []).map((item: any, i: number) => {
-                  const itemFoto = item.foto || item.image || item.foto_produk || null;
-                  const itemName = item.name || item.nama_produk || "Produk Belanja";
 
-                  return (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
-                      <div style={{ width: "45px", height: "45px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        {itemFoto ? (
-                          <img src={itemFoto} alt={itemName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        ) : (
-                          <IconRenderer type={item.icon_type || "rice"} size={24} />
-                        )}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div className="text-sm font-semibold">{itemName}</div>
-                        <div className="text-xs text-muted">x{item.qty || item.jumlah || 1}</div>
-                      </div>
-                      <div className="font-semibold text-sm">Rp {((item.price || item.harga || 0) * (item.qty || item.jumlah || 1)).toLocaleString("id-ID")}</div>
+                {(order.items || []).map((item: any, i: number) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
+                      <IconRenderer type={item.icon_type || "rice"} size={24} />
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div className="text-sm font-medium">{item.name || "Produk"}</div>
+                      <div className="text-xs text-muted">x{item.qty || 1}</div>
                     </div>
-                  );
-                })}
+                    <div className="font-semibold text-sm">Rp {(item.price || 0).toLocaleString("id-ID")}</div>
+                  </div>
+                ))}
 
-                {/* Actions */}
+
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
                   {order.status === "Belum Dibayar" && !order.proof_uploaded && (
                     <button onClick={() => handleUpdateStatus(order.id, "Diproses")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-bayar-${order.id}`}>
@@ -480,11 +471,9 @@ export default function PesananView() {
                   <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
                     Invoice
                   </button>
-                  
-                  {/* 💡 BUKA MODAL FOTO BUKTI PEMBAYARAN KHUSUS */}
-                  {((order.status !== "Belum Dibayar" || order.proof_uploaded || buktiFotoStr) && order.status !== "Dibatalkan") && (
+                  {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
                     <button
-                      onClick={() => setModalBuktiUrl(buktiFotoStr || "Bukti Terunggah")}
+                      onClick={() => setReceiptOrder(order)}
                       className="btn-secondary"
                       style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
                       id={`btn-bukti-${order.id}`}
@@ -492,7 +481,6 @@ export default function PesananView() {
                       Bukti Pembayaran
                     </button>
                   )}
-
                   {timeline.length > 0 && (
                     <button className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} onClick={() => setExpanded(expanded === order.id ? null : order.id)} id={`btn-track-${order.id}`}>
                       <LocationIcon size={14} /> {expanded === order.id ? "Sembunyikan Lacak" : "Lacak Pengiriman"}
@@ -500,7 +488,7 @@ export default function PesananView() {
                   )}
                 </div>
 
-                {/* Timeline */}
+
                 {expanded === order.id && timeline.length > 0 && (
                   <div style={{ padding: "1rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)" }}>
                     <div className="text-sm font-semibold" style={{ marginBottom: "0.875rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -543,48 +531,10 @@ export default function PesananView() {
             </div>
           )}
         </div>
-      )}
+      )
+      }
 
-{/* MODAL PREVIEW BUKTI PEMBAYARAN FOTO SCREENSHOT RIIL */}
-      {modalBuktiUrl && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "480px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-              <div style={{ fontWeight: 800, fontSize: "1rem", color: "#1E293B" }}>Bukti Transfer / Pembayaran Pembeli</div>
-              <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: "1.2rem", fontWeight: 700 }}>✕</button>
-            </div>
-            
-            <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", minHeight: "200px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC", padding: "0.5rem" }}>
-              {modalBuktiUrl.startsWith("data:") || modalBuktiUrl.startsWith("http") || modalBuktiUrl.startsWith("/") ? (
-                <img 
-                  src={modalBuktiUrl} 
-                  alt="Bukti Transfer Pembeli" 
-                  style={{ maxWidth: "100%", maxHeight: "420px", objectFit: "contain", borderRadius: "6px" }} 
-                />
-              ) : (
-                <div style={{ width: "100%", textAlign: "center", padding: "1.5rem 0.5rem" }}>
-                  <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#FEF3C7", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem", fontSize: "1.5rem", fontWeight: 800 }}>
-                    ⚠️
-                  </div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Data Foto Transaksi Lama</div>
-                  <div style={{ fontSize: "0.78rem", color: "#64748B", marginTop: "6px", lineHeight: 1.4 }}>
-                    Pesanan ini dibuat sebelum perbaikan simpan foto aktif, sehingga database hanya mencatat teks: <code>{modalBuktiUrl}</code>.
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#059669", fontWeight: 700, marginTop: "12px", background: "#ECFDF5", padding: "8px", borderRadius: "6px" }}>
-                    💡 Silakan coba checkout <strong>Pesanan Baru</strong> &amp; upload foto bukti bayar untuk melihat foto asli!
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <button onClick={() => setModalBuktiUrl(null)} style={{ width: "100%", padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none", background: "#475569", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>
-              Tutup Preview
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* RECEIPT / INVOICE MODAL */}
       {receiptOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
@@ -641,6 +591,18 @@ export default function PesananView() {
                 <span className="text-muted">Status Pembayaran</span>
                 <span style={{ color: "#10B981", fontWeight: "bold" }}>Berhasil (Terverifikasi)</span>
               </div>
+              {receiptOrder.proof_filename && (
+                <div style={{ marginTop: "0.5rem", borderTop: "1px dashed var(--color-border-light)", paddingTop: "0.5rem" }}>
+                  <div className="text-muted font-medium" style={{ fontSize: "0.75rem", marginBottom: "0.35rem" }}>Bukti Transfer Terlampir:</div>
+                  {receiptOrder.proof_filename.startsWith("data:") ? (
+                    <div style={{ display: "flex", justifyContent: "center", background: "#F8FAFC", padding: "0.5rem", borderRadius: "6px", border: "1px solid var(--color-border-light)" }}>
+                      <img src={receiptOrder.proof_filename} alt="Bukti Transfer" style={{ maxHeight: "120px", maxWidth: "100%", objectFit: "contain", borderRadius: "4px" }} />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", fontFamily: "monospace" }}>{receiptOrder.proof_filename}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ borderBottom: "1px solid var(--color-border-light)", paddingBottom: "1rem", marginBottom: "1rem" }}>
@@ -648,8 +610,8 @@ export default function PesananView() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 {(receiptOrder.items || []).map((item: any, idx: number) => (
                   <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                    <span>{item.name || item.nama_produk || "Produk"} (x{item.qty || item.jumlah || 1})</span>
-                    <span>Rp {((item.price || item.harga || 0) * (item.qty || item.jumlah || 1)).toLocaleString("id-ID")}</span>
+                    <span>{item.name || "Produk"} (x{item.qty || 1})</span>
+                    <span>Rp {((item.price || 0) * (item.qty || 1)).toLocaleString("id-ID")}</span>
                   </div>
                 ))}
               </div>
@@ -668,7 +630,7 @@ export default function PesananView() {
         </div>
       )}
 
-      {/* MODAL BERIKAN ULASAN PRODUK */}
+
       {reviewModalOrder && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,

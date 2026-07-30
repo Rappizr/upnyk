@@ -47,11 +47,11 @@ export default function DataUMKM() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
-  // STATE MODAL KONFIRMASI SUSPEND
+
   const [targetSuspend, setTargetSuspend] = useState<TokoUmkm | null>(null);
   const [submittingSuspend, setSubmittingSuspend] = useState(false);
 
-  // FETCH DATA UMKM / ADMIN TOKO DARI SUPABASE
+
   const muatDataUmkm = useCallback(async () => {
     setLoading(true);
     try {
@@ -106,7 +106,6 @@ export default function DataUMKM() {
     muatDataUmkm();
   }, [muatDataUmkm]);
 
-  // PROSES SUSPEND AKUN DI DATABASE (Dua Tabel: admin_toko & profiles)
   async function eksekusiToggleSuspend() {
     if (!targetSuspend) return;
     setSubmittingSuspend(true);
@@ -116,7 +115,7 @@ export default function DataUMKM() {
     const statusLabel: TokoUmkm["status"] = targetSuspend.status === "Aktif" ? "Suspended" : "Aktif";
 
     try {
-      // 1. Update status di tabel admin_toko
+   
       const { error: errToko } = await supabase
         .from("admin_toko")
         .update({ status: statusBaruAdminToko })
@@ -124,7 +123,7 @@ export default function DataUMKM() {
 
       if (errToko) throw errToko;
 
-      // 2. Update status di tabel profiles (jika profile_id ada)
+     
       if (targetSuspend.profile_id) {
         await supabase
           .from("profiles")
@@ -132,7 +131,7 @@ export default function DataUMKM() {
           .eq("id", targetSuspend.profile_id);
       }
 
-      // Update state lokal
+     
       setUmkmList((prev) =>
         prev.map((u) => (u.id === targetSuspend.id ? { ...u, status: statusLabel } : u))
       );
@@ -148,7 +147,7 @@ export default function DataUMKM() {
     }
   }
 
-  // KELOLA & BUKA DETAIL TOKO UMKM
+
   async function bukaKelolaDetail(toko: TokoUmkm) {
     setDetail(toko);
     setLoadingRelasi(true);
@@ -309,7 +308,6 @@ export default function DataUMKM() {
         </div>
       </div>
 
-      {/* POPUP MODAL KONFIRMASI SUSPEND / AKTIFKAN */}
       {targetSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
@@ -342,7 +340,7 @@ export default function DataUMKM() {
         </div>
       )}
 
-      {/* MODAL KELOLA & DETAIL TOKO */}
+      
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

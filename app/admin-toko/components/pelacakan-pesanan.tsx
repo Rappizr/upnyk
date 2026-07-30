@@ -129,104 +129,6 @@ export default function PelacakanPesanan({
     setActiveTab(tabDefault);
   }, [tabDefault]);
 
-  // 💡 AUTOMATIC ENRICHMENT DATA PENJUALAN UNTUK MEMASTIKAN DETAIL BARANG RIIEL & TEPAT
-  const enrichPenjualan = useCallback(async () => {
-    if (!penjualanList || penjualanList.length === 0) {
-      setEnrichedPenjualanList([]);
-      return;
-    }
-
-    try {
-      const [{ data: dbPesanan }, { data: dbEtalase }, { data: dbInv }] = await Promise.all([
-        supabase.from("pesanan").select("*"),
-        supabase.from("etalase").select("*"),
-        supabase.from("inventaris").select("*")
-      ]);
-
-      const etalaseMap = new Map<string, { nama: string; foto: string | null }>();
-      (dbEtalase || []).forEach((e: any) => {
-        if (e.id) etalaseMap.set(String(e.id), { nama: e.nama_produk, foto: e.foto });
-        if (e.produk_id) etalaseMap.set(String(e.produk_id), { nama: e.nama_produk, foto: e.foto });
-      });
-      (dbInv || []).forEach((inv: any) => {
-        if (inv.id && !etalaseMap.has(String(inv.id))) etalaseMap.set(String(inv.id), { nama: inv.nama_produk, foto: inv.foto });
-        if (inv.produk_id && !etalaseMap.has(String(inv.produk_id))) etalaseMap.set(String(inv.produk_id), { nama: inv.nama_produk, foto: inv.foto });
-      });
-
-      const listMapped = penjualanList.map((pj) => {
-        const matchingPesanan = (dbPesanan || []).find((p: any) => 
-          String(p.id).toLowerCase() === String(pj.id).toLowerCase() ||
-          String(p.kode_pesanan).toLowerCase() === String(pj.kodePesanan || pj.id).toLowerCase()
-        );
-
-        let finalItems: PenjualanItem[] = pj.items && pj.items.length > 0 ? pj.items : [];
-
-        if (finalItems.length === 0 && matchingPesanan) {
-          const rawItems = matchingPesanan.items || [];
-          if (Array.isArray(rawItems) && rawItems.length > 0) {
-            finalItems = rawItems.map((it: any) => {
-              const meta = etalaseMap.get(String(it.produk_id || it.id || ""));
-              return {
-                id: String(it.id || it.produk_id || Math.random()),
-                produk_id: String(it.produk_id || it.id || ""),
-                nama: it.name || it.nama_produk || meta?.nama || "kripik",
-                jumlah: Number(it.qty || it.jumlah || 1),
-                harga: Number(it.price || it.harga || 15000),
-                subtotal: (Number(it.price || it.harga || 15000)) * (Number(it.qty || it.jumlah || 1)),
-                foto: it.foto || meta?.foto || null
-              };
-            });
-          } else {
-            const meta = etalaseMap.get(String(matchingPesanan.produk_id || ""));
-            const namaFix = matchingPesanan.nama_produk || meta?.nama || "kripik";
-            const jmlFix = Number(matchingPesanan.jumlah || 1);
-            const hgFix = Number(matchingPesanan.total_harga || pj.total || 25000);
-            
-            finalItems = [
-              {
-                id: String(matchingPesanan.id),
-                produk_id: String(matchingPesanan.produk_id || ""),
-                nama: namaFix,
-                jumlah: jmlFix,
-                harga: hgFix,
-                subtotal: hgFix,
-                foto: meta?.foto || null
-              }
-            ];
-          }
-        }
-
-        if (finalItems.length === 0) {
-          finalItems = [
-            {
-              id: String(pj.id),
-              produk_id: "",
-              nama: pj.produk && pj.produk !== "Produk Belanja" ? pj.produk : "kripik",
-              jumlah: pj.jumlah || 1,
-              harga: pj.total || 15000,
-              subtotal: pj.total || 15000,
-              foto: null
-            }
-          ];
-        }
-
-        return {
-          ...pj,
-          items: finalItems
-        };
-      });
-
-      setEnrichedPenjualanList(listMapped);
-    } catch (err) {
-      console.error("enrichPenjualan error:", err);
-      setEnrichedPenjualanList(penjualanList);
-    }
-  }, [penjualanList]);
-
-  useEffect(() => {
-    enrichPenjualan();
-  }, [enrichPenjualan]);
-
   useEffect(() => {
     if (!onRefreshData) return;
 
@@ -268,19 +170,22 @@ export default function PelacakanPesanan({
 
       if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
 
+
       const { error: errUpdatePesanan } = await supabase
         .from("pesanan")
-        .update({ 
-          status: "selesai", 
+        .update({
+          status: "selesai",
           rating: ratingInput,
           ulasan: keteranganInput || null,
-          updated_at: new Date().toISOString() 
+          updated_at: new Date().toISOString()
         })
         .eq("id", targetPesananId);
 
       if (errUpdatePesanan) throw errUpdatePesanan;
 
+
       let existingInv = null;
+
 
       if (modalTerimaItem.produkId) {
         const { data } = await supabase
@@ -290,6 +195,7 @@ export default function PelacakanPesanan({
           .maybeSingle();
         existingInv = data;
       }
+
 
       if (!existingInv && modalTerimaItem.item) {
         const { data } = await supabase
@@ -301,12 +207,14 @@ export default function PelacakanPesanan({
       }
 
       if (existingInv) {
+
         const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
-        
+
         const updateData: any = {
           stok: stokBaru,
           updated_at: new Date().toISOString()
         };
+
 
         if (!existingInv.admin_toko_id) {
           updateData.admin_toko_id = adminToko.id;
@@ -319,6 +227,7 @@ export default function PelacakanPesanan({
 
         if (errUpdateInv) throw errUpdateInv;
       } else {
+
         const { error: errInsertInv } = await supabase
           .from("inventaris")
           .insert({
@@ -334,6 +243,7 @@ export default function PelacakanPesanan({
 
         if (errInsertInv) throw errInsertInv;
       }
+
 
       if (modalTerimaItem.produkId) {
         const { data: listPesananProduk } = await supabase
@@ -376,7 +286,7 @@ export default function PelacakanPesanan({
     } catch (err: any) {
       const errorMsg = err?.message || err?.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
       console.error("Detail Error penerimaan pesanan:", errorMsg, err);
-      
+
       setNotifState({
         open: true,
         type: "error",
@@ -510,8 +420,8 @@ export default function PelacakanPesanan({
 
                   <div style={{ padding: "0 1.1rem 1.1rem" }}>
                     {(p.status === "Dikirim" || p.status === "Selesai" || p.status === "Diterima") && (
-                      <button 
-                        onClick={() => bukaModalTerima(p)} 
+                      <button
+                        onClick={() => bukaModalTerima(p)}
                         style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}
                       >
                         {p.status === "Dikirim" ? "Pesanan Diterima & Beri Ulasan" : "Terima Barang, Beri Ulasan & Tambahkan ke Inventaris"}
@@ -525,7 +435,7 @@ export default function PelacakanPesanan({
         )
       )}
 
-      {/* TAB 2: TOKO KE PEMBELI */}
+
       {activeTab === "toko-pembeli" && (
         <div>
           <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
@@ -568,23 +478,12 @@ export default function PelacakanPesanan({
                 const targetId = pj.kodePesanan || pj.id;
                 const isBusy = actionLoadingId === targetId;
 
-let labelStatusText: string = pj.status || "Belum Dibayar";
-let badgeBg = "#FEF3C7";
-let badgeColor = "#D97706";
-
-if (pj.status === "Belum Dibayar" || !pj.status) {
-  labelStatusText = "Sudah Dibayar (Konfirmasi)";
-  badgeBg = "#FEF3C7";
-  badgeColor = "#D97706";
-} else if (pj.status === "Diproses") {
-  labelStatusText = "Diproses";
-  badgeBg = "#DBEAFE";
-  badgeColor = "#1D4ED8";
-} else if (pj.status === "Dikirim") {
-  labelStatusText = "Dikirim";
-  badgeBg = "#E0E7FF";
-  badgeColor = "#4338CA";
-}
+                let badgeBg = "#FEF3C7";
+                let badgeColor = "#D97706";
+                if (pj.status === "Diproses") { badgeBg = "#DBEAFE"; badgeColor = "#1D4ED8"; }
+                if (pj.status === "Dikirim") { badgeBg = "#E0E7FF"; badgeColor = "#4338CA"; }
+                if (pj.status === "Selesai") { badgeBg = "#D1FAE5"; badgeColor = "#047857"; }
+                if (pj.status === "Dibatalkan") { badgeBg = "#FEE2E2"; badgeColor = "#B91C1C"; }
 
                 return (
                   <div key={pj.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -723,7 +622,6 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
         </div>
       )}
 
-      {/* MODAL INPUT RESI */}
       {modalResiOrder && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "420px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
@@ -752,7 +650,7 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
         </div>
       )}
 
-      {/* MODAL TERIMA PESANAN, RATING & ULASAN PRODUSEN */}
+
       {modalTerimaItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "460px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
@@ -763,7 +661,7 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
               Terima <strong>{modalTerimaItem.item}</strong> ({modalTerimaItem.jumlah} {modalTerimaItem.satuan || "pcs"}). Stok akan langsung masuk ke Inventaris Gudang Toko.
             </p>
 
-            {/* INPUT RATING BINTANG */}
+
             <div style={{ marginBottom: "1rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                 Rating Kualitas Komoditas
@@ -786,7 +684,7 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
               </div>
             </div>
 
-            {/* INPUT KETERANGAN ULASAN */}
+
             <div style={{ marginBottom: "1.25rem" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                 Ulasan / Catatan Kualitas
@@ -827,7 +725,6 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
         </div>
       )}
 
-{/* MODAL PREVIEW BUKTI PEMBAYARAN (DENGAN SMART FALLBACK) */}
       {modalBuktiUrl && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "440px", textAlign: "center" }}>
@@ -835,47 +732,45 @@ if (pj.status === "Belum Dibayar" || !pj.status) {
               <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1E293B" }}>Bukti Transfer Pembayaran</div>
               <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            
-            <div style={{ borderRadius: "10px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", minHeight: "180px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC", padding: "1rem" }}>
-              {modalBuktiUrl.startsWith("data:image") || modalBuktiUrl.startsWith("http") ? (
-                <img 
-                  src={modalBuktiUrl} 
-                  alt="Bukti Transfer" 
-                  style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain", borderRadius: "6px" }} 
-                />
-              ) : (
-                <div style={{ width: "100%", textAlign: "center", padding: "1rem 0.5rem" }}>
-                  <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#D1FAE5", color: "#059669", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem", fontSize: "1.5rem", fontWeight: 800 }}>
-                    ✓
-                  </div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Pembayaran QRIS / Digital Verified</div>
-                  <div style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 700, marginTop: "4px" }}>
-                    Status: Pembayaran Berhasil
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "#64748B", marginTop: "10px", background: "#F1F5F9", padding: "6px 10px", borderRadius: "6px", display: "inline-block", fontFamily: "monospace" }}>
-                    Catatan Transaksi: {modalBuktiUrl}
-                  </div>
-                </div>
-              )}
+            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", maxHeight: "360px", minHeight: "140px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}>
+              <img
+                src={modalBuktiUrl}
+                alt="Bukti Transfer"
+                style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain" }}
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                  const container = (e.target as HTMLElement).parentElement;
+                  if (container && !container.querySelector(".bukti-fallback-msg")) {
+                    const msg = document.createElement("div");
+                    msg.className = "bukti-fallback-msg";
+                    msg.style.padding = "1.25rem 1rem";
+                    msg.style.color = "#475569";
+                    msg.style.fontSize = "0.85rem";
+                    msg.style.lineHeight = "1.5";
+                    msg.innerHTML = `⚠️ <strong>Gambar Bukti Tidak Dapat Dimuat</strong><br/><span style="font-size: 0.75rem; color: #64748B; margin-top: 6px; display: block;">${modalBuktiUrl.startsWith('data:') ? 'Format gambar tidak valid' : 'Transaksi ini sebelumnya hanya mencatat nama file: <code>' + modalBuktiUrl + '</code>.<br/>Silakan minta pembeli mengunggah bukti gambar kembali.'}</span>`;
+                    container.appendChild(msg);
+                  }
+                }}
+              />
             </div>
-
-            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.55rem 1.5rem", borderRadius: "8px", border: "none", background: "#475569", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
+            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.5rem 1.5rem", borderRadius: "6px", border: "none", background: "#64748B", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
           </div>
         </div>
       )}
 
-      {/* MODAL NOTIFIKASI MODERN */}
+
       {notifState.open && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
-            <div style={{ 
-              width: "64px", 
-              height: "64px", 
-              borderRadius: "50%", 
-              background: notifState.type === "success" ? "#D1FAE5" : "#FEE2E2", 
-              color: notifState.type === "success" ? "#059669" : "#DC2626", 
-              display: "flex", 
-              alignItems: "center", 
+
+            <div style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              background: notifState.type === "success" ? "#D1FAE5" : "#FEE2E2",
+              color: notifState.type === "success" ? "#059669" : "#DC2626",
+              display: "flex",
+              alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 1.25rem",
               fontSize: "1.75rem",
