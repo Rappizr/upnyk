@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// Custom Hook untuk animasi angka (Count Up)
+
 function useCountUp(target: number, durationMs: number, start: boolean) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -27,7 +27,7 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
 }
 
 export default function LandingPage() {
-  // Gambar Latar Belakang Slide
+  
   const bgImages = [
     "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=1920&q=80",
     "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80",
@@ -40,14 +40,13 @@ export default function LandingPage() {
   const [jsReady, setJsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
 
-  // Integrasi Hook useCountUp
+
   const produsenCount = useCountUp(1250, 1800, statsVisible);
   const tokoCount = useCountUp(480, 1800, statsVisible);
 
-  // Penanda JS aktif — animasi reveal baru dipasang setelah mount
   useEffect(() => setJsReady(true), []);
 
-  // Efek Ganti Background Otomatis
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let timer: ReturnType<typeof setInterval>;
@@ -67,7 +66,7 @@ export default function LandingPage() {
     };
   }, [bgImages.length]);
 
-  // Efek Deteksi Scroll untuk Navbar
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -77,7 +76,7 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Efek Intersection Observer untuk Trigger Animasi Statistik
+ 
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
@@ -89,7 +88,7 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
-  // Reveal saat scroll — hanya opacity + geser 12px, tidak menyentuh layout
+ 
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (!nodes.length) return;
@@ -103,11 +102,11 @@ export default function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-  // Data Fitur Rantai Pasok
+
   const fitur = [
     {
       layer: "Hulu",
-      accent: "#0A4D2E", // Hijau PasarNusa
+      accent: "#0A4D2E", 
       soft: "rgba(10, 77, 46, 0.09)",
       title: "Portal Konsolidasi Produsen",
       desc: "Fitur pencatatan hasil panen, monitor indeks harga komoditas secara objektif, serta manajemen klaim pencairan dana otomatis.",
@@ -117,7 +116,7 @@ export default function LandingPage() {
     },
     {
       layer: "Logistik",
-      accent: "#B45309", // Amber Harvest — kontras dinaikkan
+      accent: "#B45309", 
       soft: "rgba(180, 83, 9, 0.09)",
       title: "Sistem Manajemen Distribusi",
       desc: "Modul pengawasan inventoris toko, optimasi rute armada pengiriman, dan rekomendasi restock otomatis berbasis histori permintaan.",
@@ -127,7 +126,7 @@ export default function LandingPage() {
     },
     {
       layer: "Hilir",
-      accent: "#0E6E80", // Teal — kontras dinaikkan
+      accent: "#0E6E80", 
       soft: "rgba(14, 110, 128, 0.09)",
       title: "Katalog B2B & Transaksi",
       desc: "Kemudahan pengadaan komoditas langsung dari daerah asal dengan kepastian ketersediaan barang dan sistem jaminan pembayaran.",
@@ -140,7 +139,7 @@ export default function LandingPage() {
   return (
     <div className={`pn-root${jsReady ? " js-ready" : ""}`} style={{ minHeight: "100vh", background: "#F6F8F5", fontFamily: "var(--font-sans), system-ui, -apple-system, sans-serif", color: "#101C16", overflowX: "hidden", scrollBehavior: "smooth" }}>
 
-      {/* BLOK CSS IN JSX */}
+    
       <style>{`
         .pn-root {
           --brand-green: #0A4D2E;
@@ -513,7 +512,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* HEADER / NAVIGATION */}
+     
       <header className={`glass-nav header-container${isScrolled ? " is-scrolled" : ""}`} style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "4px" }} />
@@ -538,7 +537,7 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* HERO SECTION */}
+     
       <section className="hero-section" style={{ minHeight: "88vh", display: "flex", alignItems: "center", position: "relative", overflow: "hidden", padding: "7.5rem 3rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} className="hero-photo" style={{
@@ -591,11 +590,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* STATISTIK SECTION */}
+   
       <section className="stats-section" ref={statsRef} style={{ padding: "0 2rem", marginTop: "-2.5rem", position: "relative", zIndex: 10 }}>
         <div className="stats-grid" style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.25rem" }}>
 
-          {/* Statistik 1 */}
+      
           <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem" }}>
             <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -615,7 +614,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Statistik 2 */}
+    
           <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem", "--d": "90ms" } as React.CSSProperties}>
             <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -638,7 +637,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FITUR UTAMA SECTION */}
+     
       <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", background: "var(--surface)", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", marginTop: "3rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "2.2rem" }} data-reveal>
@@ -677,7 +676,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA SECTION */}
       <section className="cta-section" style={{ padding: "3.5rem 1rem 4rem", background: "var(--surface)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div data-reveal style={{
@@ -749,7 +747,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="footer-section" style={{ background: "#051B11", color: "#A3BDB0", paddingTop: "2.5rem", paddingBottom: "2rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.25rem" }}>
           <div className="footer-main-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "nowrap", gap: "1.5rem", marginBottom: "2rem" }}>

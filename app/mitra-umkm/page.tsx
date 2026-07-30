@@ -22,7 +22,7 @@ interface Mitra {
 
 const filterTipe = ["Semua", "Toko UMKM", "Produsen Hulu"] as const;
 
-/* Palet disamakan dengan landing page */
+
 const C = {
   deep: "#051B11",
   forest: "#0A3A22",
