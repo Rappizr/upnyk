@@ -41,8 +41,8 @@ export default function LandingPage() {
   const statsRef = useRef<HTMLDivElement>(null);
 
 
-  const produsenCount = useCountUp(1250, 1800, statsVisible);
-  const tokoCount = useCountUp(480, 1800, statsVisible);
+  const produsenCount = useCountUp(3, 1800, statsVisible);
+  const tokoCount = useCountUp(9, 1800, statsVisible);
 
   useEffect(() => setJsReady(true), []);
 
@@ -606,7 +606,7 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
-                {produsenCount.toLocaleString("id-ID")}+
+                {produsenCount.toLocaleString("id-ID")}
               </div>
               <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Produsen Terverifikasi
@@ -626,7 +626,7 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
-                {tokoCount.toLocaleString("id-ID")}+
+                {tokoCount.toLocaleString("id-ID")}
               </div>
               <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Jaringan Toko &amp; Mitra Terintegrasi
