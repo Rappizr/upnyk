@@ -47,10 +47,9 @@ export default function DataUMKM() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
-
+  // STATE UNTUK POP-UP KONFIRMASI SUSPEND / AKTIFKAN TOKO UMKM
   const [targetSuspend, setTargetSuspend] = useState<TokoUmkm | null>(null);
   const [submittingSuspend, setSubmittingSuspend] = useState(false);
-
 
   const muatDataUmkm = useCallback(async () => {
     setLoading(true);
@@ -106,16 +105,14 @@ export default function DataUMKM() {
     muatDataUmkm();
   }, [muatDataUmkm]);
 
-  async function eksekusiToggleSuspend() {
+async function eksekusiToggleSuspend() {
     if (!targetSuspend) return;
     setSubmittingSuspend(true);
 
     const statusBaruAdminToko = targetSuspend.status === "Aktif" ? "suspended" : "aktif";
-    const statusBaruProfile = targetSuspend.status === "Aktif" ? "suspended" : "aktif";
     const statusLabel: TokoUmkm["status"] = targetSuspend.status === "Aktif" ? "Suspended" : "Aktif";
 
     try {
-   
       const { error: errToko } = await supabase
         .from("admin_toko")
         .update({ status: statusBaruAdminToko })
@@ -123,15 +120,7 @@ export default function DataUMKM() {
 
       if (errToko) throw errToko;
 
-     
-      if (targetSuspend.profile_id) {
-        await supabase
-          .from("profiles")
-          .update({ status: statusBaruProfile })
-          .eq("id", targetSuspend.profile_id);
-      }
-
-     
+      // Update UI Lokal
       setUmkmList((prev) =>
         prev.map((u) => (u.id === targetSuspend.id ? { ...u, status: statusLabel } : u))
       );
@@ -146,7 +135,6 @@ export default function DataUMKM() {
       setSubmittingSuspend(false);
     }
   }
-
 
   async function bukaKelolaDetail(toko: TokoUmkm) {
     setDetail(toko);
@@ -308,6 +296,7 @@ export default function DataUMKM() {
         </div>
       </div>
 
+      {/* POP-UP MODAL KONFIRMASI SUSPEND / AKTIFKAN */}
       {targetSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
@@ -340,7 +329,7 @@ export default function DataUMKM() {
         </div>
       )}
 
-      
+      {/* MODAL KELOLA DETAIL TOKO UMKM */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

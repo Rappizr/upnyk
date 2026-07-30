@@ -46,10 +46,16 @@ export default function DataProdusen() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
+  // 💡 STATE UNTUK POP-UP KONFIRMASI SUSPEND / AKTIFKAN
+  const [confirmSuspend, setConfirmSuspend] = useState<{
+    id: string;
+    namaUsaha: string;
+    statusSaatIni: string;
+  } | null>(null);
+
   const muatDataProdusen = useCallback(async () => {
     setLoading(true);
     try {
-    
       const { data: prodRelasi, error: errRelasi } = await supabase
         .from("produsen")
         .select(`
@@ -81,7 +87,6 @@ export default function DataProdusen() {
         return;
       }
 
-    
       const { data: prodData } = await supabase
         .from("produsen")
         .select("id, profile_id, nama_usaha, alamat, desa, kecamatan, kabupaten, provinsi, kategori, status");
@@ -132,8 +137,10 @@ export default function DataProdusen() {
     muatDataProdusen();
   }, [muatDataProdusen]);
 
- 
-  async function toggleSuspendEntitas(id: string, statusSaatIni: string) {
+async function eksekusiToggleSuspend() {
+    if (!confirmSuspend) return;
+
+    const { id, statusSaatIni } = confirmSuspend;
     const statusBaru = statusSaatIni === "Aktif" ? "suspended" : "aktif";
     const statusLabel = statusSaatIni === "Aktif" ? "Suspended" : "Aktif";
 
@@ -152,6 +159,8 @@ export default function DataProdusen() {
         setDetail((prev) => (prev ? { ...prev, status: statusLabel } : null));
       }
     }
+
+    setConfirmSuspend(null);
   }
 
   async function bukaKelolaDetail(produsen: ProdusenBinaan) {
@@ -316,7 +325,14 @@ export default function DataProdusen() {
                     <td style={{ padding: "1rem", textAlign: "center" }}>
                       <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
                         <button onClick={() => bukaKelolaDetail(b)} style={{ background: "#EFF6FF", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Kelola</button>
-                        <button onClick={() => toggleSuspendEntitas(b.id, b.status)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
+                        
+                        {/* 💡 BUKA MODAL KONFIRMASI KETIKA MENGELIK SUSPEND / AKTIFKAN */}
+                        <button 
+                          onClick={() => setConfirmSuspend({ id: b.id, namaUsaha: b.namaUsaha, statusSaatIni: b.status })} 
+                          style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          {b.status === "Aktif" ? "Suspend" : "Aktifkan"}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -327,7 +343,42 @@ export default function DataProdusen() {
         </div>
       </div>
 
-     
+      {/* 💡 MODAL POP-UP KONFIRMASI SUSPEND / AKTIFKAN */}
+      {confirmSuspend && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: confirmSuspend.statusSaatIni === "Aktif" ? "#FEE2E2" : "#ECFDF5", color: confirmSuspend.statusSaatIni === "Aktif" ? "#EF4444" : "#10B981", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem", fontSize: "1.5rem", fontWeight: 800 }}>
+              {confirmSuspend.statusSaatIni === "Aktif" ? "⚠️" : "✓"}
+            </div>
+
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem", margin: 0 }}>
+              {confirmSuspend.statusSaatIni === "Aktif" ? "Konfirmasi Suspend Produsen" : "Konfirmasi Aktifkan Produsen"}
+            </h3>
+
+            <p style={{ fontSize: "0.85rem", color: "#64748B", marginTop: "0.5rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+              Apakah Anda yakin ingin {confirmSuspend.statusSaatIni === "Aktif" ? "menangguhkan (suspend)" : "mengaktifkan kembali"} akun produsen <strong>{confirmSuspend.namaUsaha}</strong>?
+              {confirmSuspend.statusSaatIni === "Aktif" && " Akun ini nantinya tidak akan bisa login ke platform."}
+            </p>
+
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setConfirmSuspend(null)}
+                style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={eksekusiToggleSuspend}
+                style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: confirmSuspend.statusSaatIni === "Aktif" ? "#EF4444" : "#10B981", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Ya, {confirmSuspend.statusSaatIni === "Aktif" ? "Suspend" : "Aktifkan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KELOLA DETAIL PRODUSEN */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

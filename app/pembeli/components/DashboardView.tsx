@@ -88,16 +88,22 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
   }, [currentUserName]);
 
  
-  const loadDashboardRealtime = useCallback(async () => {
+const loadDashboardRealtime = useCallback(async () => {
     setLoading(true);
     try {
-    
+      // 💡 AMBIL KOLOM 'status' DARI TABEL admin_toko
       const { data: adminTokoData } = await supabase
         .from("admin_toko")
-        .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto");
+        .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto, status");
 
-      if (adminTokoData && adminTokoData.length > 0) {
-        const mappedStores = adminTokoData.map((t) => ({
+      // 💡 FILTER HANYA TOKO AKTIF
+      const activeAdminToko = (adminTokoData || []).filter((t: any) => {
+        const st = String(t.status || "").toLowerCase().trim();
+        return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
+      });
+
+      if (activeAdminToko && activeAdminToko.length > 0) {
+        const mappedStores = activeAdminToko.map((t: any) => ({
           id: t.id,
           name: t.nama_toko || "Toko Mitra",
           desa: t.desa || "Desa Mitra",
@@ -106,14 +112,13 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
           reviews: 88,
           desc: `Toko resmi ${t.nama_toko} memproduksi dan menyediakan komoditas olahan unggulan.`,
           bg_color: "var(--color-primary-light)",
-          foto: t.foto || null, // 
+          foto: t.foto || null,
         }));
         setCoopStores(mappedStores);
       } else {
         setCoopStores([]);
       }
 
-  
       const { data: etalaseData } = await supabase
         .from("etalase")
         .select("*")
@@ -126,7 +131,7 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         if (tokoIds.length > 0) {
           const { data: tokoList } = await supabase
             .from("admin_toko")
-            .select("id, nama_toko, desa, kabupaten")
+            .select("id, nama_toko, desa, kabupaten, status")
             .in("id", tokoIds);
 
           if (tokoList) {
@@ -134,7 +139,15 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
           }
         }
 
-        const mappedProducts = etalaseData.map((e: any) => {
+        // 💡 FILTER BUANG PRODUK UNTUK TOKO YANG SUSPENDED
+        const activeProducts = etalaseData.filter((e: any) => {
+          const tokoObj = tokoMap.get(e.admin_toko_id);
+          if (!tokoObj) return false;
+          const st = String(tokoObj.status || "").toLowerCase().trim();
+          return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
+        });
+
+        const mappedProducts = activeProducts.map((e: any) => {
           const tokoObj = tokoMap.get(e.admin_toko_id);
           const asal = [tokoObj?.desa, tokoObj?.kabupaten].filter(Boolean).join(", ") || "Indonesia";
 
@@ -157,7 +170,6 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
         setProducts([]);
       }
 
-      
       const [orderData, profileData, wlData] = await Promise.all([
         getOrdersAction(),
         getProfileAction(),

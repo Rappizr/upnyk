@@ -5,6 +5,7 @@ import { supabase } from "@/lib/db";
 
 interface Pembeli {
   id: string;
+  profile_id?: string;
   namaLengkap: string;
   alamat: string;
   telepon: string;
@@ -19,12 +20,17 @@ const IconBan = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none
 const IconMail = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2Z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>;
 const IconPhone = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92Z"></path></svg>;
 const IconMapPin = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+const IconAlertTriangle = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 
 export default function DataPembeli() {
   const [pembeliList, setPembeliList] = useState<Pembeli[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<Pembeli | null>(null);
+
+  // STATE UNTUK POP-UP MODAL KONFIRMASI SUSPEND
+  const [targetSuspend, setTargetSuspend] = useState<Pembeli | null>(null);
+  const [submittingSuspend, setSubmittingSuspend] = useState(false);
 
   const muatDataPembeli = useCallback(async () => {
     setLoading(true);
@@ -42,6 +48,7 @@ export default function DataPembeli() {
 
       const mapped: Pembeli[] = (data || []).map((p: any) => ({
         id: p.id,
+        profile_id: p.profile_id,
         namaLengkap: p.nama || "Pembeli Terdaftar",
         email: p.email || "-",
         telepon: p.no_hp || "-",
@@ -61,24 +68,34 @@ export default function DataPembeli() {
     muatDataPembeli();
   }, [muatDataPembeli]);
 
-  async function toggleSuspendPembeli(id: string, statusSaatIni: "Aktif" | "Nonaktif") {
-    const statusBaru = statusSaatIni === "Aktif" ? "suspended" : "aktif";
-    const statusLabel = statusSaatIni === "Aktif" ? "Nonaktif" : "Aktif";
+  async function eksekusiToggleSuspend() {
+    if (!targetSuspend) return;
+    setSubmittingSuspend(true);
 
-    const { error } = await supabase
-      .from("pembeli")
-      .update({ status: statusBaru })
-      .eq("id", id);
+    const statusBaru = targetSuspend.status === "Aktif" ? "suspended" : "aktif";
+    const statusLabel: Pembeli["status"] = targetSuspend.status === "Aktif" ? "Nonaktif" : "Aktif";
 
-    if (error) {
-      alert(`Gagal mengubah status akun pembeli: ${error.message}`);
-    } else {
+    try {
+      // 💡 HANYA UPDATE TABEL pembeli (Tidak mengubah tabel profiles/peran lain)
+      const { error } = await supabase
+        .from("pembeli")
+        .update({ status: statusBaru })
+        .eq("id", targetSuspend.id);
+
+      if (error) throw error;
+
       setPembeliList((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status: statusLabel } : b))
+        prev.map((b) => (b.id === targetSuspend.id ? { ...b, status: statusLabel } : b))
       );
-      if (detail && detail.id === id) {
+      if (detail && detail.id === targetSuspend.id) {
         setDetail((prev) => (prev ? { ...prev, status: statusLabel } : null));
       }
+
+      setTargetSuspend(null);
+    } catch (err: any) {
+      alert(`Gagal mengubah status pembeli: ${err.message || "Terjadi kesalahan"}`);
+    } finally {
+      setSubmittingSuspend(false);
     }
   }
 
@@ -172,7 +189,9 @@ export default function DataPembeli() {
                   </td>
                   <td style={{ padding: "1rem", textAlign: "center" }}>
                     <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
-                      <button onClick={() => toggleSuspendPembeli(b.id, b.status)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>{b.status === "Aktif" ? "Suspend" : "Aktifkan"}</button>
+                      <button onClick={() => setTargetSuspend(b)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>
+                        {b.status === "Aktif" ? "Suspend" : "Aktifkan"}
+                      </button>
                       <button onClick={() => setDetail(b)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Detail</button>
                     </div>
                   </td>
@@ -183,6 +202,40 @@ export default function DataPembeli() {
         </div>
       </div>
 
+      {/* POP-UP MODAL KONFIRMASI SUSPEND / AKTIFKAN */}
+      {targetSuspend && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+              <div style={{ background: targetSuspend.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", color: targetSuspend.status === "Aktif" ? "#EF4444" : "#10B981", padding: "0.6rem", borderRadius: "12px" }}>
+                <IconAlertTriangle />
+              </div>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>
+                {targetSuspend.status === "Aktif" ? "Konfirmasi Suspend Akun" : "Aktifkan Akun Kembali"}
+              </h3>
+            </div>
+
+            <p style={{ fontSize: "0.88rem", color: "#475569", lineHeight: 1.5, margin: "0 0 1.25rem 0" }}>
+              {targetSuspend.status === "Aktif" ? (
+                <>Apakah Anda yakin ingin menangguhkan (suspend) akses pembeli <strong>{targetSuspend.namaLengkap}</strong>? Pengguna ini tidak akan bisa login sebagai pembeli.</>
+              ) : (
+                <>Apakah Anda yakin ingin mengaktifkan kembali akses pembeli <strong>{targetSuspend.namaLengkap}</strong>?</>
+              )}
+            </p>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button onClick={() => setTargetSuspend(null)} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>
+                Batal
+              </button>
+              <button onClick={eksekusiToggleSuspend} disabled={submittingSuspend} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: targetSuspend.status === "Aktif" ? "#EF4444" : "#10B981", color: "white", fontWeight: 800, cursor: "pointer", fontSize: "0.85rem", opacity: submittingSuspend ? 0.7 : 1 }}>
+                {submittingSuspend ? "Proses..." : targetSuspend.status === "Aktif" ? "Ya, Suspend Akun" : "Ya, Aktifkan Akun"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DETAIL MODAL PEMBELI */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
@@ -205,7 +258,7 @@ export default function DataPembeli() {
                 <div style={{ fontSize: "0.85rem", color: "#334155" }}>{detail.email}</div>
               </div>
             </div>
-            <button onClick={() => { toggleSuspendPembeli(detail.id, detail.status); setDetail(null); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: detail.status === "Aktif" ? "#EF4444" : "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>
+            <button onClick={() => { setTargetSuspend(detail); setDetail(null); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: detail.status === "Aktif" ? "#EF4444" : "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>
               {detail.status === "Aktif" ? "Suspend Akun Ini" : "Aktifkan Kembali"}
             </button>
           </div>

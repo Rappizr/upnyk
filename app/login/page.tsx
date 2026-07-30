@@ -29,7 +29,7 @@ const roleConfigs: Record<Role, RoleConfig> = {
     ),
     color: "#2563EB",
     bgColor: "#EFF6FF",
-    email: "  ",
+    email: "",
     redirectUrl: "/pembeli",
   },
   produsen: {
@@ -77,21 +77,13 @@ const roleConfigs: Record<Role, RoleConfig> = {
   },
 };
 
-interface UserEntry {
-  name: string;
-  phone: string;
-  email: string;
-  passwordHash: string;
-  role: Role;
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<Role>("pembeli");
 
   const activeConfig = roleConfigs[selectedRole];
 
-  const [email, setEmail] = useState(roleConfigs.pembeli.email);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -109,32 +101,15 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
 
-  const getRegisteredUsers = (): UserEntry[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("registered_users");
-    return stored ? JSON.parse(stored) : [];
-  };
-
-  const registerUser = (user: UserEntry) => {
-    if (typeof window === "undefined") return;
-    const users = getRegisteredUsers();
-    users.push(user);
-    localStorage.setItem("registered_users", JSON.stringify(users));
-  };
-
-  const isEmailRegistered = (emailToCheck: string): boolean => {
-    const isPreseeded = Object.values(roleConfigs).some(
-      (config) => config.email.toLowerCase() === emailToCheck.toLowerCase()
-    );
-    if (isPreseeded) return true;
-
-    const users = getRegisteredUsers();
-    return users.some((u) => u.email.toLowerCase() === emailToCheck.toLowerCase());
+  // Helper untuk mengecek status terblokir/terpenjara secara aman
+  const isSuspendedStatus = (statusStr?: string | null): boolean => {
+    const s = String(statusStr || "").toLowerCase().trim();
+    return s === "suspended" || s === "nonaktif" || s === "terblokir";
   };
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
-    setEmail(roleConfigs[role].email);
+    setEmail(roleConfigs[role].email.trim());
     setPassword("");
     setError("");
     setRegSuccess("");
@@ -154,9 +129,8 @@ export default function LoginPage() {
     setError("");
 
     try {
-     
       const preseededRole = (Object.keys(roleConfigs) as Role[]).find(
-        (r) => roleConfigs[r].email.toLowerCase() === email.toLowerCase()
+        (r) => roleConfigs[r].email.trim() !== "" && roleConfigs[r].email.toLowerCase() === email.trim().toLowerCase()
       );
 
       if (preseededRole && preseededRole !== selectedRole) {
@@ -164,7 +138,6 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-
 
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -181,53 +154,83 @@ export default function LoginPage() {
         return;
       }
 
-   
       if (authData.user) {
-      
-        const { data: profileStatus } = await supabase
-          .from('profiles')
-          .select('status, role')
-          .eq('id', authData.user.id)
-          .maybeSingle();
+        const userId = authData.user.id;
 
-        if (profileStatus?.status === "suspended" || profileStatus?.status === "nonaktif") {
-          await supabase.auth.signOut();
-          setError("Akun Anda telah ditangguhkan (terblokir). Silakan hubungi Admin Platform.");
-          setIsLoading(false);
-          return;
-        }
-
-        if (selectedRole === "admin_toko") {
-          const { data: toko } = await supabase
-            .from("admin_toko")
+        // 1. Cek status khusus PRODUSEN (jika memilih login sebagai Produsen)
+        if (selectedRole === "produsen") {
+          const { data: produsenRows } = await supabase
+            .from("produsen")
             .select("status")
-            .eq("profile_id", authData.user.id)
-            .maybeSingle();
+            .or(`id.eq.${userId},profile_id.eq.${userId}`)
+            .limit(1);
 
-          if (toko?.status === "suspended" || toko?.status === "nonaktif") {
+          const prod = produsenRows?.[0];
+          if (isSuspendedStatus(prod?.status)) {
             await supabase.auth.signOut();
-            setError("Akun Toko Anda telah ditangguhkan oleh Admin Platform.");
+            setError("Akun Produsen Anda telah ditangguhkan (terblokir) oleh Admin Platform.");
             setIsLoading(false);
             return;
           }
         }
-   
+
+        // 2. Cek status khusus ADMIN TOKO (jika memilih login sebagai Admin Toko)
+        if (selectedRole === "admin_toko") {
+          const { data: tokoRows } = await supabase
+            .from("admin_toko")
+            .select("status")
+            .or(`id.eq.${userId},profile_id.eq.${userId}`)
+            .limit(1);
+
+          const toko = tokoRows?.[0];
+          if (isSuspendedStatus(toko?.status)) {
+            await supabase.auth.signOut();
+            setError("Akun Toko UMKM Anda telah ditangguhkan (terblokir) oleh Admin Platform.");
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // 3. Cek status khusus PEMBELI
+        if (selectedRole === "pembeli") {
+          const { data: pembeliRows } = await supabase
+            .from("pembeli")
+            .select("status")
+            .or(`id.eq.${userId},profile_id.eq.${userId}`)
+            .limit(1);
+
+          const pembeli = pembeliRows?.[0];
+          if (isSuspendedStatus(pembeli?.status)) {
+            await supabase.auth.signOut();
+            setError("Akun Pembeli Anda telah ditangguhkan (terblokir) oleh Admin Platform.");
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // 4. Validasi Role Match pada profiles
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
-          .select('role')
-          .eq('id', authData.user.id)
+          .select('role, status')
+          .eq('id', userId)
           .maybeSingle();
 
         if (profileErr) {
           console.error("Gagal mengambil data profil:", profileErr.message);
         }
 
-        
+        // Cek status global profiles hanya jika role sesuai
+        if (profile && profile.role === selectedRole && isSuspendedStatus(profile.status)) {
+          await supabase.auth.signOut();
+          setError("Akun Anda telah ditangguhkan secara keseluruhan. Silakan hubungi Admin Platform.");
+          setIsLoading(false);
+          return;
+        }
+
         if (profile && profile.role) {
           if (profile.role !== selectedRole) {
             const roleTitle = roleConfigs[profile.role as Role]?.title || profile.role;
             setError(`Akun Anda terdaftar sebagai ${roleTitle}. Silakan pilih peran yang sesuai.`);
-            // Logout kembali agar sesi tidak tertinggal
             await supabase.auth.signOut();
             setIsLoading(false);
             return;
@@ -235,13 +238,14 @@ export default function LoginPage() {
         }
 
         localStorage.setItem('user_role', selectedRole);
-        localStorage.setItem('supabase_user_id', authData.user.id);
+        localStorage.setItem('supabase_user_id', userId);
         localStorage.setItem('supabase_user_email', authData.user.email || '');
       }
+
       router.push(roleConfigs[selectedRole].redirectUrl);
     } catch (e) {
       console.error('Login error:', e);
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+      setError('Terjadi kesalahan saat masuk. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -265,7 +269,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-     
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: regEmail.trim(),
         password: regPassword.trim(),
@@ -286,7 +289,6 @@ export default function LoginPage() {
       }
 
       if (authData.user) {
-        
         const { error: profileError } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           nama: regName.trim(),
@@ -301,7 +303,6 @@ export default function LoginPage() {
           console.error('Client-side profiles upsert failed:', profileError.message);
         }
 
-        
         if (selectedRole === 'pembeli') {
           const { error: roleErr } = await supabase.from('pembeli').upsert({
             id: authData.user.id,
@@ -309,7 +310,7 @@ export default function LoginPage() {
             nama: regName.trim(),
             status: 'aktif'
           });
-          if (roleErr) console.warn('Client-side pembeli upsert info (trigger might have handled it):', roleErr.message);
+          if (roleErr) console.warn('Client-side pembeli upsert info:', roleErr.message);
         } else if (selectedRole === 'produsen') {
           const { error: roleErr } = await supabase.from('produsen').upsert({
             id: authData.user.id,
@@ -317,7 +318,7 @@ export default function LoginPage() {
             nama_usaha: regName.trim(),
             status: 'aktif'
           });
-          if (roleErr) console.warn('Client-side produsen upsert info (trigger might have handled it):', roleErr.message);
+          if (roleErr) console.warn('Client-side produsen upsert info:', roleErr.message);
         } else if (selectedRole === 'admin_toko') {
           const { error: roleErr } = await supabase.from('admin_toko').upsert({
             id: authData.user.id,
@@ -325,7 +326,7 @@ export default function LoginPage() {
             nama_toko: regName.trim(),
             status: 'menunggu'
           });
-          if (roleErr) console.warn('Client-side admin_toko upsert info (trigger might have handled it):', roleErr.message);
+          if (roleErr) console.warn('Client-side admin_toko upsert info:', roleErr.message);
         }
 
         localStorage.setItem('supabase_user_id', authData.user.id);
@@ -354,7 +355,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setResetSuccess("");
@@ -364,23 +365,29 @@ export default function LoginPage() {
       return;
     }
 
-    if (!isEmailRegistered(resetEmail)) {
-      setError("Alamat email tidak terdaftar di server.");
-      return;
-    }
-
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (resetErr) {
+        setError(resetErr.message);
+      } else {
+        setResetSuccess("Instruksi atur ulang kata sandi telah dikirim ke email Anda.");
+        setResetEmail("");
+      }
+    } catch (err) {
+      console.error("Forgot password error:", err);
+      setError("Gagal mengirim email reset kata sandi.");
+    } finally {
       setIsLoading(false);
-      setResetSuccess("Instruksi atur ulang kata sandi telah dikirim ke email Anda.");
-      setResetEmail("");
-    }, 1500);
+    }
   };
 
   return (
     <div style={{ minHeight: "100vh", padding: "2rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", background: "#F8FAFC" }}>
-
       <style dangerouslySetInnerHTML={{
         __html: `
         .login-back-link {
@@ -718,7 +725,6 @@ export default function LoginPage() {
           ) : (
             <>
               <form onSubmit={handleRegister}>
-              
                 <div className="form-group" style={{ marginBottom: "1.25rem", alignItems: "center" }}>
                   <label className="form-label" style={{ width: "100%", textAlign: "left" }}>Foto Profil / Avatar</label>
 

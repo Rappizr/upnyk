@@ -44,7 +44,6 @@ interface Pembelian {
   lokasiProdusen?: string;
 }
 
-
 interface ProdusenDariParent {
   id: string;
   nama: string;
@@ -161,12 +160,13 @@ export default function MarketplaceProdusen({
     return () => clearTimeout(timer);
   }, [toast.tampil]);
 
+  // 💡 PERBAIKAN: MENAMBAHKAN FILTER STATUS PRODUSEN (HANYA AMBIL YANG AKTIF / BUKAN SUSPENDED)
   const muatProdusen = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("produsen")
       .select(`
-        id, nama_usaha, alamat, kabupaten, provinsi, kategori, foto,
+        id, nama_usaha, alamat, kabupaten, provinsi, kategori, foto, status,
         produk ( id )
       `);
 
@@ -177,8 +177,13 @@ export default function MarketplaceProdusen({
       return;
     }
 
-   
-    const mapped: ProdusenToko[] = (data || []).map((p: any) => ({
+    // Filter keluar produsen yang berstatus "suspended" atau "nonaktif"
+    const filteredData = (data || []).filter((p: any) => {
+      const st = String(p.status || "").toLowerCase();
+      return st !== "suspended" && st !== "nonaktif";
+    });
+
+    const mapped: ProdusenToko[] = filteredData.map((p: any) => ({
       id: p.id,
       namaUsaha: p.nama_usaha || "UMKM Produsen",
       alamat: p.alamat || "",
@@ -194,7 +199,6 @@ export default function MarketplaceProdusen({
   }, [pemicuToast]);
 
   useEffect(() => {
-  
     muatProdusen();
   }, [muatProdusen]);
 
@@ -212,7 +216,6 @@ export default function MarketplaceProdusen({
       console.error("Gagal memuat katalog toko:", error);
       pemicuToast("Gagal memuat katalog produk toko", "gagal");
     } else {
-    
       const mapped: ProdukKomoditas[] = (data || []).map((p: any) => ({
         id: p.id,
         nama: p.nama,
@@ -273,7 +276,6 @@ export default function MarketplaceProdusen({
         return;
       }
 
-    
       const { data: adminData } = await supabase
         .from("admin_toko")
         .select("id")
@@ -282,7 +284,6 @@ export default function MarketplaceProdusen({
 
       const totalTagihan = qty * selectedBarang.harga;
 
-      
       const payloadPesanan: Record<string, any> = {
         produk_id: selectedBarang.id,
         produsen_id: selectedProdusen.id,
@@ -319,7 +320,6 @@ export default function MarketplaceProdusen({
         return;
       }
 
-
       const { error: txError } = await supabase
         .from("transaksi")
         .insert({
@@ -336,7 +336,6 @@ export default function MarketplaceProdusen({
         return;
       }
 
-     
       if (selectedProdusen?.id) {
         const { data: produsenInfo } = await supabase
           .from("produsen")
@@ -423,7 +422,7 @@ export default function MarketplaceProdusen({
         <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "10px", padding: "0.8rem 1rem", marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <span style={{ color: "#D97706" }}><IconClock /></span>
           <span style={{ fontSize: "0.85rem", color: "#92400E" }}>
-            <strong>{pesananMenunggu} pembelian</strong> menunggu konfirmasi penerimaan barang. Cek di menu Inventaris & Grading.
+            <strong>{pesananMenunggu} pembelian</strong> menunggu konfirmasi penerimaan barang. Cek di menu Inventaris &amp; Grading.
           </span>
         </div>
       )}
@@ -443,7 +442,7 @@ export default function MarketplaceProdusen({
       <div className="marketplace-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1.25rem" }}>
         {filtered.length === 0 && (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2rem", textAlign: "center", color: "#94A3B8", gridColumn: "1 / -1" }}>
-            Belum ada toko produsen yang terdaftar.
+            Belum ada toko produsen aktif yang terdaftar.
           </div>
         )}
 
@@ -837,7 +836,7 @@ export default function MarketplaceProdusen({
                     fontSize: "0.85rem"
                   }}
                 >
-                  Selesai & Lanjut
+                  Selesai &amp; Lanjut
                 </button>
               </div>
             )}

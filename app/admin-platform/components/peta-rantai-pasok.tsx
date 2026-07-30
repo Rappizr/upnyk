@@ -23,6 +23,8 @@ interface EscrowTx {
   nominal: number;
   status: string;
   tanggal: string;
+  tokoId?: string;
+  produsenId?: string;
 }
 
 interface LeafletLayer {
@@ -50,9 +52,9 @@ const cityCoords: Record<string, [number, number]> = {
   Surabaya: [-7.2575, 112.7521],
   Sidoarjo: [-7.4478, 112.7183],
   Mojokerto: [-7.4726, 112.4381],
+  Jakarta: [-6.2088, 106.8456],
 };
 
-// HELPER: Mengambil koordinat dari DB atau melempar offset halus jika DB null
 function getCoordinates(e: Entitas): [number, number] {
   if (e.latitude && e.longitude) {
     return [e.latitude, e.longitude];
@@ -62,7 +64,6 @@ function getCoordinates(e: Entitas): [number, number] {
   const found = known.find((c) => e.lokasi.toLowerCase().includes(c.toLowerCase()));
   const baseCoord = cityCoords[found || "Malang"];
 
-  // Pergeseran acak berbasis hash ID agar data bertumpuk di 1 kota terpisah rapi
   const hash = (e.id || e.nama).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const latOffset = ((hash % 87) - 43) * 0.0003;
   const lngOffset = (((hash * 3) % 87) - 43) * 0.0003;
@@ -151,43 +152,89 @@ const IconBuilding = () => <svg width="20" height="20" viewBox="0 0 24 24" fill=
 const IconX = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 function formatRupiah(n: number) {
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
-export default function PetaRantaiPasok({ entitasList: initialEntitasList, transaksiList = [] }: { entitasList?: Entitas[]; transaksiList?: EscrowTx[] }) {
+export default function PetaRantaiPasok({
+  entitasList: initialEntitasList,
+  transaksiList: initialTransaksiList = []
+}: {
+  entitasList?: Entitas[];
+  transaksiList?: EscrowTx[];
+}) {
   const [entitasList, setEntitasList] = useState<Entitas[]>(initialEntitasList || []);
+  const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksiList);
   const [loading, setLoading] = useState(true);
   const [tipeFilter, setTipeFilter] = useState<TipeEntitas | "">("");
   const [detail, setDetail] = useState<Entitas | null>(null);
+
+  // Helper untuk memvalidasi status suspended
+  const isSuspended = (statusStr?: string | null) => {
+    const s = String(statusStr || "").toLowerCase().trim();
+    return s === "suspended" || s === "nonaktif" || s === "terblokir";
+  };
 
   // LOAD REALTIME DATA FROM SUPABASE
   const loadEntitasData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: tokoData } = await supabase.from("admin_toko").select("*");
-      const { data: produsenData } = await supabase.from("produsen").select("*");
+      const [{ data: tokoData }, { data: produsenData }, { data: pesananData }] = await Promise.all([
+        supabase.from("admin_toko").select("*"),
+        supabase.from("produsen").select("*"),
+        supabase.from("pesanan").select("*").order("created_at", { ascending: false })
+      ]);
 
-      const mappedToko: Entitas[] = (tokoData || []).map((t: any) => ({
+      // 1. FILTER DAN MAP TOKO YANG AKTIF SAJA
+      const activeTokoData = (tokoData || []).filter((t: any) => !isSuspended(t.status));
+      const mappedToko: Entitas[] = activeTokoData.map((t: any) => ({
         id: t.id,
         nama: t.nama_toko || "Admin Toko",
         tipe: "Toko",
         lokasi: [t.desa, t.kabupaten].filter(Boolean).join(", ") || t.alamat || "Lokal",
-        status: t.status === "aktif" ? "Aktif" : "Nonaktif",
+        status: "Aktif",
         latitude: t.latitude,
         longitude: t.longitude,
       }));
 
-      const mappedProdusen: Entitas[] = (produsenData || []).map((p: any) => ({
+      // 2. FILTER DAN MAP PRODUSEN YANG AKTIF SAJA
+      const activeProdusenData = (produsenData || []).filter((p: any) => !isSuspended(p.status));
+      const mappedProdusen: Entitas[] = activeProdusenData.map((p: any) => ({
         id: p.id,
         nama: p.nama_usaha || "Produsen",
         tipe: "Produsen",
         lokasi: [p.desa, p.kabupaten].filter(Boolean).join(", ") || p.alamat || "Lokal",
-        status: p.status === "aktif" ? "Aktif" : "Nonaktif",
+        status: "Aktif",
         latitude: p.latitude,
         longitude: p.longitude,
       }));
 
+      const tokoMap = new Map(activeTokoData.map((t: any) => [t.id, t.nama_toko || "Toko Mitra"]));
+      const produsenMap = new Map(activeProdusenData.map((p: any) => [p.id, p.nama_usaha || "Produsen Binaan"]));
+
+      // 3. MAP SELURUH TRANSAKSI DARI DATABASE
+      const mappedTx: EscrowTx[] = (pesananData || []).map((ord: any) => {
+        const tokoNama = ord.supplier || tokoMap.get(ord.admin_toko_id) || "Toko Mitra";
+        const produsenNama = produsenMap.get(ord.produsen_id) || "Produsen Binaan";
+        const nominal = Number(ord.total || ord.total_harga || 0);
+        const dateStr = ord.created_at
+          ? new Date(ord.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+          : "Hari ini";
+
+        return {
+          id: ord.kode_pesanan || ord.id,
+          pembeli: ord.pembeli_id || "Pembeli",
+          toko: tokoNama,
+          produsen: produsenNama,
+          tokoId: ord.admin_toko_id,
+          produsenId: ord.produsen_id,
+          nominal,
+          status: ord.status || "Selesai",
+          tanggal: dateStr
+        };
+      });
+
       setEntitasList([...mappedToko, ...mappedProdusen]);
+      setTransaksiList(mappedTx);
     } catch (err) {
       console.error("Gagal load entitas:", err);
     } finally {
@@ -203,10 +250,18 @@ export default function PetaRantaiPasok({ entitasList: initialEntitasList, trans
     return entitasList.filter((e) => !tipeFilter || e.tipe === tipeFilter);
   }, [entitasList, tipeFilter]);
 
-  const relasiUntuk = (nama: string) => (transaksiList || []).filter((t) => t.toko === nama || t.produsen === nama);
+  // Cek relasi transaksi berdasarkan ID atau Nama Toko/Produsen
+  const relasiUntuk = useCallback((e: Entitas) => {
+    const qNama = e.nama.toLowerCase().trim();
+    return (transaksiList || []).filter((t) => {
+      const isTokoMatch = t.tokoId === e.id || t.toko.toLowerCase().trim() === qNama;
+      const isProdusenMatch = t.produsenId === e.id || t.produsen.toLowerCase().trim() === qNama;
+      return isTokoMatch || isProdusenMatch;
+    });
+  }, [transaksiList]);
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
         .map-wrapper-contain { position: relative !important; z-index: 1 !important; }
         .map-wrapper-contain .leaflet-container,
@@ -223,7 +278,7 @@ export default function PetaRantaiPasok({ entitasList: initialEntitasList, trans
 
       <div style={{ marginBottom: "1.25rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>Peta Rantai Pasok</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Visualisasi lokasi & sebaran jaringan Admin Toko dan Produsen di ekosistem.</p>
+        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Visualisasi lokasi &amp; sebaran jaringan Admin Toko dan Produsen di ekosistem.</p>
       </div>
 
       <div className="map-filter-buttons" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
@@ -255,7 +310,7 @@ export default function PetaRantaiPasok({ entitasList: initialEntitasList, trans
         )}
         {filtered.map((e) => {
           const c = tipeBg[e.tipe];
-          const jumlahRelasi = relasiUntuk(e.nama).length;
+          const jumlahRelasi = relasiUntuk(e).length;
           return (
             <div key={e.id} onClick={() => setDetail(e)} className="supply-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
@@ -270,28 +325,39 @@ export default function PetaRantaiPasok({ entitasList: initialEntitasList, trans
         })}
       </div>
 
+      {/* DETAIL MODAL ENTITAS & RIWAYAT TRANSAKSI */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "400px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "420px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#1E293B" }}>{detail.nama}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
-            <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>{detail.id} • {detail.tipe} • {detail.lokasi}</p>
-            <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.4rem" }}>Transaksi terhubung ({relasiUntuk(detail.nama).length})</div>
-            {relasiUntuk(detail.nama).length === 0 ? (
+            <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>#{detail.id.slice(0, 8).toUpperCase()} • {detail.tipe} • {detail.lokasi}</p>
+            
+            <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>
+              Transaksi Terhubung ({relasiUntuk(detail).length})
+            </div>
+            
+            {relasiUntuk(detail).length === 0 ? (
               <p style={{ fontSize: "0.78rem", color: "#94A3B8" }}>Belum ada transaksi yang melibatkan entitas ini.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                {relasiUntuk(detail.nama).map((t) => (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                {relasiUntuk(detail).map((t) => (
                   <div key={t.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0.65rem", background: "#F8FAFC", borderRadius: "6px", fontSize: "0.78rem" }}>
-                    <span style={{ color: "#334155" }}>{t.id} • {t.toko} ↔ {t.produsen}</span>
-                    <strong style={{ color: "#1E293B" }}>{formatRupiah(t.nominal)}</strong>
+                    <div>
+                      <div style={{ color: "#1E293B", fontWeight: 600 }}>#{t.id}</div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{t.toko} • {t.tanggal}</div>
+                    </div>
+                    <strong style={{ color: "#059669" }}>{formatRupiah(t.nominal)}</strong>
                   </div>
                 ))}
               </div>
             )}
-            <button onClick={() => setDetail(null)} style={{ marginTop: "1rem", width: "100%", padding: "0.55rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
+            
+            <button onClick={() => setDetail(null)} style={{ marginTop: "1rem", width: "100%", padding: "0.55rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
+              Tutup
+            </button>
           </div>
         </div>
       )}

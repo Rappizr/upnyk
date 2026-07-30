@@ -75,15 +75,22 @@ export default function MarketplaceView({
   const [showCartPopup, setShowCartPopup] = useState(false);
   const [addedProductName, setAddedProductName] = useState("");
 
-  const loadMarketplaceData = useCallback(async () => {
+const loadMarketplaceData = useCallback(async () => {
     setLoading(true);
     try {
+      // 💡 AMBIL KOLOM 'status' DARI TABEL admin_toko
       const { data: tokoData, error: errToko } = await supabase
         .from("admin_toko")
-        .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto");
+        .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto, status");
 
       if (errToko) console.error("Error load admin_toko:", errToko.message);
-      setStores(tokoData || []);
+
+      // 💡 FILTER HANYA TOKO YANG TIDAK SUSPENDED / NONAKTIF
+      const activeStores = (tokoData || []).filter((t: any) => {
+        const st = String(t.status || "").toLowerCase().trim();
+        return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
+      });
+      setStores(activeStores);
 
       const { data: etalaseData, error: errEtalase } = await supabase
         .from("etalase")
@@ -96,7 +103,15 @@ export default function MarketplaceView({
       if (etalaseData && etalaseData.length > 0) {
         const tokoMap = new Map((tokoData || []).map((t) => [t.id, t]));
 
-        const mappedProducts = etalaseData.map((e: any) => {
+        // 💡 FILTER BUANG PRODUK MILIK TOKO YANG SUSPENDED
+        const activeProducts = etalaseData.filter((e: any) => {
+          const toko = tokoMap.get(e.admin_toko_id);
+          if (!toko) return false;
+          const st = String(toko.status || "").toLowerCase().trim();
+          return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
+        });
+
+        const mappedProducts = activeProducts.map((e: any) => {
           const toko = tokoMap.get(e.admin_toko_id);
           const lokasi = [toko?.desa, toko?.kabupaten].filter(Boolean).join(", ");
 
@@ -116,7 +131,6 @@ export default function MarketplaceView({
             origin: lokasi,
             foto: e.foto || null,
             deskripsi: e.deskripsi || "",
-            // 💡 AMBIL RATING & TOTAL ULASAN DINAMIS DARI DATABASE
             rating: Number(e.rating) || 0,
             totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
           };
