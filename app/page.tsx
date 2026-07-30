@@ -8,6 +8,10 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     if (!start) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setValue(target);
+      return;
+    }
     let raf: number;
     const startTime = performance.now();
     const tick = (now: number) => {
@@ -33,18 +37,34 @@ export default function LandingPage() {
   const [currentBg, setCurrentBg] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [jsReady, setJsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
 
   // Integrasi Hook useCountUp
   const produsenCount = useCountUp(1250, 1800, statsVisible);
   const tokoCount = useCountUp(480, 1800, statsVisible);
 
+  // Penanda JS aktif — animasi reveal baru dipasang setelah mount
+  useEffect(() => setJsReady(true), []);
+
   // Efek Ganti Background Otomatis
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentBg((prev) => (prev + 1) % bgImages.length);
-    }, 6000);
-    return () => clearInterval(timer);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer: ReturnType<typeof setInterval>;
+    const run = () => {
+      clearInterval(timer);
+      if (document.visibilityState === "visible") {
+        timer = setInterval(() => {
+          setCurrentBg((prev) => (prev + 1) % bgImages.length);
+        }, 6000);
+      }
+    };
+    run();
+    document.addEventListener("visibilitychange", run);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", run);
+    };
   }, [bgImages.length]);
 
   // Efek Deteksi Scroll untuk Navbar
@@ -52,7 +72,8 @@ export default function LandingPage() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -68,12 +89,26 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
+  // Reveal saat scroll — hanya opacity + geser 12px, tidak menyentuh layout
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (!nodes.length) return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }
+      }),
+      { threshold: 0.15, rootMargin: "0px 0px -30px 0px" }
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, []);
+
   // Data Fitur Rantai Pasok
   const fitur = [
     {
       layer: "Hulu",
       accent: "#0A4D2E", // Hijau PasarNusa
-      soft: "rgba(10, 77, 46, 0.1)",
+      soft: "rgba(10, 77, 46, 0.09)",
       title: "Portal Konsolidasi Produsen",
       desc: "Fitur pencatatan hasil panen, monitor indeks harga komoditas secara objektif, serta manajemen klaim pencairan dana otomatis.",
       icon: (
@@ -82,8 +117,8 @@ export default function LandingPage() {
     },
     {
       layer: "Logistik",
-      accent: "#D97706", // Orange Harvest
-      soft: "rgba(217, 119, 6, 0.1)",
+      accent: "#B45309", // Amber Harvest — kontras dinaikkan
+      soft: "rgba(180, 83, 9, 0.09)",
       title: "Sistem Manajemen Distribusi",
       desc: "Modul pengawasan inventoris toko, optimasi rute armada pengiriman, dan rekomendasi restock otomatis berbasis histori permintaan.",
       icon: (
@@ -92,8 +127,8 @@ export default function LandingPage() {
     },
     {
       layer: "Hilir",
-      accent: "#0E7490", // Teal/Cyan
-      soft: "rgba(14, 116, 144, 0.1)",
+      accent: "#0E6E80", // Teal — kontras dinaikkan
+      soft: "rgba(14, 110, 128, 0.09)",
       title: "Katalog B2B & Transaksi",
       desc: "Kemudahan pengadaan komoditas langsung dari daerah asal dengan kepastian ketersediaan barang dan sistem jaminan pembayaran.",
       icon: (
@@ -103,91 +138,212 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="pn-root" style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "var(--font-sans), system-ui, -apple-system, sans-serif", color: "#0F172A", overflowX: "hidden", scrollBehavior: "smooth" }}>
+    <div className={`pn-root${jsReady ? " js-ready" : ""}`} style={{ minHeight: "100vh", background: "#F6F8F5", fontFamily: "var(--font-sans), system-ui, -apple-system, sans-serif", color: "#101C16", overflowX: "hidden", scrollBehavior: "smooth" }}>
 
       {/* BLOK CSS IN JSX */}
       <style>{`
         .pn-root {
           --brand-green: #0A4D2E;
-          --brand-green-hover: #073822;
+          --brand-green-hover: #06301C;
+          --brand-green-lift: #0F6337;
+          --ink: #101C16;
+          --ink-body: #47554C;
+          --ink-muted: #6B7A70;
+          --surface: #F6F8F5;
+          --hairline: #E3EAE3;
         }
 
         /* Navbar Glassmorphism */
         .glass-nav {
-          background: ${isScrolled ? 'rgba(255, 255, 255, 0.95)' : 'transparent'};
-          backdrop-filter: ${isScrolled ? 'blur(12px)' : 'none'};
-          -webkit-backdrop-filter: ${isScrolled ? 'blur(12px)' : 'none'};
-          border-bottom: ${isScrolled ? '1px solid rgba(15, 23, 42, 0.08)' : '1px solid transparent'};
-          box-shadow: ${isScrolled ? '0 4px 20px rgba(0, 0, 0, 0.05)' : 'none'};
-          transition: all 0.3s ease-in-out;
+          background: ${isScrolled ? 'rgba(252, 253, 252, 0.9)' : 'transparent'};
+          backdrop-filter: ${isScrolled ? 'saturate(180%) blur(14px)' : 'none'};
+          -webkit-backdrop-filter: ${isScrolled ? 'saturate(180%) blur(14px)' : 'none'};
+          border-bottom: ${isScrolled ? '1px solid rgba(16, 28, 22, 0.07)' : '1px solid transparent'};
+          box-shadow: ${isScrolled ? '0 6px 24px rgba(6, 40, 24, 0.06)' : 'none'};
+          transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
         }
 
         .nav-link {
-          color: #0F172A;
-          transition: all 0.3s ease;
+          color: var(--ink);
+          transition: color 0.25s ease;
           cursor: pointer;
+          position: relative;
+        }
+        .nav-link::after {
+          content: "";
+          position: absolute;
+          left: 0; bottom: -3px;
+          height: 2px; width: 0;
+          background: var(--brand-green);
+          border-radius: 2px;
+          transition: width 0.28s cubic-bezier(0.16,1,0.3,1);
         }
         .nav-link:hover { color: var(--brand-green); }
+        .nav-link:hover::after { width: 100%; }
 
         /* Footer Link */
         .footer-link {
-          color: #94A3B8;
+          color: #A3BDB0;
           text-decoration: none;
-          transition: all 0.2s ease;
+          transition: color 0.2s ease;
         }
-        .footer-link:hover { color: #22C55E; }
+        .footer-link:hover { color: #4ADE80; }
 
-        /* Highlight Warna Hijau Transparan */
+        /* Highlight Warna Hijau */
         .green-highlight {
           color: var(--brand-green);
           font-style: normal;
           font-weight: 800;
         }
 
-        /* Kartu Fitur dengan Hijau Transparansi */
+        /* Kartu Fitur — putih bersih, identitas layer lewat garis aksen atas */
         .green-translucent-card {
           position: relative;
-          background: rgba(10, 77, 46, 0.04);
-          border: 1px solid rgba(10, 77, 46, 0.18);
+          overflow: hidden;
+          background: #FFFFFF;
+          border: 1px solid var(--hairline);
           border-radius: 12px;
           padding: 1.25rem 1rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 4px 15px rgba(10, 77, 46, 0.03);
+          transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.32s ease, border-color 0.32s ease;
+          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 8px 20px rgba(6, 40, 24, 0.04);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
         }
-        .green-translucent-card:hover {
-          background: rgba(10, 77, 46, 0.07);
-          border-color: rgba(10, 77, 46, 0.3);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(10, 77, 46, 0.08);
+        .green-translucent-card::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: var(--accent, var(--brand-green));
+          opacity: 0.85;
+          transition: opacity 0.3s ease, height 0.3s ease;
         }
+        .green-translucent-card:hover {
+          transform: translateY(-3px);
+          border-color: rgba(10, 77, 46, 0.22);
+          box-shadow: 0 2px 4px rgba(6, 40, 24, 0.05), 0 16px 34px rgba(6, 40, 24, 0.10);
+        }
+        .green-translucent-card:hover::before { opacity: 1; height: 4px; }
+        .green-translucent-card h3 { color: var(--ink); }
+        .green-translucent-card p { color: var(--ink-body); }
 
         /* Kartu Statistik Putih */
         .glass-stat {
           background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+          border: 1px solid var(--hairline);
+          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 10px 26px rgba(6, 40, 24, 0.05);
+          transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.32s ease;
         }
+        .glass-stat:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 2px 4px rgba(6, 40, 24, 0.05), 0 18px 34px rgba(6, 40, 24, 0.09);
+        }
+        .glass-stat .icon-box {
+          background: linear-gradient(160deg, var(--brand-green-lift) 0%, var(--brand-green) 100%);
+          box-shadow: 0 4px 12px rgba(10, 77, 46, 0.22);
+        }
+        .glass-stat .stat-number {
+          color: var(--ink);
+          font-variant-numeric: tabular-nums;
+          letter-spacing: -0.02em;
+        }
+        .glass-stat .stat-label { color: var(--ink-muted); }
 
         /* Tombol Utama Hijau */
         .btn-green {
-          background-color: var(--brand-green);
+          background: linear-gradient(180deg, var(--brand-green-lift) 0%, var(--brand-green) 100%);
           color: #FFFFFF;
-          transition: all 0.25s ease;
-          box-shadow: 0 4px 14px rgba(10, 77, 46, 0.25);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+          box-shadow: 0 6px 18px rgba(10, 77, 46, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.12);
         }
         .btn-green:hover {
-          background-color: var(--brand-green-hover);
+          filter: brightness(1.08);
           transform: translateY(-1px);
+          box-shadow: 0 10px 24px rgba(10, 77, 46, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14);
         }
+        .btn-green:active { transform: translateY(0) scale(0.985); }
+
+        .btn-emerald {
+          background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          box-shadow: 0 8px 22px rgba(22, 163, 74, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+          transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+        }
+        .btn-emerald:hover { filter: brightness(1.07); transform: translateY(-1px); }
+        .btn-emerald:active { transform: translateY(0) scale(0.985); }
+
+        /* Fokus keyboard terlihat di semua elemen interaktif */
+        .pn-root a:focus-visible,
+        .pn-root button:focus-visible {
+          outline: 2px solid #16A34A;
+          outline-offset: 3px;
+          border-radius: 6px;
+        }
+
+        /* Lapisan foto hero — tiga foto stok disatukan jadi satu nada warna */
+        .hero-photo {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-repeat: no-repeat;
+          background-position: center right;
+          filter: saturate(0.72) contrast(1.06) brightness(1.02);
+          transition: opacity 2s ease-in-out, transform 6s ease;
+        }
+        /* Kerudung kontras — menjamin teks selalu duduk di bidang terang */
+        .hero-section::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background:
+            linear-gradient(96deg,
+              #F6F8F5 0%,
+              rgba(246, 248, 245, 0.97) 42%,
+              rgba(246, 248, 245, 0.70) 66%,
+              rgba(246, 248, 245, 0.18) 88%,
+              rgba(10, 77, 46, 0.10) 100%),
+            linear-gradient(180deg, rgba(246, 248, 245, 0.55) 0%, transparent 22%);
+        }
+        .hero-section::after {
+          content: "";
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          height: 120px;
+          z-index: 1;
+          pointer-events: none;
+          background: linear-gradient(180deg, transparent 0%, var(--surface) 92%);
+        }
+
+        .hero-badge { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+
+        /* Titik indikator slide */
+        .hero-dots { display: flex; gap: 0.4rem; }
+        .hero-dots button {
+          height: 3px; width: 18px; padding: 0; border: 0;
+          border-radius: 99px; cursor: pointer;
+          background: rgba(16, 28, 22, 0.18);
+          transition: width 0.3s ease, background 0.3s ease;
+        }
+        .hero-dots button.is-active { width: 34px; background: var(--brand-green); }
 
         /* Animasi Fade In Up */
         .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Reveal saat scroll — baru aktif kalau JS hidup */
+        .js-ready [data-reveal] { opacity: 0; transform: translateY(12px); }
+        .js-ready [data-reveal].is-in {
+          opacity: 1;
+          transform: none;
+          transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
+          transition-delay: var(--d, 0ms);
         }
 
         /* Utiliti no-scrollbar */
@@ -306,24 +462,72 @@ export default function LandingPage() {
             justify-content: center !important;
             text-align: center !important;
           }
+
+          /* ====== TAMBAHAN VISUAL SAJA — ukuran & susunan di atas tidak diubah ====== */
+
+          /* Di HP teks memenuhi lebar layar, jadi kerudungnya vertikal.
+             Ini yang bikin paragraf hero tidak lagi tenggelam di foto gudang. */
+          .hero-section::before {
+            background:
+              linear-gradient(180deg,
+                #F6F8F5 0%,
+                rgba(246, 248, 245, 0.98) 46%,
+                rgba(246, 248, 245, 0.88) 72%,
+                rgba(246, 248, 245, 0.62) 100%) !important;
+          }
+          .hero-section::after { height: 70px !important; }
+
+          /* Label nav 0.55rem sekarang duduk di atas bidang putih pekat
+             (lihat gradient di atas), jadi tidak perlu alas tambahan —
+             cukup dinaikkan ketegasannya lewat warna, bukan lewat ukuran. */
+          .nav-link-desktop { color: #14261C !important; }
+
+          /* Jarak sebelum "ARSITEKTUR SISTEM" dirapatkan — marginTop 3rem
+             dari inline style ditimpa di sini, jadi kartu fitur naik ±60px
+             dan tidak terpotong batas layar. */
+          .features-section {
+            background: var(--surface) !important;
+            margin-top: 0.75rem !important;
+            padding-top: 1.5rem !important;
+          }
+          .features-section > div > div:first-child {
+            margin-bottom: 1.4rem !important;
+          }
+          .green-translucent-card::before { height: 2px; }
+          .green-translucent-card:hover::before { height: 3px; }
+          .green-translucent-card p { color: #3F4D45 !important; }
+          .glass-stat .stat-label { color: #5C6B62 !important; }
+          .hero-dots button { height: 2px; width: 14px; }
+          .hero-dots button.is-active { width: 26px; }
+        }
+
+        /* Hormati preferensi kurangi animasi */
+        @media (prefers-reduced-motion: reduce) {
+          .pn-root *, .pn-root *::before, .pn-root *::after {
+            animation-duration: 0.001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.001ms !important;
+          }
+          .js-ready [data-reveal] { opacity: 1; transform: none; }
+          .hero-photo { transform: none !important; }
         }
       `}</style>
 
       {/* HEADER / NAVIGATION */}
-      <header className="glass-nav header-container" style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
+      <header className={`glass-nav header-container${isScrolled ? " is-scrolled" : ""}`} style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "4px" }} />
-          <span className="nav-logo-text" style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", color: "#0F172A" }}>
+          <span className="nav-logo-text" style={{ fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.03em", color: "var(--ink)" }}>
             Pasar<span style={{ color: "var(--brand-green)" }}>Nusa</span>
           </span>
         </div>
 
         <nav className="nav-container" style={{ display: "flex", alignItems: "center", gap: "1.8rem" }}>
-          <a href="#fitur" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 500, whiteSpace: "nowrap" }}>Fitur Utama</a>
-          <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 500, whiteSpace: "nowrap" }}>Rantai Pasok</a>
-          <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 500, whiteSpace: "nowrap" }}>Mitra Ekosistem</a>
+          <a href="#fitur" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 600, whiteSpace: "nowrap" }}>Fitur Utama</a>
+          <a href="/rantai-pasok" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 600, whiteSpace: "nowrap" }}>Rantai Pasok</a>
+          <a href="/mitra-umkm" className="nav-link nav-link-desktop" style={{ textDecoration: "none", fontSize: "0.88rem", fontWeight: 600, whiteSpace: "nowrap" }}>Mitra Ekosistem</a>
 
-          <Link href="/login" className="btn-masuk-portal btn-green" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.5rem 1.15rem", borderRadius: "99px", fontSize: "0.82rem", fontWeight: 500, whiteSpace: "nowrap" }}>
+          <Link href="/login" className="btn-masuk-portal btn-green" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.5rem 1.15rem", borderRadius: "99px", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
               <polyline points="10 17 15 12 10 7" />
@@ -337,38 +541,48 @@ export default function LandingPage() {
       {/* HERO SECTION */}
       <section className="hero-section" style={{ minHeight: "88vh", display: "flex", alignItems: "center", position: "relative", overflow: "hidden", padding: "7.5rem 3rem 4rem" }}>
         {bgImages.map((img, index) => (
-          <div key={index} style={{
-            position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
-            backgroundImage: `linear-gradient(90deg, #FFFFFF 0%, rgba(255,255,255,0.96) 45%, rgba(255,255,255,0.3) 75%, rgba(255,255,255,0.05) 100%), url('${img}')`,
-            backgroundSize: "cover", backgroundPosition: "center right", backgroundRepeat: "no-repeat",
+          <div key={index} className="hero-photo" style={{
+            backgroundImage: `url('${img}')`,
             opacity: currentBg === index ? 1 : 0,
-            transform: currentBg === index ? "scale(1.01)" : "scale(1.04)",
-            transition: "opacity 2s ease-in-out, transform 6s ease",
+            transform: currentBg === index ? "scale(1.01)" : "scale(1.05)",
           }} />
         ))}
 
         <div style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", position: "relative", zIndex: 2 }}>
           <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "2rem", alignItems: "center" }}>
             <div className="fade-in" style={{ paddingRight: "0.5rem" }}>
-              <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.41rem", padding: "0.25rem 0.8rem", borderRadius: "99px", background: "rgba(10, 77, 46, 0.08)", border: "1px solid rgba(10, 77, 46, 0.2)", color: "var(--brand-green)", fontSize: "0.7rem", fontWeight: 600, marginBottom: "0.9rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.41rem", padding: "0.25rem 0.8rem", borderRadius: "99px", background: "rgba(10, 77, 46, 0.07)", border: "1px solid rgba(10, 77, 46, 0.22)", color: "var(--brand-green)", fontSize: "0.7rem", fontWeight: 700, marginBottom: "0.9rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand-green)" }} />
                 PLATFORM EKONOMI DIGITAL B2B
               </div>
 
-              <h1 className="hero-title" style={{ fontSize: "clamp(1.8rem, 3.8vw, 3rem)", fontWeight: 800, color: "#0F172A", lineHeight: 1.2, marginBottom: "0.85rem", letterSpacing: "-0.02em" }}>
+              <h1 className="hero-title" style={{ fontSize: "clamp(1.8rem, 3.8vw, 3rem)", fontWeight: 800, color: "var(--ink)", lineHeight: 1.2, marginBottom: "0.85rem", letterSpacing: "-0.03em" }}>
                 Optimasi Rantai Pasok Pangan Terpadu dengan <br />
                 <span className="green-highlight">Smart Supply Tracking</span>
               </h1>
 
-              <p className="hero-desc" style={{ fontSize: "clamp(0.85rem, 1.3vw, 0.95rem)", color: "#475569", marginBottom: "1.75rem", lineHeight: 1.6, fontWeight: 400, maxWidth: "540px" }}>
+              <p className="hero-desc" style={{ fontSize: "clamp(0.85rem, 1.3vw, 0.95rem)", color: "var(--ink-body)", marginBottom: "1.75rem", lineHeight: 1.65, fontWeight: 400, maxWidth: "540px" }}>
                 PasarNusa menghubungkan sentra produksi komoditas langsung dengan jaringan distributor dan retail. Mewujudkan transparansi alur komoditas serta efisiensi harga secara real-time.
               </p>
 
               <div className="hero-btn-group" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <Link href="/login" className="btn-green btn-green-hero" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.7rem 1.4rem", borderRadius: "8px", fontSize: "0.88rem", fontWeight: 600, whiteSpace: "nowrap" }}>
+                <Link href="/login" className="btn-green btn-green-hero" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.7rem 1.4rem", borderRadius: "10px", fontSize: "0.88rem", fontWeight: 600, whiteSpace: "nowrap" }}>
                   Bergabung Sebagai Mitra
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </Link>
+              </div>
+
+              <div className="hero-dots" role="tablist" aria-label="Ganti latar" style={{ marginTop: "1.6rem" }}>
+                {bgImages.map((img, index) => (
+                  <button
+                    key={index}
+                    role="tab"
+                    aria-selected={currentBg === index}
+                    aria-label={`Latar ${index + 1}`}
+                    className={currentBg === index ? "is-active" : ""}
+                    onClick={() => setCurrentBg(index)}
+                  />
+                ))}
               </div>
             </div>
 
@@ -380,10 +594,10 @@ export default function LandingPage() {
       {/* STATISTIK SECTION */}
       <section className="stats-section" ref={statsRef} style={{ padding: "0 2rem", marginTop: "-2.5rem", position: "relative", zIndex: 10 }}>
         <div className="stats-grid" style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.25rem" }}>
-          
+
           {/* Statistik 1 */}
-          <div className="glass-stat" style={{ padding: "1.1rem 1.35rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #E2E8F0" }}>
-            <div className="icon-box" style={{ background: "var(--brand-green)", padding: "0.65rem", borderRadius: "0.5rem", color: "#FFFFFF", flexShrink: 0 }}>
+          <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -392,18 +606,18 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.1 }}>
+              <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
                 {produsenCount.toLocaleString("id-ID")}+
               </div>
-              <div className="stat-label" style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 400, marginTop: "0.2rem" }}>
+              <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Produsen Terverifikasi
               </div>
             </div>
           </div>
 
           {/* Statistik 2 */}
-          <div className="glass-stat" style={{ padding: "1.1rem 1.35rem", borderRadius: "0.75rem", display: "flex", alignItems: "center", gap: "1rem", boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #E2E8F0" }}>
-            <div className="icon-box" style={{ background: "var(--brand-green)", padding: "0.65rem", borderRadius: "0.5rem", color: "#FFFFFF", flexShrink: 0 }}>
+          <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem", "--d": "90ms" } as React.CSSProperties}>
+            <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
                 <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
@@ -412,10 +626,10 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 700, color: "#0F172A", lineHeight: 1.1 }}>
+              <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
                 {tokoCount.toLocaleString("id-ID")}+
               </div>
-              <div className="stat-label" style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 400, marginTop: "0.2rem" }}>
+              <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Jaringan Toko &amp; Mitra Terintegrasi
               </div>
             </div>
@@ -425,33 +639,38 @@ export default function LandingPage() {
       </section>
 
       {/* FITUR UTAMA SECTION */}
-      <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", marginTop: "3rem" }}>
+      <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", background: "var(--surface)", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", marginTop: "3rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "2.2rem" }}>
-            <span style={{ color: "var(--brand-green)", fontWeight: 700, fontSize: "0.75rem", letterSpacing: "0.1em", textTransform: "uppercase" }}>Arsitektur Sistem</span>
-            <h2 style={{ fontSize: "clamp(1.2rem, 2.8vw, 2rem)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.02em", marginTop: "0.3rem" }}>Integrasi Rantai Pasok Dari Hulu ke Hilir</h2>
-            <p style={{ color: "#64748B", fontSize: "0.85rem", maxWidth: "580px", margin: "0.3rem auto 0", lineHeight: 1.5, fontWeight: 400 }}>
+          <div style={{ textAlign: "center", marginBottom: "2.2rem" }} data-reveal>
+            <span style={{ color: "var(--brand-green)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Arsitektur Sistem</span>
+            <h2 style={{ fontSize: "clamp(1.2rem, 2.8vw, 2rem)", fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "0.35rem" }}>Integrasi Rantai Pasok Dari Hulu ke Hilir</h2>
+            <p style={{ color: "var(--ink-muted)", fontSize: "0.85rem", maxWidth: "580px", margin: "0.45rem auto 0", lineHeight: 1.6, fontWeight: 400 }}>
               Menghubungkan setiap entitas ekosistem dalam satu alur data terpadu untuk efisiensi maksimal.
             </p>
           </div>
 
           <div className="features-grid no-scrollbar" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem" }}>
             {fitur.map((f, i) => (
-              <div key={i} className="green-translucent-card">
+              <div
+                key={i}
+                className="green-translucent-card"
+                data-reveal
+                style={{ "--accent": f.accent, "--d": `${i * 90}ms` } as React.CSSProperties}
+              >
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
                     <div className="icon-wrapper" style={{ background: f.soft, padding: "0.4rem", borderRadius: "8px", color: f.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {f.icon}
                     </div>
-                    <span className="layer-badge" style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: f.accent, background: f.soft, padding: "0.15rem 0.5rem", borderRadius: "99px" }}>
+                    <span className="layer-badge" style={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase", color: f.accent, background: f.soft, padding: "0.15rem 0.5rem", borderRadius: "99px" }}>
                       {f.layer}
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>{f.title}</h3>
+                  <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.4rem", letterSpacing: "-0.015em" }}>{f.title}</h3>
                 </div>
 
-                <p style={{ color: "#475569", lineHeight: 1.5, fontSize: "0.82rem", margin: 0, fontWeight: 400 }}>{f.desc}</p>
+                <p style={{ lineHeight: 1.55, fontSize: "0.82rem", margin: 0, fontWeight: 400 }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -459,22 +678,30 @@ export default function LandingPage() {
       </section>
 
       {/* CTA SECTION */}
-      <section className="cta-section" style={{ padding: "3.5rem 1rem 4rem", background: "#F8FAFC" }}>
+      <section className="cta-section" style={{ padding: "3.5rem 1rem 4rem", background: "var(--surface)" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-          <div style={{
+          <div data-reveal style={{
             position: "relative",
-            borderRadius: "1rem",
+            borderRadius: "1.15rem",
             overflow: "hidden",
-            background: "linear-gradient(135deg, #0A3A22 0%, #062317 60%, #0F172A 100%)",
+            background: "radial-gradient(125% 125% at 12% 0%, #12633B 0%, #0A3A22 46%, #051B11 100%)",
             padding: "2.5rem 1.5rem",
-            boxShadow: "0 15px 30px rgba(10, 77, 46, 0.2)",
-            border: "1px solid rgba(22, 163, 74, 0.2)",
+            boxShadow: "0 20px 44px rgba(6, 40, 24, 0.24)",
+            border: "1px solid rgba(74, 222, 128, 0.18)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center"
           }}>
+            <span aria-hidden="true" style={{
+              position: "absolute", right: "-14%", bottom: "-44%",
+              width: "68%", aspectRatio: "1",
+              background: "radial-gradient(circle, rgba(74,222,128,0.18), transparent 66%)",
+              pointerEvents: "none"
+            }} />
+
             <span style={{
+              position: "relative",
               display: "inline-flex",
               alignItems: "center",
               gap: "0.4rem",
@@ -484,37 +711,35 @@ export default function LandingPage() {
               backdropFilter: "blur(4px)",
               color: "#4ADE80",
               fontSize: "0.7rem",
-              fontWeight: 600,
-              letterSpacing: "0.06em",
+              fontWeight: 700,
+              letterSpacing: "0.09em",
               textTransform: "uppercase",
               marginBottom: "0.85rem",
-              border: "1px solid rgba(255, 255, 255, 0.12)"
+              border: "1px solid rgba(255, 255, 255, 0.14)"
             }}>
               <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#4ADE80" }} />
               Bergabung Bersama Kami
             </span>
 
-            <h2 style={{ fontSize: "clamp(1.25rem, 3vw, 2.2rem)", fontWeight: 800, color: "#FFFFFF", letterSpacing: "-0.02em", lineHeight: 1.25, maxWidth: "700px", marginBottom: "0.6rem" }}>
+            <h2 style={{ position: "relative", fontSize: "clamp(1.25rem, 3vw, 2.2rem)", fontWeight: 800, color: "#FFFFFF", letterSpacing: "-0.03em", lineHeight: 1.25, maxWidth: "700px", marginBottom: "0.6rem" }}>
               Tingkatkan Efisiensi Distribusi Komoditas Pangan Nasional
             </h2>
 
-            <p style={{ color: "#CBD5E1", fontSize: "clamp(0.75rem, 1.2vw, 0.95rem)", maxWidth: "580px", lineHeight: 1.5, marginBottom: "1.5rem", fontWeight: 400 }}>
+            <p style={{ position: "relative", color: "#C7D6CC", fontSize: "clamp(0.75rem, 1.2vw, 0.95rem)", maxWidth: "580px", lineHeight: 1.6, marginBottom: "1.5rem", fontWeight: 400 }}>
               Daftarkan usaha Anda dan menjadi bagian dari rantai pasok digital yang transparan dan terukur.
             </p>
 
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-              <Link href="/login" style={{
+            <div style={{ position: "relative", display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
+              <Link href="/login" className="btn-emerald" style={{
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.5rem",
                 padding: "0.6rem 1.35rem",
-                borderRadius: "8px",
-                background: "#16A34A",
+                borderRadius: "10px",
                 color: "#FFFFFF",
                 fontSize: "0.82rem",
-                fontWeight: 600,
-                boxShadow: "0 4px 14px rgba(22, 163, 74, 0.3)"
+                fontWeight: 600
               }}>
                 Akses Platform
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -525,17 +750,17 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="footer-section" style={{ background: "#061F15", color: "#94A3B8", paddingTop: "2.5rem", paddingBottom: "2rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      <footer className="footer-section" style={{ background: "#051B11", color: "#A3BDB0", paddingTop: "2.5rem", paddingBottom: "2rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.25rem" }}>
           <div className="footer-main-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "nowrap", gap: "1.5rem", marginBottom: "2rem" }}>
             <div className="footer-brand-area" style={{ display: "flex", flexDirection: "column", gap: "0.35rem", maxWidth: "420px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <img src="/logo.png" alt="PasarNusa" style={{ height: "24px", width: "auto", borderRadius: "4px" }} />
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.02em" }}>
-                  Pasar<span style={{ color: "#22C55E" }}>Nusa</span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#FFFFFF", letterSpacing: "-0.03em" }}>
+                  Pasar<span style={{ color: "#4ADE80" }}>Nusa</span>
                 </span>
               </div>
-              <p style={{ fontSize: "0.78rem", lineHeight: 1.5, color: "#94A3B8", margin: 0, fontWeight: 400 }}>
+              <p style={{ fontSize: "0.78rem", lineHeight: 1.55, color: "#A3BDB0", margin: 0, fontWeight: 400 }}>
                 Platform ekosistem rantai pasok digital komoditas pangan untuk efisiensi distribusi nasional.
               </p>
             </div>
@@ -547,8 +772,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="footer-bottom" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "1.25rem", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "0.72rem", color: "#64748B", textTransform: "none" }}>
-            <span>© 2026 <strong style={{ color: "#CBD5E1", fontWeight: 500 }}>PasarNusa Indonesia</strong>. All rights reserved.</span>
+          <div className="footer-bottom" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: "1.25rem", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "0.72rem", color: "#7C9187", textTransform: "none" }}>
+            <span>© 2026 <strong style={{ color: "#CBD5E1", fontWeight: 600 }}>PasarNusa Indonesia</strong>. All rights reserved.</span>
           </div>
         </div>
       </footer>
