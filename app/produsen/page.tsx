@@ -11,11 +11,57 @@ import Pengiriman from "./components/pengiriman";
 import Keuangan from "./components/keuangan";
 import ProfilUMKM from "./components/profil-umkm";
 
-export interface Profil { nama: string; usaha: string; alamat: string; telepon: string; email: string; kategori: string; terverifikasi: boolean; inisial: string; fotoUrl?: string }
-export interface Ulasan { pembeli: string; rating: number; komentar: string }
-export interface StokItem { id: string; nama: string; jumlah: number; satuan: string; hargaSatuan: number; status: "Aman" | "Menipis" | "Habis"; kategori: string; fotoUrl?: string; ulasan: Ulasan[] }
-export interface Pesanan { id: string; pembeli: string; itemId: string; item: string; jumlah: number; satuan: string; total: number; status: "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan"; tanggal: string; alamatKirim: string; noResi?: string }
-export interface Pengeluaran { id: string; keterangan: string; nominal: number; tanggal: string; kategori: string }
+export interface Profil {
+  nama: string;
+  usaha: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  kategori: string;
+  terverifikasi: boolean;
+  inisial: string;
+  fotoUrl?: string;
+}
+
+export interface Ulasan {
+  pembeli: string;
+  rating: number;
+  komentar: string;
+}
+
+export interface StokItem {
+  id: string;
+  nama: string;
+  jumlah: number;
+  satuan: string;
+  hargaSatuan: number;
+  status: "Aman" | "Menipis" | "Habis";
+  kategori: string;
+  fotoUrl?: string;
+  ulasan: Ulasan[];
+}
+
+export interface Pesanan {
+  id: string;
+  pembeli: string;
+  itemId: string;
+  item: string;
+  jumlah: number;
+  satuan: string;
+  total: number;
+  status: "Baru" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
+  tanggal: string;
+  alamatKirim: string;
+  noResi?: string;
+}
+
+export interface Pengeluaran {
+  id: string;
+  keterangan: string;
+  nominal: number;
+  tanggal: string;
+  kategori: string;
+}
 
 interface ProdukRow {
   id: string;
@@ -33,7 +79,6 @@ const IconTruck = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="no
 const IconWallet = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconSparkle = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"></path></svg>;
 const IconArrowRight = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
 const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
@@ -54,8 +99,6 @@ function formatRupiah(n: number) {
 export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [, setNotifOpen] = useState(false);
-
   const [showProfilPopup, setShowProfilPopup] = useState(false);
 
   const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
@@ -66,7 +109,7 @@ export default function ProdusenDashboard() {
 
   const [stokList, setStokList] = useState<StokItem[]>([]);
   const [pesananList, setPesananList] = useState<Pesanan[]>([]);
-  const [pengeluaranList] = useState<Pengeluaran[]>([]);
+  const [pengeluaranList, setPengeluaranList] = useState<Pengeluaran[]>([]);
 
   const muatDataDashboard = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -94,7 +137,7 @@ export default function ProdusenDashboard() {
     });
 
     if (produsen) {
-     
+      // Load Stok Produk
       const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
       if (produk) {
         setStokList((produk as ProdukRow[]).map((p) => {
@@ -107,7 +150,7 @@ export default function ProdusenDashboard() {
         }));
       }
 
-  
+      // Load Pesanan B2B
       const { data: pesananData } = await supabase
         .from("pesanan")
         .select(`
@@ -146,18 +189,35 @@ export default function ProdusenDashboard() {
 
         setPesananList(mappedPesanan);
       }
+
+      // Load Pengeluaran
+      const { data: pengeluaranData } = await supabase
+        .from("pengeluaran")
+        .select("*")
+        .eq("produsen_id", produsen.id)
+        .order("created_at", { ascending: false });
+
+      if (pengeluaranData) {
+        const mappedPengeluaran: Pengeluaran[] = pengeluaranData.map((p: any) => ({
+          id: p.id,
+          keterangan: p.keterangan || "Pengeluaran Toko",
+          nominal: Number(p.nominal) || 0,
+          tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
+          kategori: p.kategori || "Operasional"
+        }));
+        setPengeluaranList(mappedPengeluaran);
+      }
     }
   }, []);
 
- 
   useEffect(() => {
     muatDataDashboard();
 
     const channel = supabase
       .channel("realtime-dashboard-produsen")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => {
-        muatDataDashboard();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatDataDashboard())
+      .on("postgres_changes", { event: "*", schema: "public", table: "pengeluaran" }, () => muatDataDashboard())
+      .on("postgres_changes", { event: "*", schema: "public", table: "produk" }, () => muatDataDashboard())
       .subscribe();
 
     return () => {
@@ -173,8 +233,6 @@ export default function ProdusenDashboard() {
   const pesananAktif = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses" || p.status === "Dikirim").length;
   const semuaUlasan = stokList.flatMap((s) => s.ulasan.map((u) => ({ ...u, produk: s.nama })));
   const ratingRata = semuaUlasan.length ? semuaUlasan.reduce((s, u) => s + u.rating, 0) / semuaUlasan.length : 0;
-
-  const notifItems = stokMenipis.map((s) => ({ id: `stok-${s.id}`, text: `Stok ${s.nama} ${s.status === "Habis" ? "habis" : "menipis"}`, sub: `Sisa ${s.jumlah} ${s.satuan}`, tujuan: "stok" }));
 
   if (isProfileComplete === null) {
     return <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", color: "#64748B" }}>Menghubungkan Database PasarNusa...</div>;
@@ -200,7 +258,7 @@ export default function ProdusenDashboard() {
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-           <div style={{ width: "32px", height: "32px", borderRadius: "9px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, position: "relative" }}>
+           <div style={{ width: "32px", height: "32px", borderRadius: "99px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, position: "relative" }}>
               <Image src="/logo.png" alt="Logo PasarNusa" fill style={{ objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Produsen / UMKM</div></div>
@@ -229,12 +287,8 @@ export default function ProdusenDashboard() {
             <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
 
+          {/* Profil Button (Icon Notifikasi Bel di Sampingnya Sudah Dihapus Total) */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div onClick={() => isProfileComplete && setNotifOpen((v) => !v)} style={{ position: "relative", width: "32px", height: "32px", borderRadius: "50%", background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <IconBell />
-              {notifItems.length > 0 && <span style={{ position: "absolute", top: "6px", right: "7px", width: "6px", height: "6px", borderRadius: "50%", background: "#EF4444" }} />}
-            </div>
-
             <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                 {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
@@ -293,7 +347,7 @@ export default function ProdusenDashboard() {
               <div className="pn-panels-grid">
                 <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen & stok</div>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen &amp; stok</div>
                     {stokMenipis.length > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>Butuh tindakan</span>}
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
@@ -333,7 +387,7 @@ export default function ProdusenDashboard() {
           {activeMenu === "stok" && <StokKomoditas />}
           {activeMenu === "penjualan" && <PenjualanB2B />}
           {activeMenu === "pengiriman" && <Pengiriman />}
-          {activeMenu === "keuangan" && <Keuangan pesananList={pesananList} pengeluaranList={pengeluaranList} addPengeluaran={() => {}} />}
+          {activeMenu === "keuangan" && <Keuangan />}
         </div>
       </div>
 

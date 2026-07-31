@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
+import { supabase } from "@/lib/db";
 
 interface Pesanan {
   id: string;
@@ -19,12 +20,6 @@ interface Pengeluaran {
   kategori: string;
 }
 
-interface Props {
-  pesananList: Pesanan[];
-  pengeluaranList: Pengeluaran[];
-  addPengeluaran: (entry: Omit<Pengeluaran, "id" | "tanggal">) => void;
-}
-
 const IconWallet = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Z"></path></svg>;
 const IconArrowUp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>;
 const IconArrowDown = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>;
@@ -34,39 +29,217 @@ function formatRupiah(n: number) {
   if (n < 0) {
     return "- Rp " + Math.abs(n).toLocaleString("id-ID");
   }
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
-export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran }: Props) {
+function formatInputRupiah(value: string) {
+  const angka = value.replace(/\D/g, "");
+  return angka ? Number(angka).toLocaleString("id-ID") : "";
+}
+
+function unformatInputRupiah(value: string) {
+  return value.replace(/\./g, "");
+}
+
+export default function Keuangan() {
+  const [pesananList, setPesananList] = useState<Pesanan[]>([]);
+  const [pengeluaranList, setPengeluaranList] = useState<Pengeluaran[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTarikModal, setShowTarikModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const [form, setForm] = useState({ keterangan: "", nominal: "", kategori: "Bahan Baku" });
   const [tarikForm, setTarikForm] = useState({ nominal: "", metode: "Transfer Bank", rekening: "" });
   const [tarikError, setTarikError] = useState("");
 
+  const muatDataKeuangan = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: produsen } = await supabase
+        .from("produsen")
+        .select("id")
+        .or(`profile_id.eq.${user.id},id.eq.${user.id}`)
+        .maybeSingle();
+
+      if (!produsen) {
+        setLoading(false);
+        return;
+      }
+
+      // 1. Load Pemasukan dari Pesanan Selesai
+      const { data: pesananData, error: pesananError } = await supabase
+        .from("pesanan")
+        .select("id, total_harga, status, created_at, admin_toko_id")
+        .eq("produsen_id", produsen.id)
+        .order("created_at", { ascending: false });
+
+      if (pesananError) {
+        console.error("Gagal muat pesanan di keuangan:", pesananError);
+      }
+
+      const { data: adminList } = await supabase
+        .from("admin_toko")
+        .select("id, nama_toko");
+
+      const adminMap = new Map((adminList || []).map((a) => [a.id, a.nama_toko]));
+
+      if (pesananData) {
+        const mappedPesanan: Pesanan[] = pesananData.map((p: any) => {
+          const stRaw = String(p.status || "").toLowerCase().trim();
+          let statusNormalized = "Lainnya";
+
+          if (stRaw === "selesai" || stRaw === "diterima" || stRaw === "lunas") {
+            statusNormalized = "Selesai";
+          } else if (stRaw === "diproses" || stRaw === "dikirim" || stRaw === "baru") {
+            statusNormalized = "Proses";
+          } else if (stRaw === "dibatalkan" || stRaw === "batal") {
+            statusNormalized = "Dibatalkan";
+          }
+
+          const namaToko = adminMap.get(p.admin_toko_id) || "Admin Toko Mitra";
+
+          return {
+            id: p.id.slice(0, 8).toUpperCase(),
+            pembeli: namaToko,
+            total: Number(p.total_harga) || 0,
+            status: statusNormalized,
+            tanggal: new Date(p.created_at).toLocaleDateString("id-ID")
+          };
+        });
+        setPesananList(mappedPesanan);
+      }
+
+      // 2. Load Pengeluaran
+      const { data: pengeluaranData } = await supabase
+        .from("pengeluaran")
+        .select("*")
+        .eq("produsen_id", produsen.id)
+        .order("created_at", { ascending: false });
+
+      if (pengeluaranData) {
+        const mappedPengeluaran: Pengeluaran[] = pengeluaranData.map((p: any) => ({
+          id: p.id,
+          keterangan: p.keterangan || "Pengeluaran Toko",
+          nominal: Number(p.nominal) || 0,
+          tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
+          kategori: p.kategori || "Operasional"
+        }));
+        setPengeluaranList(mappedPengeluaran);
+      }
+    } catch (err) {
+      console.error("Gagal muat keuangan:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    muatDataKeuangan();
+
+    const channel = supabase
+      .channel("realtime-keuangan-produsen")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatDataKeuangan())
+      .on("postgres_changes", { event: "*", schema: "public", table: "pengeluaran" }, () => muatDataKeuangan())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [muatDataKeuangan]);
+
   const pemasukan = useMemo(
-    () => pesananList.filter((p) => p.status === "Selesai").map((p) => ({ id: p.id, keterangan: `Penjualan — ${p.pembeli}`, nominal: p.total, tanggal: p.tanggal, tipe: "masuk" as const })),
+    () =>
+      pesananList
+        .filter((p) => p.status === "Selesai")
+        .map((p) => ({
+          id: p.id,
+          keterangan: `Penjualan B2B — ${p.pembeli} (#${p.id})`,
+          nominal: p.total,
+          tanggal: p.tanggal,
+          tipe: "masuk" as const
+        })),
     [pesananList]
   );
-  const pengeluaran = useMemo(() => pengeluaranList.map((p) => ({ ...p, tipe: "keluar" as const })), [pengeluaranList]);
 
-  const riwayat = useMemo(() => [...pemasukan, ...pengeluaran].sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)), [pemasukan, pengeluaran]);
+  const pengeluaran = useMemo(
+    () => pengeluaranList.map((p) => ({ ...p, tipe: "keluar" as const })),
+    [pengeluaranList]
+  );
+
+  const riwayat = useMemo(
+    () => [...pemasukan, ...pengeluaran].sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)),
+    [pemasukan, pengeluaran]
+  );
 
   const totalMasuk = pemasukan.reduce((s, x) => s + x.nominal, 0);
   const totalKeluar = pengeluaran.reduce((s, x) => s + x.nominal, 0);
   const saldo = totalMasuk - totalKeluar;
 
+  async function addPengeluaran(entry: { keterangan: string; nominal: number; kategori: string }) {
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: produsen } = await supabase
+        .from("produsen")
+        .select("id")
+        .or(`profile_id.eq.${user.id},id.eq.${user.id}`)
+        .maybeSingle();
+
+      if (!produsen) {
+        alert("Gagal mengidentifikasi profil produsen Anda.");
+        return;
+      }
+
+      const { error } = await supabase.from("pengeluaran").insert({
+        produsen_id: produsen.id,
+        keterangan: entry.keterangan,
+        nominal: entry.nominal,
+        kategori: entry.kategori,
+        created_at: new Date().toISOString()
+      });
+
+      if (error) {
+        const { error: errFallback } = await supabase.from("pengeluaran").insert({
+          keterangan: entry.keterangan,
+          nominal: entry.nominal,
+          kategori: entry.kategori,
+          created_at: new Date().toISOString()
+        });
+
+        if (errFallback) throw errFallback;
+      }
+
+      await muatDataKeuangan();
+    } catch (err: any) {
+      console.error("Gagal mencatat pengeluaran:", err);
+      alert("Gagal mencatat pengeluaran: " + (err.message || "Pastikan tabel 'pengeluaran' sudah ada."));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function handleAddSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!form.keterangan || !form.nominal) return;
-    addPengeluaran({ keterangan: form.keterangan, nominal: Number(form.nominal), kategori: form.kategori });
+    const nominalNum = Number(unformatInputRupiah(form.nominal));
+    if (!form.keterangan || !nominalNum) return;
+    addPengeluaran({ keterangan: form.keterangan, nominal: nominalNum, kategori: form.kategori });
     setForm({ keterangan: "", nominal: "", kategori: "Bahan Baku" });
     setShowAddModal(false);
   }
 
   function handleTarikSubmit(e: FormEvent) {
     e.preventDefault();
-    const nominal = Number(tarikForm.nominal);
+    const nominal = Number(unformatInputRupiah(tarikForm.nominal));
     if (!nominal || nominal <= 0) return;
     if (nominal > saldo) {
       setTarikError(`Nominal melebihi saldo tersedia (${formatRupiah(saldo)}).`);
@@ -79,87 +252,24 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
     setShowTarikModal(false);
   }
 
+  if (loading) {
+    return <div style={{ padding: "3rem", textAlign: "center", color: "#64748B" }}>Memuat Laporan Arus Kas...</div>;
+  }
+
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
         @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          .finance-header-row {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            align-items: center !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-            width: 100% !important;
-            flex-wrap: nowrap !important;
-          }
-          .finance-title-block {
-            min-width: 0 !important;
-            flex: 1 !important;
-          }
-          .finance-title-block h1 {
-            font-size: 1.15rem !important;
-            margin: 0px !important;
-          }
-          .finance-title-block p {
-            font-size: 0.62rem !important;
-            margin: 0px !important;
-            line-height: 1.2 !important;
-          }
-          .finance-action-buttons {
-            display: flex !important;
-            gap: 0.25rem !important; /* Dirapatkan jarak antar tombolnya */
-            flex-shrink: 0 !important;
-          }
-          .finance-action-buttons button {
-            padding: 0.35rem 0.5rem !important; /* Dikecilkan ukurannya agar pas hulu ke hilir */
-            font-size: 0.62rem !important;
-            border-radius: 5px !important;
-            white-space: nowrap !important;
-          }
-          .finance-stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .finance-stat-card {
-            padding: 0.4rem 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .finance-stat-card div:first-child {
-            gap: 0.25rem !important;
-            margin-bottom: 0.25rem !important;
-          }
-          .finance-stat-card div:first-child div:first-child {
-            padding: 0.25rem !important;
-            border-radius: 4px !important;
-          }
-          .finance-stat-card div:first-child div:first-child svg {
-            width: 12px !important;
-            height: 12px !important;
-          }
-          .finance-stat-card span {
-            font-size: 0.52rem !important;
-            line-height: 1.1 !important;
-          }
-          .finance-stat-card div:last-child {
-            font-size: 0.62rem !important;
-            line-height: 1.1 !important;
-            white-space: nowrap !important;
-            letter-spacing: -0.02em !important;
-          }
-          .history-table-container th, .history-table-container td {
-            padding: 0.5rem 0.4rem !important;
-            font-size: 0.58rem !important;
-          }
-          .history-table-container table {
-            min-width: auto !important;
-            width: 100% !important;
-          }
+          main { padding: 0.5rem 0.25rem !important; }
+          .finance-header-row { display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 0.25rem !important; margin-bottom: 1rem !important; width: 100% !important; flex-wrap: nowrap !important; }
+          .finance-title-block { min-width: 0 !important; flex: 1 !important; }
+          .finance-title-block h1 { font-size: 1.15rem !important; margin: 0px !important; }
+          .finance-title-block p { font-size: 0.62rem !important; margin: 0px !important; line-height: 1.2 !important; }
+          .finance-action-buttons { display: flex !important; gap: 0.25rem !important; flex-shrink: 0 !important; }
+          .finance-action-buttons button { padding: 0.35rem 0.5rem !important; font-size: 0.62rem !important; border-radius: 5px !important; white-space: nowrap !important; }
+          .finance-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
+          .finance-stat-card { padding: 0.4rem 0.3rem !important; border-radius: 6px !important; }
+          .history-table-container th, .history-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
         }
       `}} />
 
@@ -211,7 +321,7 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
             </thead>
             <tbody>
               {riwayat.length === 0 && (
-                <tr><td colSpan={3} style={{ padding: "1.25rem", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi.</td></tr>
+                <tr><td colSpan={3} style={{ padding: "1.25rem", textAlign: "center", color: "#94A3B8" }}>Belum ada transaksi lunas.</td></tr>
               )}
               {riwayat.map((r, i) => (
                 <tr key={i} style={{ borderBottom: "1px solid #F1F5F9" }}>
@@ -225,25 +335,26 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
         </div>
       </div>
 
+      {/* MODAL CATAT PENGELUARAN */}
       {showAddModal && (
-        <div onClick={() => setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.1rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>Catat Pengeluaran</h2>
-              <button onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
+        <div onClick={() => !submitting && setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#1E293B" }}>Catat Pengeluaran</h2>
+              <button disabled={submitting} onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            <form onSubmit={handleAddSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+            <form onSubmit={handleAddSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Keterangan *</label>
-                <input required value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} placeholder="Contoh: Pembelian minyak goreng" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Keterangan Pengeluaran *</label>
+                <input required value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} placeholder="Contoh: Pembelian bibit & pupuk" style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Nominal (Rp) *</label>
-                <input required type="number" min="0" value={form.nominal} onChange={(e) => setForm({ ...form, nominal: e.target.value })} placeholder="Contoh: 250000" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Nominal Pengeluaran (Rp) *</label>
+                <input required type="text" inputMode="numeric" value={formatInputRupiah(form.nominal)} onChange={(e) => setForm({ ...form, nominal: unformatInputRupiah(e.target.value) })} placeholder="0" style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Kategori</label>
-                <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Kategori</label>
+                <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", outline: "none", boxSizing: "border-box" }}>
                   <option value="Bahan Baku">Bahan Baku</option>
                   <option value="Kemasan">Kemasan</option>
                   <option value="Logistik">Logistik</option>
@@ -252,44 +363,45 @@ export default function Keuangan({ pesananList, pengeluaranList, addPengeluaran 
                 </select>
               </div>
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Batal</button>
-                <button type="submit" style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#EF4444", color: "white", fontWeight: 600, cursor: "pointer" }}>Simpan</button>
+                <button type="button" disabled={submitting} onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 700, cursor: "pointer" }}>Batal</button>
+                <button type="submit" disabled={submitting} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: "#EF4444", color: "white", fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>{submitting ? "Menyimpan..." : "Simpan Pengeluaran"}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* MODAL TARIK TUNAI */}
       {showTarikModal && (
-        <div onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
+        <div onClick={() => { if (!submitting) { setShowTarikModal(false); setTarikError(""); } }} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>Tarik Saldo</h2>
-              <button onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
+              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#1E293B" }}>Tarik Saldo</h2>
+              <button disabled={submitting} onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            <p style={{ margin: "0 0 1.1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>Saldo tersedia: <strong style={{ color: "#1E293B" }}>{formatRupiah(saldo)}</strong></p>
-            <form onSubmit={handleTarikSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+            <p style={{ margin: "0 0 1.25rem 0", fontSize: "0.85rem", color: "#64748B" }}>Saldo tersedia: <strong style={{ color: "#10B981" }}>{formatRupiah(saldo)}</strong></p>
+            <form onSubmit={handleTarikSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Nominal Penarikan (Rp) *</label>
-                <input required type="number" min="1" max={saldo} value={tarikForm.nominal} onChange={(e) => { setTarikForm({ ...tarikForm, nominal: e.target.value }); setTarikError(""); }} placeholder="Contoh: 1000000" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Nominal Penarikan (Rp) *</label>
+                <input required type="text" inputMode="numeric" value={formatInputRupiah(tarikForm.nominal)} onChange={(e) => { setTarikForm({ ...tarikForm, nominal: unformatInputRupiah(e.target.value) }); setTarikError(""); }} placeholder="0" style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>Metode Pencairan</label>
-                <select value={tarikForm.metode} onChange={(e) => setTarikForm({ ...tarikForm, metode: e.target.value })} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>Metode Pencairan</label>
+                <select value={tarikForm.metode} onChange={(e) => setTarikForm({ ...tarikForm, metode: e.target.value })} style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", outline: "none", boxSizing: "border-box" }}>
                   <option value="Transfer Bank">Transfer Bank</option>
                   <option value="Tunai di Mitra Terdekat">Tunai di Mitra Terdekat</option>
                 </select>
               </div>
               {tarikForm.metode === "Transfer Bank" && (
                 <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#334155", marginBottom: "0.3rem" }}>No. Rekening Tujuan</label>
-                  <input value={tarikForm.rekening} onChange={(e) => setTarikForm({ ...tarikForm, rekening: e.target.value })} placeholder="Contoh: BCA 1234567890 a.n. Budi" style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>No. Rekening Tujuan</label>
+                  <input value={tarikForm.rekening} onChange={(e) => setTarikForm({ ...tarikForm, rekening: e.target.value })} placeholder="Contoh: BCA 1234567890 a.n. Budi" style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
                 </div>
               )}
               {tarikError && <div style={{ background: "#FEE2E2", color: "#991B1B", fontSize: "0.8rem", padding: "0.6rem 0.8rem", borderRadius: "8px" }}>{tarikError}</div>}
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                <button type="button" onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 600, cursor: "pointer" }}>Batal</button>
-                <button type="submit" style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Konfirmasi Penarikan</button>
+                <button type="button" disabled={submitting} onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #E2E8F0", background: "white", color: "#334155", fontWeight: 700, cursor: "pointer" }}>Batal</button>
+                <button type="submit" disabled={submitting} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>{submitting ? "Memproses..." : "Konfirmasi Penarikan"}</button>
               </div>
             </form>
           </div>
