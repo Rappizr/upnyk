@@ -343,7 +343,7 @@ async function eksekusiToggleSuspend() {
         </div>
       </div>
 
-      {/* 💡 MODAL POP-UP KONFIRMASI SUSPEND / AKTIFKAN */}
+     
       {confirmSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
@@ -378,7 +378,7 @@ async function eksekusiToggleSuspend() {
         </div>
       )}
 
-      {/* MODAL KELOLA DETAIL PRODUSEN */}
+   
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

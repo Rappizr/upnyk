@@ -66,7 +66,7 @@ export default function SmartRestock({ produsenList = [], stokList = [], updateS
     [produsenList]
   );
 
-// 💡 DETEKSI PASTI: MUNCUL JIKA STOK <= 15 ATAU STOK <= BATAS MINIMUM
+
   const stokMenipis = useMemo(() => {
     return (stokList || []).filter((s: any) => {
       const namaVal = s.nama || s.nama_produk;

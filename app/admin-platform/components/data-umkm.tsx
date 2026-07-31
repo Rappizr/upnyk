@@ -47,7 +47,7 @@ export default function DataUMKM() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
-  // STATE UNTUK POP-UP KONFIRMASI SUSPEND / AKTIFKAN TOKO UMKM
+
   const [targetSuspend, setTargetSuspend] = useState<TokoUmkm | null>(null);
   const [submittingSuspend, setSubmittingSuspend] = useState(false);
 
@@ -296,7 +296,7 @@ async function eksekusiToggleSuspend() {
         </div>
       </div>
 
-      {/* POP-UP MODAL KONFIRMASI SUSPEND / AKTIFKAN */}
+     
       {targetSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
@@ -329,7 +329,7 @@ async function eksekusiToggleSuspend() {
         </div>
       )}
 
-      {/* MODAL KELOLA DETAIL TOKO UMKM */}
+     
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

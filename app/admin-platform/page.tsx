@@ -521,7 +521,7 @@ export default function AdminPlatformDashboard() {
           </main>
         )}
 
-        {/* SUB HALAMAN */}
+        
         {activeMenu === "umkm" && <DataUMKM />}
         {activeMenu === "produsen" && <DataProdusen />}
         {activeMenu === "pembeli" && <DataPembeli />}

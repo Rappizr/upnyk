@@ -14,14 +14,14 @@ export interface StokToko {
   hargaBeli: number;
   hargaJual: number;
   diskonPersen: number;
-  berat?: number; // 💡 Berat per item dalam kg
+  berat?: number; 
   grade: Grade;
   asalProdusen: string;
   live: boolean;
   foto?: string | null;
   deskripsi?: string;
-  rating?: number;       // 💡 Gunakan tanda tanya (?) agar opsional
-  totalUlasan?: number;  // 💡 Gunakan tanda tanya (?) agar opsional
+  rating?: number;      
+  totalUlasan?: number; 
   produk_id?: string;
 }
 

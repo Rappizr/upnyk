@@ -36,12 +36,12 @@ export default function LaporanDampak() {
   const loadRealtimeImpact = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Ambil data pesanan untuk menghitung Total Dana (GMV)
+ 
       const { data: pesananData } = await supabase.from("pesanan").select("total, total_harga");
       const gmvSum = (pesananData || []).reduce((acc, curr) => acc + (Number(curr.total || curr.total_harga) || 0), 0);
       setTotalGMV(gmvSum);
 
-      // 2. Ambil data etalase / produk untuk komoditas terlaris
+   
       const { data: etalaseData } = await supabase.from("etalase").select("nama_produk, harga_jual, stok");
       const komoditasMap = new Map<string, { harga: number; qty: number }>();
 
@@ -88,7 +88,7 @@ export default function LaporanDampak() {
         { lokasi: "Jombang, Jawa Timur", jumlah: 1 }
       ]);
 
-      // Hitung indeks harga adil dinamis berdasarkan selisih harga platform vs tengkulak
+    
       setIndeksHargaAdil(82);
 
     } catch (err) {

@@ -157,7 +157,7 @@ export default function LoginPage() {
       if (authData.user) {
         const userId = authData.user.id;
 
-        // 1. Cek status khusus PRODUSEN (jika memilih login sebagai Produsen)
+       
         if (selectedRole === "produsen") {
           const { data: produsenRows } = await supabase
             .from("produsen")
@@ -174,7 +174,6 @@ export default function LoginPage() {
           }
         }
 
-        // 2. Cek status khusus ADMIN TOKO (jika memilih login sebagai Admin Toko)
         if (selectedRole === "admin_toko") {
           const { data: tokoRows } = await supabase
             .from("admin_toko")
@@ -191,7 +190,7 @@ export default function LoginPage() {
           }
         }
 
-        // 3. Cek status khusus PEMBELI
+  
         if (selectedRole === "pembeli") {
           const { data: pembeliRows } = await supabase
             .from("pembeli")
@@ -208,7 +207,7 @@ export default function LoginPage() {
           }
         }
 
-        // 4. Validasi Role Match pada profiles
+      
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
           .select('role, status')
@@ -219,7 +218,7 @@ export default function LoginPage() {
           console.error("Gagal mengambil data profil:", profileErr.message);
         }
 
-        // Cek status global profiles hanya jika role sesuai
+      
         if (profile && profile.role === selectedRole && isSuspendedStatus(profile.status)) {
           await supabase.auth.signOut();
           setError("Akun Anda telah ditangguhkan secara keseluruhan. Silakan hubungi Admin Platform.");

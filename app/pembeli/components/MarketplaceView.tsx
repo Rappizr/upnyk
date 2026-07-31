@@ -78,14 +78,14 @@ export default function MarketplaceView({
 const loadMarketplaceData = useCallback(async () => {
     setLoading(true);
     try {
-      // 💡 AMBIL KOLOM 'status' DARI TABEL admin_toko
+    
       const { data: tokoData, error: errToko } = await supabase
         .from("admin_toko")
         .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto, status");
 
       if (errToko) console.error("Error load admin_toko:", errToko.message);
 
-      // 💡 FILTER HANYA TOKO YANG TIDAK SUSPENDED / NONAKTIF
+    
       const activeStores = (tokoData || []).filter((t: any) => {
         const st = String(t.status || "").toLowerCase().trim();
         return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
@@ -103,7 +103,7 @@ const loadMarketplaceData = useCallback(async () => {
       if (etalaseData && etalaseData.length > 0) {
         const tokoMap = new Map((tokoData || []).map((t) => [t.id, t]));
 
-        // 💡 FILTER BUANG PRODUK MILIK TOKO YANG SUSPENDED
+       
         const activeProducts = etalaseData.filter((e: any) => {
           const toko = tokoMap.get(e.admin_toko_id);
           if (!toko) return false;
@@ -231,7 +231,7 @@ const loadMarketplaceData = useCallback(async () => {
   return (
     <div style={{ width: "100%", paddingBottom: "2rem", fontFamily: "inherit" }}>
 
-      {/* FILTER PILIHAN WILAYAH */}
+  
       <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "1rem", scrollbarWidth: "none" }}>
         {locationOptions.map((loc) => (
           <button
@@ -259,7 +259,7 @@ const loadMarketplaceData = useCallback(async () => {
 
       <div style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", padding: "0.75rem 1rem", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
-        {/* TOKO SELECTOR */}
+      
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: "1 1 200px" }}>
           <StoreIcon size={16} style={{ color: "#64748B" }} />
           <select

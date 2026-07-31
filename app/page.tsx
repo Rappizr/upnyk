@@ -27,7 +27,7 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
 }
 
 export default function LandingPage() {
-  
+
   const bgImages = [
     "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=1920&q=80",
     "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80",
@@ -76,7 +76,7 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
- 
+
   useEffect(() => {
     const el = statsRef.current;
     if (!el) return;
@@ -88,7 +88,7 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
- 
+
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (!nodes.length) return;
@@ -103,10 +103,13 @@ export default function LandingPage() {
   }, []);
 
 
+  /* accent = warna teks/ikon (kontras aman di ukuran kecil)
+     bar    = warna garis aksen atas kartu (versi cerah, ambil dari logo) */
   const fitur = [
     {
       layer: "Hulu",
-      accent: "#0A4D2E", 
+      accent: "#0A4D2E",
+      bar: "#16A34A",
       soft: "rgba(10, 77, 46, 0.09)",
       title: "Portal Konsolidasi Produsen",
       desc: "Fitur pencatatan hasil panen, monitor indeks harga komoditas secara objektif, serta manajemen klaim pencairan dana otomatis.",
@@ -116,8 +119,9 @@ export default function LandingPage() {
     },
     {
       layer: "Logistik",
-      accent: "#B45309", 
-      soft: "rgba(180, 83, 9, 0.09)",
+      accent: "#B5610D",
+      bar: "#E08A2B",
+      soft: "rgba(224, 138, 43, 0.12)",
       title: "Sistem Manajemen Distribusi",
       desc: "Modul pengawasan inventoris toko, optimasi rute armada pengiriman, dan rekomendasi restock otomatis berbasis histori permintaan.",
       icon: (
@@ -126,8 +130,9 @@ export default function LandingPage() {
     },
     {
       layer: "Hilir",
-      accent: "#0E6E80", 
-      soft: "rgba(14, 110, 128, 0.09)",
+      accent: "#15687F",
+      bar: "#1E9BBE",
+      soft: "rgba(30, 155, 190, 0.12)",
       title: "Katalog B2B & Transaksi",
       desc: "Kemudahan pengadaan komoditas langsung dari daerah asal dengan kepastian ketersediaan barang dan sistem jaminan pembayaran.",
       icon: (
@@ -137,29 +142,72 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className={`pn-root${jsReady ? " js-ready" : ""}`} style={{ minHeight: "100vh", background: "#F6F8F5", fontFamily: "var(--font-sans), system-ui, -apple-system, sans-serif", color: "#101C16", overflowX: "hidden", scrollBehavior: "smooth" }}>
+    <div
+      className={`pn-root${jsReady ? " js-ready" : ""}`}
+      style={{
+        minHeight: "100vh",
+        background: "#F7F9F6",
+        fontFamily: "var(--font-sans), system-ui, -apple-system, sans-serif",
+        color: "#101C16",
+        overflowX: "hidden",
+        scrollBehavior: "smooth",
+        isolation: "isolate"
+      }}
+    >
 
-    
       <style>{`
         .pn-root {
           --brand-green: #0A4D2E;
           --brand-green-hover: #06301C;
           --brand-green-lift: #0F6337;
+
+          /* diambil dari logo — jingga panen & biru air */
+          --brand-orange: #E08A2B;
+          --brand-orange-ink: #B5610D;
+          --brand-blue: #1E9BBE;
+          --brand-blue-ink: #15687F;
+
           --ink: #101C16;
           --ink-body: #47554C;
           --ink-muted: #6B7A70;
-          --surface: #F6F8F5;
+          --surface: #F7F9F6;
           --hairline: #E3EAE3;
+        }
+
+        /* ===== LATAR BERWARNA =====
+           Tiga sapuan lembut dari palet logo, dipasang fixed di belakang
+           semua konten. Ini yang menghilangkan kesan "putih polos" tanpa
+           menyentuh susunan apa pun. */
+        .pn-root::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+          background:
+            radial-gradient(820px 560px at 94% 6%,  rgba(224, 138, 43, 0.15), transparent 60%),
+            radial-gradient(760px 540px at -8% 52%, rgba(30, 155, 190, 0.13), transparent 58%),
+            radial-gradient(880px 560px at 62% 102%, rgba(16, 163, 74, 0.11), transparent 60%);
         }
 
         /* Navbar Glassmorphism */
         .glass-nav {
-          background: ${isScrolled ? 'rgba(252, 253, 252, 0.9)' : 'transparent'};
+          background: ${isScrolled ? 'rgba(252, 253, 252, 0.88)' : 'transparent'};
           backdrop-filter: ${isScrolled ? 'saturate(180%) blur(14px)' : 'none'};
           -webkit-backdrop-filter: ${isScrolled ? 'saturate(180%) blur(14px)' : 'none'};
           border-bottom: ${isScrolled ? '1px solid rgba(16, 28, 22, 0.07)' : '1px solid transparent'};
           box-shadow: ${isScrolled ? '0 6px 24px rgba(6, 40, 24, 0.06)' : 'none'};
           transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+        }
+        /* garis tipis tiga warna logo saat navbar menempel */
+        .glass-nav::after {
+          content: "";
+          position: absolute;
+          left: 0; right: 0; bottom: -1px;
+          height: 2px;
+          background: linear-gradient(90deg, var(--brand-green) 0%, var(--brand-orange) 52%, var(--brand-blue) 100%);
+          opacity: ${isScrolled ? 0.85 : 0};
+          transition: opacity 0.35s ease;
         }
 
         .nav-link {
@@ -199,12 +247,12 @@ export default function LandingPage() {
         .green-translucent-card {
           position: relative;
           overflow: hidden;
-          background: #FFFFFF;
+          background: rgba(255, 255, 255, 0.94);
           border: 1px solid var(--hairline);
           border-radius: 12px;
           padding: 1.25rem 1rem;
           transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.32s ease, border-color 0.32s ease;
-          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 8px 20px rgba(6, 40, 24, 0.04);
+          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 8px 20px rgba(6, 40, 24, 0.05);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -215,12 +263,12 @@ export default function LandingPage() {
           top: 0; left: 0; right: 0;
           height: 3px;
           background: var(--accent, var(--brand-green));
-          opacity: 0.85;
+          opacity: 0.9;
           transition: opacity 0.3s ease, height 0.3s ease;
         }
         .green-translucent-card:hover {
           transform: translateY(-3px);
-          border-color: rgba(10, 77, 46, 0.22);
+          border-color: color-mix(in srgb, var(--accent, var(--brand-green)) 35%, var(--hairline));
           box-shadow: 0 2px 4px rgba(6, 40, 24, 0.05), 0 16px 34px rgba(6, 40, 24, 0.10);
         }
         .green-translucent-card:hover::before { opacity: 1; height: 4px; }
@@ -229,18 +277,19 @@ export default function LandingPage() {
 
         /* Kartu Statistik Putih */
         .glass-stat {
-          background: #FFFFFF;
+          background: rgba(255, 255, 255, 0.95);
           border: 1px solid var(--hairline);
-          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 10px 26px rgba(6, 40, 24, 0.05);
+          box-shadow: 0 1px 2px rgba(6, 40, 24, 0.04), 0 10px 26px rgba(6, 40, 24, 0.06);
           transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), box-shadow 0.32s ease;
         }
         .glass-stat:hover {
           transform: translateY(-3px);
           box-shadow: 0 2px 4px rgba(6, 40, 24, 0.05), 0 18px 34px rgba(6, 40, 24, 0.09);
         }
+        /* tiap kartu statistik punya warna ikonnya sendiri — hijau lalu biru */
         .glass-stat .icon-box {
-          background: linear-gradient(160deg, var(--brand-green-lift) 0%, var(--brand-green) 100%);
-          box-shadow: 0 4px 12px rgba(10, 77, 46, 0.22);
+          background: linear-gradient(160deg, var(--ico-a, var(--brand-green-lift)) 0%, var(--ico-b, var(--brand-green)) 100%);
+          box-shadow: 0 4px 12px var(--ico-shadow, rgba(10, 77, 46, 0.22));
         }
         .glass-stat .stat-number {
           color: var(--ink);
@@ -291,7 +340,9 @@ export default function LandingPage() {
           filter: saturate(0.72) contrast(1.06) brightness(1.02);
           transition: opacity 2s ease-in-out, transform 6s ease;
         }
-        /* Kerudung kontras — menjamin teks selalu duduk di bidang terang */
+        /* Kerudung kontras — menjamin teks selalu duduk di bidang terang.
+           Dua sapuan warna logo ditumpuk di atasnya supaya sisi kiri hero
+           tidak lagi putih polos. */
         .hero-section::before {
           content: "";
           position: absolute;
@@ -299,13 +350,15 @@ export default function LandingPage() {
           z-index: 1;
           pointer-events: none;
           background:
+            radial-gradient(680px 420px at 4% 8%,  rgba(224, 138, 43, 0.16), transparent 62%),
+            radial-gradient(620px 440px at 0% 96%, rgba(30, 155, 190, 0.16), transparent 62%),
             linear-gradient(96deg,
-              #F6F8F5 0%,
-              rgba(246, 248, 245, 0.97) 42%,
-              rgba(246, 248, 245, 0.70) 66%,
-              rgba(246, 248, 245, 0.18) 88%,
+              #F7F9F6 0%,
+              rgba(247, 249, 246, 0.97) 42%,
+              rgba(247, 249, 246, 0.70) 66%,
+              rgba(247, 249, 246, 0.18) 88%,
               rgba(10, 77, 46, 0.10) 100%),
-            linear-gradient(180deg, rgba(246, 248, 245, 0.55) 0%, transparent 22%);
+            linear-gradient(180deg, rgba(247, 249, 246, 0.55) 0%, transparent 22%);
         }
         .hero-section::after {
           content: "";
@@ -319,7 +372,7 @@ export default function LandingPage() {
 
         .hero-badge { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 
-        /* Titik indikator slide */
+        /* Titik indikator slide — tiga warna logo */
         .hero-dots { display: flex; gap: 0.4rem; }
         .hero-dots button {
           height: 3px; width: 18px; padding: 0; border: 0;
@@ -327,7 +380,16 @@ export default function LandingPage() {
           background: rgba(16, 28, 22, 0.18);
           transition: width 0.3s ease, background 0.3s ease;
         }
-        .hero-dots button.is-active { width: 34px; background: var(--brand-green); }
+        .hero-dots button:nth-child(1).is-active { width: 34px; background: var(--brand-green); }
+        .hero-dots button:nth-child(2).is-active { width: 34px; background: var(--brand-orange); }
+        .hero-dots button:nth-child(3).is-active { width: 34px; background: var(--brand-blue); }
+
+        /* Section tembus pandang supaya sapuan warna latar terlihat */
+        .features-section {
+          background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
+        }
+        .cta-section { background: transparent !important; }
 
         /* Animasi Fade In Up */
         .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
@@ -343,6 +405,16 @@ export default function LandingPage() {
           transform: none;
           transition: opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1);
           transition-delay: var(--d, 0ms);
+        }
+
+        /* Footer — pita tiga warna logo di tepi atas */
+        .footer-section { position: relative; }
+        .footer-section::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--brand-green) 0%, var(--brand-orange) 50%, var(--brand-blue) 100%);
         }
 
         /* Utiliti no-scrollbar */
@@ -465,16 +537,27 @@ export default function LandingPage() {
           /* ====== TAMBAHAN VISUAL SAJA — ukuran & susunan di atas tidak diubah ====== */
 
           /* Di HP teks memenuhi lebar layar, jadi kerudungnya vertikal.
-             Ini yang bikin paragraf hero tidak lagi tenggelam di foto gudang. */
+             Sapuan jingga & biru tetap dipertahankan, hanya dipindah ke
+             sudut yang tidak ditempati teks. */
           .hero-section::before {
             background:
+              radial-gradient(420px 300px at 96% 4%,  rgba(224, 138, 43, 0.20), transparent 64%),
+              radial-gradient(420px 320px at 2% 100%, rgba(30, 155, 190, 0.18), transparent 64%),
               linear-gradient(180deg,
-                #F6F8F5 0%,
-                rgba(246, 248, 245, 0.98) 46%,
-                rgba(246, 248, 245, 0.88) 72%,
-                rgba(246, 248, 245, 0.62) 100%) !important;
+                #F7F9F6 0%,
+                rgba(247, 249, 246, 0.98) 46%,
+                rgba(247, 249, 246, 0.88) 72%,
+                rgba(247, 249, 246, 0.62) 100%) !important;
           }
           .hero-section::after { height: 70px !important; }
+
+          /* Latar berwarna dikecilkan radiusnya supaya tetap lembut di layar sempit */
+          .pn-root::before {
+            background:
+              radial-gradient(420px 320px at 98% 4%,  rgba(224, 138, 43, 0.16), transparent 62%),
+              radial-gradient(400px 320px at -10% 48%, rgba(30, 155, 190, 0.14), transparent 60%),
+              radial-gradient(460px 340px at 70% 100%, rgba(16, 163, 74, 0.12), transparent 62%);
+          }
 
           /* Label nav 0.55rem sekarang duduk di atas bidang putih pekat
              (lihat gradient di atas), jadi tidak perlu alas tambahan —
@@ -485,7 +568,8 @@ export default function LandingPage() {
              dari inline style ditimpa di sini, jadi kartu fitur naik ±60px
              dan tidak terpotong batas layar. */
           .features-section {
-            background: var(--surface) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
             margin-top: 0.75rem !important;
             padding-top: 1.5rem !important;
           }
@@ -512,7 +596,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-     
+
       <header className={`glass-nav header-container${isScrolled ? " is-scrolled" : ""}`} style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "4px" }} />
@@ -537,7 +621,7 @@ export default function LandingPage() {
         </nav>
       </header>
 
-     
+
       <section className="hero-section" style={{ minHeight: "88vh", display: "flex", alignItems: "center", position: "relative", overflow: "hidden", padding: "7.5rem 3rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} className="hero-photo" style={{
@@ -550,8 +634,8 @@ export default function LandingPage() {
         <div style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", position: "relative", zIndex: 2 }}>
           <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "2rem", alignItems: "center" }}>
             <div className="fade-in" style={{ paddingRight: "0.5rem" }}>
-              <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.41rem", padding: "0.25rem 0.8rem", borderRadius: "99px", background: "rgba(10, 77, 46, 0.07)", border: "1px solid rgba(10, 77, 46, 0.22)", color: "var(--brand-green)", fontSize: "0.7rem", fontWeight: 700, marginBottom: "0.9rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand-green)" }} />
+              <div className="hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "0.41rem", padding: "0.25rem 0.8rem", borderRadius: "99px", background: "rgba(255, 255, 255, 0.62)", border: "1px solid rgba(10, 77, 46, 0.22)", color: "var(--brand-green)", fontSize: "0.7rem", fontWeight: 700, marginBottom: "0.9rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--brand-orange)" }} />
                 PLATFORM EKONOMI DIGITAL B2B
               </div>
 
@@ -590,12 +674,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-   
+
       <section className="stats-section" ref={statsRef} style={{ padding: "0 2rem", marginTop: "-2.5rem", position: "relative", zIndex: 10 }}>
         <div className="stats-grid" style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.25rem" }}>
 
-      
-          <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+
+          <div
+            className="glass-stat"
+            data-reveal
+            style={{
+              padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem",
+              "--ico-a": "#0F6337", "--ico-b": "#0A4D2E", "--ico-shadow": "rgba(10, 77, 46, 0.24)"
+            } as React.CSSProperties}
+          >
             <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -614,8 +705,16 @@ export default function LandingPage() {
             </div>
           </div>
 
-    
-          <div className="glass-stat" data-reveal style={{ padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem", "--d": "90ms" } as React.CSSProperties}>
+
+          <div
+            className="glass-stat"
+            data-reveal
+            style={{
+              padding: "1.1rem 1.35rem", borderRadius: "0.85rem", display: "flex", alignItems: "center", gap: "1rem",
+              "--d": "90ms",
+              "--ico-a": "#2AA9C9", "--ico-b": "#15687F", "--ico-shadow": "rgba(21, 104, 127, 0.26)"
+            } as React.CSSProperties}
+          >
             <div className="icon-box" style={{ padding: "0.65rem", borderRadius: "0.6rem", color: "#FFFFFF", flexShrink: 0, display: "flex" }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
@@ -637,8 +736,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-     
-      <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", background: "var(--surface)", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", marginTop: "3rem" }}>
+
+      <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", marginTop: "3rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: "2.2rem" }} data-reveal>
             <span style={{ color: "var(--brand-green)", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "0.14em", textTransform: "uppercase" }}>Arsitektur Sistem</span>
@@ -654,7 +753,7 @@ export default function LandingPage() {
                 key={i}
                 className="green-translucent-card"
                 data-reveal
-                style={{ "--accent": f.accent, "--d": `${i * 90}ms` } as React.CSSProperties}
+                style={{ "--accent": f.bar, "--d": `${i * 90}ms` } as React.CSSProperties}
               >
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
@@ -676,7 +775,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="cta-section" style={{ padding: "3.5rem 1rem 4rem", background: "var(--surface)" }}>
+      <section className="cta-section" style={{ padding: "3.5rem 1rem 4rem" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div data-reveal style={{
             position: "relative",
@@ -691,10 +790,23 @@ export default function LandingPage() {
             alignItems: "center",
             textAlign: "center"
           }}>
+            {/* pendar jingga di kiri atas dan hijau-biru di kanan bawah */}
+            <span aria-hidden="true" style={{
+              position: "absolute", left: "-12%", top: "-38%",
+              width: "58%", aspectRatio: "1",
+              background: "radial-gradient(circle, rgba(224,138,43,0.20), transparent 66%)",
+              pointerEvents: "none"
+            }} />
             <span aria-hidden="true" style={{
               position: "absolute", right: "-14%", bottom: "-44%",
               width: "68%", aspectRatio: "1",
               background: "radial-gradient(circle, rgba(74,222,128,0.18), transparent 66%)",
+              pointerEvents: "none"
+            }} />
+            <span aria-hidden="true" style={{
+              position: "absolute", right: "18%", top: "-30%",
+              width: "42%", aspectRatio: "1",
+              background: "radial-gradient(circle, rgba(30,155,190,0.16), transparent 68%)",
               pointerEvents: "none"
             }} />
 
@@ -747,7 +859,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="footer-section" style={{ background: "#051B11", color: "#A3BDB0", paddingTop: "2.5rem", paddingBottom: "2rem", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+      <footer className="footer-section" style={{ background: "#051B11", color: "#A3BDB0", paddingTop: "2.5rem", paddingBottom: "2rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 1.25rem" }}>
           <div className="footer-main-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "nowrap", gap: "1.5rem", marginBottom: "2rem" }}>
             <div className="footer-brand-area" style={{ display: "flex", flexDirection: "column", gap: "0.35rem", maxWidth: "420px" }}>

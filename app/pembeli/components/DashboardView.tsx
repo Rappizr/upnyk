@@ -91,12 +91,12 @@ export default function DashboardView({ onCartUpdated, onNavigate, currentUserNa
 const loadDashboardRealtime = useCallback(async () => {
     setLoading(true);
     try {
-      // 💡 AMBIL KOLOM 'status' DARI TABEL admin_toko
+    
       const { data: adminTokoData } = await supabase
         .from("admin_toko")
         .select("id, nama_toko, desa, kecamatan, kabupaten, provinsi, foto, status");
 
-      // 💡 FILTER HANYA TOKO AKTIF
+    
       const activeAdminToko = (adminTokoData || []).filter((t: any) => {
         const st = String(t.status || "").toLowerCase().trim();
         return st !== "suspended" && st !== "nonaktif" && st !== "terblokir";
@@ -246,7 +246,7 @@ const loadDashboardRealtime = useCallback(async () => {
 
   return (
     <>
-      {/* Hero Banner */}
+   
       <div className="hero-banner" style={{ marginBottom: "1.5rem" }}>
         <div style={{ position: "relative", zIndex: 1 }}>
           <div className="badge badge-info" style={{ background: "rgba(255,255,255,0.2)", color: "white", marginBottom: "0.75rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>

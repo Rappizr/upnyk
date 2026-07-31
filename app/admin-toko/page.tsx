@@ -299,7 +299,6 @@ export default function AdminTokoDashboard() {
     }
   }, []);
 
-// FETCH INVENTARIS TOKO SECARA UTUH
   const fetchInventaris = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -369,7 +368,7 @@ export default function AdminTokoDashboard() {
     }
   }, []);
 
-  // 💡 FETCH HITUNG JUMLAH ETALASE TAYANG RIIEL MENGGUNAKAN COUNT
+
   const fetchEtalaseCount = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -499,7 +498,7 @@ export default function AdminTokoDashboard() {
     setStokList(updatedList);
   }
 
-  // HITUNG METRIK DINAMIS DASHBOARD
+ 
   const pesananMenunggu = penjualanList.filter((p) => p.status === "Belum Dibayar" || p.status === "Diproses").length;
   const totalOmset = penjualanList.filter((p) => p.status === "Selesai" || p.status === "Dikirim" || p.status === "Diproses").reduce((s, p) => s + p.total, 0);
   const totalStokUnit = stokList.reduce((acc, curr) => acc + (Number(curr.jumlah) || 0), 0);

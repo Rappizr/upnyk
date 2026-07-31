@@ -45,7 +45,7 @@ interface LeafletStatic {
 }
 declare const window: Window & { L?: LeafletStatic };
 
-// Titik tengah default jika data koordinat kosong
+
 const cityCoords: Record<string, [number, number]> = {
   Malang: [-7.9666, 112.6326],
   Jombang: [-7.5460, 112.2384],
@@ -168,13 +168,12 @@ export default function PetaRantaiPasok({
   const [tipeFilter, setTipeFilter] = useState<TipeEntitas | "">("");
   const [detail, setDetail] = useState<Entitas | null>(null);
 
-  // Helper untuk memvalidasi status suspended
-  const isSuspended = (statusStr?: string | null) => {
+   const isSuspended = (statusStr?: string | null) => {
     const s = String(statusStr || "").toLowerCase().trim();
     return s === "suspended" || s === "nonaktif" || s === "terblokir";
   };
 
-  // LOAD REALTIME DATA FROM SUPABASE
+  
   const loadEntitasData = useCallback(async () => {
     setLoading(true);
     try {
@@ -211,7 +210,7 @@ export default function PetaRantaiPasok({
       const tokoMap = new Map(activeTokoData.map((t: any) => [t.id, t.nama_toko || "Toko Mitra"]));
       const produsenMap = new Map(activeProdusenData.map((p: any) => [p.id, p.nama_usaha || "Produsen Binaan"]));
 
-      // 3. MAP SELURUH TRANSAKSI DARI DATABASE
+      
       const mappedTx: EscrowTx[] = (pesananData || []).map((ord: any) => {
         const tokoNama = ord.supplier || tokoMap.get(ord.admin_toko_id) || "Toko Mitra";
         const produsenNama = produsenMap.get(ord.produsen_id) || "Produsen Binaan";
@@ -250,7 +249,7 @@ export default function PetaRantaiPasok({
     return entitasList.filter((e) => !tipeFilter || e.tipe === tipeFilter);
   }, [entitasList, tipeFilter]);
 
-  // Cek relasi transaksi berdasarkan ID atau Nama Toko/Produsen
+
   const relasiUntuk = useCallback((e: Entitas) => {
     const qNama = e.nama.toLowerCase().trim();
     return (transaksiList || []).filter((t) => {
@@ -325,7 +324,6 @@ export default function PetaRantaiPasok({
         })}
       </div>
 
-      {/* DETAIL MODAL ENTITAS & RIWAYAT TRANSAKSI */}
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "420px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>

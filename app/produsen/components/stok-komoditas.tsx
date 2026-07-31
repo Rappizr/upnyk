@@ -85,7 +85,6 @@ export default function StokKomoditas() {
     return () => clearTimeout(timer);
   }, [toast.tampil]);
 
-  // FETCH DATA PRODUK + ULASAN/RATING DARI SUPABASE
   const muatStok = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -98,7 +97,7 @@ export default function StokKomoditas() {
 
     if (!produsen) return;
 
-    // 1. Fetch Produk Milik Produsen
+
     const { data: produkData, error: prodError } = await supabase
       .from("produk")
       .select(`
@@ -114,7 +113,7 @@ export default function StokKomoditas() {
 
     const produkIds = (produkData || []).map((p) => p.id);
 
-    // 2. Fetch Ulasan/Rating dari Tabel Pesanan berdasarkan produk_id
+    
     let ulasanMap = new Map<string, Ulasan[]>();
     if (produkIds.length > 0) {
       const { data: pesananData } = await supabase
@@ -140,7 +139,7 @@ export default function StokKomoditas() {
       }
     }
 
-    // 3. Mapping Data Produk Beserta List Ulasannya
+ 
     const mapped: StokItem[] = (produkData || []).map((p: any) => {
       const stokMurni = Number(p.stok) || 0; 
       

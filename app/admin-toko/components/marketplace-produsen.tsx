@@ -160,7 +160,7 @@ export default function MarketplaceProdusen({
     return () => clearTimeout(timer);
   }, [toast.tampil]);
 
-  // 💡 PERBAIKAN: MENAMBAHKAN FILTER STATUS PRODUSEN (HANYA AMBIL YANG AKTIF / BUKAN SUSPENDED)
+ 
   const muatProdusen = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -177,7 +177,7 @@ export default function MarketplaceProdusen({
       return;
     }
 
-    // Filter keluar produsen yang berstatus "suspended" atau "nonaktif"
+  
     const filteredData = (data || []).filter((p: any) => {
       const st = String(p.status || "").toLowerCase();
       return st !== "suspended" && st !== "nonaktif";
