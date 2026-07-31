@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/db";
 
-
+// Fungsi count up animation
 function useCountUp(target: number, durationMs: number, start: boolean) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -16,7 +17,7 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
     const startTime = performance.now();
     const tick = (now: number) => {
       const progress = Math.min((now - startTime) / durationMs, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // Cubic Ease-Out
+      const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(eased * target));
       if (progress < 1) raf = requestAnimationFrame(tick);
     };
@@ -27,7 +28,6 @@ function useCountUp(target: number, durationMs: number, start: boolean) {
 }
 
 export default function LandingPage() {
-
   const bgImages = [
     "https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=1920&q=80",
     "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80",
@@ -40,13 +40,102 @@ export default function LandingPage() {
   const [jsReady, setJsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
 
+  // 🔥 STATE UNTUK DATA REAL-TIME
+  const [produsenCount, setProdusenCount] = useState(0);
+  const [tokoCount, setTokoCount] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
 
-  const produsenCount = useCountUp(3, 1800, statsVisible);
-  const tokoCount = useCountUp(9, 1800, statsVisible);
+  // 🔥 ANIMASI COUNT UP (nilai awal 0, akan terisi dari database)
+  const animatedProdusen = useCountUp(produsenCount, 1800, statsVisible && produsenCount > 0);
+  const animatedToko = useCountUp(tokoCount, 1800, statsVisible && tokoCount > 0);
+
+  // 🔥 AMBIL DATA DARI DATABASE
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+
+      // Ambil jumlah produsen dengan status aktif
+      const { count: produsenTotal, error: produsenError } = await supabase
+        .from("produsen")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "aktif");
+
+      if (produsenError) {
+        console.error("Error fetching produsen count:", produsenError);
+      } else {
+        console.log("✅ Produsen aktif:", produsenTotal);
+        setProdusenCount(produsenTotal || 0);
+      }
+
+      // Ambil jumlah admin_toko dengan status aktif
+      const { count: tokoTotal, error: tokoError } = await supabase
+        .from("admin_toko")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "aktif");
+
+      if (tokoError) {
+        console.error("Error fetching toko count:", tokoError);
+      } else {
+        console.log("✅ Toko aktif:", tokoTotal);
+        setTokoCount(tokoTotal || 0);
+      }
+
+      // 🔥 ALTERNATIF: Jika tidak ada data, gunakan data statis sebagai fallback
+      if (!produsenTotal && !tokoTotal) {
+        console.log("⚠️ Tidak ada data dari database, menggunakan fallback statis");
+        setProdusenCount(3);
+        setTokoCount(9);
+      }
+
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+      // Fallback statis
+      setProdusenCount(3);
+      setTokoCount(9);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // 🔥 REALTIME SUBSCRIPTION - Update otomatis saat ada perubahan
+  useEffect(() => {
+    fetchStats();
+
+    // Subscribe ke perubahan tabel produsen
+    const produsenChannel = supabase
+      .channel("realtime-produsen-stats")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "produsen" },
+        () => {
+          console.log("🔄 Produsen berubah, refresh stats...");
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    // Subscribe ke perubahan tabel admin_toko
+    const tokoChannel = supabase
+      .channel("realtime-toko-stats")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "admin_toko" },
+        () => {
+          console.log("🔄 Toko berubah, refresh stats...");
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(produsenChannel);
+      supabase.removeChannel(tokoChannel);
+    };
+  }, []);
 
   useEffect(() => setJsReady(true), []);
 
-
+  // Background slideshow
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let timer: ReturnType<typeof setInterval>;
@@ -66,7 +155,6 @@ export default function LandingPage() {
     };
   }, [bgImages.length]);
 
-
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -75,7 +163,6 @@ export default function LandingPage() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
 
   useEffect(() => {
     const el = statsRef.current;
@@ -87,7 +174,6 @@ export default function LandingPage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-
 
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
@@ -102,9 +188,7 @@ export default function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-
-  /* accent = warna teks/ikon (kontras aman di ukuran kecil)
-     bar    = warna garis aksen atas kartu (versi cerah, ambil dari logo) */
+  // Fitur cards
   const fitur = [
     {
       layer: "Hulu",
@@ -154,19 +238,16 @@ export default function LandingPage() {
         isolation: "isolate"
       }}
     >
-
+      {/* CSS Styles (sama seperti sebelumnya) */}
       <style>{`
         .pn-root {
           --brand-green: #0A4D2E;
           --brand-green-hover: #06301C;
           --brand-green-lift: #0F6337;
-
-          /* diambil dari logo — jingga panen & biru air */
           --brand-orange: #E08A2B;
           --brand-orange-ink: #B5610D;
           --brand-blue: #1E9BBE;
           --brand-blue-ink: #15687F;
-
           --ink: #101C16;
           --ink-body: #47554C;
           --ink-muted: #6B7A70;
@@ -174,10 +255,6 @@ export default function LandingPage() {
           --hairline: #E3EAE3;
         }
 
-        /* ===== LATAR BERWARNA =====
-           Tiga sapuan lembut dari palet logo, dipasang fixed di belakang
-           semua konten. Ini yang menghilangkan kesan "putih polos" tanpa
-           menyentuh susunan apa pun. */
         .pn-root::before {
           content: "";
           position: fixed;
@@ -190,7 +267,6 @@ export default function LandingPage() {
             radial-gradient(880px 560px at 62% 102%, rgba(16, 163, 74, 0.11), transparent 60%);
         }
 
-        /* Navbar Glassmorphism */
         .glass-nav {
           background: ${isScrolled ? 'rgba(252, 253, 252, 0.88)' : 'transparent'};
           backdrop-filter: ${isScrolled ? 'saturate(180%) blur(14px)' : 'none'};
@@ -199,7 +275,6 @@ export default function LandingPage() {
           box-shadow: ${isScrolled ? '0 6px 24px rgba(6, 40, 24, 0.06)' : 'none'};
           transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
         }
-        /* garis tipis tiga warna logo saat navbar menempel */
         .glass-nav::after {
           content: "";
           position: absolute;
@@ -228,7 +303,6 @@ export default function LandingPage() {
         .nav-link:hover { color: var(--brand-green); }
         .nav-link:hover::after { width: 100%; }
 
-        /* Footer Link */
         .footer-link {
           color: #A3BDB0;
           text-decoration: none;
@@ -236,14 +310,12 @@ export default function LandingPage() {
         }
         .footer-link:hover { color: #4ADE80; }
 
-        /* Highlight Warna Hijau */
         .green-highlight {
           color: var(--brand-green);
           font-style: normal;
           font-weight: 800;
         }
 
-        /* Kartu Fitur — putih bersih, identitas layer lewat garis aksen atas */
         .green-translucent-card {
           position: relative;
           overflow: hidden;
@@ -275,7 +347,6 @@ export default function LandingPage() {
         .green-translucent-card h3 { color: var(--ink); }
         .green-translucent-card p { color: var(--ink-body); }
 
-        /* Kartu Statistik Putih */
         .glass-stat {
           background: rgba(255, 255, 255, 0.95);
           border: 1px solid var(--hairline);
@@ -286,7 +357,6 @@ export default function LandingPage() {
           transform: translateY(-3px);
           box-shadow: 0 2px 4px rgba(6, 40, 24, 0.05), 0 18px 34px rgba(6, 40, 24, 0.09);
         }
-        /* tiap kartu statistik punya warna ikonnya sendiri — hijau lalu biru */
         .glass-stat .icon-box {
           background: linear-gradient(160deg, var(--ico-a, var(--brand-green-lift)) 0%, var(--ico-b, var(--brand-green)) 100%);
           box-shadow: 0 4px 12px var(--ico-shadow, rgba(10, 77, 46, 0.22));
@@ -298,7 +368,6 @@ export default function LandingPage() {
         }
         .glass-stat .stat-label { color: var(--ink-muted); }
 
-        /* Tombol Utama Hijau */
         .btn-green {
           background: linear-gradient(180deg, var(--brand-green-lift) 0%, var(--brand-green) 100%);
           color: #FFFFFF;
@@ -322,7 +391,6 @@ export default function LandingPage() {
         .btn-emerald:hover { filter: brightness(1.07); transform: translateY(-1px); }
         .btn-emerald:active { transform: translateY(0) scale(0.985); }
 
-        /* Fokus keyboard terlihat di semua elemen interaktif */
         .pn-root a:focus-visible,
         .pn-root button:focus-visible {
           outline: 2px solid #16A34A;
@@ -330,7 +398,6 @@ export default function LandingPage() {
           border-radius: 6px;
         }
 
-        /* Lapisan foto hero — tiga foto stok disatukan jadi satu nada warna */
         .hero-photo {
           position: absolute;
           inset: 0;
@@ -340,9 +407,6 @@ export default function LandingPage() {
           filter: saturate(0.72) contrast(1.06) brightness(1.02);
           transition: opacity 2s ease-in-out, transform 6s ease;
         }
-        /* Kerudung kontras — menjamin teks selalu duduk di bidang terang.
-           Dua sapuan warna logo ditumpuk di atasnya supaya sisi kiri hero
-           tidak lagi putih polos. */
         .hero-section::before {
           content: "";
           position: absolute;
@@ -372,7 +436,6 @@ export default function LandingPage() {
 
         .hero-badge { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 
-        /* Titik indikator slide — tiga warna logo */
         .hero-dots { display: flex; gap: 0.4rem; }
         .hero-dots button {
           height: 3px; width: 18px; padding: 0; border: 0;
@@ -384,21 +447,18 @@ export default function LandingPage() {
         .hero-dots button:nth-child(2).is-active { width: 34px; background: var(--brand-orange); }
         .hero-dots button:nth-child(3).is-active { width: 34px; background: var(--brand-blue); }
 
-        /* Section tembus pandang supaya sapuan warna latar terlihat */
         .features-section {
           background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
         }
         .cta-section { background: transparent !important; }
 
-        /* Animasi Fade In Up */
         .fade-in { animation: fadeUp 0.65s cubic-bezier(0.16,1,0.3,1) both; }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Reveal saat scroll — baru aktif kalau JS hidup */
         .js-ready [data-reveal] { opacity: 0; transform: translateY(12px); }
         .js-ready [data-reveal].is-in {
           opacity: 1;
@@ -407,7 +467,6 @@ export default function LandingPage() {
           transition-delay: var(--d, 0ms);
         }
 
-        /* Footer — pita tiga warna logo di tepi atas */
         .footer-section { position: relative; }
         .footer-section::before {
           content: "";
@@ -417,11 +476,9 @@ export default function LandingPage() {
           background: linear-gradient(90deg, var(--brand-green) 0%, var(--brand-orange) 50%, var(--brand-blue) 100%);
         }
 
-        /* Utiliti no-scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Media Queries - Penyesuaian Tampilan HP */
         @media (max-width: 768px) {
           .header-container { 
             padding: 0.5rem 0.6rem !important; 
@@ -502,7 +559,6 @@ export default function LandingPage() {
             height: 12px !important; 
           }
 
-          /* Penyesuaian Responsif Footer Mobile Agar Sama Seperti Laptop */
           .footer-section { padding-top: 1.5rem !important; padding-bottom: 1rem !important; }
           .footer-main-container {
             flex-direction: row !important;
@@ -534,11 +590,6 @@ export default function LandingPage() {
             text-align: center !important;
           }
 
-          /* ====== TAMBAHAN VISUAL SAJA — ukuran & susunan di atas tidak diubah ====== */
-
-          /* Di HP teks memenuhi lebar layar, jadi kerudungnya vertikal.
-             Sapuan jingga & biru tetap dipertahankan, hanya dipindah ke
-             sudut yang tidak ditempati teks. */
           .hero-section::before {
             background:
               radial-gradient(420px 300px at 96% 4%,  rgba(224, 138, 43, 0.20), transparent 64%),
@@ -551,7 +602,6 @@ export default function LandingPage() {
           }
           .hero-section::after { height: 70px !important; }
 
-          /* Latar berwarna dikecilkan radiusnya supaya tetap lembut di layar sempit */
           .pn-root::before {
             background:
               radial-gradient(420px 320px at 98% 4%,  rgba(224, 138, 43, 0.16), transparent 62%),
@@ -559,14 +609,8 @@ export default function LandingPage() {
               radial-gradient(460px 340px at 70% 100%, rgba(16, 163, 74, 0.12), transparent 62%);
           }
 
-          /* Label nav 0.55rem sekarang duduk di atas bidang putih pekat
-             (lihat gradient di atas), jadi tidak perlu alas tambahan —
-             cukup dinaikkan ketegasannya lewat warna, bukan lewat ukuran. */
           .nav-link-desktop { color: #14261C !important; }
 
-          /* Jarak sebelum "ARSITEKTUR SISTEM" dirapatkan — marginTop 3rem
-             dari inline style ditimpa di sini, jadi kartu fitur naik ±60px
-             dan tidak terpotong batas layar. */
           .features-section {
             background:
               linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
@@ -584,7 +628,6 @@ export default function LandingPage() {
           .hero-dots button.is-active { width: 26px; }
         }
 
-        /* Hormati preferensi kurangi animasi */
         @media (prefers-reduced-motion: reduce) {
           .pn-root *, .pn-root *::before, .pn-root *::after {
             animation-duration: 0.001ms !important;
@@ -596,7 +639,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-
+      {/* Header (sama seperti sebelumnya) */}
       <header className={`glass-nav header-container${isScrolled ? " is-scrolled" : ""}`} style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "4px" }} />
@@ -620,8 +663,6 @@ export default function LandingPage() {
           </Link>
         </nav>
       </header>
-
-
       <section className="hero-section" style={{ minHeight: "88vh", display: "flex", alignItems: "center", position: "relative", overflow: "hidden", padding: "7.5rem 3rem 4rem" }}>
         {bgImages.map((img, index) => (
           <div key={index} className="hero-photo" style={{
@@ -674,11 +715,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-
       <section className="stats-section" ref={statsRef} style={{ padding: "0 2rem", marginTop: "-2.5rem", position: "relative", zIndex: 10 }}>
         <div className="stats-grid" style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1.25rem" }}>
-
-
+     
           <div
             className="glass-stat"
             data-reveal
@@ -697,14 +736,17 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
-                {produsenCount.toLocaleString("id-ID")}
+                {loadingStats ? (
+                  <span style={{ opacity: 0.5 }}>...</span>
+                ) : (
+                  animatedProdusen.toLocaleString("id-ID")
+                )}
               </div>
               <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Produsen Terverifikasi
               </div>
             </div>
           </div>
-
 
           <div
             className="glass-stat"
@@ -725,17 +767,19 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="stat-number" style={{ fontSize: "1.35rem", fontWeight: 800, lineHeight: 1.1 }}>
-                {tokoCount.toLocaleString("id-ID")}
+                {loadingStats ? (
+                  <span style={{ opacity: 0.5 }}>...</span>
+                ) : (
+                  animatedToko.toLocaleString("id-ID")
+                )}
               </div>
               <div className="stat-label" style={{ fontSize: "0.75rem", fontWeight: 500, marginTop: "0.2rem" }}>
                 Jaringan Toko &amp; Mitra Terintegrasi
               </div>
             </div>
           </div>
-
         </div>
       </section>
-
 
       <section id="fitur" className="features-section" style={{ padding: "4.5rem 2rem", borderTop: "1px solid var(--hairline)", borderBottom: "1px solid var(--hairline)", marginTop: "3rem" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -790,7 +834,6 @@ export default function LandingPage() {
             alignItems: "center",
             textAlign: "center"
           }}>
-            {/* pendar jingga di kiri atas dan hijau-biru di kanan bawah */}
             <span aria-hidden="true" style={{
               position: "absolute", left: "-12%", top: "-38%",
               width: "58%", aspectRatio: "1",
