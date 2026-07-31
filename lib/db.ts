@@ -2041,16 +2041,20 @@ export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
   try {
     const dbClient = supabaseAdmin || supabase;
     
-    let query = dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan');
-    if (isValidUuid(orderId)) {
-      query = query.eq('id', orderId);
-    } else {
-      query = query.eq('kode_pesanan', orderId);
-    }
-    
-    let { data: pesanan } = await query.maybeSingle();
+    let pesanan: any = null;
 
-    if (!pesanan?.id && !isValidUuid(orderId)) {
+    if (isValidUuid(orderId)) {
+      const { data } = await dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan').eq('id', orderId).maybeSingle();
+      pesanan = data;
+    } else if (orderId.toUpperCase().startsWith('TX-')) {
+      const hex = orderId.toUpperCase().replace('TX-', '');
+      const { data: allPesanan } = await dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan');
+      if (allPesanan) {
+        pesanan = allPesanan.find((p: any) => p.id && p.id.slice(0, 6).toUpperCase() === hex) || null;
+      }
+    }
+
+    if (!pesanan?.id) {
       const { data: alt } = await dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan').eq('kode_pesanan', orderId).maybeSingle();
       if (alt) pesanan = alt;
     }
@@ -2061,7 +2065,7 @@ export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
       try {
         await dbClient.from('pesanan').update({ escrow_status: 'Tersalur' }).eq('id', pesanan.id);
       } catch {}
-    } else if (!isValidUuid(orderId)) {
+    } else {
       const { error: err2 } = await dbClient.from('pesanan').update({ status: 'Tersalur' }).eq('kode_pesanan', orderId);
       if (err2) console.error('salurkanDanaEscrow fallback update error:', err2.message);
     }
@@ -2089,15 +2093,20 @@ export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
 export async function tandaiSengketaEscrow(orderId: string): Promise<boolean> {
   try {
     const dbClient = supabaseAdmin || supabase;
-    let query = dbClient.from('pesanan').select('id, kode_pesanan');
+    let pesanan: any = null;
+
     if (isValidUuid(orderId)) {
-      query = query.eq('id', orderId);
-    } else {
-      query = query.eq('kode_pesanan', orderId);
+      const { data } = await dbClient.from('pesanan').select('id, kode_pesanan').eq('id', orderId).maybeSingle();
+      pesanan = data;
+    } else if (orderId.toUpperCase().startsWith('TX-')) {
+      const hex = orderId.toUpperCase().replace('TX-', '');
+      const { data: allPesanan } = await dbClient.from('pesanan').select('id, kode_pesanan');
+      if (allPesanan) {
+        pesanan = allPesanan.find((p: any) => p.id && p.id.slice(0, 6).toUpperCase() === hex) || null;
+      }
     }
 
-    let { data: pesanan } = await query.maybeSingle();
-    if (!pesanan?.id && !isValidUuid(orderId)) {
+    if (!pesanan?.id) {
       const { data: alt } = await dbClient.from('pesanan').select('id, kode_pesanan').eq('kode_pesanan', orderId).maybeSingle();
       if (alt) pesanan = alt;
     }
@@ -2107,7 +2116,7 @@ export async function tandaiSengketaEscrow(orderId: string): Promise<boolean> {
       try {
         await dbClient.from('pesanan').update({ escrow_status: 'Disengketakan' }).eq('id', pesanan.id);
       } catch {}
-    } else if (!isValidUuid(orderId)) {
+    } else {
       await dbClient.from('pesanan').update({ status: 'Disengketakan' }).eq('kode_pesanan', orderId);
     }
     return true;

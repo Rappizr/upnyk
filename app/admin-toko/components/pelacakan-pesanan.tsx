@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/db";
+import { supabase, supabaseAdmin } from "@/lib/db";
 
 export type Grade = "A" | "B" | "C" | "Belum Dinilai";
 
@@ -159,48 +159,87 @@ export default function PelacakanPesanan({
     setSubmitting(true);
 
     try {
-      const targetPesananId = modalTerimaItem.rawId || modalTerimaItem.id.replace(/^#PO-/, "");
+      const dbClient = supabaseAdmin || supabase;
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: adminToko } = user ? await dbClient.from("admin_toko").select("id").eq("profile_id", user.id).maybeSingle() : { data: null };
 
-      const { data: { user }, error: authErr } = await supabase.auth.getUser();
-      if (authErr || !user) throw new Error(authErr?.message || "Autentikasi user gagal.");
+      const rawIdStr = String(modalTerimaItem.rawId || modalTerimaItem.id || "").replace(/^[#PO-]+/g, "").trim();
 
-      const { data: adminToko, error: adminErr } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
+      let targetPesanan: any = null;
+      if (modalTerimaItem.rawId && typeof modalTerimaItem.rawId === "string" && modalTerimaItem.rawId.length > 20) {
+        const { data } = await dbClient.from("pesanan").select("id, produk_id, produsen_id").eq("id", modalTerimaItem.rawId).maybeSingle();
+        targetPesanan = data;
+      }
 
-      if (adminErr || !adminToko) throw new Error(adminErr?.message || "Profil Admin Toko tidak ditemukan.");
+      if (!targetPesanan && rawIdStr) {
+        const { data: pesList } = await dbClient.from("pesanan").select("id, produk_id, produsen_id, kode_pesanan");
+        if (pesList) {
+          targetPesanan = pesList.find((p: any) =>
+            p.id === rawIdStr ||
+            (p.id && p.id.toLowerCase().startsWith(rawIdStr.toLowerCase())) ||
+            (p.kode_pesanan && (
+              p.kode_pesanan.toUpperCase() === rawIdStr.toUpperCase() ||
+              p.kode_pesanan.toUpperCase() === ("PN-" + rawIdStr.toUpperCase()) ||
+              p.kode_pesanan.toUpperCase() === ("PO-" + rawIdStr.toUpperCase())
+            ))
+          ) || null;
+        }
+      }
 
+      // Step 1: Cari produk_id dari berbagai sumber
+      let pTargetId: string | null = targetPesanan?.produk_id || modalTerimaItem.produkId || null;
+      let pProdusenId: string | null = modalTerimaItem.produsenId || targetPesanan?.produsen_id || null;
 
-      const { error: errUpdatePesanan } = await supabase
-        .from("pesanan")
-        .update({
-          status: "selesai",
-          rating: ratingInput,
-          ulasan: keteranganInput || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", targetPesananId);
+      if (!pTargetId) {
+        // Cari semua produk milik produsen ini
+        const produkQuery = pProdusenId
+          ? dbClient.from("produk").select("id, nama").eq("produsen_id", pProdusenId)
+          : dbClient.from("produk").select("id, nama");
+        const { data: produkList } = await produkQuery;
+        if (produkList && produkList.length > 0) {
+          const itemClean = (modalTerimaItem.item || "").toLowerCase().trim();
+          let match: any = null;
+          if (itemClean && itemClean !== "komoditas") {
+            match = produkList.find((p: any) => p.nama.toLowerCase().trim() === itemClean);
+            if (!match) match = produkList.find((p: any) =>
+              p.nama.toLowerCase().includes(itemClean) || itemClean.includes(p.nama.toLowerCase())
+            );
+          }
+          if (!match) match = produkList[0]; // fallback: produk pertama milik produsen ini
+          if (match) pTargetId = match.id;
+        }
+      }
 
-      if (errUpdatePesanan) throw errUpdatePesanan;
+      // Step 2: Update baris pesanan
+      const updatePesData: any = {
+        status: "selesai",
+        rating: ratingInput,
+        ulasan: keteranganInput || null,
+        updated_at: new Date().toISOString()
+      };
+      if (pTargetId) updatePesData.produk_id = pTargetId;
+      if (pProdusenId) updatePesData.produsen_id = pProdusenId;
 
+      if (targetPesanan?.id) {
+        await dbClient.from("pesanan").update(updatePesData).eq("id", targetPesanan.id);
+      } else if (rawIdStr) {
+        await dbClient.from("pesanan").update(updatePesData).ilike("id", `${rawIdStr}%`);
+      }
 
+      // Step 3: Update inventaris
       let existingInv = null;
 
-
-      if (modalTerimaItem.produkId) {
-        const { data } = await supabase
+      if (pTargetId) {
+        const { data } = await dbClient
           .from("inventaris")
           .select("id, stok, admin_toko_id")
-          .eq("produk_id", modalTerimaItem.produkId)
+          .eq("produk_id", pTargetId)
           .maybeSingle();
         existingInv = data;
       }
 
-
       if (!existingInv && modalTerimaItem.item) {
-        const { data } = await supabase
+        const { data } = await dbClient
           .from("inventaris")
           .select("id, stok, admin_toko_id")
           .ilike("nama_produk", modalTerimaItem.item)
@@ -209,64 +248,46 @@ export default function PelacakanPesanan({
       }
 
       if (existingInv) {
-
         const stokBaru = (Number(existingInv.stok) || 0) + Number(modalTerimaItem.jumlah);
-
-        const updateData: any = {
-          stok: stokBaru,
-          updated_at: new Date().toISOString()
-        };
-
-
-        if (!existingInv.admin_toko_id) {
-          updateData.admin_toko_id = adminToko.id;
-        }
-
-        const { error: errUpdateInv } = await supabase
-          .from("inventaris")
-          .update(updateData)
-          .eq("id", existingInv.id);
-
+        const updateData: any = { stok: stokBaru, updated_at: new Date().toISOString() };
+        if (!existingInv.admin_toko_id && adminToko?.id) updateData.admin_toko_id = adminToko.id;
+        const { error: errUpdateInv } = await dbClient.from("inventaris").update(updateData).eq("id", existingInv.id);
         if (errUpdateInv) throw errUpdateInv;
       } else {
-
-        const { error: errInsertInv } = await supabase
-          .from("inventaris")
-          .insert({
-            admin_toko_id: adminToko.id,
-            produk_id: modalTerimaItem.produkId || null,
-            nama_produk: modalTerimaItem.item,
-            stok: modalTerimaItem.jumlah,
-            harga_beli: modalTerimaItem.hargaSatuan || 0,
-            grade: gradeInput || "A",
-            satuan: modalTerimaItem.satuan || "pcs",
-            updated_at: new Date().toISOString()
-          });
-
+        const { error: errInsertInv } = await dbClient.from("inventaris").insert({
+          admin_toko_id: adminToko?.id || null,
+          produk_id: pTargetId || null,
+          nama_produk: modalTerimaItem.item,
+          stok: modalTerimaItem.jumlah,
+          harga_beli: modalTerimaItem.hargaSatuan || 0,
+          grade: gradeInput || "A",
+          satuan: modalTerimaItem.satuan || "pcs",
+          updated_at: new Date().toISOString()
+        });
         if (errInsertInv) throw errInsertInv;
       }
 
-
-      if (modalTerimaItem.produkId) {
-        const { data: listPesananProduk } = await supabase
+      // Step 4: Update rating di tabel produk LANGSUNG
+      if (pTargetId) {
+        // Ambil semua rating untuk produk ini
+        const { data: listPesananProduk } = await dbClient
           .from("pesanan")
           .select("rating")
-          .eq("produk_id", modalTerimaItem.produkId)
+          .eq("produk_id", pTargetId)
           .not("rating", "is", null);
 
-        if (listPesananProduk && listPesananProduk.length > 0) {
-          const totalUlasan = listPesananProduk.length;
-          const totalRatingSum = listPesananProduk.reduce((acc, curr) => acc + Number(curr.rating || 0), 0);
-          const avgRating = Number((totalRatingSum / totalUlasan).toFixed(1));
+        const ratings = (listPesananProduk || []).map((p: any) => Number(p.rating)).filter((r: number) => !isNaN(r) && r > 0);
+        // Pastikan rating baru ikut dihitung
+        if (!ratings.includes(ratingInput)) ratings.push(ratingInput);
+        if (ratings.length === 0) ratings.push(ratingInput);
 
-          await supabase
-            .from("produk")
-            .update({
-              rating: avgRating,
-              total_ulasan: totalUlasan
-            })
-            .eq("id", modalTerimaItem.produkId);
-        }
+        const totalUlasan = ratings.length;
+        const avgRating = Number((ratings.reduce((a: number, b: number) => a + b, 0) / totalUlasan).toFixed(1));
+
+        await dbClient.from("produk").update({ rating: avgRating, total_ulasan: totalUlasan }).eq("id", pTargetId);
+      } else if (pProdusenId) {
+        // Fallback akhir: update semua produk milik produsen ini jika pTargetId masih null
+        await dbClient.from("produk").update({ rating: ratingInput, total_ulasan: 1 }).eq("produsen_id", pProdusenId);
       }
 
       const itemNama = modalTerimaItem.item;
@@ -530,13 +551,27 @@ export default function PelacakanPesanan({
                         </div>
                       </div>
 
-                      {(p.status === "Dikirim" || p.status === "Selesai" || p.status === "Diterima") && (
+                      {p.status === "Dikirim" && (
                         <div style={{ display: "flex", justifyContent: "flex-end" }}>
                           <button
                             onClick={() => bukaModalTerima(p)}
                             style={{ padding: "0.6rem 1.2rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
                           >
-                            {p.status === "Dikirim" ? "Pesanan Diterima & Beri Ulasan" : "Terima Barang, Beri Ulasan & Tambahkan ke Inventaris"}
+                            Pesanan Diterima & Beri Ulasan
+                          </button>
+                        </div>
+                      )}
+
+                      {(p.status === "Selesai" || p.status === "Diterima" || (p.status || "").toLowerCase() === "selesai") && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "0.78rem", color: "#047857", fontWeight: 700, background: "#D1FAE5", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
+                            ✓ Pesanan Diterima & Stok Ditambahkan {p.rating ? `(Rating: ${p.rating}★)` : ""}
+                          </span>
+                          <button
+                            onClick={() => bukaModalTerima(p)}
+                            style={{ padding: "0.4rem 0.82rem", borderRadius: "6px", border: `1px solid ${WARNA_UTAMA}`, background: "#fff", color: WARNA_UTAMA_GELAP, fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}
+                          >
+                            ⭐ {p.rating ? "Edit Ulasan & Rating" : "Beri Rating & Ulasan"}
                           </button>
                         </div>
                       )}

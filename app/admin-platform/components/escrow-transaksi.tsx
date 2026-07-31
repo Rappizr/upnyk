@@ -267,12 +267,12 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
 
             {detail.status === "Ditahan" && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button onClick={async () => { updateDetail(detail.id, "Disengketakan"); await tandaiSengketa(detail.id); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "white", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tandai Sengketa</button>
-                <button onClick={async () => { updateDetail(detail.id, "Tersalur"); await salurkanDana(detail.id); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Salurkan Dana</button>
+                <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Disengketakan"); await tandaiSengketa(targetId); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "white", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tandai Sengketa</button>
+                <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Tersalur"); await salurkanDana(targetId); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Salurkan Dana</button>
               </div>
             )}
             {detail.status === "Disengketakan" && (
-              <button onClick={async () => { updateDetail(detail.id, "Tersalur"); await selesaikanSengketa(detail.id); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Selesaikan & Salurkan Dana</button>
+              <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Tersalur"); await selesaikanSengketa(targetId); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Selesaikan & Salurkan Dana</button>
             )}
             {detail.status === "Tersalur" && (
               <div style={{ textAlign: "center", padding: "0.6rem", background: "#ECFDF5", borderRadius: "8px", color: "#059669", fontWeight: 600, fontSize: "0.85rem" }}>Dana sudah tersalur ke kedua pihak</div>
