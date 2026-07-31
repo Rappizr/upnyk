@@ -151,21 +151,12 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
   }, [muatInventarisFromDb]);
 
 
-  async function handleEditSubmit(e: FormEvent) {
+async function handleEditSubmit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: adminToko } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      
+      // 1. Update stok di tabel INVENTARIS
       const { error: errInv } = await supabase
         .from("inventaris")
         .update({
@@ -176,21 +167,33 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
 
       if (errInv) throw errInv;
 
-   
-      if (adminToko) {
-        await supabase
+      // 2. SINKRONISASI KE TABEL ETALASE (UPDATE STOK SECARA FLEKSIBEL)
+      let updatedEtalase = false;
+
+      // Opsi A: Jika ada produk_id
+      if (editItem.produk_id) {
+        const { error: errEt1, count } = await supabase
           .from("etalase")
-          .update({ stok: editJumlah })
-          .eq("admin_toko_id", adminToko.id)
-          .ilike("nama_produk", editItem.nama);
+          .update({ stok: editJumlah, updated_at: new Date().toISOString() })
+          .eq("produk_id", editItem.produk_id);
+
+        if (!errEt1) updatedEtalase = true;
       }
 
-      showToast(`Stok ${editItem.nama} berhasil disesuaikan!`);
+      // Opsi B: Jika Opsi A belum update, cari berdasarkan Nama Produk
+      if (!updatedEtalase && editItem.nama) {
+        await supabase
+          .from("etalase")
+          .update({ stok: editJumlah, updated_at: new Date().toISOString() })
+          .ilike("nama_produk", editItem.nama.trim());
+      }
+
+      showToast(`Stok ${editItem.nama} berhasil disesuaikan di Gudang & Etalase!`);
       setEditItem(null);
       await muatInventarisFromDb();
       if (onRefresh) onRefresh();
     } catch (err: any) {
-      showToast(`Gagal memperbarui stok: ${err.message}`);
+      showToast(`Gagal memperbarui stok: ${err.message || "Terjadi kesalahan"}`);
     }
   }
 

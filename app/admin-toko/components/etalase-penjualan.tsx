@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import { supabase } from "@/lib/db";
 
@@ -20,7 +20,7 @@ export interface StokToko {
   live: boolean;
   foto?: string | null;
   deskripsi?: string;
-  rating?: number;      
+  rating?: number;       
   totalUlasan?: number; 
   produk_id?: string;
 }
@@ -88,7 +88,6 @@ function formatInputRupiah(value: string) {
 function unformatInputRupiah(value: string) {
   return value.replace(/\./g, "");
 }
-
 
 async function kompresGambar(base64Data: string, maxDimensi = 600, kualitas = 0.7): Promise<string> {
   return new Promise((resolve) => {
@@ -237,11 +236,9 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     setTimeout(() => setToastMessage(null), 3500);
   }
 
- 
   const [selectedStokId, setSelectedStokId] = useState("");
   const [addGudangForm, setAddGudangForm] = useState({ hargaJual: "", diskonPersen: "0", berat: "1.0", deskripsi: "" });
 
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [formBaru, setFormBaru] = useState({
@@ -255,57 +252,87 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     deskripsi: "",
   });
 
-
-  const muatDataEtalase = useCallback(async () => {
+const muatDataEtalase = useCallback(async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Ambil ID admin toko dari user ID atau localStorage
+      let adminTokoId: string | null = null;
+      if (user) {
+        const { data: adminToko } = await supabase
+          .from("admin_toko")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle();
+        if (adminToko) adminTokoId = adminToko.id;
       }
 
-      const { data: adminToko } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      if (!adminToko) {
-        setLoading(false);
-        return;
+      // Jika user id auth null, cari dari localStorage
+      if (!adminTokoId && typeof window !== "undefined") {
+        const localUserId = localStorage.getItem("supabase_user_id");
+        if (localUserId) {
+          const { data: adminToko } = await supabase
+            .from("admin_toko")
+            .select("id")
+            .or(`id.eq.${localUserId},profile_id.eq.${localUserId}`)
+            .maybeSingle();
+          if (adminToko) adminTokoId = adminToko.id;
+        }
       }
 
-      const { data: etalaseData, error } = await supabase
-        .from("etalase")
-        .select("*")
-        .eq("admin_toko_id", adminToko.id)
-        .order("created_at", { ascending: false });
+      let etalaseQuery = supabase.from("etalase").select("*").order("created_at", { ascending: false });
+      if (adminTokoId) {
+        etalaseQuery = etalaseQuery.eq("admin_toko_id", adminTokoId);
+      }
 
+      const { data: etalaseData, error } = await etalaseQuery;
       if (error) throw error;
 
+      // Tarik juga data inventaris terbaru untuk sinkronisasi stok riil
+      let invMap = new Map();
+      if (adminTokoId) {
+        const { data: invData } = await supabase
+          .from("inventaris")
+          .select("id, produk_id, nama_produk, stok")
+          .eq("admin_toko_id", adminTokoId);
+
+        if (invData) {
+          invData.forEach((inv) => {
+            if (inv.produk_id) invMap.set(inv.produk_id, Number(inv.stok));
+            if (inv.nama_produk) invMap.set(inv.nama_produk.toLowerCase().trim(), Number(inv.stok));
+          });
+        }
+      }
+
       if (etalaseData && etalaseData.length > 0) {
-        const mapped: StokToko[] = etalaseData.map((e: any) => ({
-          id: e.id,
-          produk_id: e.produk_id,
-          nama: e.nama_produk || "Produk Etalase",
-          jumlah: Number(e.stok) || 0,
-          satuan: e.satuan || "pcs",
-          hargaBeli: 0,
-          hargaJual: Number(e.harga_jual) || 0,
-          diskonPersen: Number(e.diskon_persen) || 0,
-          berat: parseBeratFromEtalase(e),
-          grade: "A",
-          asalProdusen: "Gudang Toko",
-          live: e.status === "tayang" || Boolean(e.status),
-          foto: e.foto || null,
-          deskripsi: getCleanDeskripsiText(e.deskripsi),
-          
-          rating: Number(e.rating) || 0,
-          totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
-        }));
+        const mapped: StokToko[] = etalaseData.map((e: any) => {
+          const namaKey = (e.nama_produk || "").toLowerCase().trim();
+          const stokRiil = invMap.has(e.produk_id) 
+            ? invMap.get(e.produk_id) 
+            : invMap.has(namaKey) 
+              ? invMap.get(namaKey) 
+              : (Number(e.stok) || 0);
+
+          return {
+            id: e.id,
+            produk_id: e.produk_id,
+            nama: e.nama_produk || "Produk Etalase",
+            jumlah: stokRiil,
+            satuan: e.satuan || "pcs",
+            hargaBeli: 0,
+            hargaJual: Number(e.harga_jual) || 0,
+            diskonPersen: Number(e.diskon_persen) || 0,
+            berat: parseBeratFromEtalase(e),
+            grade: "A",
+            asalProdusen: "Gudang Toko",
+            live: e.status === "tayang" || Boolean(e.status),
+            foto: e.foto || null,
+            deskripsi: getCleanDeskripsiText(e.deskripsi),
+            rating: Number(e.rating) || 0,
+            totalUlasan: Number(e.total_ulasan) || Number(e.total_review) || 0,
+          };
+        });
 
         setItemsEtalase(mapped);
       } else {
@@ -320,10 +347,43 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
 
   useEffect(() => {
     muatDataEtalase();
+
+    const channel = supabase
+      .channel("realtime-etalase-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "inventaris" },
+        () => {
+          muatDataEtalase();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "etalase" },
+        () => {
+          muatDataEtalase();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [muatDataEtalase]);
 
-  const live = itemsEtalase.filter((s) => s.live);
-  const belumLive = itemsEtalase.filter((s) => !s.live);
+  // 💡 MENGHITUNG KATEGORI LIVE DAN DRAFT
+  const live = useMemo(() => itemsEtalase.filter((s) => s.live), [itemsEtalase]);
+  const belumLive = useMemo(() => itemsEtalase.filter((s) => !s.live), [itemsEtalase]);
+
+  async function toggleStatusLive(id: string, currentLive: boolean) {
+    const nextStatus = currentLive ? "draft" : "tayang";
+
+    setItemsEtalase((prev) => prev.map((i) => (i.id === id ? { ...i, live: !currentLive } : i)));
+
+    await supabase.from("etalase").update({ status: nextStatus }).eq("id", id);
+
+    showToast(`Status produk diubah menjadi ${nextStatus === "tayang" ? "Tayang Live" : "Draft"}`);
+  }
 
   function openEdit(item: StokToko) {
     setEditItem(item);
@@ -335,18 +395,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     });
   }
 
- 
-  async function toggleStatusLive(id: string, currentLive: boolean) {
-    const nextStatus = currentLive ? "draft" : "tayang";
-
-    setItemsEtalase((prev) => prev.map((i) => (i.id === id ? { ...i, live: !currentLive } : i)));
-
-    await supabase.from("etalase").update({ status: nextStatus }).eq("id", id);
-
-    showToast(`Status produk diubah menjadi ${nextStatus === "tayang" ? "Tayang Live" : "Draft"}`);
-  }
-
- 
   async function handleSubmitEdit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
@@ -392,7 +440,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     };
     reader.readAsDataURL(file);
   }
-
 
   async function handleTayangkanDariGudang(e: FormEvent) {
     e.preventDefault();
@@ -472,7 +519,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     }
   }
 
- 
   async function handleBuatProdukBaru(e: FormEvent) {
     e.preventDefault();
     if (!formBaru.nama.trim() || submitting) return;
@@ -509,7 +555,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         finalFoto = await kompresGambar(finalFoto);
       }
 
-  
       const { data: existingInv } = await supabase
         .from("inventaris")
         .select("id, stok")
@@ -544,7 +589,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         if (errInv) throw new Error(`Gagal simpan ke inventaris: ${errInv.message}`);
       }
 
-    
       const errEtalase = await safeInsertEtalase({
         admin_toko_id: adminToko.id,
         produk_id: null,
@@ -709,16 +753,15 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
                 <div style={{ padding: "0.9rem", flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.2rem" }}>{s.nama}</div>
 
-               
-<div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "0.4rem" }}>
-  <IconStar />
-  <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#1E293B" }}>
-    {(s.totalUlasan ?? 0) > 0 ? (s.rating ? s.rating.toFixed(1) : "0.0") : "0"}
-  </span>
-  <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>
-    ({s.totalUlasan ?? 0} ulasan)
-  </span>
-</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "0.4rem" }}>
+                    <IconStar />
+                    <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "#1E293B" }}>
+                      {(s.totalUlasan ?? 0) > 0 ? (s.rating ? s.rating.toFixed(1) : "0.0") : "0"}
+                    </span>
+                    <span style={{ fontSize: "0.72rem", color: "#94A3B8" }}>
+                      ({s.totalUlasan ?? 0} ulasan)
+                    </span>
+                  </div>
 
                   <p
                     style={{
@@ -785,7 +828,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         )}
       </div>
 
-    
       {showAddModal && (
         <div
           onClick={closeModalTambah}
@@ -1171,7 +1213,6 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
         </div>
       )}
 
-     
       {editItem && (
         <div
           onClick={() => setEditItem(null)}
