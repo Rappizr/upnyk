@@ -408,12 +408,110 @@ export default function AdminTokoDashboard() {
 
   const fetchPenjualan = useCallback(async () => {
     try {
-      const list = await getPenjualanAdminTokoAction();
-      setPenjualanList(list || []);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: adminTokoRow } = await supabase
+        .from("admin_toko")
+        .select("id, nama_toko")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+
+      const namaToko = adminTokoRow?.nama_toko || "";
+
+      // Query safe select dari tabel pesanan
+      let { data: rawPesanan, error } = await supabase
+        .from("pesanan")
+        .select(`
+          id, pembeli_id, status, escrow_status, total, total_harga, kode_pesanan, alamat_pengiriman,
+          supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan, produk_id, jumlah,
+          detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error || !rawPesanan) {
+        const { data: altPesanan } = await supabase.from("pesanan").select("*").order("created_at", { ascending: false });
+        rawPesanan = altPesanan || [];
+      }
+
+      // Filter pesanan B2C (Toko ke Pembeli):
+      const filteredPesanan = (rawPesanan || []).filter((p: any) => {
+        // Jika supplier cocok dengan nama toko ini
+        if (namaToko && p.supplier && p.supplier.toLowerCase().includes(namaToko.toLowerCase())) {
+          return true;
+        }
+        // Pesanan B2C yang memiliki pembeli_id atau kode_pesanan ORD-
+        if (p.pembeli_id || (p.kode_pesanan && String(p.kode_pesanan).startsWith("ORD-"))) {
+          return true;
+        }
+        // Jika bukan pesanan B2B dengan admin_toko_id/produsen_id
+        if (!p.admin_toko_id && !p.produsen_id) {
+          return true;
+        }
+        return false;
+      });
+
+      mapAndSetPenjualan(filteredPesanan.length > 0 ? filteredPesanan : (rawPesanan || []));
     } catch (err) {
       console.error("fetchPenjualan error:", err);
     }
   }, []);
+
+  async function mapAndSetPenjualan(pesananData: any[]) {
+    const allProdIds = Array.from(new Set(
+      pesananData.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)).filter(Boolean)
+    ));
+    let prodMap = new Map<string, string>();
+    if (allProdIds.length > 0) {
+      const { data: etalaseList } = await supabase.from("etalase").select("id, nama_produk").in("id", allProdIds);
+      if (etalaseList) etalaseList.forEach((e: any) => prodMap.set(e.id, e.nama_produk));
+    }
+
+    const mapped: Penjualan[] = pesananData.map((p: any) => {
+      const items = (p.detail_pesanan || []).map((d: any) => ({
+        id: d.id,
+        produk_id: d.produk_id,
+        nama: prodMap.get(d.produk_id) || "Produk Komoditas",
+        jumlah: d.jumlah || 1,
+        harga: d.harga || 0,
+        subtotal: d.subtotal || (d.harga * d.jumlah)
+      }));
+      const produkSummary = items.map((i: any) => `${i.nama} (${i.jumlah})`).join(", ") || p.supplier || "Produk Belanja";
+      const totalJumlah = items.reduce((s: number, i: any) => s + i.jumlah, 0);
+
+      // Format status pesanan agar 'Tersalur' dipetakan ke 'Diproses'
+      const rawSt = String(p.status || "").toLowerCase().trim();
+      let statusFormat: Penjualan["status"] = "Belum Dibayar";
+      if (rawSt === "diproses" || rawSt === "tersalur" || rawSt === "sudah dibayar") {
+        statusFormat = "Diproses";
+      } else if (rawSt === "dikirim") {
+        statusFormat = "Dikirim";
+      } else if (rawSt === "selesai" || rawSt === "diterima") {
+        statusFormat = "Selesai";
+      } else if (rawSt === "dibatalkan" || rawSt === "batal") {
+        statusFormat = "Dibatalkan";
+      }
+
+      return {
+        id: p.id,
+        kodePesanan: p.kode_pesanan || p.id,
+        pembeli: "Pembeli PasarNusa",
+        noHpPembeli: "",
+        produk: produkSummary,
+        jumlah: totalJumlah || 1,
+        total: Number(p.total) || 0,
+        tanggal: new Date(p.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        status: statusFormat,
+        escrowStatus: (p.escrow_status || (p.status === "Selesai" ? "Tersalur" : "Ditahan")) as any,
+        alamatPembeli: p.alamat_pengiriman || "Alamat belum diisi",
+        metodePembayaran: p.metode_pembayaran || "QRIS",
+        buktiPembayaran: p.bukti_pembayaran || null,
+        noResi: "",
+        items: items
+      };
+    });
+    setPenjualanList(mapped);
+  }
 
   const fetchProdusenList = useCallback(async () => {
     try {

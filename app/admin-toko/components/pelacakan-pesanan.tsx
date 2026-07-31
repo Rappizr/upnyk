@@ -127,6 +127,11 @@ export default function PelacakanPesanan({
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [enrichedPenjualanList, setEnrichedPenjualanList] = useState<Penjualan[]>([]);
 
+  // Sync prop penjualanList ke enrichedPenjualanList setiap kali berubah
+  useEffect(() => {
+    setEnrichedPenjualanList(penjualanList || []);
+  }, [penjualanList]);
+
   useEffect(() => {
     setActiveTab(tabDefault);
   }, [tabDefault]);

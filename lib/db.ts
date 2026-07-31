@@ -1899,6 +1899,23 @@ export async function submitReview(
       console.error('review insert catch:', errReview);
     }
 
+    // Auto-update rating dan total_ulasan di tabel etalase dan produk
+    if (produkIdFound && isValidUuid(produkIdFound)) {
+      try {
+        const { data: revs } = await supabaseAdmin.from('review').select('rating').eq('produk_id', produkIdFound);
+        const ratings = (revs || []).map((r: any) => Number(r.rating)).filter((r: number) => !isNaN(r) && r > 0);
+        if (!ratings.includes(Number(rating))) ratings.push(Number(rating));
+
+        const totalUlasan = ratings.length;
+        const avgRating = Number((ratings.reduce((a: number, b: number) => a + b, 0) / totalUlasan).toFixed(1));
+
+        await supabaseAdmin.from('etalase').update({ rating: avgRating, total_ulasan: totalUlasan }).eq('id', produkIdFound);
+        await supabaseAdmin.from('produk').update({ rating: avgRating, total_ulasan: totalUlasan }).eq('id', produkIdFound);
+      } catch (errRatingUpdate) {
+        console.error('Rating update on product/etalase warning:', errRatingUpdate);
+      }
+    }
+
     if (targetNotifId && isValidUuid(targetNotifId)) {
       await supabaseAdmin
         .from('notifikasi')
@@ -2060,14 +2077,23 @@ export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
     }
 
     if (pesanan?.id) {
-      const { error: err1 } = await dbClient.from('pesanan').update({ status: 'Tersalur' }).eq('id', pesanan.id);
-      if (err1) console.error('salurkanDanaEscrow update error:', err1.message);
+      // Update escrow_status menjadi Tersalur
       try {
         await dbClient.from('pesanan').update({ escrow_status: 'Tersalur' }).eq('id', pesanan.id);
       } catch {}
+
+      // Update status pesanan menjadi 'Diproses' jika belum Dikirim / Selesai
+      const currentSt = String(pesanan.status || '').toLowerCase();
+      if (currentSt !== 'dikirim' && currentSt !== 'selesai' && currentSt !== 'diterima') {
+        const { error: err1 } = await dbClient.from('pesanan').update({ status: 'Diproses' }).eq('id', pesanan.id);
+        if (err1) console.error('salurkanDanaEscrow status update error:', err1.message);
+      }
     } else {
-      const { error: err2 } = await dbClient.from('pesanan').update({ status: 'Tersalur' }).eq('kode_pesanan', orderId);
-      if (err2) console.error('salurkanDanaEscrow fallback update error:', err2.message);
+      try {
+        await dbClient.from('pesanan').update({ escrow_status: 'Tersalur', status: 'Diproses' }).eq('kode_pesanan', orderId);
+      } catch (err2: any) {
+        console.error('salurkanDanaEscrow fallback update error:', err2?.message);
+      }
     }
 
     try {
