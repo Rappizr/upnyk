@@ -31,6 +31,7 @@ export interface Entitas {
 
 export interface EscrowTx {
   id: string;
+  originalId?: string;
   pembeli: string;
   toko: string;
   produsen: string;
@@ -286,19 +287,19 @@ export default function AdminPlatformDashboard() {
   };
 
   async function salurkanDana(id: string) {
-    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+    setTransaksiList((prev) => prev.map((t) => (t.id === id || t.originalId === id ? { ...t, status: "Tersalur" } : t)));
     await salurkanDanaAction(id);
     await fetchEscrowLive();
   }
 
   async function tandaiSengketa(id: string) {
-    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Disengketakan" } : t)));
+    setTransaksiList((prev) => prev.map((t) => (t.id === id || t.originalId === id ? { ...t, status: "Disengketakan" } : t)));
     await tandaiSengketaAction(id);
     await fetchEscrowLive();
   }
 
   async function selesaikanSengketa(id: string) {
-    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+    setTransaksiList((prev) => prev.map((t) => (t.id === id || t.originalId === id ? { ...t, status: "Tersalur" } : t)));
     await selesaikanSengketaAction(id);
     await fetchEscrowLive();
   }

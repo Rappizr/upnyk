@@ -1939,7 +1939,8 @@ export async function submitReview(
 
 export async function getEscrowTransaksi(): Promise<any[]> {
   try {
-    let { data: pesananList, error } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+    let { data: pesananList, error } = await dbClient
       .from('pesanan')
       .select(`
         id, pembeli_id, status, total, total_harga, kode_pesanan, alamat_pengiriman,
@@ -1950,7 +1951,7 @@ export async function getEscrowTransaksi(): Promise<any[]> {
 
     if (error || !pesananList) {
       if (error) console.error('getEscrowTransaksi error:', error.message);
-      const { data: fallbackList } = await supabase
+      const { data: fallbackList } = await dbClient
         .from('pesanan')
         .select('*')
         .order('created_at', { ascending: false });
@@ -1962,10 +1963,10 @@ export async function getEscrowTransaksi(): Promise<any[]> {
     const pembeliIds = Array.from(new Set(rawList.map((p: any) => p.pembeli_id).filter(Boolean)));
     let pembeliMap = new Map();
     if (pembeliIds.length > 0) {
-      const { data: profiles } = await supabase.from('profiles').select('id, nama').in('id', pembeliIds);
+      const { data: profiles } = await dbClient.from('profiles').select('id, nama').in('id', pembeliIds);
       if (profiles) profiles.forEach((pr) => pembeliMap.set(pr.id, pr.nama));
 
-      const { data: pembeliTable } = await supabase.from('pembeli').select('id, profile_id, nama').or(`id.in.(${pembeliIds.join(',')}),profile_id.in.(${pembeliIds.join(',')})`);
+      const { data: pembeliTable } = await dbClient.from('pembeli').select('id, profile_id, nama').or(`id.in.(${pembeliIds.join(',')}),profile_id.in.(${pembeliIds.join(',')})`);
       if (pembeliTable) {
         pembeliTable.forEach((pb) => {
           if (pb.id) pembeliMap.set(pb.id, pb.nama);
@@ -1977,11 +1978,11 @@ export async function getEscrowTransaksi(): Promise<any[]> {
     const prodIds = Array.from(new Set(rawList.map((p: any) => p.produk_id).filter(Boolean)));
     let produsenMap = new Map();
     if (prodIds.length > 0) {
-      const { data: produkList } = await supabase.from('produk').select('id, produsen_id').in('id', prodIds);
+      const { data: produkList } = await dbClient.from('produk').select('id, produsen_id').in('id', prodIds);
       if (produkList && produkList.length > 0) {
         const produsenIds = Array.from(new Set(produkList.map((pr: any) => pr.produsen_id).filter(Boolean)));
         if (produsenIds.length > 0) {
-          const { data: prodData } = await supabase.from('produsen').select('id, nama_usaha').in('id', produsenIds);
+          const { data: prodData } = await dbClient.from('produsen').select('id, nama_usaha').in('id', produsenIds);
           if (prodData) {
             const prodNameMap = new Map(prodData.map((p: any) => [p.id, p.nama_usaha]));
             produkList.forEach((pk: any) => {
@@ -2034,22 +2035,41 @@ export async function getEscrowTransaksi(): Promise<any[]> {
   }
 }
 
+const isValidUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
   try {
-    const { data: pesanan } = await supabase
-      .from('pesanan')
-      .select('id, supplier, total, total_harga, kode_pesanan')
-      .or(`kode_pesanan.eq.${orderId},id.eq.${orderId}`)
-      .maybeSingle();
+    const dbClient = supabaseAdmin || supabase;
+    
+    let query = dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan');
+    if (isValidUuid(orderId)) {
+      query = query.eq('id', orderId);
+    } else {
+      query = query.eq('kode_pesanan', orderId);
+    }
+    
+    let { data: pesanan } = await query.maybeSingle();
+
+    if (!pesanan?.id && !isValidUuid(orderId)) {
+      const { data: alt } = await dbClient.from('pesanan').select('id, supplier, total, total_harga, kode_pesanan').eq('kode_pesanan', orderId).maybeSingle();
+      if (alt) pesanan = alt;
+    }
 
     if (pesanan?.id) {
-      await supabase.from('pesanan').update({ escrow_status: 'Tersalur' }).eq('id', pesanan.id);
+      const { error: err1 } = await dbClient.from('pesanan').update({ status: 'Tersalur' }).eq('id', pesanan.id);
+      if (err1) console.error('salurkanDanaEscrow update error:', err1.message);
+      try {
+        await dbClient.from('pesanan').update({ escrow_status: 'Tersalur' }).eq('id', pesanan.id);
+      } catch {}
+    } else if (!isValidUuid(orderId)) {
+      const { error: err2 } = await dbClient.from('pesanan').update({ status: 'Tersalur' }).eq('kode_pesanan', orderId);
+      if (err2) console.error('salurkanDanaEscrow fallback update error:', err2.message);
     }
 
     try {
       const nominal = pesanan ? (pesanan.total || pesanan.total_harga || 0) : 0;
       const nominalStr = nominal > 0 ? ` sebesar Rp ${Number(nominal).toLocaleString('id-ID')}` : '';
-      await supabaseAdmin.from('notifikasi').insert({
+      await dbClient.from('notifikasi').insert({
         judul: 'Penyaluran Dana Escrow',
         isi: `Dana${nominalStr} untuk pesanan ${pesanan?.kode_pesanan || orderId} telah resmi disalurkan oleh Admin Platform ke rekening Toko (${pesanan?.supplier || 'Admin Toko'}).`,
         tipe: 'Transaksi',
@@ -2068,14 +2088,27 @@ export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
 
 export async function tandaiSengketaEscrow(orderId: string): Promise<boolean> {
   try {
-    const { data: pesanan } = await supabase
-      .from('pesanan')
-      .select('id, kode_pesanan')
-      .or(`kode_pesanan.eq.${orderId},id.eq.${orderId}`)
-      .maybeSingle();
+    const dbClient = supabaseAdmin || supabase;
+    let query = dbClient.from('pesanan').select('id, kode_pesanan');
+    if (isValidUuid(orderId)) {
+      query = query.eq('id', orderId);
+    } else {
+      query = query.eq('kode_pesanan', orderId);
+    }
+
+    let { data: pesanan } = await query.maybeSingle();
+    if (!pesanan?.id && !isValidUuid(orderId)) {
+      const { data: alt } = await dbClient.from('pesanan').select('id, kode_pesanan').eq('kode_pesanan', orderId).maybeSingle();
+      if (alt) pesanan = alt;
+    }
 
     if (pesanan?.id) {
-      await supabase.from('pesanan').update({ escrow_status: 'Disengketakan' }).eq('id', pesanan.id);
+      await dbClient.from('pesanan').update({ status: 'Disengketakan' }).eq('id', pesanan.id);
+      try {
+        await dbClient.from('pesanan').update({ escrow_status: 'Disengketakan' }).eq('id', pesanan.id);
+      } catch {}
+    } else if (!isValidUuid(orderId)) {
+      await dbClient.from('pesanan').update({ status: 'Disengketakan' }).eq('kode_pesanan', orderId);
     }
     return true;
   } catch (err) {
