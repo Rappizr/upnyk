@@ -119,6 +119,7 @@ export default function PelacakanPesanan({
     type: "success"
   });
 
+  const [filterPembelian, setFilterPembelian] = useState<string>("Semua");
   const [filterPenjualan, setFilterPenjualan] = useState<string>("Semua");
   const [modalResiOrder, setModalResiOrder] = useState<Penjualan | null>(null);
   const [inputNoResi, setInputNoResi] = useState("");
@@ -320,6 +321,15 @@ export default function PelacakanPesanan({
     setInputNoResi("");
   }
 
+  const pembelianFiltered = pembelianList.filter((pb) => {
+    if (filterPembelian === "Semua") return true;
+    const st = String(pb.status || "").toLowerCase();
+    const f = filterPembelian.toLowerCase();
+    if (f === "belum dibayar") return st === "belum dibayar" || st === "menunggu" || st === "baru" || st === "pending";
+    if (f === "selesai") return st === "selesai" || st === "diterima";
+    return st === f;
+  });
+
   const penjualanFiltered = enrichedPenjualanList.filter((pj) => {
     if (filterPenjualan === "Semua") return true;
     return (pj.status || "Belum Dibayar") === filterPenjualan;
@@ -369,71 +379,174 @@ export default function PelacakanPesanan({
         </button>
       </div>
 
-    
+      {/* PRODUSEN KE TOKO TAB */}
       {activeTab === "produsen-toko" && (
-        pembelianList.length === 0 ? (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "3rem 1.5rem", textAlign: "center", color: "#64748B" }}>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: "#CBD5E1" }}><IconPackage /></div>
-            Belum ada pesanan bahan baku yang dilacak dari produsen.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {pembelianList.map((p) => {
-              const langkahAktif = indeksLangkah(p.status);
-
+        <div>
+          {/* FILTER PILLS */}
+          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+            {["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"].map((st) => {
+              const count = st === "Semua"
+                ? pembelianList.length
+                : pembelianList.filter((pb) => {
+                    const s = String(pb.status || "").toLowerCase();
+                    const f = st.toLowerCase();
+                    if (f === "belum dibayar") return s === "belum dibayar" || s === "menunggu" || s === "baru" || s === "pending";
+                    if (f === "selesai") return s === "selesai" || s === "diterima";
+                    return s === f;
+                  }).length;
+              const isAktif = filterPembelian === st;
               return (
-                <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1E293B" }}>#{p.id} • {p.tanggal}</span>
-                    <span style={{ fontSize: "0.68rem", fontWeight: 700, color: WARNA_UTAMA_GELAP, background: "#FEF3C7", padding: "0.2rem 0.6rem", borderRadius: "999px" }}>{p.produsen}</span>
-                  </div>
-
-                  <div style={{ display: "flex", gap: "0.85rem", padding: "1rem 1.1rem", alignItems: "center" }}>
-                    <div style={{ width: "56px", height: "56px", borderRadius: "8px", background: "#FEF3C7", color: WARNA_UTAMA_GELAP, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <IconPackage />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{p.item}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{p.jumlah} {p.satuan || "pcs"} × {formatRupiah(p.hargaSatuan || 0)}</div>
-                    </div>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</div>
-                  </div>
-
-                  <div style={{ padding: "0.5rem 1.5rem 1.1rem" }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      {LANGKAH.map((l, i) => {
-                        const Icon = l.icon;
-                        const selesai = i <= langkahAktif;
-                        return (
-                          <div key={l.key} style={{ display: "flex", alignItems: "center", flex: i < LANGKAH.length - 1 ? 1 : "unset" }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                              <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: selesai ? WARNA_UTAMA : "#E2E8F0", color: selesai ? "white" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon />
-                              </div>
-                              <span style={{ fontSize: "0.65rem", fontWeight: 600, color: selesai ? "#1E293B" : "#94A3B8" }}>{l.label}</span>
-                            </div>
-                            {i < LANGKAH.length - 1 && <div style={{ flex: 1, height: "3px", background: i < langkahAktif ? WARNA_UTAMA : "#E2E8F0" }} />}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div style={{ padding: "0 1.1rem 1.1rem" }}>
-                    {(p.status === "Dikirim" || p.status === "Selesai" || p.status === "Diterima") && (
-                      <button
-                        onClick={() => bukaModalTerima(p)}
-                        style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}
-                      >
-                        {p.status === "Dikirim" ? "Pesanan Diterima & Beri Ulasan" : "Terima Barang, Beri Ulasan & Tambahkan ke Inventaris"}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button
+                  key={st}
+                  onClick={() => setFilterPembelian(st)}
+                  style={{
+                    padding: "0.4rem 0.8rem",
+                    borderRadius: "20px",
+                    border: isAktif ? `1px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0",
+                    background: isAktif ? "#FFFBEB" : "#fff",
+                    color: isAktif ? WARNA_UTAMA_GELAP : "#64748B",
+                    fontSize: "0.78rem",
+                    fontWeight: isAktif ? 700 : 500,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}
+                >
+                  <span>{st}</span>
+                  <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>({count})</span>
+                </button>
               );
             })}
           </div>
-        )
+
+          {pembelianFiltered.length === 0 ? (
+            <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "3rem 1.5rem", textAlign: "center", color: "#64748B" }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: "#CBD5E1" }}><IconPackage /></div>
+              Belum ada pesanan bahan baku pada status <strong>{filterPembelian}</strong>.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {pembelianFiltered.map((p) => {
+                const langkahAktif = indeksLangkah(p.status);
+
+                let displayStatus = "Belum Dibayar";
+                const st = String(p.status || "").toLowerCase();
+                if (st === "diproses") displayStatus = "Diproses";
+                else if (st === "dikirim") displayStatus = "Dikirim";
+                else if (st === "selesai" || st === "diterima") displayStatus = "Selesai";
+                else if (st === "dibatalkan") displayStatus = "Dibatalkan";
+
+                let badgeBg = "#FEF3C7";
+                let badgeColor = "#D97706";
+                if (displayStatus === "Diproses") { badgeBg = "#DBEAFE"; badgeColor = "#1D4ED8"; }
+                if (displayStatus === "Dikirim") { badgeBg = "#E0E7FF"; badgeColor = "#4338CA"; }
+                if (displayStatus === "Selesai") { badgeBg = "#D1FAE5"; badgeColor = "#047857"; }
+                if (displayStatus === "Dibatalkan") { badgeBg = "#FEE2E2"; badgeColor = "#B91C1C"; }
+
+                return (
+                  <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{p.id}</span>
+                        <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {p.tanggal}</span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: WARNA_UTAMA_GELAP, background: "#FEF3C7", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
+                          🏭 Produsen: {p.produsen}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
+                        {displayStatus}
+                      </span>
+                    </div>
+
+                    <div style={{ padding: "1.1rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.4rem" }}>
+                            <IconUser /> Produsen: {p.produsen}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", fontSize: "0.78rem", color: "#64748B", lineHeight: 1.4 }}>
+                            <IconMapPin />
+                            <span>{p.lokasiProdusen || "Lokasi produsen terdaftar"}</span>
+                          </div>
+                        </div>
+
+                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                          <div>
+                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".02em" }}>STATUS TRACKING</div>
+                            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginTop: "2px" }}>{displayStatus}</div>
+                          </div>
+                          <div style={{ marginTop: "0.5rem" }}>
+                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>TOTAL BELANJA BAHAN BAKU</div>
+                            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>{formatRupiah(p.total)}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: "1rem" }}>
+                        <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Rincian Bahan Baku Dipesan:</div>
+                        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px", overflow: "hidden" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", fontSize: "0.8rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              {p.fotoProduk ? (
+                                <div style={{ width: "28px", height: "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
+                                  <img src={p.fotoProduk} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                              ) : (
+                                <div style={{ width: "28px", height: "28px", borderRadius: "4px", background: "#FEF3C7", color: WARNA_UTAMA_GELAP, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                  <IconPackage />
+                                </div>
+                              )}
+                              <span style={{ color: "#1E293B", fontWeight: 600 }}>{p.item} <span style={{ color: "#64748B", fontWeight: 400 }}>× {p.jumlah} {p.satuan || "pcs"}</span></span>
+                            </div>
+                            <span style={{ color: "#475569", fontWeight: 700 }}>{formatRupiah(p.total)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {p.noResi && (
+                        <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "0.6rem 0.85rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.8rem", color: "#1E40AF" }}>
+                          📦 <strong>No. Resi Pengiriman:</strong> <code style={{ background: "#DBEAFE", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>{p.noResi}</code>
+                        </div>
+                      )}
+
+                      <div style={{ padding: "0.5rem 0.5rem 1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          {LANGKAH.map((l, i) => {
+                            const Icon = l.icon;
+                            const selesai = i <= langkahAktif;
+                            return (
+                              <div key={l.key} style={{ display: "flex", alignItems: "center", flex: i < LANGKAH.length - 1 ? 1 : "unset" }}>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                  <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: selesai ? WARNA_UTAMA : "#E2E8F0", color: selesai ? "white" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Icon />
+                                  </div>
+                                  <span style={{ fontSize: "0.65rem", fontWeight: 600, color: selesai ? "#1E293B" : "#94A3B8" }}>{l.label}</span>
+                                </div>
+                                {i < LANGKAH.length - 1 && <div style={{ flex: 1, height: "3px", background: i < langkahAktif ? WARNA_UTAMA : "#E2E8F0" }} />}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {(p.status === "Dikirim" || p.status === "Selesai" || p.status === "Diterima") && (
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <button
+                            onClick={() => bukaModalTerima(p)}
+                            style={{ padding: "0.6rem 1.2rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                          >
+                            {p.status === "Dikirim" ? "Pesanan Diterima & Beri Ulasan" : "Terima Barang, Beri Ulasan & Tambahkan ke Inventaris"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
 
