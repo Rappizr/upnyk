@@ -50,8 +50,8 @@ export default function WishlistView({
 }) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cartModalState, setCartModalState] = useState<{ isOpen: boolean; product: any }>({ isOpen: false, product: null });
 
- 
   const loadWishlistRealtime = useCallback(async () => {
     setLoading(true);
     try {
@@ -109,6 +109,7 @@ export default function WishlistView({
 const handleCheckoutAll = async () => {
   try {
     setLoading(true);
+    const count = items.length;
     await Promise.all(
       items.map(async (item) => {
         const prodId = item.product_id || item.product?.id || item.id;
@@ -121,11 +122,14 @@ const handleCheckoutAll = async () => {
 
     setItems([]);
     if (onCartUpdated) onCartUpdated();
-    if (onNavigateToCart) onNavigateToCart();
 
-    setTimeout(() => {
-      alert("Semua item berhasil dipindahkan! Anda sekarang berada di Keranjang Belanja.");
-    }, 150);
+    setCartModalState({
+      isOpen: true,
+      product: {
+        name: `${count} Produk Wishlist`,
+        qty: count
+      }
+    });
   } catch (err) {
     console.error("Error batch checkout wishlist:", err);
     alert("Gagal memindahkan sebagian item ke keranjang.");
@@ -226,7 +230,16 @@ const handleCheckoutAll = async () => {
                         await addToCartAction(targetId, 1);
                         await remove(item.product_id, item.id);
                         if (onCartUpdated) onCartUpdated();
-                        if (onNavigateToCart) onNavigateToCart();
+                        setCartModalState({
+                          isOpen: true,
+                          product: {
+                            name: p.name || "Produk Wishlist",
+                            price: p.price,
+                            foto: p.foto,
+                            supplier: p.supplier,
+                            qty: 1
+                          }
+                        });
                       }}
                       style={{ padding: "0.4rem 0.875rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} 
                       id={`btn-wl-cart-${item.id}`}
@@ -270,6 +283,191 @@ const handleCheckoutAll = async () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {cartModalState.isOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "1rem",
+          }}
+          onClick={() => setCartModalState({ isOpen: false, product: null })}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: "20px",
+              padding: "1.75rem",
+              width: "380px",
+              maxWidth: "100%",
+              boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+              position: "relative",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setCartModalState({ isOpen: false, product: null })}
+              style={{
+                position: "absolute",
+                top: "14px",
+                right: "14px",
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                border: "none",
+                backgroundColor: "#F1F5F9",
+                color: "#64748B",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+              }}
+            >
+              ✕
+            </button>
+
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                boxShadow: "0 10px 25px rgba(16, 185, 129, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0.25rem auto 1rem auto",
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+
+            <h3 style={{ margin: "0 0 0.35rem 0", fontSize: "1.15rem", fontWeight: 800, color: "#0F172A" }}>
+              Berhasil Ditambahkan!
+            </h3>
+            <p style={{ fontSize: "0.825rem", color: "#64748B", margin: "0 0 1.25rem 0", lineHeight: "1.4" }}>
+              Produk pilihan Anda telah dimasukkan ke keranjang belanja.
+            </p>
+
+            {cartModalState.product && (
+              <div
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "14px",
+                  padding: "0.875rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.875rem",
+                  textAlign: "left",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "10px",
+                    backgroundColor: "#E2E8F0",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {cartModalState.product.foto ? (
+                    <img src={cartModalState.product.foto} alt={cartModalState.product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "1.75rem" }}>📦</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {cartModalState.product.supplier && (
+                    <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", marginBottom: "0.15rem" }}>
+                      🏪 {cartModalState.product.supplier}
+                    </div>
+                  )}
+                  <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {cartModalState.product.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.25rem" }}>
+                    {cartModalState.product.price ? (
+                      <span style={{ fontSize: "0.825rem", fontWeight: 700, color: "#059669" }}>
+                        Rp {cartModalState.product.price.toLocaleString("id-ID")}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.75rem", color: "#64748B" }}>Item siap diproses</span>
+                    )}
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748B", backgroundColor: "#E2E8F0", padding: "0.15rem 0.45rem", borderRadius: "6px" }}>
+                      {cartModalState.product.qty || 1} item
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <button
+                onClick={() => {
+                  setCartModalState({ isOpen: false, product: null });
+                  if (onNavigateToCart) onNavigateToCart();
+                }}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+                Lihat Keranjang
+              </button>
+              <button
+                onClick={() => setCartModalState({ isOpen: false, product: null })}
+                style={{
+                  width: "100%",
+                  padding: "0.7rem 1rem",
+                  borderRadius: "12px",
+                  border: "1px solid #E2E8F0",
+                  backgroundColor: "#FFFFFF",
+                  color: "#475569",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+              >
+                Lanjut Belanja
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

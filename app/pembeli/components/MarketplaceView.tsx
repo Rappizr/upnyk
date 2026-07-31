@@ -73,7 +73,7 @@ export default function MarketplaceView({
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [detailQty, setDetailQty] = useState(1);
   const [showCartPopup, setShowCartPopup] = useState(false);
-  const [addedProductName, setAddedProductName] = useState("");
+  const [addedProductObj, setAddedProductObj] = useState<any>(null);
 
 const loadMarketplaceData = useCallback(async () => {
     setLoading(true);
@@ -201,11 +201,23 @@ const loadMarketplaceData = useCallback(async () => {
 
       await addToCartAction(targetProductId, qty, userId);
       if (onCartUpdated) onCartUpdated();
-      setAddedProductName(p.name);
+      setAddedProductObj({
+        name: p.name || p.nama_produk || "Produk",
+        price: p.price || p.harga_jual || p.harga,
+        foto: p.foto || p.image || p.image_url,
+        supplier: p.storeName || p.supplier || p.nama_toko,
+        qty: qty
+      });
       setShowCartPopup(true);
     } catch (e: any) {
       console.error("Gagal tambah keranjang:", e);
-      setAddedProductName(p.name);
+      setAddedProductObj({
+        name: p.name || p.nama_produk || "Produk",
+        price: p.price || p.harga_jual || p.harga,
+        foto: p.foto || p.image || p.image_url,
+        supplier: p.storeName || p.supplier || p.nama_toko,
+        qty: qty
+      });
       setShowCartPopup(true);
     }
   };
@@ -531,28 +543,182 @@ const loadMarketplaceData = useCallback(async () => {
 
 
       {showCartPopup && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "1rem" }}>
-          <div style={{ backgroundColor: "#FFFFFF", borderRadius: "12px", padding: "1.5rem", width: "320px", maxWidth: "100%", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
-            <div style={{ width: "40px", height: "40px", backgroundColor: "#ECFDF5", color: "#059669", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.75rem auto", fontSize: "1.2rem", fontWeight: 700 }}>
-              ✓
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "1rem",
+          }}
+          onClick={() => setShowCartPopup(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: "20px",
+              padding: "1.75rem",
+              width: "380px",
+              maxWidth: "100%",
+              boxShadow: "0 25px 50px -12px rgba(15, 23, 42, 0.25)",
+              position: "relative",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowCartPopup(false)}
+              style={{
+                position: "absolute",
+                top: "14px",
+                right: "14px",
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                border: "none",
+                backgroundColor: "#F1F5F9",
+                color: "#64748B",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+              }}
+            >
+              ✕
+            </button>
+
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                boxShadow: "0 10px 25px rgba(16, 185, 129, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0.25rem auto 1rem auto",
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </div>
-            <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>Berhasil Ditambahkan!</h4>
-            <p style={{ fontSize: "0.75rem", color: "#64748B", margin: "0 0 1rem 0" }}>
-              <strong>{addedProductName}</strong> dimasukkan ke keranjang.
+
+            <h3 style={{ margin: "0 0 0.35rem 0", fontSize: "1.15rem", fontWeight: 800, color: "#0F172A" }}>
+              Berhasil Ditambahkan!
+            </h3>
+            <p style={{ fontSize: "0.825rem", color: "#64748B", margin: "0 0 1.25rem 0", lineHeight: "1.4" }}>
+              Produk pilihan Anda telah dimasukkan ke keranjang belanja.
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+
+            {addedProductObj && (
+              <div
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "14px",
+                  padding: "0.875rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.875rem",
+                  textAlign: "left",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "10px",
+                    backgroundColor: "#E2E8F0",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {addedProductObj.foto ? (
+                    <img src={addedProductObj.foto} alt={addedProductObj.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: "1.75rem" }}>📦</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {addedProductObj.supplier && (
+                    <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", marginBottom: "0.15rem" }}>
+                      🏪 {addedProductObj.supplier}
+                    </div>
+                  )}
+                  <div style={{ fontSize: "0.875rem", fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {addedProductObj.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.25rem" }}>
+                    {addedProductObj.price ? (
+                      <span style={{ fontSize: "0.825rem", fontWeight: 700, color: "#059669" }}>
+                        Rp {addedProductObj.price.toLocaleString("id-ID")}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "0.75rem", color: "#64748B" }}>Item siap diproses</span>
+                    )}
+                    <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "#64748B", backgroundColor: "#E2E8F0", padding: "0.15rem 0.45rem", borderRadius: "6px" }}>
+                      {addedProductObj.qty || 1} item
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
               <button
                 onClick={() => {
                   setShowCartPopup(false);
                   if (onNavigateToCart) onNavigateToCart();
                 }}
-                style={{ width: "100%", padding: "0.55rem", borderRadius: "6px", border: "none", backgroundColor: "#10B981", color: "#FFFFFF", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  color: "#FFFFFF",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                }}
               >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
                 Lihat Keranjang
               </button>
               <button
                 onClick={() => setShowCartPopup(false)}
-                style={{ width: "100%", padding: "0.55rem", borderRadius: "6px", border: "1px solid #E2E8F0", backgroundColor: "#FFFFFF", color: "#475569", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+                style={{
+                  width: "100%",
+                  padding: "0.7rem 1rem",
+                  borderRadius: "12px",
+                  border: "1px solid #E2E8F0",
+                  backgroundColor: "#FFFFFF",
+                  color: "#475569",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
               >
                 Lanjut Belanja
               </button>
@@ -560,7 +726,6 @@ const loadMarketplaceData = useCallback(async () => {
           </div>
         </div>
       )}
-
     </div>
   );
 }
