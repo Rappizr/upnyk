@@ -45,7 +45,7 @@ export interface Penjualan {
   jumlah: number;
   total: number;
   tanggal: string;
-  status: "Belum Dibayar" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
+  status: "Belum Dibayar" | "Sudah Dibayar" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan" | string;
   escrowStatus?: "Ditahan" | "Tersalur" | "Disengketakan";
   alamatPembeli?: string;
   metodePembayaran?: string;
@@ -867,68 +867,50 @@ export default function PelacakanPesanan({
                           marginTop: "0.6rem",
                           width: "100%"
                         }}>
-                          {(pj.status === "Belum Dibayar" || !pj.status) && (
+                          {(pj.status === "Belum Dibayar" || pj.status === "Sudah Dibayar" || pj.status === "Diproses" || !pj.status) && (
                             <>
+                              {(pj.status === "Belum Dibayar" || !pj.status) && (
+                                <button
+                                  disabled={isBusy}
+                                  onClick={() => handleUbahStatusPenjualan(targetId, "Dibatalkan")}
+                                  style={{ 
+                                    padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 0.85rem", 
+                                    borderRadius: "8px", 
+                                    border: "1px solid #FCA5A5", 
+                                    background: "#FEF2F2", 
+                                    color: "#991B1B", 
+                                    fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                    fontWeight: 700, 
+                                    cursor: "pointer",
+                                    width: isMobile ? "100%" : "auto"
+                                  }}
+                                >
+                                  Batalkan
+                                </button>
+                              )}
                               <button
                                 disabled={isBusy}
-                                onClick={() => handleUbahStatusPenjualan(targetId, "Dibatalkan")}
-                                style={{ 
-                                  padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 0.85rem", 
-                                  borderRadius: "8px", 
-                                  border: "1px solid #FCA5A5", 
-                                  background: "#FEF2F2", 
-                                  color: "#991B1B", 
-                                  fontSize: isMobile ? "0.65rem" : "0.78rem", 
-                                  fontWeight: 700, 
-                                  cursor: "pointer",
-                                  width: isMobile ? "100%" : "auto"
-                                }}
-                              >
-                                Batalkan
-                              </button>
-                              <button
-                                disabled={isBusy}
-                                onClick={() => handleUbahStatusPenjualan(targetId, "Diproses")}
+                                onClick={() => { setModalResiOrder(pj); setInputNoResi(`NUSA-${Date.now().toString().slice(-6)}`); }}
                                 style={{ 
                                   padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 1rem", 
                                   borderRadius: "8px", 
                                   border: "none", 
-                                  background: WARNA_UTAMA, 
+                                  background: "#2563EB", 
                                   color: "white", 
                                   fontSize: isMobile ? "0.65rem" : "0.78rem", 
                                   fontWeight: 700, 
-                                  cursor: "pointer",
+                                  cursor: "pointer", 
+                                  display: "flex", 
+                                  alignItems: "center", 
+                                  gap: "4px",
+                                  justifyContent: "center",
                                   width: isMobile ? "100%" : "auto"
                                 }}
                               >
-                                {isBusy ? "Memproses..." : "Konfirmasi Pembayaran"}
+                                <IconTruck />
+                                <span>{isBusy ? "Memproses..." : "Konfirmasi & Kirim Barang"}</span>
                               </button>
                             </>
-                          )}
-
-                          {pj.status === "Diproses" && (
-                            <button
-                              disabled={isBusy}
-                              onClick={() => { setModalResiOrder(pj); setInputNoResi(`NUSA-${Date.now().toString().slice(-6)}`); }}
-                              style={{ 
-                                padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 1rem", 
-                                borderRadius: "8px", 
-                                border: "none", 
-                                background: "#2563EB", 
-                                color: "white", 
-                                fontSize: isMobile ? "0.65rem" : "0.78rem", 
-                                fontWeight: 700, 
-                                cursor: "pointer", 
-                                display: "flex", 
-                                alignItems: "center", 
-                                gap: "4px",
-                                justifyContent: "center",
-                                width: isMobile ? "100%" : "auto"
-                              }}
-                            >
-                              <IconTruck />
-                              <span>Kirim & Input Resi</span>
-                            </button>
                           )}
 
                           {pj.status === "Dikirim" && (

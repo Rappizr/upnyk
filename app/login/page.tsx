@@ -101,7 +101,7 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
 
- 
+
   const isSuspendedStatus = (statusStr?: string | null): boolean => {
     const s = String(statusStr || "").toLowerCase().trim();
     return s === "suspended" || s === "nonaktif" || s === "terblokir";
@@ -157,7 +157,7 @@ export default function LoginPage() {
       if (authData.user) {
         const userId = authData.user.id;
 
-       
+
         if (selectedRole === "produsen") {
           const { data: produsenRows } = await supabase
             .from("produsen")
@@ -190,7 +190,7 @@ export default function LoginPage() {
           }
         }
 
-  
+
         if (selectedRole === "pembeli") {
           const { data: pembeliRows } = await supabase
             .from("pembeli")
@@ -207,7 +207,7 @@ export default function LoginPage() {
           }
         }
 
-      
+
         const { data: profile, error: profileErr } = await supabase
           .from('profiles')
           .select('role, status')
@@ -218,7 +218,7 @@ export default function LoginPage() {
           console.error("Gagal mengambil data profil:", profileErr.message);
         }
 
-      
+
         if (profile && profile.role === selectedRole && isSuspendedStatus(profile.status)) {
           await supabase.auth.signOut();
           setError("Akun Anda telah ditangguhkan secara keseluruhan. Silakan hubungi Admin Platform.");

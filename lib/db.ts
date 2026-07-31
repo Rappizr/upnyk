@@ -724,59 +724,97 @@ export async function createOrder(orderData: any): Promise<any> {
 
 export async function getPenjualanAdminToko(): Promise<any[]> {
   try {
-    const { data: pesananList, error } = await supabase
+    const isValidUuid = (id: string | null | undefined): boolean => {
+      if (!id) return false;
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    };
+
+    let pesananList: any[] = [];
+    const { data, error } = await supabase
       .from('pesanan')
       .select(`
         id, pembeli_id, status, escrow_status, total, kode_pesanan, alamat_pengiriman,
-        supplier, metode_pembayaran, bukti_pembayaran, created_at,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at, produk_id, jumlah,
         detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
       `)
       .order('created_at', { ascending: false });
 
-    if (error || !pesananList) {
-      if (error) console.error('getPenjualanAdminToko error:', error.message);
-      return [];
+    if (error || !data || data.length === 0) {
+      if (error) console.error('getPenjualanAdminToko relational query error:', error.message);
+      const { data: rawData, error: rawError } = await supabase
+        .from('pesanan')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (rawError || !rawData) {
+        if (rawError) console.error('getPenjualanAdminToko raw query error:', rawError.message);
+        return [];
+      }
+      pesananList = rawData;
+    } else {
+      pesananList = data;
     }
 
-    const pembeliIds = Array.from(new Set(pesananList.map((p) => p.pembeli_id).filter(Boolean)));
+    const pembeliIds = Array.from(new Set(pesananList.map((p) => p.pembeli_id).filter(isValidUuid)));
     let pembeliMap = new Map();
 
     if (pembeliIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, nama, phone')
-        .in('id', pembeliIds);
+      try {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, nama, phone')
+          .in('id', pembeliIds);
 
-      if (profiles) {
-        profiles.forEach((pr) => pembeliMap.set(pr.id, pr));
-      }
+        if (profiles) {
+          profiles.forEach((pr) => pembeliMap.set(pr.id, pr));
+        }
 
-      const { data: pembeliTable } = await supabase
-        .from('pembeli')
-        .select('id, profile_id, nama, no_hp, alamat')
-        .or(`id.in.(${pembeliIds.join(',')}),profile_id.in.(${pembeliIds.join(',')})`);
+        const { data: pembeliTable } = await supabase
+          .from('pembeli')
+          .select('id, profile_id, nama, no_hp, alamat')
+          .or(`id.in.(${pembeliIds.join(',')}),profile_id.in.(${pembeliIds.join(',')})`);
 
-      if (pembeliTable) {
-        pembeliTable.forEach((pb) => {
-          if (pb.id) pembeliMap.set(pb.id, { nama: pb.nama, phone: pb.no_hp, alamat: pb.alamat });
-          if (pb.profile_id) pembeliMap.set(pb.profile_id, { nama: pb.nama, phone: pb.no_hp, alamat: pb.alamat });
-        });
+        if (pembeliTable) {
+          pembeliTable.forEach((pb) => {
+            if (pb.id) pembeliMap.set(pb.id, { nama: pb.nama, phone: pb.no_hp, alamat: pb.alamat });
+            if (pb.profile_id) pembeliMap.set(pb.profile_id, { nama: pb.nama, phone: pb.no_hp, alamat: pb.alamat });
+          });
+        }
+      } catch (ePembeli) {
+        console.warn('getPenjualanAdminToko pembeli query exception:', ePembeli);
       }
     }
 
-    const allProdIds = Array.from(new Set(
-      pesananList.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)).filter(Boolean)
-    ));
+    const allProdIds = Array.from(new Set([
+      ...pesananList.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)),
+      ...pesananList.map((o) => o.produk_id)
+    ].filter(isValidUuid)));
 
     let prodMap = new Map();
     if (allProdIds.length > 0) {
-      const { data: etalaseList } = await supabase
-        .from('etalase')
-        .select('id, nama_produk')
-        .in('id', allProdIds);
+      try {
+        const { data: etalaseList } = await supabase
+          .from('etalase')
+          .select('id, nama_produk')
+          .in('id', allProdIds);
 
-      if (etalaseList) {
-        etalaseList.forEach((e) => prodMap.set(e.id, e.nama_produk));
+        if (etalaseList) {
+          etalaseList.forEach((e) => prodMap.set(e.id, e.nama_produk));
+        }
+
+        const missingProdIds = allProdIds.filter((id) => !prodMap.has(id));
+        if (missingProdIds.length > 0) {
+          const { data: mpList } = await supabase
+            .from('marketplace')
+            .select('id, nama')
+            .in('id', missingProdIds);
+
+          if (mpList) {
+            mpList.forEach((m) => prodMap.set(m.id, m.nama));
+          }
+        }
+      } catch (eProd) {
+        console.warn('getPenjualanAdminToko product mapping exception:', eProd);
       }
     }
 
@@ -785,14 +823,36 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
       const namaPembeli = pbInfo?.nama || 'Pembeli PasarNusa';
       const noHp = pbInfo?.phone || '';
 
-      const items = (p.detail_pesanan || []).map((d: any) => ({
-        id: d.id,
-        produk_id: d.produk_id,
-        nama: prodMap.get(d.produk_id) || 'Produk Komoditas',
-        jumlah: d.jumlah || 1,
-        harga: d.harga || 0,
-        subtotal: d.subtotal || (d.harga * d.jumlah)
-      }));
+      let items: any[] = [];
+      if (p.detail_pesanan && p.detail_pesanan.length > 0) {
+        items = p.detail_pesanan.map((d: any) => ({
+          id: d.id,
+          produk_id: d.produk_id,
+          nama: prodMap.get(d.produk_id) || 'Produk Komoditas',
+          jumlah: d.jumlah || 1,
+          harga: d.harga || 0,
+          subtotal: d.subtotal || (d.harga * d.jumlah)
+        }));
+      } else if (p.produk_id) {
+        const prodName = prodMap.get(p.produk_id) || (p.supplier ? `Produk (${p.supplier})` : 'Produk Komoditas');
+        items = [{
+          id: `item-${p.id}`,
+          produk_id: p.produk_id,
+          nama: prodName,
+          jumlah: p.jumlah || 1,
+          harga: p.total || 0,
+          subtotal: p.total || 0
+        }];
+      } else {
+        items = [{
+          id: `item-${p.id}`,
+          produk_id: null,
+          nama: p.supplier ? `Produk (${p.supplier})` : 'Produk Komoditas',
+          jumlah: p.jumlah || 1,
+          harga: p.total || 0,
+          subtotal: p.total || 0
+        }];
+      }
 
       const produkSummary = items.map((i: any) => `${i.nama} (${i.jumlah} pcs)`).join(', ') || 'Produk Belanja';
       const totalJumlah = items.reduce((s: number, i: any) => s + i.jumlah, 0);

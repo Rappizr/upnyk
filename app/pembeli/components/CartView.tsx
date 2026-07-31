@@ -6,7 +6,8 @@ import {
   getCartAction,
   updateCartQtyAction,
   removeFromCartAction,
-  clearCartAction
+  clearCartAction,
+  getProfileAction
 } from "@/app/actions";
 
 function RiceIcon({ size = 24, className = "", ...props }: any) {
@@ -295,16 +296,21 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
       });
 
       const userId = typeof window !== "undefined" ? (localStorage.getItem("supabase_user_id") || localStorage.getItem("pembeli_id") || undefined) : undefined;
+      const userProfile = await getProfileAction(userId);
+      const buyerAddress = (userProfile?.alamat && userProfile.alamat.trim() !== "") 
+        ? userProfile.alamat 
+        : "Jl. Jenderal Sudirman No. 12, Yogyakarta";
 
       const orderPromises = Object.entries(grouped).map(async ([supplier, items]) => {
         const supplierSubtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
         const supplierGrandTotal = supplierSubtotal + 10000;
 
         return await createOrderAction({
-          pembeli_id: userId,
+          pembeli_id: userId || userProfile?.id,
           supplier,
           items,
           total: supplierGrandTotal,
+          alamat_pengiriman: buyerAddress,
           payment_method: selectedPayment.toUpperCase(),
           status: paymentProof || selectedPayment === "qris" ? "Sudah Dibayar" : "Belum Dibayar",
           proof_uploaded: true,
