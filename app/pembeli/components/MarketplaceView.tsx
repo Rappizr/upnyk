@@ -238,46 +238,54 @@ const loadMarketplaceData = useCallback(async () => {
   }
 
   const selectedStoreObj = stores.find((s) => s.id === selectedStoreId);
-  const locationOptions = ["Semua Wilayah", ...Array.from(new Set(stores.map((s) => s.kabupaten).filter(Boolean)))];
+  const locationOptions = ["Semua Wilayah", ...Array.from(new Set(stores.map((s) => s.kabupaten).filter((loc) => Boolean(loc) && String(loc).trim().length > 2)))];
 
   return (
-    <div style={{ width: "100%", paddingBottom: "2rem", fontFamily: "inherit" }}>
+    <div style={{ width: "100%", paddingBottom: "110px", fontFamily: "inherit" }}>
 
   
-      <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "1rem", scrollbarWidth: "none" }}>
-        {locationOptions.map((loc) => (
-          <button
-            key={loc}
-            onClick={() => setActiveLocation(loc)}
-            style={{
-              whiteSpace: "nowrap",
-              padding: "0.4rem 0.85rem",
-              borderRadius: "20px",
-              fontSize: "0.8rem",
-              fontWeight: activeLocation === loc ? 600 : 400,
-              border: activeLocation === loc ? "1px solid #10B981" : "1px solid #E2E8F0",
-              backgroundColor: activeLocation === loc ? "#ECFDF5" : "#FFFFFF",
-              color: activeLocation === loc ? "#059669" : "#64748B",
-              cursor: "pointer",
-              transition: "all 0.15s ease"
-            }}
-          >
-            <LocationIcon size={12} style={{ marginRight: "4px", verticalAlign: "middle" }} />
-            {loc}
-          </button>
-        ))}
+      <div className="category-scroll-strip" style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.5rem", marginBottom: "0.875rem", scrollbarWidth: "none" }}>
+        {locationOptions.map((loc) => {
+          const isActive = activeLocation === loc;
+          return (
+            <button
+              key={loc}
+              onClick={() => setActiveLocation(loc)}
+              style={{
+                whiteSpace: "nowrap",
+                padding: "0.35rem 0.85rem",
+                borderRadius: "999px",
+                fontSize: "0.775rem",
+                fontWeight: isActive ? 700 : 500,
+                border: isActive ? "none" : "1px solid #E2E8F0",
+                backgroundColor: isActive ? "#2563EB" : "#FFFFFF",
+                color: isActive ? "#FFFFFF" : "#64748B",
+                boxShadow: isActive ? "0 2px 8px rgba(37, 99, 235, 0.25)" : "0 1px 2px rgba(0,0,0,0.02)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px"
+              }}
+            >
+              <LocationIcon size={12} style={{ color: isActive ? "#FFFFFF" : "#94A3B8" }} />
+              {loc}
+            </button>
+          );
+        })}
       </div>
 
 
-      <div style={{ backgroundColor: "#FFFFFF", borderRadius: "10px", padding: "0.75rem 1rem", display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+      <div className="marketplace-controls" style={{ backgroundColor: "#FFFFFF", borderRadius: "8px", padding: "0.35rem 0.65rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.875rem", border: "1px solid #E2E8F0", boxShadow: "0 1px 3px rgba(0,0,0,0.03)" }}>
 
       
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: "1 1 200px" }}>
-          <StoreIcon size={16} style={{ color: "#64748B" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flex: "1 1 140px", minWidth: 0 }}>
+          <StoreIcon size={15} style={{ color: "#2563EB", flexShrink: 0 }} />
           <select
             value={selectedStoreId}
             onChange={(e) => setSelectedStoreId(e.target.value)}
-            style={{ border: "none", fontSize: "0.85rem", fontWeight: 600, color: "#334155", backgroundColor: "transparent", outline: "none", cursor: "pointer", width: "100%" }}
+            style={{ border: "none", fontSize: "0.8rem", fontWeight: 600, color: "#334155", backgroundColor: "transparent", outline: "none", cursor: "pointer", width: "100%", padding: "2px 0" }}
           >
             <option value="">Semua Toko Mitra</option>
             {stores.map((s) => (
@@ -287,12 +295,12 @@ const loadMarketplaceData = useCallback(async () => {
         </div>
 
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ fontSize: "0.8rem", color: "#64748B" }}>Urutkan:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", flexShrink: 0 }}>
+          <span style={{ fontSize: "0.75rem", color: "#64748B", whiteSpace: "nowrap" }}>Urutkan:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            style={{ border: "1px solid #E2E8F0", borderRadius: "6px", padding: "0.3rem 0.5rem", fontSize: "0.8rem", color: "#334155", backgroundColor: "#FFF", outline: "none" }}
+            style={{ border: "1px solid #E2E8F0", borderRadius: "6px", padding: "0.25rem 0.4rem", fontSize: "0.75rem", fontWeight: 500, color: "#334155", backgroundColor: "#F8FAFC", outline: "none" }}
           >
             <option value="terbaru">Paling Sesuai</option>
             <option value="termurah">Harga Terendah</option>
@@ -303,10 +311,10 @@ const loadMarketplaceData = useCallback(async () => {
       </div>
 
       {selectedStoreObj && (
-        <div style={{ backgroundColor: "#FFFFFF", borderLeft: "4px solid #10B981", borderRadius: "8px", padding: "1rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div style={{ backgroundColor: "#FFFFFF", borderLeft: "4px solid #2563EB", borderRadius: "8px", padding: "0.75rem 1rem", marginBottom: "0.875rem", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
           <div>
-            <div style={{ fontSize: "0.7rem", color: "#10B981", fontWeight: 700, textTransform: "uppercase" }}>Sedang Belanja di Toko</div>
-            <h2 style={{ margin: "0.1rem 0", fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{selectedStoreObj.nama_toko}</h2>
+            <div style={{ fontSize: "0.7rem", color: "#2563EB", fontWeight: 700, textTransform: "uppercase" }}>Sedang Belanja di Toko</div>
+            <h2 style={{ margin: "0.1rem 0", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>{selectedStoreObj.nama_toko}</h2>
             <div style={{ fontSize: "0.75rem", color: "#64748B", display: "flex", alignItems: "center", gap: "4px" }}>
               <LocationIcon size={12} />
               {[selectedStoreObj.desa, selectedStoreObj.kabupaten, selectedStoreObj.provinsi].filter(Boolean).join(", ")}
@@ -314,7 +322,7 @@ const loadMarketplaceData = useCallback(async () => {
           </div>
           <button
             onClick={() => setSelectedStoreId("")}
-            style={{ background: "#F1F5F9", border: "none", padding: "0.4rem 0.75rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}
+            style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.65rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600, color: "#475569", cursor: "pointer" }}
           >
             Buka Semua Toko ✕
           </button>
@@ -333,7 +341,7 @@ const loadMarketplaceData = useCallback(async () => {
           <p style={{ fontSize: "0.8rem", margin: "0.25rem 0 0 0" }}>Coba ubah kata kunci atau pencarian Anda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+        <div className="product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
           {filteredProducts.map((p) => {
             const isWishlisted = wishlistedIds.includes(p.id);
             const hargaFinal = p.diskon > 0 ? Math.round(p.price * (1 - p.diskon / 100)) : p.price;
@@ -343,13 +351,13 @@ const loadMarketplaceData = useCallback(async () => {
                 key={p.etalase_id || p.id}
                 style={{
                   backgroundColor: "#FFFFFF",
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   overflow: "hidden",
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
                   border: "1px solid #E2E8F0",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
                   cursor: "pointer"
                 }}
                 onClick={() => { setSelectedProduct(p); setDetailQty(1); }}
@@ -367,7 +375,7 @@ const loadMarketplaceData = useCallback(async () => {
                     top: "8px",
                     right: "8px",
                     zIndex: 10,
-                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    backgroundColor: "rgba(255, 255, 255, 0.92)",
                     border: "none",
                     borderRadius: "50%",
                     width: "28px",
@@ -376,7 +384,7 @@ const loadMarketplaceData = useCallback(async () => {
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
                   }}
                 >
                   <HeartIcon size={14} filled={isWishlisted} />
@@ -393,7 +401,7 @@ const loadMarketplaceData = useCallback(async () => {
                   )}
 
                   {p.diskon > 0 && (
-                    <div style={{ position: "absolute", bottom: "0", left: "0", backgroundColor: "#EF4444", color: "#FFFFFF", padding: "2px 6px", fontSize: "0.65rem", fontWeight: 700, borderTopRightRadius: "4px" }}>
+                    <div style={{ position: "absolute", bottom: "0", left: "0", background: "linear-gradient(135deg, #EF4444, #DC2626)", color: "#FFFFFF", padding: "2px 7px", fontSize: "0.65rem", fontWeight: 800, borderTopRightRadius: "6px" }}>
                       {p.diskon}% OFF
                     </div>
                   )}
@@ -402,7 +410,7 @@ const loadMarketplaceData = useCallback(async () => {
 
                 <div style={{ padding: "0.75rem", display: "flex", flexDirection: "column", flex: 1 }}>
 
-                  <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1E293B", height: "2.4rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.2rem", marginBottom: "0.4rem" }}>
+                  <div style={{ fontSize: "0.825rem", fontWeight: 600, color: "#1E293B", height: "2.4rem", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.2rem", marginBottom: "0.35rem" }}>
                     {p.name}
                   </div>
 
@@ -412,14 +420,14 @@ const loadMarketplaceData = useCallback(async () => {
                         Rp {p.price.toLocaleString("id-ID")}
                       </div>
                     )}
-                    <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#DC2626" }}>
+                    <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#2563EB" }}>
                       Rp {hargaFinal.toLocaleString("id-ID")}
                     </div>
                   </div>
 
                   <div style={{ fontSize: "0.7rem", color: "#64748B", marginTop: "0.3rem", display: "flex", alignItems: "center", gap: "3px" }}>
-                    <LocationIcon size={11} />
-                    <span>{p.kabupaten || "Lokal"}</span>
+                    <LocationIcon size={11} style={{ color: "#94A3B8" }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.kabupaten || "Lokal"}</span>
                   </div>
 
                   {/* 💡 BAGIAN RATING DINAMIS SAMA DENGAN ETALASE */}
@@ -444,15 +452,16 @@ const loadMarketplaceData = useCallback(async () => {
                     style={{
                       marginTop: "0.6rem",
                       width: "100%",
-                      padding: "0.4rem 0",
-                      borderRadius: "6px",
-                      border: "1px solid #10B981",
-                      backgroundColor: "#FFFFFF",
-                      color: "#10B981",
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
+                      padding: "0.45rem 0",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor: p.stock > 0 ? "#2563EB" : "#E2E8F0",
+                      color: p.stock > 0 ? "#FFFFFF" : "#94A3B8",
+                      fontSize: "0.775rem",
+                      fontWeight: 700,
                       cursor: p.stock > 0 ? "pointer" : "not-allowed",
-                      opacity: p.stock > 0 ? 1 : 0.4
+                      boxShadow: p.stock > 0 ? "0 2px 6px rgba(37, 99, 235, 0.25)" : "none",
+                      transition: "all 0.15s ease"
                     }}
                   >
                     + Keranjang
@@ -489,9 +498,9 @@ const loadMarketplaceData = useCallback(async () => {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "0.7rem", color: "#10B981", fontWeight: 700 }}>🏪 {selectedProduct.storeName}</div>
+                  <div style={{ fontSize: "0.7rem", color: "#2563EB", fontWeight: 700 }}>🏪 {selectedProduct.storeName}</div>
                   <h3 style={{ margin: "0.2rem 0", fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>{selectedProduct.name}</h3>
-                  <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#DC2626", marginTop: "0.2rem" }}>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#2563EB", marginTop: "0.2rem" }}>
                     Rp {(selectedProduct.diskon > 0 ? Math.round(selectedProduct.price * (1 - selectedProduct.diskon / 100)) : selectedProduct.price).toLocaleString("id-ID")}
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "#64748B", marginTop: "0.2rem" }}>Stok: {selectedProduct.stock} {selectedProduct.satuan}</div>
@@ -519,7 +528,7 @@ const loadMarketplaceData = useCallback(async () => {
                     handleAddToCart(selectedProduct, detailQty);
                     setSelectedProduct(null);
                   }}
-                  style={{ flex: 1, padding: "0.65rem", borderRadius: "6px", border: "1px solid #10B981", backgroundColor: "#ECFDF5", color: "#059669", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+                  style={{ flex: 1, padding: "0.65rem", borderRadius: "6px", border: "1px solid #2563EB", backgroundColor: "#EFF6FF", color: "#2563EB", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
                 >
                   + Keranjang
                 </button>
@@ -529,7 +538,7 @@ const loadMarketplaceData = useCallback(async () => {
                     setSelectedProduct(null);
                     if (onNavigateToCart) onNavigateToCart();
                   }}
-                  style={{ flex: 1, padding: "0.65rem", borderRadius: "6px", border: "none", backgroundColor: "#10B981", color: "#FFFFFF", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+                  style={{ flex: 1, padding: "0.65rem", borderRadius: "6px", border: "none", backgroundColor: "#2563EB", color: "#FFFFFF", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
                 >
                   Beli Langsung
                 </button>
@@ -592,14 +601,13 @@ const loadMarketplaceData = useCallback(async () => {
             >
               ✕
             </button>
-
             <div
               style={{
                 width: "64px",
                 height: "64px",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-                boxShadow: "0 10px 25px rgba(16, 185, 129, 0.35)",
+                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                boxShadow: "0 10px 25px rgba(37, 99, 235, 0.35)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -662,7 +670,7 @@ const loadMarketplaceData = useCallback(async () => {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.25rem" }}>
                     {addedProductObj.price ? (
-                      <span style={{ fontSize: "0.825rem", fontWeight: 700, color: "#059669" }}>
+                      <span style={{ fontSize: "0.825rem", fontWeight: 700, color: "#2563EB" }}>
                         Rp {addedProductObj.price.toLocaleString("id-ID")}
                       </span>
                     ) : (
@@ -687,12 +695,12 @@ const loadMarketplaceData = useCallback(async () => {
                   padding: "0.75rem 1rem",
                   borderRadius: "12px",
                   border: "none",
-                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                  background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
                   color: "#FFFFFF",
                   fontWeight: 700,
                   fontSize: "0.875rem",
                   cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.35)",
+                  boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -723,6 +731,7 @@ const loadMarketplaceData = useCallback(async () => {
                 Lanjut Belanja
               </button>
             </div>
+
           </div>
         </div>
       )}

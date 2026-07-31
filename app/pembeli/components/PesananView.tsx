@@ -383,10 +383,10 @@ export default function PesananView() {
             return (
               <div key={order.id || order.originalId} className="card" id={`order-${order.id}`}>
 
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
-                      <span className="font-semibold text-sm">{order.id}</span>
+                <div className="order-card-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.875rem" }}>
+                  <div className="order-card-header-info">
+                    <div className="order-card-header-top" style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                      <span className="font-semibold text-sm order-id">{order.id}</span>
                       <span className={`badge ${order.status === "Belum Dibayar" || order.status === "Diproses" || order.status === "Sudah Dibayar"
                         ? "badge-warning"
                         : order.status === "Dikirim"
@@ -404,7 +404,7 @@ export default function PesananView() {
                       {order.date} · <strong>{order.supplier || "Toko Admin"}</strong>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
+                  <div className="order-card-header-total" style={{ textAlign: "right" }}>
                     <div className="font-bold text-primary">Rp {(order.total || 0).toLocaleString("id-ID")}</div>
                     <div className="text-xs text-muted">{totalItemCount} item</div>
                   </div>
@@ -413,76 +413,78 @@ export default function PesananView() {
 
                 {(order.items || []).map((item: any, i: number) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.875rem", padding: "0.625rem", background: "var(--color-bg)", borderRadius: "var(--radius-sm)", marginBottom: "0.75rem" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px", background: "white", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", flexShrink: 0 }}>
                       <IconRenderer type={item.icon_type || "rice"} size={24} />
                     </span>
-                    <div style={{ flex: 1 }}>
-                      <div className="text-sm font-medium">{item.name || "Produk"}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="text-sm font-medium" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name || "Produk"}</div>
                       <div className="text-xs text-muted">x{item.qty || 1}</div>
                     </div>
-                    <div className="font-semibold text-sm">Rp {(item.price || 0).toLocaleString("id-ID")}</div>
+                    <div className="font-semibold text-sm" style={{ flexShrink: 0 }}>Rp {(item.price || 0).toLocaleString("id-ID")}</div>
                   </div>
                 ))}
 
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
-                  {order.status === "Belum Dibayar" && !order.proof_uploaded && (
-                    <button onClick={() => handleUpdateStatus(order.id, "Diproses")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-bayar-${order.id}`}>
-                      Bayar Sekarang
-                    </button>
-                  )}
-                  {order.status === "Dikirim" && (
-                    <button onClick={() => handleUpdateStatus(order.id, "Selesai")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-selesai-${order.id}`}>
-                      Selesai &amp; Terima Barang
-                    </button>
-                  )}
-                  {order.status === "Selesai" && (
-                    (order.rating || order.ulasan || reviewedOrderIds.includes(String(order.id)) || reviewedOrderIds.includes(String(order.kodePesanan || '')) || reviewedOrderIds.includes(String(order.originalId || ''))) ? (
-                      <button
-                        className="btn-secondary"
-                        disabled
-                        style={{
-                          fontSize: "0.8rem",
-                          padding: "0.4rem 0.875rem",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          opacity: 0.65,
-                          cursor: "not-allowed",
-                          backgroundColor: "#e5e7eb",
-                          color: "#6b7280",
-                          borderColor: "#d1d5db"
-                        }}
-                        id={`btn-ulasan-selesai-${order.id}`}
-                      >
-                        Selesai
+                <div className="order-actions-container" style={{ display: "flex", flexWrap: "wrap", gap: "0.625rem", marginBottom: timeline.length > 0 ? "0.875rem" : 0 }}>
+                  <div className="order-actions-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", flex: 1 }}>
+                    {order.status === "Belum Dibayar" && !order.proof_uploaded && (
+                      <button onClick={() => handleUpdateStatus(order.id, "Diproses")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-bayar-${order.id}`}>
+                        Bayar Sekarang
                       </button>
-                    ) : (
+                    )}
+                    {order.status === "Dikirim" && (
+                      <button onClick={() => handleUpdateStatus(order.id, "Selesai")} className="btn-primary" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} id={`btn-selesai-${order.id}`}>
+                        Selesai &amp; Terima Barang
+                      </button>
+                    )}
+                    {order.status === "Selesai" && (
+                      (order.rating || order.ulasan || reviewedOrderIds.includes(String(order.id)) || reviewedOrderIds.includes(String(order.kodePesanan || '')) || reviewedOrderIds.includes(String(order.originalId || ''))) ? (
+                        <button
+                          className="btn-secondary"
+                          disabled
+                          style={{
+                            fontSize: "0.8rem",
+                            padding: "0.4rem 0.875rem",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            opacity: 0.65,
+                            cursor: "not-allowed",
+                            backgroundColor: "#e5e7eb",
+                            color: "#6b7280",
+                            borderColor: "#d1d5db"
+                          }}
+                          id={`btn-ulasan-selesai-${order.id}`}
+                        >
+                          Selesai
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => handleOpenReviewModal(order)}
+                          style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
+                          id={`btn-ulasan-${order.id}`}
+                        >
+                          <StarIcon size={14} fill="currentColor" /> Beri Ulasan
+                        </button>
+                      )
+                    )}
+                    <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
+                      Invoice
+                    </button>
+                    {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
                       <button
+                        onClick={() => setReceiptOrder(order)}
                         className="btn-secondary"
-                        onClick={() => handleOpenReviewModal(order)}
                         style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
-                        id={`btn-ulasan-${order.id}`}
+                        id={`btn-bukti-${order.id}`}
                       >
-                        <StarIcon size={14} fill="currentColor" /> Beri Ulasan
+                        Bukti Pembayaran
                       </button>
-                    )
-                  )}
-                  <button onClick={() => setReceiptOrder(order)} className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem" }} id={`btn-invoice-${order.id}`}>
-                    Invoice
-                  </button>
-                  {((order.status !== "Belum Dibayar" || order.proof_uploaded) && order.status !== "Dibatalkan") && (
-                    <button
-                      onClick={() => setReceiptOrder(order)}
-                      className="btn-secondary"
-                      style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}
-                      id={`btn-bukti-${order.id}`}
-                    >
-                      Bukti Pembayaran
-                    </button>
-                  )}
+                    )}
+                  </div>
                   {timeline.length > 0 && (
-                    <button className="btn-ghost" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} onClick={() => setExpanded(expanded === order.id ? null : order.id)} id={`btn-track-${order.id}`}>
+                    <button className="btn-ghost btn-track-toggle" style={{ fontSize: "0.8rem", padding: "0.4rem 0.875rem", marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "0.35rem" }} onClick={() => setExpanded(expanded === order.id ? null : order.id)} id={`btn-track-${order.id}`}>
                       <LocationIcon size={14} /> {expanded === order.id ? "Sembunyikan Lacak" : "Lacak Pengiriman"}
                     </button>
                   )}

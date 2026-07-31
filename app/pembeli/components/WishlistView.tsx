@@ -261,7 +261,7 @@ const handleCheckoutAll = async () => {
           })}
 
           {items.length === 0 && (
-            <div className="wishlist-empty-state" style={{ background: "white", padding: "3rem", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
+            <div className="wishlist-empty-state" style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", textAlign: "center" }}>
               <div className="wishlist-empty-icon" style={{ marginBottom: "1rem", color: "#94A3B8" }}>
                 <HeartIcon size={48} fill="none" />
               </div>
