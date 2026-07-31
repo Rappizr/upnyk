@@ -252,12 +252,11 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
     deskripsi: "",
   });
 
-const muatDataEtalase = useCallback(async () => {
+  const muatDataEtalase = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Ambil ID admin toko dari user ID atau localStorage
       let adminTokoId: string | null = null;
       if (user) {
         const { data: adminToko } = await supabase
@@ -268,7 +267,6 @@ const muatDataEtalase = useCallback(async () => {
         if (adminToko) adminTokoId = adminToko.id;
       }
 
-      // Jika user id auth null, cari dari localStorage
       if (!adminTokoId && typeof window !== "undefined") {
         const localUserId = localStorage.getItem("supabase_user_id");
         if (localUserId) {
@@ -289,7 +287,6 @@ const muatDataEtalase = useCallback(async () => {
       const { data: etalaseData, error } = await etalaseQuery;
       if (error) throw error;
 
-      // Tarik juga data inventaris terbaru untuk sinkronisasi stok riil
       let invMap = new Map();
       if (adminTokoId) {
         const { data: invData } = await supabase
@@ -339,7 +336,6 @@ const muatDataEtalase = useCallback(async () => {
         setItemsEtalase([]);
       }
     } catch (err) {
-      console.error("Gagal muat etalase:", err);
     } finally {
       setLoading(false);
     }
@@ -371,7 +367,6 @@ const muatDataEtalase = useCallback(async () => {
     };
   }, [muatDataEtalase]);
 
-  // 💡 MENGHITUNG KATEGORI LIVE DAN DRAFT
   const live = useMemo(() => itemsEtalase.filter((s) => s.live), [itemsEtalase]);
   const belumLive = useMemo(() => itemsEtalase.filter((s) => !s.live), [itemsEtalase]);
 
@@ -636,6 +631,97 @@ const muatDataEtalase = useCallback(async () => {
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif", position: "relative" }}>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        /* STYLES RESPONSIP KHUSUS HP & TABLET */
+        .showcase-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+          gap: 1rem;
+        }
+        .showcase-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.25rem !important;
+          }
+          .header-title-container h1 {
+            font-size: 1.15rem !important;
+          }
+          .header-title-container p {
+            font-size: 0.62rem !important;
+            line-height: 1.2 !important;
+          }
+          .btn-tambah-etalase {
+            padding: 0.45rem 0.75rem !important;
+            font-size: 0.72rem !important;
+            border-radius: 6px !important;
+          }
+
+          /* GRID STATISTIK RESPONSIP 2 KOLOM */
+          .showcase-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.4rem !important;
+            margin-bottom: 0.85rem !important;
+          }
+          .showcase-stats-grid > div {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            gap: 0.5rem !important;
+          }
+
+          /* GRID KARTU ETALASE PRODUK 2 KOLOM */
+          .showcase-cards-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.5rem !important;
+          }
+          .showcase-cards-grid > div {
+            border-radius: 10px !important;
+          }
+          .showcase-cards-grid .card-image-box {
+            height: 90px !important;
+          }
+          .showcase-cards-grid .card-body {
+            padding: 0.5rem !important;
+          }
+          .showcase-cards-grid .card-title {
+            font-size: 0.78rem !important;
+            line-height: 1.15 !important;
+          }
+          .showcase-cards-grid .card-desc {
+            font-size: 0.62rem !important;
+            margin-bottom: 0.3rem !important;
+          }
+          .showcase-cards-grid .card-price {
+            font-size: 0.88rem !important;
+          }
+          .showcase-cards-grid .card-action-btn {
+            padding: 0.3rem !important;
+            font-size: 0.62rem !important;
+          }
+
+          /* MODAL RESPONSIP MOBILE */
+          .modal-box {
+            padding: 1rem !important;
+            width: 100% !important;
+            max-height: 92vh !important;
+            border-radius: 12px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .showcase-cards-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.4rem !important;
+          }
+        }
+      `
+      }} />
+
       {toastMessage && (
         <div
           style={{
@@ -662,8 +748,8 @@ const muatDataEtalase = useCallback(async () => {
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div className="header-title-container">
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>Etalase Penjualan</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
             Kelola harga, diskon, dan produk yang tampil di toko online pembeli.
@@ -671,6 +757,7 @@ const muatDataEtalase = useCallback(async () => {
         </div>
 
         <button
+          className="btn-tambah-etalase"
           onClick={() => setShowAddModal(true)}
           style={{
             display: "inline-flex",
@@ -691,7 +778,7 @@ const muatDataEtalase = useCallback(async () => {
         </button>
       </div>
 
-      <div className="showcase-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="showcase-stats-grid" style={{ marginBottom: "1.25rem" }}>
         <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px" }}>
             <IconEye />
@@ -712,7 +799,7 @@ const muatDataEtalase = useCallback(async () => {
         </div>
       </div>
 
-      <div className="showcase-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "1rem" }}>
+      <div className="showcase-cards-grid">
         {loading ? (
           <div style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "2.5rem", textAlign: "center", color: "#64748B", gridColumn: "1 / -1" }}>
             Memuat produk etalase...
@@ -727,7 +814,7 @@ const muatDataEtalase = useCallback(async () => {
 
             return (
               <div key={s.id} style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                <div style={{ height: "130px", background: "#F1F5F9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div className="card-image-box" style={{ height: "130px", background: "#F1F5F9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {s.foto ? (
                     <img src={s.foto} alt={s.nama} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
@@ -750,8 +837,8 @@ const muatDataEtalase = useCallback(async () => {
                   </span>
                 </div>
 
-                <div style={{ padding: "0.9rem", flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.2rem" }}>{s.nama}</div>
+                <div className="card-body" style={{ padding: "0.9rem", flex: 1, display: "flex", flexDirection: "column" }}>
+                  <div className="card-title" style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.2rem" }}>{s.nama}</div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "0.4rem" }}>
                     <IconStar />
@@ -764,6 +851,7 @@ const muatDataEtalase = useCallback(async () => {
                   </div>
 
                   <p
+                    className="card-desc"
                     style={{
                       fontSize: "0.75rem",
                       color: "#64748B",
@@ -778,7 +866,7 @@ const muatDataEtalase = useCallback(async () => {
                     {s.deskripsi || "Produk bahan baku segar dan terjamin."}
                   </p>
 
-                  <div style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.6rem" }}>
+                  <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.5rem" }}>
                     Stok: <strong style={{ color: "#1E293B" }}>{s.jumlah} pcs</strong>
                   </div>
 
@@ -793,18 +881,19 @@ const muatDataEtalase = useCallback(async () => {
                             -{s.diskonPersen}%
                           </span>
                         </div>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B" }}>{formatRupiah(hargaFinal)}</div>
+                        <div className="card-price" style={{ fontSize: "1.1rem", fontWeight: 800, color: "#F59E0B" }}>{formatRupiah(hargaFinal)}</div>
                       </div>
                     ) : (
-                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>{formatRupiah(s.hargaJual)}</div>
+                      <div className="card-price" style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>{formatRupiah(s.hargaJual)}</div>
                     )}
                   </div>
 
                   <div style={{ display: "flex", gap: "0.4rem" }}>
-                    <button onClick={() => openEdit(s)} style={{ flex: 1, background: "#FFFBEB", border: "1px solid #FDE68A", padding: "0.45rem", borderRadius: "6px", fontSize: "0.76rem", color: "#92400E", fontWeight: 700, cursor: "pointer" }}>
+                    <button className="card-action-btn" onClick={() => openEdit(s)} style={{ flex: 1, background: "#FFFBEB", border: "1px solid #FDE68A", padding: "0.45rem", borderRadius: "6px", fontSize: "0.76rem", color: "#92400E", fontWeight: 700, cursor: "pointer" }}>
                       Ubah Harga
                     </button>
                     <button
+                      className="card-action-btn"
                       onClick={() => toggleStatusLive(s.id, s.live)}
                       style={{
                         flex: 1,
@@ -840,10 +929,11 @@ const muatDataEtalase = useCallback(async () => {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 2000,
-            padding: "1rem",
+            padding: "0.5rem",
           }}
         >
           <div
+            className="modal-box"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: "white",
@@ -857,7 +947,7 @@ const muatDataEtalase = useCallback(async () => {
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#1E293B" }}>Tambah Produk ke Etalase</h2>
+              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#1E293B" }}>Tambah Produk ke Etalase</h2>
               <button onClick={closeModalTambah} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}>
                 <IconX />
               </button>
@@ -872,7 +962,7 @@ const muatDataEtalase = useCallback(async () => {
                   padding: "0.55rem",
                   borderRadius: "8px",
                   border: "none",
-                  fontSize: "0.8rem",
+                  fontSize: "0.78rem",
                   fontWeight: 700,
                   cursor: "pointer",
                   background: modeTambah === "gudang" ? "white" : "transparent",
@@ -889,7 +979,7 @@ const muatDataEtalase = useCallback(async () => {
                   padding: "0.55rem",
                   borderRadius: "8px",
                   border: "none",
-                  fontSize: "0.8rem",
+                  fontSize: "0.78rem",
                   fontWeight: 700,
                   cursor: "pointer",
                   background: modeTambah === "baru" ? "white" : "transparent",
@@ -901,9 +991,9 @@ const muatDataEtalase = useCallback(async () => {
             </div>
 
             {modeTambah === "gudang" ? (
-              <form onSubmit={handleTayangkanDariGudang} style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+              <form onSubmit={handleTayangkanDariGudang} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
                     Pilih Produk Gudang *
                   </label>
                   <select
@@ -912,10 +1002,10 @@ const muatDataEtalase = useCallback(async () => {
                     onChange={(e) => setSelectedStokId(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "0.65rem 0.85rem",
+                      padding: "0.6rem 0.85rem",
                       borderRadius: "8px",
                       border: "1px solid #CBD5E1",
-                      fontSize: "0.88rem",
+                      fontSize: "0.85rem",
                       background: "white",
                       color: "#1E293B",
                       outline: "none",
@@ -935,7 +1025,7 @@ const muatDataEtalase = useCallback(async () => {
                 {selectedStokId && (
                   <>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
                         Harga Jual ke Pembeli (Rp) *
                       </label>
                       <input
@@ -949,12 +1039,12 @@ const muatDataEtalase = useCallback(async () => {
                             hargaJual: unformatInputRupiah(e.target.value),
                           })
                         }
-                        style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
+                        style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                       />
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
                       <div>
-                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
                           Diskon Toko (%)
                         </label>
                         <input
@@ -963,11 +1053,11 @@ const muatDataEtalase = useCallback(async () => {
                           max="90"
                           value={addGudangForm.diskonPersen}
                           onChange={(e) => setAddGudangForm({ ...addGudangForm, diskonPersen: e.target.value })}
-                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
+                          style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                         />
                       </div>
                       <div>
-                        <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                        <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
                           Berat / Item (kg) *
                         </label>
                         <input
@@ -978,7 +1068,7 @@ const muatDataEtalase = useCallback(async () => {
                           placeholder="1.0"
                           value={addGudangForm.berat}
                           onChange={(e) => setAddGudangForm({ ...addGudangForm, berat: e.target.value })}
-                          style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none" }}
+                          style={{ width: "100%", padding: "0.6rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                         />
                       </div>
                     </div>
@@ -989,7 +1079,7 @@ const muatDataEtalase = useCallback(async () => {
                   <button
                     type="button"
                     onClick={closeModalTambah}
-                    style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
                   >
                     Batal
                   </button>
@@ -998,13 +1088,14 @@ const muatDataEtalase = useCallback(async () => {
                     disabled={!selectedStokId || submitting}
                     style={{
                       flex: 1,
-                      padding: "0.65rem",
+                      padding: "0.6rem",
                       borderRadius: "8px",
                       border: "none",
                       background: selectedStokId ? "#10B981" : "#CBD5E1",
                       color: "white",
                       fontWeight: 800,
                       cursor: selectedStokId ? "pointer" : "not-allowed",
+                      fontSize: "0.82rem"
                     }}
                   >
                     {submitting ? "Memproses..." : "Tayangkan Sekarang"}
@@ -1012,7 +1103,7 @@ const muatDataEtalase = useCallback(async () => {
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleBuatProdukBaru} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              <form onSubmit={handleBuatProdukBaru} style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                     Foto Produk
@@ -1023,7 +1114,7 @@ const muatDataEtalase = useCallback(async () => {
                       border: "2px dashed #CBD5E1",
                       background: "#F8FAFC",
                       borderRadius: "10px",
-                      padding: "0.85rem",
+                      padding: "0.75rem",
                       textAlign: "center",
                       cursor: "pointer",
                       display: "flex",
@@ -1033,9 +1124,9 @@ const muatDataEtalase = useCallback(async () => {
                     }}
                   >
                     {fotoPreview ? (
-                      <img src={fotoPreview} alt="Preview" style={{ height: "50px", borderRadius: "6px", objectFit: "cover" }} />
+                      <img src={fotoPreview} alt="Preview" style={{ height: "45px", borderRadius: "6px", objectFit: "cover" }} />
                     ) : (
-                      <span style={{ fontSize: "0.8rem", color: "#64748B", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{ fontSize: "0.78rem", color: "#64748B", display: "flex", alignItems: "center", gap: "6px" }}>
                         <IconCamera /> Pilih / Unggah Foto Produk
                       </span>
                     )}
@@ -1053,11 +1144,11 @@ const muatDataEtalase = useCallback(async () => {
                     placeholder="Contoh: Kripik Tempe Premium"
                     value={formBaru.nama}
                     onChange={(e) => setFormBaru({ ...formBaru, nama: e.target.value })}
-                    style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                   />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                       Jumlah Stok *
@@ -1069,7 +1160,7 @@ const muatDataEtalase = useCallback(async () => {
                       placeholder="10"
                       value={formBaru.jumlah}
                       onChange={(e) => setFormBaru({ ...formBaru, jumlah: e.target.value })}
-                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                   <div>
@@ -1081,7 +1172,7 @@ const muatDataEtalase = useCallback(async () => {
                       value="pcs"
                       style={{
                         width: "100%",
-                        padding: "0.6rem 0.8rem",
+                        padding: "0.55rem 0.75rem",
                         borderRadius: "8px",
                         border: "1px solid #CBD5E1",
                         fontSize: "0.85rem",
@@ -1097,7 +1188,7 @@ const muatDataEtalase = useCallback(async () => {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                       Harga Beli/Modal (Rp)
@@ -1113,7 +1204,7 @@ const muatDataEtalase = useCallback(async () => {
                           hargaBeli: unformatInputRupiah(e.target.value),
                         })
                       }
-                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                   <div>
@@ -1131,12 +1222,12 @@ const muatDataEtalase = useCallback(async () => {
                           hargaJual: unformatInputRupiah(e.target.value),
                         })
                       }
-                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                       Diskon Toko (%)
@@ -1148,7 +1239,7 @@ const muatDataEtalase = useCallback(async () => {
                       placeholder="0"
                       value={formBaru.diskonPersen}
                       onChange={(e) => setFormBaru({ ...formBaru, diskonPersen: e.target.value })}
-                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                   <div>
@@ -1163,7 +1254,7 @@ const muatDataEtalase = useCallback(async () => {
                       placeholder="1.0"
                       value={formBaru.berat}
                       onChange={(e) => setFormBaru({ ...formBaru, berat: e.target.value })}
-                      style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
+                      style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                     />
                   </div>
                 </div>
@@ -1177,7 +1268,7 @@ const muatDataEtalase = useCallback(async () => {
                     placeholder="Penjelasan detail komoditas..."
                     value={formBaru.deskripsi}
                     onChange={(e) => setFormBaru({ ...formBaru, deskripsi: e.target.value })}
-                    style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
                   />
                 </div>
 
@@ -1185,7 +1276,7 @@ const muatDataEtalase = useCallback(async () => {
                   <button
                     type="button"
                     onClick={closeModalTambah}
-                    style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer" }}
+                    style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}
                   >
                     Batal
                   </button>
@@ -1194,13 +1285,14 @@ const muatDataEtalase = useCallback(async () => {
                     disabled={submitting}
                     style={{
                       flex: 1,
-                      padding: "0.65rem",
+                      padding: "0.6rem",
                       borderRadius: "8px",
                       border: "none",
                       background: "#F59E0B",
                       color: "white",
                       fontWeight: 800,
                       cursor: "pointer",
+                      fontSize: "0.82rem",
                       opacity: submitting ? 0.7 : 1,
                     }}
                   >
@@ -1216,17 +1308,17 @@ const muatDataEtalase = useCallback(async () => {
       {editItem && (
         <div
           onClick={() => setEditItem(null)}
-          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "0.5rem" }}
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "380px", maxWidth: "100%" }}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "380px", maxWidth: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 800, color: "#1E293B" }}>Ubah Harga — {editItem.nama}</h2>
+              <h2 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Ubah Harga — {editItem.nama}</h2>
               <button onClick={() => setEditItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}>
                 <IconX />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitEdit} style={{ display: "flex", flexDirection: "column", gap: "0.9rem", marginTop: "1rem" }}>
+            <form onSubmit={handleSubmitEdit} style={{ display: "flex", flexDirection: "column", gap: "0.8rem", marginTop: "0.85rem" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                   Harga Jual (Rp)
@@ -1241,11 +1333,11 @@ const muatDataEtalase = useCallback(async () => {
                       hargaJual: unformatInputRupiah(e.target.value),
                     })
                   }
-                  style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
                     Diskon (%)
@@ -1256,7 +1348,7 @@ const muatDataEtalase = useCallback(async () => {
                     max="90"
                     value={editForm.diskonPersen}
                     onChange={(e) => setEditForm({ ...editForm, diskonPersen: e.target.value })}
-                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                   />
                 </div>
                 <div>
@@ -1271,7 +1363,7 @@ const muatDataEtalase = useCallback(async () => {
                     placeholder="1.0"
                     value={editForm.berat}
                     onChange={(e) => setEditForm({ ...editForm, berat: e.target.value })}
-                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }}
                   />
                 </div>
               </div>
@@ -1284,11 +1376,11 @@ const muatDataEtalase = useCallback(async () => {
                   rows={2}
                   value={editForm.deskripsi}
                   onChange={(e) => setEditForm({ ...editForm, deskripsi: e.target.value })}
-                  style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
+                  style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", fontFamily: "sans-serif" }}
                 />
               </div>
 
-              <button type="submit" style={{ width: "100%", padding: "0.65rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 800, cursor: "pointer" }}>
+              <button type="submit" style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>
                 Simpan Perubahan
               </button>
             </form>

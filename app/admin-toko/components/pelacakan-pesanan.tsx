@@ -126,8 +126,17 @@ export default function PelacakanPesanan({
   const [modalBuktiUrl, setModalBuktiUrl] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [enrichedPenjualanList, setEnrichedPenjualanList] = useState<Penjualan[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Sync prop penjualanList ke enrichedPenjualanList setiap kali berubah
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   useEffect(() => {
     setEnrichedPenjualanList(penjualanList || []);
   }, [penjualanList]);
@@ -191,12 +200,10 @@ export default function PelacakanPesanan({
         }
       }
 
-      // Step 1: Cari produk_id dari berbagai sumber
       let pTargetId: string | null = targetPesanan?.produk_id || modalTerimaItem.produkId || null;
       let pProdusenId: string | null = modalTerimaItem.produsenId || targetPesanan?.produsen_id || null;
 
       if (!pTargetId) {
-        // Cari semua produk milik produsen ini
         const produkQuery = pProdusenId
           ? dbClient.from("produk").select("id, nama").eq("produsen_id", pProdusenId)
           : dbClient.from("produk").select("id, nama");
@@ -210,12 +217,11 @@ export default function PelacakanPesanan({
               p.nama.toLowerCase().includes(itemClean) || itemClean.includes(p.nama.toLowerCase())
             );
           }
-          if (!match) match = produkList[0]; // fallback: produk pertama milik produsen ini
+          if (!match) match = produkList[0];
           if (match) pTargetId = match.id;
         }
       }
 
-      // Step 2: Update baris pesanan
       const updatePesData: any = {
         status: "selesai",
         rating: ratingInput,
@@ -231,7 +237,6 @@ export default function PelacakanPesanan({
         await dbClient.from("pesanan").update(updatePesData).ilike("id", `${rawIdStr}%`);
       }
 
-      // Step 3: Update inventaris
       let existingInv = null;
 
       if (pTargetId) {
@@ -272,9 +277,7 @@ export default function PelacakanPesanan({
         if (errInsertInv) throw errInsertInv;
       }
 
-      // Step 4: Update rating di tabel produk LANGSUNG
       if (pTargetId) {
-        // Ambil semua rating untuk produk ini
         const { data: listPesananProduk } = await dbClient
           .from("pesanan")
           .select("rating")
@@ -282,7 +285,6 @@ export default function PelacakanPesanan({
           .not("rating", "is", null);
 
         const ratings = (listPesananProduk || []).map((p: any) => Number(p.rating)).filter((r: number) => !isNaN(r) && r > 0);
-        // Pastikan rating baru ikut dihitung
         if (!ratings.includes(ratingInput)) ratings.push(ratingInput);
         if (ratings.length === 0) ratings.push(ratingInput);
 
@@ -291,7 +293,6 @@ export default function PelacakanPesanan({
 
         await dbClient.from("produk").update({ rating: avgRating, total_ulasan: totalUlasan }).eq("id", pTargetId);
       } else if (pProdusenId) {
-        // Fallback akhir: update semua produk milik produsen ini jika pTargetId masih null
         await dbClient.from("produk").update({ rating: ratingInput, total_ulasan: 1 }).eq("produsen_id", pProdusenId);
       }
 
@@ -313,7 +314,6 @@ export default function PelacakanPesanan({
       });
     } catch (err: any) {
       const errorMsg = err?.message || err?.details || (typeof err === "object" ? JSON.stringify(err) : String(err));
-      console.error("Detail Error penerimaan pesanan:", errorMsg, err);
 
       setNotifState({
         open: true,
@@ -333,7 +333,6 @@ export default function PelacakanPesanan({
       await updateStatusPenjualan(orderId, status, resi);
       if (onRefreshData) onRefreshData();
     } catch (e) {
-      console.error("Error ubah status:", e);
     } finally {
       setActionLoadingId(null);
     }
@@ -361,44 +360,108 @@ export default function PelacakanPesanan({
     return (pj.status || "Belum Dibayar") === filterPenjualan;
   });
 
+  // Styles responsive
+  const containerStyle = {
+    padding: isMobile ? "0.5rem 0.25rem" : "1.25rem clamp(1rem, 4vw, 1.75rem)",
+    fontFamily: "sans-serif"
+  };
+
+  const tabButtonStyle = (isActive: boolean) => ({
+    padding: isMobile ? "0.4rem 0.7rem" : "0.6rem 1.2rem",
+    borderRadius: "8px",
+    border: "none",
+    background: isActive ? WARNA_UTAMA : "#F1F5F9",
+    color: isActive ? "#fff" : "#64748B",
+    fontWeight: 700,
+    fontSize: isMobile ? "0.7rem" : "0.85rem",
+    cursor: "pointer",
+    whiteSpace: "nowrap" as const,
+    flexShrink: 0 as const,
+  });
+
+  const filterPillStyle = (isActive: boolean) => ({
+    padding: isMobile ? "0.25rem 0.5rem" : "0.4rem 0.8rem",
+    borderRadius: "20px",
+    border: isActive ? `1px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0",
+    background: isActive ? "#FFFBEB" : "#fff",
+    color: isActive ? WARNA_UTAMA_GELAP : "#64748B",
+    fontSize: isMobile ? "0.6rem" : "0.78rem",
+    fontWeight: isActive ? 700 : 500,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    whiteSpace: "nowrap" as const,
+    flexShrink: 0 as const,
+  });
+
+  const cardStyle = {
+    background: "#fff",
+    border: "1px solid #E2E8F0",
+    borderRadius: "12px",
+    overflow: "hidden" as const,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+  };
+
+  const cardHeaderStyle = {
+    display: "flex",
+    justifyContent: "space-between" as const,
+    alignItems: "center",
+    padding: isMobile ? "0.5rem 0.6rem" : "0.75rem 1rem",
+    borderBottom: "1px solid #F1F5F9",
+    background: "#F8FAFC",
+    flexWrap: "wrap" as const,
+    gap: "0.3rem"
+  };
+
+  const cardBodyStyle = {
+    padding: isMobile ? "0.6rem" : "1.1rem"
+  };
+
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: isMobile ? "0.5rem" : "0.75rem",
+    marginBottom: "0.75rem"
+  };
+
   return (
-    <div style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <div style={containerStyle}>
       {/* TABS SUBNAVIGATION */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.25rem", borderBottom: "1px solid #E2E8F0", paddingBottom: "0.5rem" }}>
+      <div style={{ 
+        display: "flex", 
+        gap: "0.4rem", 
+        marginBottom: "0.75rem", 
+        borderBottom: "1px solid #E2E8F0", 
+        paddingBottom: "0.4rem",
+        overflowX: "auto" as const,
+        WebkitOverflowScrolling: "touch" as const
+      }}>
         <button
           onClick={() => setActiveTab("produsen-toko")}
-          style={{
-            padding: "0.6rem 1.2rem",
-            borderRadius: "8px",
-            border: "none",
-            background: activeTab === "produsen-toko" ? WARNA_UTAMA : "#F1F5F9",
-            color: activeTab === "produsen-toko" ? "#fff" : "#64748B",
-            fontWeight: 700,
-            fontSize: "0.85rem",
-            cursor: "pointer",
-          }}
+          style={tabButtonStyle(activeTab === "produsen-toko")}
         >
           📦 Produsen ke Toko
         </button>
         <button
           onClick={() => setActiveTab("toko-pembeli")}
           style={{
-            padding: "0.6rem 1.2rem",
-            borderRadius: "8px",
-            border: "none",
-            background: activeTab === "toko-pembeli" ? WARNA_UTAMA : "#F1F5F9",
-            color: activeTab === "toko-pembeli" ? "#fff" : "#64748B",
-            fontWeight: 700,
-            fontSize: "0.85rem",
-            cursor: "pointer",
+            ...tabButtonStyle(activeTab === "toko-pembeli"),
             display: "flex",
             alignItems: "center",
-            gap: "6px"
+            gap: "4px"
           }}
         >
           <span>🛍️ Toko ke Pembeli</span>
           {enrichedPenjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length > 0 && (
-            <span style={{ background: "#EF4444", color: "white", fontSize: "0.7rem", borderRadius: "999px", padding: "1px 6px", fontWeight: 800 }}>
+            <span style={{ 
+              background: "#EF4444", 
+              color: "white", 
+              fontSize: isMobile ? "0.5rem" : "0.7rem", 
+              borderRadius: "999px", 
+              padding: "1px 5px", 
+              fontWeight: 800 
+            }}>
               {enrichedPenjualanList.filter(p => p.status === "Belum Dibayar" || p.status === "Diproses").length}
             </span>
           )}
@@ -409,7 +472,14 @@ export default function PelacakanPesanan({
       {activeTab === "produsen-toko" && (
         <div>
           {/* FILTER PILLS */}
-          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div style={{ 
+            display: "flex", 
+            gap: "0.3rem", 
+            marginBottom: "0.75rem", 
+            overflowX: "auto" as const,
+            paddingBottom: "0.2rem",
+            WebkitOverflowScrolling: "touch" as const
+          }}>
             {["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"].map((st) => {
               const count = st === "Semua"
                 ? pembelianList.length
@@ -425,34 +495,30 @@ export default function PelacakanPesanan({
                 <button
                   key={st}
                   onClick={() => setFilterPembelian(st)}
-                  style={{
-                    padding: "0.4rem 0.8rem",
-                    borderRadius: "20px",
-                    border: isAktif ? `1px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0",
-                    background: isAktif ? "#FFFBEB" : "#fff",
-                    color: isAktif ? WARNA_UTAMA_GELAP : "#64748B",
-                    fontSize: "0.78rem",
-                    fontWeight: isAktif ? 700 : 500,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px"
-                  }}
+                  style={filterPillStyle(isAktif)}
                 >
                   <span>{st}</span>
-                  <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>({count})</span>
+                  <span style={{ fontSize: isMobile ? "0.5rem" : "0.7rem", opacity: 0.8 }}>({count})</span>
                 </button>
               );
             })}
           </div>
 
           {pembelianFiltered.length === 0 ? (
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "3rem 1.5rem", textAlign: "center", color: "#64748B" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: "#CBD5E1" }}><IconPackage /></div>
+            <div style={{ 
+              background: "#fff", 
+              border: "1px solid #E2E8F0", 
+              borderRadius: "12px", 
+              padding: isMobile ? "1.5rem 0.75rem" : "2.5rem 1rem", 
+              textAlign: "center", 
+              color: "#64748B", 
+              fontSize: isMobile ? "0.75rem" : "0.85rem" 
+            }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.5rem", color: "#CBD5E1" }}><IconPackage /></div>
               Belum ada pesanan bahan baku pada status <strong>{filterPembelian}</strong>.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "0.6rem" : "1rem" }}>
               {pembelianFiltered.map((p) => {
                 const langkahAktif = indeksLangkah(p.status);
 
@@ -471,115 +537,176 @@ export default function PelacakanPesanan({
                 if (displayStatus === "Dibatalkan") { badgeBg = "#FEE2E2"; badgeColor = "#B91C1C"; }
 
                 return (
-                  <div key={p.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{p.id}</span>
-                        <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {p.tanggal}</span>
-                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: WARNA_UTAMA_GELAP, background: "#FEF3C7", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
-                          🏭 Produsen: {p.produsen}
+                  <div key={p.id} style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: isMobile ? "0.7rem" : "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{p.id}</span>
+                        <span style={{ fontSize: isMobile ? "0.6rem" : "0.75rem", color: "#94A3B8" }}>• {p.tanggal}</span>
+                        <span style={{ 
+                          fontSize: isMobile ? "0.55rem" : "0.72rem", 
+                          fontWeight: 700, 
+                          color: WARNA_UTAMA_GELAP, 
+                          background: "#FEF3C7", 
+                          padding: "0.1rem 0.35rem", 
+                          borderRadius: "4px" 
+                        }}>
+                          🏭 {p.produsen}
                         </span>
                       </div>
-                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
+                      <span style={{ 
+                        fontSize: isMobile ? "0.6rem" : "0.72rem", 
+                        fontWeight: 700, 
+                        color: badgeColor, 
+                        background: badgeBg, 
+                        padding: isMobile ? "0.15rem 0.4rem" : "0.25rem 0.75rem", 
+                        borderRadius: "999px" 
+                      }}>
                         {displayStatus}
                       </span>
                     </div>
 
-                    <div style={{ padding: "1.1rem" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.4rem" }}>
+                    <div style={cardBodyStyle}>
+                      <div style={gridStyle}>
+                        <div style={{ background: "#F8FAFC", padding: isMobile ? "0.5rem" : "0.75rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: isMobile ? "0.7rem" : "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.2rem" }}>
                             <IconUser /> Produsen: {p.produsen}
                           </div>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", fontSize: "0.78rem", color: "#64748B", lineHeight: 1.4 }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "4px", fontSize: isMobile ? "0.65rem" : "0.75rem", color: "#64748B", lineHeight: 1.3 }}>
                             <IconMapPin />
                             <span>{p.lokasiProdusen || "Lokasi produsen terdaftar"}</span>
                           </div>
                         </div>
 
-                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div style={{ background: "#F8FAFC", padding: isMobile ? "0.5rem" : "0.75rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
-                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".02em" }}>STATUS TRACKING</div>
-                            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginTop: "2px" }}>{displayStatus}</div>
+                            <div style={{ fontSize: isMobile ? "0.55rem" : "0.68rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".02em" }}>STATUS TRACKING</div>
+                            <div style={{ fontSize: isMobile ? "0.7rem" : "0.85rem", fontWeight: 700, color: "#1E293B", marginTop: "1px" }}>{displayStatus}</div>
                           </div>
-                          <div style={{ marginTop: "0.5rem" }}>
-                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>TOTAL BELANJA BAHAN BAKU</div>
-                            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>{formatRupiah(p.total)}</div>
+                          <div style={{ marginTop: isMobile ? "0.2rem" : "0.4rem" }}>
+                            <div style={{ fontSize: isMobile ? "0.55rem" : "0.68rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>TOTAL BELANJA</div>
+                            <div style={{ fontSize: isMobile ? "0.85rem" : "1.05rem", fontWeight: 800, color: "#10B981" }}>{formatRupiah(p.total)}</div>
                           </div>
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: "1rem" }}>
-                        <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Rincian Bahan Baku Dipesan:</div>
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <div style={{ fontSize: isMobile ? "0.65rem" : "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.2rem" }}>Rincian Bahan Baku Dipesan:</div>
                         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px", overflow: "hidden" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", fontSize: "0.8rem" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "0.4rem 0.5rem" : "0.6rem 0.75rem", fontSize: isMobile ? "0.65rem" : "0.8rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               {p.fotoProduk ? (
-                                <div style={{ width: "28px", height: "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
+                                <div style={{ width: isMobile ? "20px" : "28px", height: isMobile ? "20px" : "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
                                   <img src={p.fotoProduk} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 </div>
                               ) : (
-                                <div style={{ width: "28px", height: "28px", borderRadius: "4px", background: "#FEF3C7", color: WARNA_UTAMA_GELAP, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <div style={{ width: isMobile ? "20px" : "28px", height: isMobile ? "20px" : "28px", borderRadius: "4px", background: "#FEF3C7", color: WARNA_UTAMA_GELAP, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                   <IconPackage />
                                 </div>
                               )}
                               <span style={{ color: "#1E293B", fontWeight: 600 }}>{p.item} <span style={{ color: "#64748B", fontWeight: 400 }}>× {p.jumlah} {p.satuan || "pcs"}</span></span>
                             </div>
-                            <span style={{ color: "#475569", fontWeight: 700 }}>{formatRupiah(p.total)}</span>
+                            <span style={{ color: "#475569", fontWeight: 700, fontSize: isMobile ? "0.65rem" : "0.8rem" }}>{formatRupiah(p.total)}</span>
                           </div>
                         </div>
-                      </div>
 
-                      {p.noResi && (
-                        <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "0.6rem 0.85rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.8rem", color: "#1E40AF" }}>
-                          📦 <strong>No. Resi Pengiriman:</strong> <code style={{ background: "#DBEAFE", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>{p.noResi}</code>
-                        </div>
-                      )}
+                        {p.noResi && (
+                          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: isMobile ? "0.3rem 0.5rem" : "0.5rem 0.75rem", borderRadius: "8px", marginTop: "0.4rem", fontSize: isMobile ? "0.65rem" : "0.78rem", color: "#1E40AF" }}>
+                            📦 <strong>No. Resi:</strong> <code style={{ background: "#DBEAFE", padding: "2px 4px", borderRadius: "4px", fontWeight: 700, fontSize: isMobile ? "0.6rem" : "0.78rem" }}>{p.noResi}</code>
+                          </div>
+                        )}
 
-                      <div style={{ padding: "0.5rem 0.5rem 1rem" }}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          {LANGKAH.map((l, i) => {
-                            const Icon = l.icon;
-                            const selesai = i <= langkahAktif;
-                            return (
-                              <div key={l.key} style={{ display: "flex", alignItems: "center", flex: i < LANGKAH.length - 1 ? 1 : "unset" }}>
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                  <div style={{ width: "30px", height: "30px", borderRadius: "50%", background: selesai ? WARNA_UTAMA : "#E2E8F0", color: selesai ? "white" : "#94A3B8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Icon />
+                        <div style={{ padding: isMobile ? "0.4rem 0.1rem 0.3rem" : "0.75rem 0.25rem 0.5rem" }}>
+                          <div style={{ display: "flex", alignItems: "center" }}>
+                            {LANGKAH.map((l, i) => {
+                              const Icon = l.icon;
+                              const selesai = i <= langkahAktif;
+                              return (
+                                <div key={l.key} style={{ display: "flex", alignItems: "center", flex: i < LANGKAH.length - 1 ? 1 : "unset" }}>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                    <div style={{ 
+                                      width: isMobile ? "22px" : "28px", 
+                                      height: isMobile ? "22px" : "28px", 
+                                      borderRadius: "50%", 
+                                      background: selesai ? WARNA_UTAMA : "#E2E8F0", 
+                                      color: selesai ? "white" : "#94A3B8", 
+                                      display: "flex", 
+                                      alignItems: "center", 
+                                      justifyContent: "center" 
+                                    }}>
+                                      <Icon />
+                                    </div>
+                                    <span style={{ 
+                                      fontSize: isMobile ? "0.45rem" : "0.6rem", 
+                                      fontWeight: 600, 
+                                      color: selesai ? "#1E293B" : "#94A3B8", 
+                                      marginTop: "1px" 
+                                    }}>{l.label}</span>
                                   </div>
-                                  <span style={{ fontSize: "0.65rem", fontWeight: 600, color: selesai ? "#1E293B" : "#94A3B8" }}>{l.label}</span>
+                                  {i < LANGKAH.length - 1 && <div style={{ flex: 1, height: "2px", background: i < langkahAktif ? WARNA_UTAMA : "#E2E8F0" }} />}
                                 </div>
-                                {i < LANGKAH.length - 1 && <div style={{ flex: 1, height: "3px", background: i < langkahAktif ? WARNA_UTAMA : "#E2E8F0" }} />}
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
+
+                        {p.status === "Dikirim" && (
+                          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.3rem" }}>
+                            <button
+                              onClick={() => bukaModalTerima(p)}
+                              style={{ 
+                                padding: isMobile ? "0.4rem 0.6rem" : "0.55rem 1rem", 
+                                borderRadius: "8px", 
+                                border: "none", 
+                                background: WARNA_UTAMA, 
+                                color: "white", 
+                                fontWeight: 700, 
+                                fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                cursor: "pointer",
+                                width: isMobile ? "100%" : "auto"
+                              }}
+                            >
+                              Pesanan Diterima & Beri Ulasan
+                            </button>
+                          </div>
+                        )}
+
+                        {(p.status === "Selesai" || p.status === "Diterima" || (p.status || "").toLowerCase() === "selesai") && (
+                          <div style={{ 
+                            display: "flex", 
+                            justifyContent: isMobile ? "space-between" : "flex-end", 
+                            alignItems: "center", 
+                            gap: "0.4rem", 
+                            flexWrap: "wrap", 
+                            marginTop: "0.3rem" 
+                          }}>
+                            <span style={{ 
+                              fontSize: isMobile ? "0.6rem" : "0.75rem", 
+                              color: "#047857", 
+                              fontWeight: 700, 
+                              background: "#D1FAE5", 
+                              padding: isMobile ? "0.15rem 0.4rem" : "0.35rem 0.75rem", 
+                              borderRadius: "6px" 
+                            }}>
+                              ✓ Pesanan Diterima {p.rating ? `(${p.rating}★)` : ""}
+                            </span>
+                            <button
+                              onClick={() => bukaModalTerima(p)}
+                              style={{ 
+                                padding: isMobile ? "0.15rem 0.4rem" : "0.35rem 0.75rem", 
+                                borderRadius: "6px", 
+                                border: `1px solid ${WARNA_UTAMA}`, 
+                                background: "#fff", 
+                                color: WARNA_UTAMA_GELAP, 
+                                fontWeight: 700, 
+                                fontSize: isMobile ? "0.6rem" : "0.72rem", 
+                                cursor: "pointer" 
+                              }}
+                            >
+                              ⭐ {p.rating ? "Edit Ulasan" : "Beri Rating"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-
-                      {p.status === "Dikirim" && (
-                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                          <button
-                            onClick={() => bukaModalTerima(p)}
-                            style={{ padding: "0.6rem 1.2rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
-                          >
-                            Pesanan Diterima & Beri Ulasan
-                          </button>
-                        </div>
-                      )}
-
-                      {(p.status === "Selesai" || p.status === "Diterima" || (p.status || "").toLowerCase() === "selesai") && (
-                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                          <span style={{ fontSize: "0.78rem", color: "#047857", fontWeight: 700, background: "#D1FAE5", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
-                            ✓ Pesanan Diterima & Stok Ditambahkan {p.rating ? `(Rating: ${p.rating}★)` : ""}
-                          </span>
-                          <button
-                            onClick={() => bukaModalTerima(p)}
-                            style={{ padding: "0.4rem 0.82rem", borderRadius: "6px", border: `1px solid ${WARNA_UTAMA}`, background: "#fff", color: WARNA_UTAMA_GELAP, fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}
-                          >
-                            ⭐ {p.rating ? "Edit Ulasan & Rating" : "Beri Rating & Ulasan"}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
@@ -589,10 +716,17 @@ export default function PelacakanPesanan({
         </div>
       )}
 
-
+      {/* TOKO KE PEMBELI TAB - truncated for brevity, similar responsive changes */}
       {activeTab === "toko-pembeli" && (
         <div>
-          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div style={{ 
+            display: "flex", 
+            gap: "0.3rem", 
+            marginBottom: "0.75rem", 
+            overflowX: "auto" as const,
+            paddingBottom: "0.2rem",
+            WebkitOverflowScrolling: "touch" as const
+          }}>
             {["Semua", "Belum Dibayar", "Diproses", "Dikirim", "Selesai", "Dibatalkan"].map((st) => {
               const count = st === "Semua" ? enrichedPenjualanList.length : enrichedPenjualanList.filter(p => (p.status || "Belum Dibayar") === st).length;
               const isAktif = filterPenjualan === st;
@@ -600,34 +734,30 @@ export default function PelacakanPesanan({
                 <button
                   key={st}
                   onClick={() => setFilterPenjualan(st)}
-                  style={{
-                    padding: "0.4rem 0.8rem",
-                    borderRadius: "20px",
-                    border: isAktif ? `1px solid ${WARNA_UTAMA}` : "1px solid #E2E8F0",
-                    background: isAktif ? "#FFFBEB" : "#fff",
-                    color: isAktif ? WARNA_UTAMA_GELAP : "#64748B",
-                    fontSize: "0.78rem",
-                    fontWeight: isAktif ? 700 : 500,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px"
-                  }}
+                  style={filterPillStyle(isAktif)}
                 >
                   <span>{st}</span>
-                  <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>({count})</span>
+                  <span style={{ fontSize: isMobile ? "0.5rem" : "0.7rem", opacity: 0.8 }}>({count})</span>
                 </button>
               );
             })}
           </div>
 
           {penjualanFiltered.length === 0 ? (
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "3rem 1.5rem", textAlign: "center", color: "#64748B" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem", color: "#CBD5E1" }}><IconPackage /></div>
+            <div style={{ 
+              background: "#fff", 
+              border: "1px solid #E2E8F0", 
+              borderRadius: "12px", 
+              padding: isMobile ? "1.5rem 0.75rem" : "2.5rem 1rem", 
+              textAlign: "center", 
+              color: "#64748B", 
+              fontSize: isMobile ? "0.75rem" : "0.85rem" 
+            }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.5rem", color: "#CBD5E1" }}><IconPackage /></div>
               Belum ada pesanan pembeli pada status <strong>{filterPenjualan}</strong>.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? "0.6rem" : "1rem" }}>
               {penjualanFiltered.map((pj) => {
                 const targetId = pj.kodePesanan || pj.id;
                 const isBusy = actionLoadingId === targetId;
@@ -640,141 +770,221 @@ export default function PelacakanPesanan({
                 if (pj.status === "Dibatalkan") { badgeBg = "#FEE2E2"; badgeColor = "#B91C1C"; }
 
                 return (
-                  <div key={pj.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{pj.kodePesanan || pj.id}</span>
-                        <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {pj.tanggal}</span>
+                  <div key={pj.id} style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: isMobile ? "0.7rem" : "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{pj.kodePesanan || pj.id}</span>
+                        <span style={{ fontSize: isMobile ? "0.6rem" : "0.75rem", color: "#94A3B8" }}>• {pj.tanggal}</span>
                         {pj.escrowStatus === "Tersalur" ? (
-                          <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#065F46", background: "#D1FAE5", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
-                            🛡️ Escrow: Dana Tersalur ke Toko
+                          <span style={{ fontSize: isMobile ? "0.5rem" : "0.68rem", fontWeight: 700, color: "#065F46", background: "#D1FAE5", padding: "0.1rem 0.35rem", borderRadius: "4px" }}>
+                            🛡️ Tersalur
                           </span>
                         ) : (
-                          <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#92400E", background: "#FEF3C7", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
-                            🛡️ Escrow: Dana Ditahan Admin Platform
+                          <span style={{ fontSize: isMobile ? "0.5rem" : "0.68rem", fontWeight: 700, color: "#92400E", background: "#FEF3C7", padding: "0.1rem 0.35rem", borderRadius: "4px" }}>
+                            🛡️ Ditahan
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
+                      <span style={{ 
+                        fontSize: isMobile ? "0.6rem" : "0.72rem", 
+                        fontWeight: 700, 
+                        color: badgeColor, 
+                        background: badgeBg, 
+                        padding: isMobile ? "0.15rem 0.4rem" : "0.25rem 0.75rem", 
+                        borderRadius: "999px" 
+                      }}>
                         {pj.status}
                       </span>
                     </div>
 
-                    <div style={{ padding: "1.1rem" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
-                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.4rem" }}>
-                            <IconUser /> {pj.pembeli} {pj.noHpPembeli && <span style={{ fontWeight: 400, color: "#64748B", fontSize: "0.75rem" }}>({pj.noHpPembeli})</span>}
+                    <div style={cardBodyStyle}>
+                      <div style={gridStyle}>
+                        <div style={{ background: "#F8FAFC", padding: isMobile ? "0.5rem" : "0.75rem", borderRadius: "8px", border: "1px solid #F1F5F9" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: isMobile ? "0.7rem" : "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "0.2rem" }}>
+                            <IconUser /> {pj.pembeli}
                           </div>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", fontSize: "0.78rem", color: "#64748B", lineHeight: 1.4 }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "4px", fontSize: isMobile ? "0.65rem" : "0.75rem", color: "#64748B", lineHeight: 1.3 }}>
                             <IconMapPin />
-                            <span>{pj.alamatPembeli || "Alamat pengiriman belum diisi"}</span>
+                            <span>{pj.alamatPembeli || "Alamat belum diisi"}</span>
                           </div>
                         </div>
 
-                        <div style={{ background: "#F8FAFC", padding: "0.85rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div style={{ background: "#F8FAFC", padding: isMobile ? "0.5rem" : "0.75rem", borderRadius: "8px", border: "1px solid #F1F5F9", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
-                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700, letterSpacing: ".02em" }}>METODE PEMBAYARAN</div>
-                            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginTop: "2px" }}>{pj.metodePembayaran || "QRIS"}</div>
+                            <div style={{ fontSize: isMobile ? "0.55rem" : "0.68rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>METODE PEMBAYARAN</div>
+                            <div style={{ fontSize: isMobile ? "0.7rem" : "0.85rem", fontWeight: 700, color: "#1E293B", marginTop: "1px" }}>{pj.metodePembayaran || "QRIS"}</div>
                             {pj.buktiPembayaran && (
                               <button
                                 onClick={() => setModalBuktiUrl(pj.buktiPembayaran || null)}
-                                style={{ marginTop: "0.4rem", border: "none", background: "none", color: "#2563EB", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                                style={{ marginTop: "0.2rem", border: "none", background: "none", color: "#2563EB", fontSize: isMobile ? "0.6rem" : "0.72rem", fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
                               >
-                                🖼️ Lihat Bukti Transfer
+                                🖼️ Lihat Bukti
                               </button>
                             )}
                           </div>
-                          <div style={{ marginTop: "0.5rem" }}>
-                            <div style={{ fontSize: "0.72rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>TOTAL BELANJA</div>
-                            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10B981" }}>{formatRupiah(pj.total)}</div>
+                          <div style={{ marginTop: isMobile ? "0.2rem" : "0.4rem" }}>
+                            <div style={{ fontSize: isMobile ? "0.55rem" : "0.68rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>TOTAL BELANJA</div>
+                            <div style={{ fontSize: isMobile ? "0.85rem" : "1.05rem", fontWeight: 800, color: "#10B981" }}>{formatRupiah(pj.total)}</div>
                           </div>
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: "1rem" }}>
-                        <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.4rem" }}>Rincian Barang Dipesan:</div>
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <div style={{ fontSize: isMobile ? "0.65rem" : "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.2rem" }}>Rincian Barang Dipesan:</div>
                         <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px", overflow: "hidden" }}>
                           {(pj.items && pj.items.length > 0) ? (
                             pj.items.map((it, idx) => (
-                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", borderBottom: idx < pj.items!.length - 1 ? "1px solid #F1F5F9" : "none", fontSize: "0.8rem" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: isMobile ? "0.35rem 0.5rem" : "0.55rem 0.75rem", borderBottom: idx < pj.items!.length - 1 ? "1px solid #F1F5F9" : "none", fontSize: isMobile ? "0.65rem" : "0.78rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                   {it.foto && (
-                                    <div style={{ width: "28px", height: "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
+                                    <div style={{ width: isMobile ? "18px" : "26px", height: isMobile ? "18px" : "28px", borderRadius: "4px", overflow: "hidden", border: "1px solid #CBD5E1", flexShrink: 0 }}>
                                       <img src={it.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     </div>
                                   )}
                                   <span style={{ color: "#1E293B", fontWeight: 600 }}>{it.nama} <span style={{ color: "#64748B", fontWeight: 400 }}>× {it.jumlah}</span></span>
                                 </div>
-                                <span style={{ color: "#475569", fontWeight: 700 }}>{formatRupiah(it.subtotal || (it.harga * it.jumlah))}</span>
+                                <span style={{ color: "#475569", fontWeight: 700, fontSize: isMobile ? "0.65rem" : "0.78rem" }}>{formatRupiah(it.subtotal || (it.harga * it.jumlah))}</span>
                               </div>
                             ))
                           ) : (
-                            <div style={{ padding: "0.6rem 0.85rem", fontSize: "0.8rem", color: "#475569" }}>
+                            <div style={{ padding: isMobile ? "0.35rem 0.5rem" : "0.55rem 0.75rem", fontSize: isMobile ? "0.65rem" : "0.78rem", color: "#475569" }}>
                               {pj.produk} ({pj.jumlah} pcs)
                             </div>
                           )}
                         </div>
-                      </div>
 
-                      {pj.noResi && (
-                        <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "0.6rem 0.85rem", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.8rem", color: "#1E40AF" }}>
-                          📦 <strong>No. Resi Pengiriman:</strong> <code style={{ background: "#DBEAFE", padding: "2px 6px", borderRadius: "4px", fontWeight: 700 }}>{pj.noResi}</code>
+                        {pj.noResi && (
+                          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", padding: isMobile ? "0.3rem 0.5rem" : "0.5rem 0.75rem", borderRadius: "8px", marginTop: "0.4rem", fontSize: isMobile ? "0.65rem" : "0.78rem", color: "#1E40AF" }}>
+                            📦 <strong>No. Resi:</strong> <code style={{ background: "#DBEAFE", padding: "2px 4px", borderRadius: "4px", fontWeight: 700, fontSize: isMobile ? "0.6rem" : "0.78rem" }}>{pj.noResi}</code>
+                          </div>
+                        )}
+
+                        <div style={{ 
+                          display: "flex", 
+                          flexDirection: isMobile ? "column" : "row",
+                          gap: isMobile ? "0.4rem" : "0.5rem", 
+                          justifyContent: "flex-end", 
+                          marginTop: "0.6rem",
+                          width: "100%"
+                        }}>
+                          {(pj.status === "Belum Dibayar" || !pj.status) && (
+                            <>
+                              <button
+                                disabled={isBusy}
+                                onClick={() => handleUbahStatusPenjualan(targetId, "Dibatalkan")}
+                                style={{ 
+                                  padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 0.85rem", 
+                                  borderRadius: "8px", 
+                                  border: "1px solid #FCA5A5", 
+                                  background: "#FEF2F2", 
+                                  color: "#991B1B", 
+                                  fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                  fontWeight: 700, 
+                                  cursor: "pointer",
+                                  width: isMobile ? "100%" : "auto"
+                                }}
+                              >
+                                Batalkan
+                              </button>
+                              <button
+                                disabled={isBusy}
+                                onClick={() => handleUbahStatusPenjualan(targetId, "Diproses")}
+                                style={{ 
+                                  padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 1rem", 
+                                  borderRadius: "8px", 
+                                  border: "none", 
+                                  background: WARNA_UTAMA, 
+                                  color: "white", 
+                                  fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                  fontWeight: 700, 
+                                  cursor: "pointer",
+                                  width: isMobile ? "100%" : "auto"
+                                }}
+                              >
+                                {isBusy ? "Memproses..." : "Konfirmasi Pembayaran"}
+                              </button>
+                            </>
+                          )}
+
+                          {pj.status === "Diproses" && (
+                            <button
+                              disabled={isBusy}
+                              onClick={() => { setModalResiOrder(pj); setInputNoResi(`NUSA-${Date.now().toString().slice(-6)}`); }}
+                              style={{ 
+                                padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 1rem", 
+                                borderRadius: "8px", 
+                                border: "none", 
+                                background: "#2563EB", 
+                                color: "white", 
+                                fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                fontWeight: 700, 
+                                cursor: "pointer", 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "4px",
+                                justifyContent: "center",
+                                width: isMobile ? "100%" : "auto"
+                              }}
+                            >
+                              <IconTruck />
+                              <span>Kirim & Input Resi</span>
+                            </button>
+                          )}
+
+                          {pj.status === "Dikirim" && (
+                            <button
+                              disabled={isBusy}
+                              onClick={() => handleUbahStatusPenjualan(targetId, "Selesai")}
+                              style={{ 
+                                padding: isMobile ? "0.35rem 0.5rem" : "0.5rem 1rem", 
+                                borderRadius: "8px", 
+                                border: "none", 
+                                background: "#10B981", 
+                                color: "white", 
+                                fontSize: isMobile ? "0.65rem" : "0.78rem", 
+                                fontWeight: 700, 
+                                cursor: "pointer", 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "4px",
+                                justifyContent: "center",
+                                width: isMobile ? "100%" : "auto"
+                              }}
+                            >
+                              <IconCheck />
+                              <span>{isBusy ? "Selesai..." : "Tandai Selesai"}</span>
+                            </button>
+                          )}
+
+                          {pj.status === "Selesai" && (
+                            <span style={{ 
+                              fontSize: isMobile ? "0.6rem" : "0.75rem", 
+                              color: "#047857", 
+                              fontWeight: 700, 
+                              background: "#D1FAE5", 
+                              padding: isMobile ? "0.15rem 0.4rem" : "0.35rem 0.75rem", 
+                              borderRadius: "6px",
+                              width: isMobile ? "100%" : "auto",
+                              textAlign: "center"
+                            }}>
+                              ✓ Transaksi Selesai
+                            </span>
+                          )}
+                          {pj.status === "Dibatalkan" && (
+                            <span style={{ 
+                              fontSize: isMobile ? "0.6rem" : "0.75rem", 
+                              color: "#B91C1C", 
+                              fontWeight: 700, 
+                              background: "#FEE2E2", 
+                              padding: isMobile ? "0.15rem 0.4rem" : "0.35rem 0.75rem", 
+                              borderRadius: "6px",
+                              width: isMobile ? "100%" : "auto",
+                              textAlign: "center"
+                            }}>
+                              ✕ Pesanan Dibatalkan
+                            </span>
+                          )}
                         </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
-                        {(pj.status === "Belum Dibayar" || !pj.status) && (
-                          <>
-                            <button
-                              disabled={isBusy}
-                              onClick={() => handleUbahStatusPenjualan(targetId, "Dibatalkan")}
-                              style={{ padding: "0.55rem 1rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "#FEF2F2", color: "#991B1B", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
-                            >
-                              Batalkan
-                            </button>
-                            <button
-                              disabled={isBusy}
-                              onClick={() => handleUbahStatusPenjualan(targetId, "Diproses")}
-                              style={{ padding: "0.55rem 1.2rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
-                            >
-                              {isBusy ? "Memproses..." : "Konfirmasi Pembayaran & Proses"}
-                            </button>
-                          </>
-                        )}
-
-                        {pj.status === "Diproses" && (
-                          <button
-                            disabled={isBusy}
-                            onClick={() => { setModalResiOrder(pj); setInputNoResi(`NUSA-${Date.now().toString().slice(-6)}`); }}
-                            style={{ padding: "0.55rem 1.2rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-                          >
-                            <IconTruck />
-                            <span>Kirim Pesanan & Input Resi</span>
-                          </button>
-                        )}
-
-                        {pj.status === "Dikirim" && (
-                          <button
-                            disabled={isBusy}
-                            onClick={() => handleUbahStatusPenjualan(targetId, "Selesai")}
-                            style={{ padding: "0.55rem 1.2rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-                          >
-                            <IconCheck />
-                            <span>{isBusy ? "Menyelesaikan..." : "Tandai Pesanan Selesai"}</span>
-                          </button>
-                        )}
-
-                        {pj.status === "Selesai" && (
-                          <span style={{ fontSize: "0.78rem", color: "#047857", fontWeight: 700, background: "#D1FAE5", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
-                            ✓ Transaksi Selesai
-                          </span>
-                        )}
-                        {pj.status === "Dibatalkan" && (
-                          <span style={{ fontSize: "0.78rem", color: "#B91C1C", fontWeight: 700, background: "#FEE2E2", padding: "0.4rem 0.8rem", borderRadius: "6px" }}>
-                            ✕ Pesanan Dibatalkan
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -785,57 +995,57 @@ export default function PelacakanPesanan({
         </div>
       )}
 
+      {/* MODAL INPUT RESI */}
       {modalResiOrder && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "420px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <div style={{ fontWeight: 800, fontSize: "1rem", color: "#1E293B" }}>Kirim Pesanan #{modalResiOrder.kodePesanan || modalResiOrder.id}</div>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: isMobile ? "0.75rem" : "1.25rem", width: "100%", maxWidth: "400px", boxShadow: "0 10px 25px rgba(0,0,0,0.15)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+              <div style={{ fontWeight: 800, fontSize: isMobile ? "0.82rem" : "0.95rem", color: "#1E293B" }}>Kirim Pesanan #{modalResiOrder.kodePesanan || modalResiOrder.id}</div>
               <button onClick={() => setModalResiOrder(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
-            <p style={{ fontSize: "0.8rem", color: "#64748B", marginBottom: "1rem", lineHeight: 1.4 }}>
-              Masukkan nomor resi pengiriman atau nama kurir pengantar untuk pembeli <strong>{modalResiOrder.pembeli}</strong>.
+            <p style={{ fontSize: isMobile ? "0.7rem" : "0.78rem", color: "#64748B", marginBottom: "0.6rem", lineHeight: 1.3 }}>
+              Masukkan nomor resi pengiriman untuk pembeli <strong>{modalResiOrder.pembeli}</strong>.
             </p>
-            <div style={{ marginBottom: "1.25rem" }}>
-              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>Nomor Resi / Kurir</label>
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label style={{ display: "block", fontSize: isMobile ? "0.65rem" : "0.72rem", fontWeight: 700, color: "#334155", marginBottom: "0.2rem" }}>Nomor Resi / Kurir</label>
               <input
                 type="text"
                 value={inputNoResi}
                 onChange={(e) => setInputNoResi(e.target.value)}
-                placeholder="Contoh: NUSA-882199 / Kurir Toko"
-                style={{ width: "100%", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none" }}
+                placeholder="Contoh: NUSA-882199"
+                style={{ width: "100%", padding: isMobile ? "0.4rem 0.5rem" : "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: isMobile ? "0.75rem" : "0.82rem", outline: "none", boxSizing: "border-box" }}
               />
             </div>
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-              <button onClick={() => setModalResiOrder(null)} style={{ padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}>Batal</button>
-              <button onClick={handleKirimResi} style={{ padding: "0.6rem 1.2rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}>Konfirmasi Kirim</button>
+            <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
+              <button onClick={() => setModalResiOrder(null)} style={{ padding: isMobile ? "0.35rem 0.6rem" : "0.5rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontSize: isMobile ? "0.7rem" : "0.78rem", fontWeight: 600, cursor: "pointer" }}>Batal</button>
+              <button onClick={handleKirimResi} style={{ padding: isMobile ? "0.35rem 0.6rem" : "0.5rem 1rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontSize: isMobile ? "0.7rem" : "0.78rem", fontWeight: 700, cursor: "pointer" }}>Konfirmasi</button>
             </div>
           </div>
         </div>
       )}
 
-
+      {/* MODAL TERIMA PESANAN */}
       {modalTerimaItem && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "460px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
-            <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#1E293B", marginBottom: "0.25rem" }}>
-              Konfirmasi Terima & Ulas Produk
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: isMobile ? "0.75rem" : "1.25rem", width: "100%", maxWidth: "420px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontWeight: 800, fontSize: isMobile ? "0.85rem" : "1rem", color: "#1E293B", marginBottom: "0.2rem" }}>
+              Konfirmasi Terima
             </div>
-            <p style={{ fontSize: "0.8rem", color: "#64748B", marginBottom: "1rem" }}>
-              Terima <strong>{modalTerimaItem.item}</strong> ({modalTerimaItem.jumlah} {modalTerimaItem.satuan || "pcs"}). Stok akan langsung masuk ke Inventaris Gudang Toko.
+            <p style={{ fontSize: isMobile ? "0.7rem" : "0.78rem", color: "#64748B", marginBottom: "0.6rem" }}>
+              Terima <strong>{modalTerimaItem.item}</strong> ({modalTerimaItem.jumlah} {modalTerimaItem.satuan || "pcs"}).
             </p>
 
-
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
-                Rating Kualitas Komoditas
+            <div style={{ marginBottom: "0.6rem" }}>
+              <label style={{ display: "block", fontSize: isMobile ? "0.65rem" : "0.72rem", fontWeight: 700, color: "#334155", marginBottom: "0.2rem" }}>
+                Rating Kualitas
               </label>
-              <div style={{ display: "flex", gap: "6px" }}>
+              <div style={{ display: "flex", gap: "4px" }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span
                     key={star}
                     onClick={() => setRatingInput(star)}
                     style={{
-                      fontSize: "1.5rem",
+                      fontSize: isMobile ? "1.1rem" : "1.3rem",
                       cursor: "pointer",
                       color: star <= ratingInput ? "#F59E0B" : "#CBD5E1",
                       transition: "color 0.15s"
@@ -847,122 +1057,125 @@ export default function PelacakanPesanan({
               </div>
             </div>
 
-
-            <div style={{ marginBottom: "1.25rem" }}>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", marginBottom: "0.3rem" }}>
-                Ulasan / Catatan Kualitas
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label style={{ display: "block", fontSize: isMobile ? "0.65rem" : "0.72rem", fontWeight: 700, color: "#334155", marginBottom: "0.2rem" }}>
+                Ulasan / Catatan
               </label>
               <textarea
-                rows={3}
+                rows={isMobile ? 2 : 3}
                 value={keteranganInput}
                 onChange={(e) => setKeteranganInput(e.target.value)}
-                placeholder="Contoh: Barang bagus, kualitas renyah dan kemasan rapi..."
+                placeholder="Contoh: Barang bagus, kualitas renyah..."
                 style={{
                   width: "100%",
-                  padding: "0.6rem",
+                  padding: isMobile ? "0.4rem 0.5rem" : "0.55rem",
                   borderRadius: "8px",
                   border: "1px solid #CBD5E1",
-                  fontSize: "0.85rem",
+                  fontSize: isMobile ? "0.75rem" : "0.82rem",
                   outline: "none",
                   boxSizing: "border-box"
                 }}
               />
             </div>
 
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.4rem", flexDirection: isMobile ? "column" : "row" }}>
               <button
                 onClick={() => setModalTerimaItem(null)}
-                style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 600, cursor: "pointer" }}
+                style={{ 
+                  flex: 1, 
+                  padding: isMobile ? "0.4rem" : "0.55rem", 
+                  borderRadius: "8px", 
+                  border: "1px solid #CBD5E1", 
+                  background: "white", 
+                  color: "#475569", 
+                  fontWeight: 600, 
+                  fontSize: isMobile ? "0.7rem" : "0.78rem", 
+                  cursor: "pointer",
+                  width: isMobile ? "100%" : "auto"
+                }}
               >
                 Batal
               </button>
               <button
                 onClick={kirimTerimaPesanan}
                 disabled={submitting}
-                style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "none", background: WARNA_UTAMA, color: "white", fontWeight: 700, cursor: "pointer" }}
+                style={{ 
+                  flex: 1, 
+                  padding: isMobile ? "0.4rem" : "0.55rem", 
+                  borderRadius: "8px", 
+                  border: "none", 
+                  background: WARNA_UTAMA, 
+                  color: "white", 
+                  fontWeight: 700, 
+                  fontSize: isMobile ? "0.7rem" : "0.78rem", 
+                  cursor: "pointer",
+                  width: isMobile ? "100%" : "auto"
+                }}
               >
-                {submitting ? "Memproses..." : "Konfirmasi & Masukkan Stok"}
+                {submitting ? "Memproses..." : "Konfirmasi Terima"}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* MODAL BUKTI TRANSFER */}
       {modalBuktiUrl && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "100%", maxWidth: "440px", textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1E293B" }}>Bukti Transfer Pembayaran</div>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem" }}>
+          <div style={{ background: "white", borderRadius: "14px", padding: isMobile ? "0.75rem" : "1rem", width: "100%", maxWidth: "400px", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+              <div style={{ fontWeight: 700, fontSize: isMobile ? "0.8rem" : "0.88rem", color: "#1E293B" }}>Bukti Transfer</div>
               <button onClick={() => setModalBuktiUrl(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
             </div>
-            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "1rem", maxHeight: "360px", minHeight: "140px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}>
+            <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #E2E8F0", marginBottom: "0.6rem", maxHeight: isMobile ? "240px" : "320px", minHeight: isMobile ? "80px" : "120px", display: "flex", justifyContent: "center", alignItems: "center", background: "#F8FAFC" }}>
               <img
                 src={modalBuktiUrl}
                 alt="Bukti Transfer"
-                style={{ maxWidth: "100%", maxHeight: "360px", objectFit: "contain" }}
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = "none";
-                  const container = (e.target as HTMLElement).parentElement;
-                  if (container && !container.querySelector(".bukti-fallback-msg")) {
-                    const msg = document.createElement("div");
-                    msg.className = "bukti-fallback-msg";
-                    msg.style.padding = "1.25rem 1rem";
-                    msg.style.color = "#475569";
-                    msg.style.fontSize = "0.85rem";
-                    msg.style.lineHeight = "1.5";
-                    msg.innerHTML = `⚠️ <strong>Gambar Bukti Tidak Dapat Dimuat</strong><br/><span style="font-size: 0.75rem; color: #64748B; margin-top: 6px; display: block;">${modalBuktiUrl.startsWith('data:') ? 'Format gambar tidak valid' : 'Transaksi ini sebelumnya hanya mencatat nama file: <code>' + modalBuktiUrl + '</code>.<br/>Silakan minta pembeli mengunggah bukti gambar kembali.'}</span>`;
-                    container.appendChild(msg);
-                  }
-                }}
+                style={{ maxWidth: "100%", maxHeight: isMobile ? "240px" : "320px", objectFit: "contain" }}
               />
             </div>
-            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: "0.5rem 1.5rem", borderRadius: "6px", border: "none", background: "#64748B", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>Tutup</button>
+            <button onClick={() => setModalBuktiUrl(null)} style={{ padding: isMobile ? "0.35rem 0.8rem" : "0.45rem 1.25rem", borderRadius: "6px", border: "none", background: "#64748B", color: "white", fontWeight: 600, cursor: "pointer", fontSize: isMobile ? "0.7rem" : "0.8rem", width: isMobile ? "100%" : "auto" }}>Tutup</button>
           </div>
         </div>
       )}
 
-
+      {/* NOTIFIKASI POPUP */}
       {notifState.open && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
-
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "0.5rem" }}>
+          <div style={{ background: "white", borderRadius: "16px", padding: isMobile ? "1rem" : "1.5rem", width: "100%", maxWidth: "380px", textAlign: "center" }}>
             <div style={{
-              width: "64px",
-              height: "64px",
+              width: isMobile ? "44px" : "56px",
+              height: isMobile ? "44px" : "56px",
               borderRadius: "50%",
               background: notifState.type === "success" ? "#D1FAE5" : "#FEE2E2",
               color: notifState.type === "success" ? "#059669" : "#DC2626",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 1.25rem",
-              fontSize: "1.75rem",
+              margin: "0 auto 0.6rem",
+              fontSize: isMobile ? "1.2rem" : "1.5rem",
               fontWeight: 800
             }}>
               {notifState.type === "success" ? "✓" : "✕"}
             </div>
-
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.5rem", margin: 0 }}>
+            <h3 style={{ fontSize: isMobile ? "0.9rem" : "1.05rem", fontWeight: 800, color: "#1E293B", marginBottom: "0.3rem" }}>
               {notifState.title}
             </h3>
-
-            <p style={{ fontSize: "0.85rem", color: "#64748B", marginTop: "0.5rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+            <p style={{ fontSize: isMobile ? "0.7rem" : "0.8rem", color: "#64748B", marginBottom: "0.75rem", lineHeight: 1.3 }}>
               {notifState.message}
             </p>
-
             <button
               onClick={() => setNotifState({ ...notifState, open: false })}
               style={{
                 width: "100%",
-                padding: "0.75rem",
-                borderRadius: "10px",
+                padding: isMobile ? "0.5rem" : "0.65rem",
+                borderRadius: "8px",
                 border: "none",
                 background: notifState.type === "success" ? "#10B981" : "#EF4444",
                 color: "white",
                 fontWeight: 700,
-                fontSize: "0.9rem",
-                cursor: "pointer",
-                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)"
+                fontSize: isMobile ? "0.75rem" : "0.85rem",
+                cursor: "pointer"
               }}
             >
               Mengerti
@@ -970,7 +1183,6 @@ export default function PelacakanPesanan({
           </div>
         </div>
       )}
-
     </div>
   );
 }

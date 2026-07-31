@@ -49,7 +49,6 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     setTimeout(() => setToastMessage(null), 3500);
   }
 
-  // Synchronize jika parent memberikan stokList baru
   useEffect(() => {
     if (initialStokList && initialStokList.length > 0) {
       setInventarisDb(initialStokList);
@@ -60,27 +59,34 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
+      let possibleIds: string[] = [];
+
+      if (user) {
+        possibleIds.push(user.id);
+        const { data: adminToko } = await supabase
+          .from("admin_toko")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle();
+
+        if (adminToko?.id) possibleIds.push(adminToko.id);
       }
 
-      const { data: adminToko } = await supabase
-        .from("admin_toko")
-        .select("id")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      if (!adminToko) {
-        setLoading(false);
-        return;
+      let query = supabase.from("inventaris").select("*").order("updated_at", { ascending: false });
+      if (possibleIds.length > 0) {
+        query = query.in("admin_toko_id", possibleIds);
       }
 
-      const { data: invData, error: errInv } = await supabase
-        .from("inventaris")
-        .select("*")
-        .eq("admin_toko_id", adminToko.id)
-        .order("updated_at", { ascending: false });
+      let { data: invData, error: errInv } = await query;
+
+      // Fallback jika tidak menemukan baris yang persis cocok
+      if (!invData || invData.length === 0) {
+        const { data: fallbackData } = await supabase
+          .from("inventaris")
+          .select("*")
+          .order("updated_at", { ascending: false });
+        invData = fallbackData;
+      }
 
       if (errInv) throw errInv;
 
@@ -106,7 +112,7 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
           return {
             id: item.id,
             produk_id: item.produk_id,
-            nama: item.nama_produk || prodObj?.nama || "Komoditas Panen",
+            nama: item.nama_produk || prodObj?.nama || item.nama || "Komoditas Panen",
             jumlah: Number(item.stok) || 0,
             satuan: item.satuan || prodObj?.satuan || "pcs",
             hargaBeli: hargaBeliPasti,
@@ -130,7 +136,6 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     }
   }, []);
 
- 
   useEffect(() => {
     muatInventarisFromDb();
 
@@ -150,13 +155,11 @@ export default function InventarisGrading({ stokList: initialStokList, onRefresh
     };
   }, [muatInventarisFromDb]);
 
-
-async function handleEditSubmit(e: FormEvent) {
+  async function handleEditSubmit(e: FormEvent) {
     e.preventDefault();
     if (!editItem) return;
 
     try {
-      // 1. Update stok di tabel INVENTARIS
       const { error: errInv } = await supabase
         .from("inventaris")
         .update({
@@ -167,12 +170,10 @@ async function handleEditSubmit(e: FormEvent) {
 
       if (errInv) throw errInv;
 
-      // 2. SINKRONISASI KE TABEL ETALASE (UPDATE STOK SECARA FLEKSIBEL)
       let updatedEtalase = false;
 
-      // Opsi A: Jika ada produk_id
       if (editItem.produk_id) {
-        const { error: errEt1, count } = await supabase
+        const { error: errEt1 } = await supabase
           .from("etalase")
           .update({ stok: editJumlah, updated_at: new Date().toISOString() })
           .eq("produk_id", editItem.produk_id);
@@ -180,7 +181,6 @@ async function handleEditSubmit(e: FormEvent) {
         if (!errEt1) updatedEtalase = true;
       }
 
-      // Opsi B: Jika Opsi A belum update, cari berdasarkan Nama Produk
       if (!updatedEtalase && editItem.nama) {
         await supabase
           .from("etalase")
@@ -208,6 +208,56 @@ async function handleEditSubmit(e: FormEvent) {
 
   return (
     <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif", position: "relative" }}>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .grading-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+          main { padding: 0.5rem 0.25rem !important; }
+          main h1 { font-size: 1.15rem !important; }
+          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
+
+          .grading-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.4rem !important;
+            margin-bottom: 0.85rem !important;
+          }
+          .grading-stat-card {
+            padding: 0.6rem !important;
+            border-radius: 8px !important;
+            gap: 0.5rem !important;
+          }
+          .grading-stat-card > div:first-child {
+            padding: 0.35rem !important;
+            border-radius: 6px !important;
+          }
+          .grading-stat-card > div:last-child > div:first-child {
+            font-size: 0.85rem !important;
+          }
+          .grading-stat-card > div:last-child > div:last-child {
+            font-size: 0.6rem !important;
+          }
+
+          /* RESPONSIP TABEL UNTUK MOBILE */
+          .inventory-table-wrapper {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .inventory-table-wrapper table {
+            min-width: 520px !important;
+          }
+          .inventory-table-wrapper th, .inventory-table-wrapper td {
+            padding: 0.6rem 0.5rem !important;
+            font-size: 0.72rem !important;
+          }
+        }
+      `
+      }} />
+
       {toastMessage && (
         <div style={{ position: "fixed", top: "20px", right: "20px", zIndex: 9999, background: "#1E293B", color: "white", padding: "0.85rem 1.25rem", borderRadius: "10px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)", display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.88rem", fontWeight: 600 }}>
           <span style={{ color: "#10B981", display: "flex" }}><IconCheckCircle /></span>
@@ -215,12 +265,12 @@ async function handleEditSubmit(e: FormEvent) {
         </div>
       )}
 
-      <div style={{ marginBottom: "1.5rem" }}>
+      <div style={{ marginBottom: "1.25rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, color: "#1E293B" }}>Inventaris Gudang</h1>
         <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Pantau seluruh ketersediaan stok barang dan komoditas di gudang toko.</p>
       </div>
 
-      <div className="grading-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="grading-stats-grid" style={{ marginBottom: "1.25rem" }}>
         <div className="grading-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
           <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBox /></div>
           <div>
@@ -238,18 +288,19 @@ async function handleEditSubmit(e: FormEvent) {
         </div>
       </div>
 
-      <div style={{ position: "relative", marginBottom: "1.5rem", maxWidth: "420px" }}>
+      <div style={{ position: "relative", marginBottom: "1.25rem", maxWidth: "420px" }}>
         <input 
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
           placeholder="Cari nama produk atau produsen..." 
-          style={{ width: "100%", padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} 
+          style={{ width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box" }} 
         />
       </div>
 
+      {/* TABEL RESPONSIP (DESTOP & MOBILE DENGAN SCROLL) */}
       <div style={{ background: "white", borderRadius: "12px", border: "1px solid #E2E8F0", overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
+        <div className="inventory-table-wrapper">
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem" }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
                 <th style={{ padding: "1rem", color: "#475569" }}>Nama Produk</th>
@@ -280,7 +331,7 @@ async function handleEditSubmit(e: FormEvent) {
                     <td style={{ padding: "1rem", textAlign: "center" }}>
                       <button 
                         onClick={() => { setEditItem(s); setEditJumlah(s.jumlah); }} 
-                        style={{ background: "#F1F5F9", border: "1px solid #CBD5E1", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", fontWeight: 700, cursor: "pointer" }}
+                        style={{ background: "#F1F5F9", border: "1px solid #CBD5E1", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
                       >
                         Sesuaikan Stok
                       </button>
@@ -295,15 +346,15 @@ async function handleEditSubmit(e: FormEvent) {
 
       {editItem && (
         <div onClick={() => setEditItem(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "360px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.25rem", width: "360px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.02rem", fontWeight: 800, color: "#1E293B" }}>Sesuaikan Stok {editItem.nama}</h2>
+              <h2 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#1E293B" }}>Sesuaikan Stok {editItem.nama}</h2>
               <button onClick={() => setEditItem(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <form onSubmit={handleEditSubmit}>
-              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#334155", margin: "1rem 0 0.3rem" }}>Jumlah Stok Saat Ini ({editItem.satuan})</label>
-              <input required type="number" min="0" value={editJumlah} onChange={(e) => setEditJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", marginBottom: "1rem", boxSizing: "border-box" }} />
-              <button type="submit" style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 800, cursor: "pointer" }}>Simpan Perubahan</button>
+              <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#334155", margin: "0.85rem 0 0.3rem" }}>Jumlah Stok Saat Ini ({editItem.satuan})</label>
+              <input required type="number" min="0" value={editJumlah} onChange={(e) => setEditJumlah(Number(e.target.value))} style={{ width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", marginBottom: "1rem", boxSizing: "border-box" }} />
+              <button type="submit" style={{ width: "100%", padding: "0.55rem", borderRadius: "8px", border: "none", background: "#F59E0B", color: "white", fontWeight: 800, fontSize: "0.82rem", cursor: "pointer" }}>Simpan Perubahan</button>
             </form>
           </div>
         </div>

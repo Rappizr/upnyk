@@ -78,7 +78,7 @@ export default function LaporanBukuKas() {
           return st === "selesai" || st === "diterima" || st === "dikirim" || st === "diproses" || !p.status;
         })
         .map((p: any) => {
-          const namaProd = produsenMap.get(p.produsen_id) || "pak jay store";
+          const namaProd = produsenMap.get(p.produsen_id) || "Pak Jay Store";
           return {
             id: `po-${p.id}`,
             keterangan: `Belanja Bahan Baku — ${namaProd}`,
@@ -170,7 +170,6 @@ export default function LaporanBukuKas() {
 
       setRiwayat(gabungan);
     } catch (err) {
-      console.error("Gagal memuat buku kas:", err);
     } finally {
       setLoading(false);
     }
@@ -244,28 +243,110 @@ export default function LaporanBukuKas() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{
         __html: `
         @media print {
           .no-print { display: none !important; }
         }
+
+        .cashbook-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 0.85rem;
+        }
+
+        .cashbook-filter-tabs {
+          display: flex;
+          gap: 0.5rem;
+          overflow-x: auto;
+          padding-bottom: 0.25rem;
+          -webkit-overflow-scrolling: touch;
+        }
+
         @media (max-width: 768px) {
           main { padding: 0.5rem 0.25rem !important; }
-          main > div:first-child { gap: 0.4rem !important; margin-bottom: 1rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          .cashbook-action-buttons { width: 100% !important; justify-content: flex-end !important; }
-          .cashbook-action-buttons button { padding: 0.4rem 0.65rem !important; font-size: 0.68rem !important; border-radius: 6px !important; }
-          .cashbook-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .cashbook-stat-card { padding: 0.4rem !important; border-radius: 6px !important; }
-          .cashbook-table-container th, .cashbook-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.65rem !important; }
+          
+          .cashbook-header-box {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.75rem !important;
+            margin-bottom: 1rem !important;
+          }
+
+          .cashbook-header-box h1 {
+            font-size: 1.15rem !important;
+          }
+
+          .cashbook-header-box p {
+            font-size: 0.65rem !important;
+            line-height: 1.25 !important;
+          }
+
+          .cashbook-action-buttons {
+            width: 100% !important;
+            display: flex !important;
+            gap: 0.35rem !important;
+          }
+
+          .cashbook-action-buttons button {
+            flex: 1 !important;
+            padding: 0.4rem 0.5rem !important;
+            font-size: 0.68rem !important;
+            border-radius: 6px !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+          }
+
+          .cashbook-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.35rem !important;
+            margin-bottom: 1rem !important;
+          }
+
+          .cashbook-stat-card {
+            padding: 0.5rem 0.4rem !important;
+            border-radius: 8px !important;
+          }
+
+          .cashbook-stat-card > div:first-child {
+            font-size: 0.6rem !important;
+            margin-bottom: 0.15rem !important;
+          }
+
+          .cashbook-stat-card > div:last-child {
+            font-size: 0.82rem !important;
+            line-height: 1.1 !important;
+          }
+
+          .cashbook-filter-tabs button {
+            padding: 0.35rem 0.65rem !important;
+            font-size: 0.68rem !important;
+            white-space: nowrap !important;
+          }
+
+          .cashbook-table-container table {
+            min-width: 520px !important;
+          }
+
+          .cashbook-table-container th, 
+          .cashbook-table-container td {
+            padding: 0.5rem 0.45rem !important;
+            font-size: 0.68rem !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .cashbook-stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
         }
       `}} />
 
-      <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+      <div className="cashbook-header-box" style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>Buku Kas Digital</h1>
-          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Ringkasan arus kas masuk dari pelanggan vs arus kas keluar belanja ke produsen & modal inventaris.</p>
+          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Ringkasan arus kas masuk dari pelanggan vs arus kas keluar belanja ke produsen &amp; modal inventaris.</p>
         </div>
         <div className="cashbook-action-buttons no-print" style={{ display: "flex", gap: "0.4rem" }}>
           <button onClick={unduhExcel} style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "0.5rem 0.85rem", borderRadius: "8px", fontSize: "0.8rem", fontWeight: 600, color: "#059669", cursor: "pointer" }}>Export CSV</button>
@@ -274,9 +355,9 @@ export default function LaporanBukuKas() {
         </div>
       </div>
 
-      <div className="cashbook-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.85rem", marginBottom: "1.25rem" }}>
+      <div className="cashbook-stats-grid" style={{ marginBottom: "1.25rem" }}>
         <div className="cashbook-stat-card" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", padding: "1rem", borderRadius: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.3rem" }}>
             <span style={{ color: "#D97706", display: "flex" }}><IconWallet /></span>
             <span style={{ fontSize: "0.75rem", color: "#92400E", fontWeight: 700 }}>Laba Bersih</span>
           </div>
@@ -284,7 +365,7 @@ export default function LaporanBukuKas() {
         </div>
 
         <div className="cashbook-stat-card" style={{ background: "white", padding: "1rem", borderRadius: "10px", border: "1px solid #E2E8F0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.3rem" }}>
             <span style={{ color: "#10B981", display: "flex" }}><IconArrowUp /></span>
             <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>Total Omset</span>
           </div>
@@ -292,15 +373,15 @@ export default function LaporanBukuKas() {
         </div>
 
         <div className="cashbook-stat-card" style={{ background: "white", padding: "1rem", borderRadius: "10px", border: "1px solid #E2E8F0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.3rem" }}>
             <span style={{ color: "#EF4444", display: "flex" }}><IconArrowDown /></span>
-            <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>Total Belanja / Modal</span>
+            <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>Total Belanja</span>
           </div>
           <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalKeluar)}</div>
         </div>
       </div>
 
-      <div className="cashbook-filter-tabs no-print" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+      <div className="cashbook-filter-tabs no-print" style={{ marginBottom: "1rem" }}>
         {(["semua", "masuk", "keluar"] as const).map((t) => (
           <button 
             key={t} 
@@ -314,10 +395,11 @@ export default function LaporanBukuKas() {
               fontSize: "0.78rem", 
               fontWeight: 600, 
               cursor: "pointer", 
-              textTransform: "capitalize" 
+              textTransform: "capitalize",
+              flexShrink: 0
             }}
           >
-            {t === "semua" ? `Semua (${riwayat.length})` : t === "masuk" ? "Pemasukan (Omset)" : "Pengeluaran (Belanja/Modal)"}
+            {t === "semua" ? `Semua (${riwayat.length})` : t === "masuk" ? "Pemasukan" : "Pengeluaran"}
           </button>
         ))}
       </div>

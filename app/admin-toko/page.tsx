@@ -22,7 +22,7 @@ export interface Produsen {
   lokasi: string;
   komoditas: string;
   estimasiRestockHari: number;
-  estimasiPanenHari?: number; // Fallback kompatibilitas
+  estimasiPanenHari?: number;
 }
 
 export interface StokToko {
@@ -66,8 +66,6 @@ export interface Pembelian {
   keteranganUlasan?: string;
   lokasiProdusen?: string;
 }
-
-const todayLabel = () => new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 
 const IconDashboard = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>;
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
@@ -198,7 +196,6 @@ export default function AdminTokoDashboard() {
         fotoUrl: profile?.avatar_url || "",
       });
     } catch (error) {
-      console.error("Gagal memeriksa kelengkapan admin:", error);
     } finally {
       setLoadingProfil(false);
     }
@@ -226,12 +223,7 @@ export default function AdminTokoDashboard() {
         .in("admin_toko_id", possibleAdminIds)
         .order("created_at", { ascending: false });
 
-      if (pesananError) {
-        console.error("Error Fetch Pesanan:", JSON.stringify(pesananError, null, 2));
-        return;
-      }
-
-      if (!pesananData || pesananData.length === 0) {
+      if (pesananError || !pesananData || pesananData.length === 0) {
         setPembelianList([]);
         return;
       }
@@ -297,7 +289,6 @@ export default function AdminTokoDashboard() {
 
       setPembelianList(mapped);
     } catch (err) {
-      console.error("fetchPembelianLive Unexpected Error:", err);
     }
   }, []);
 
@@ -330,9 +321,7 @@ export default function AdminTokoDashboard() {
         dbItems = fallbackItems;
       }
 
-      // Mapping tanpa mengeliminasi data yang nama_produk-nya NULL
       const mappedItems: StokToko[] = (dbItems || []).map((item: any) => {
-        // Fallback nama jika nama_produk di DB bernilai NULL
         const namaFix = item.nama_produk && item.nama_produk !== "NULL" 
           ? item.nama_produk 
           : (item.nama || "kripik");
@@ -365,11 +354,9 @@ export default function AdminTokoDashboard() {
       });
 
       setStokList(mappedItems);
-    } catch (err: any) {
-      console.error("fetchInventaris error:", err?.message || err);
+    } catch (err) {
     }
   }, []);
-
 
   const fetchEtalaseCount = useCallback(async () => {
     try {
@@ -394,7 +381,6 @@ export default function AdminTokoDashboard() {
       if (!error && count !== null) {
         setTotalEtalaseTayang(count);
       } else {
-        // Fallback jika id spesifik belum terikat
         const { count: fallbackCount } = await supabase
           .from("etalase")
           .select("id", { count: "exact", head: true })
@@ -402,116 +388,16 @@ export default function AdminTokoDashboard() {
         if (fallbackCount !== null) setTotalEtalaseTayang(fallbackCount);
       }
     } catch (err) {
-      console.error("fetchEtalaseCount error:", err);
     }
   }, []);
 
   const fetchPenjualan = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: adminTokoRow } = await supabase
-        .from("admin_toko")
-        .select("id, nama_toko")
-        .eq("profile_id", user.id)
-        .maybeSingle();
-
-      const namaToko = adminTokoRow?.nama_toko || "";
-
-      // Query safe select dari tabel pesanan
-      let { data: rawPesanan, error } = await supabase
-        .from("pesanan")
-        .select(`
-          id, pembeli_id, status, escrow_status, total, total_harga, kode_pesanan, alamat_pengiriman,
-          supplier, metode_pembayaran, bukti_pembayaran, created_at, rating, ulasan, produk_id, jumlah,
-          detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error || !rawPesanan) {
-        const { data: altPesanan } = await supabase.from("pesanan").select("*").order("created_at", { ascending: false });
-        rawPesanan = altPesanan || [];
-      }
-
-      // Filter pesanan B2C (Toko ke Pembeli):
-      const filteredPesanan = (rawPesanan || []).filter((p: any) => {
-        // Jika supplier cocok dengan nama toko ini
-        if (namaToko && p.supplier && p.supplier.toLowerCase().includes(namaToko.toLowerCase())) {
-          return true;
-        }
-        // Pesanan B2C yang memiliki pembeli_id atau kode_pesanan ORD-
-        if (p.pembeli_id || (p.kode_pesanan && String(p.kode_pesanan).startsWith("ORD-"))) {
-          return true;
-        }
-        // Jika bukan pesanan B2B dengan admin_toko_id/produsen_id
-        if (!p.admin_toko_id && !p.produsen_id) {
-          return true;
-        }
-        return false;
-      });
-
-      mapAndSetPenjualan(filteredPesanan.length > 0 ? filteredPesanan : (rawPesanan || []));
+      const list = await getPenjualanAdminTokoAction();
+      setPenjualanList(list || []);
     } catch (err) {
-      console.error("fetchPenjualan error:", err);
     }
   }, []);
-
-  async function mapAndSetPenjualan(pesananData: any[]) {
-    const allProdIds = Array.from(new Set(
-      pesananData.flatMap((o) => (o.detail_pesanan || []).map((d: any) => d.produk_id)).filter(Boolean)
-    ));
-    let prodMap = new Map<string, string>();
-    if (allProdIds.length > 0) {
-      const { data: etalaseList } = await supabase.from("etalase").select("id, nama_produk").in("id", allProdIds);
-      if (etalaseList) etalaseList.forEach((e: any) => prodMap.set(e.id, e.nama_produk));
-    }
-
-    const mapped: Penjualan[] = pesananData.map((p: any) => {
-      const items = (p.detail_pesanan || []).map((d: any) => ({
-        id: d.id,
-        produk_id: d.produk_id,
-        nama: prodMap.get(d.produk_id) || "Produk Komoditas",
-        jumlah: d.jumlah || 1,
-        harga: d.harga || 0,
-        subtotal: d.subtotal || (d.harga * d.jumlah)
-      }));
-      const produkSummary = items.map((i: any) => `${i.nama} (${i.jumlah})`).join(", ") || p.supplier || "Produk Belanja";
-      const totalJumlah = items.reduce((s: number, i: any) => s + i.jumlah, 0);
-
-      // Format status pesanan agar 'Tersalur' dipetakan ke 'Diproses'
-      const rawSt = String(p.status || "").toLowerCase().trim();
-      let statusFormat: Penjualan["status"] = "Belum Dibayar";
-      if (rawSt === "diproses" || rawSt === "tersalur" || rawSt === "sudah dibayar") {
-        statusFormat = "Diproses";
-      } else if (rawSt === "dikirim") {
-        statusFormat = "Dikirim";
-      } else if (rawSt === "selesai" || rawSt === "diterima") {
-        statusFormat = "Selesai";
-      } else if (rawSt === "dibatalkan" || rawSt === "batal") {
-        statusFormat = "Dibatalkan";
-      }
-
-      return {
-        id: p.id,
-        kodePesanan: p.kode_pesanan || p.id,
-        pembeli: "Pembeli PasarNusa",
-        noHpPembeli: "",
-        produk: produkSummary,
-        jumlah: totalJumlah || 1,
-        total: Number(p.total) || 0,
-        tanggal: new Date(p.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-        status: statusFormat,
-        escrowStatus: (p.escrow_status || (p.status === "Selesai" ? "Tersalur" : "Ditahan")) as any,
-        alamatPembeli: p.alamat_pengiriman || "Alamat belum diisi",
-        metodePembayaran: p.metode_pembayaran || "QRIS",
-        buktiPembayaran: p.bukti_pembayaran || null,
-        noResi: "",
-        items: items
-      };
-    });
-    setPenjualanList(mapped);
-  }
 
   const fetchProdusenList = useCallback(async () => {
     try {
@@ -535,7 +421,6 @@ export default function AdminTokoDashboard() {
         setProdusenList(mapped);
       }
     } catch (e) {
-      console.error("fetchProdusenList error:", e);
     }
   }, []);
 
@@ -565,11 +450,11 @@ export default function AdminTokoDashboard() {
     };
   }, [periksaKelengkapanAdmin, fetchInventaris, fetchPenjualan, fetchProdusenList, fetchPembelianLive, fetchEtalaseCount]);
 
-  function belanjaProdusen(produsenId: string, item: string, jumlah: number, hargaSatuan: number, satuan: string) {
+  function belanjaProdusen() {
     fetchPembelianLive();
   }
 
-  async function terimaPembelian(id: string, grade: Grade, rating?: number, fotoUlasan?: string, keteranganUlasan?: string) {
+  async function terimaPembelian() {
     await fetchPembelianLive();
     await fetchInventaris();
   }
@@ -594,11 +479,9 @@ export default function AdminTokoDashboard() {
       }
       return item;
     });
-
     setStokList(updatedList);
   }
 
- 
   const pesananMenunggu = penjualanList.filter((p) => p.status === "Belum Dibayar" || p.status === "Diproses").length;
   const totalOmset = penjualanList.filter((p) => p.status === "Selesai" || p.status === "Dikirim" || p.status === "Diproses").reduce((s, p) => s + p.total, 0);
   const totalStokUnit = stokList.reduce((acc, curr) => acc + (Number(curr.jumlah) || 0), 0);
@@ -623,30 +506,92 @@ export default function AdminTokoDashboard() {
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{__html: `
-        .at-sidebar { width: 220px; }
+        .at-sidebar { width: 220px; transition: transform 0.3s ease; }
         .at-hamburger { display: none; }
-        .at-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-        .at-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+        
+        /* GRID KARTU METRIK RESPONSIP DESTOP & MOBILE */
+        .at-stats-grid { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+          gap: 0.75rem; 
+        }
+        .at-panels-grid { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+          gap: 1rem; 
+        }
         .at-user-name { display: block; }
         
-        @media (max-width: 1024px) {
-          .at-stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
-          .at-panels-grid { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 900px) {
-          .at-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
+        @media (max-width: 768px) {
+          main {
+            padding: 0.5rem 0.35rem !important;
+          }
+          .at-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); box-shadow: 2px 0 16px rgba(0,0,0,.1); }
           .at-sidebar.open { transform: translateX(0); }
           .at-hamburger { display: flex; }
-          .hero-banner-container { padding: 1rem !important; border-radius: 12px !important; flex-direction: column !important; align-items: flex-start !important; gap: 0.5rem !important; }
-          .at-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+          
+          /* OPTIMASI BANNER MOBILE */
+          .hero-banner-container { 
+            padding: 0.85rem 1rem !important; 
+            border-radius: 12px !important; 
+            flex-direction: column !important; 
+            align-items: flex-start !important; 
+            gap: 0.6rem !important; 
+            margin-bottom: 0.85rem !important;
+          }
+          .hero-banner-container div:first-child > div:nth-child(2) {
+            font-size: 1.1rem !important;
+            line-height: 1.2 !important;
+          }
+          .hero-banner-container div:first-child > div:nth-child(3) {
+            font-size: 0.72rem !important;
+            line-height: 1.25 !important;
+          }
+
+          /* FORCE GRID KARTU METRIK RINGKAS 3 KOLOM / 2 KOLOM */
+          .at-stats-grid { 
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 0.35rem !important; 
+            margin-bottom: 0.85rem !important;
+          }
+          .at-stats-grid > div {
+            padding: 0.5rem 0.4rem !important;
+            border-radius: 8px !important;
+          }
+          .at-stats-grid > div > div:first-child {
+            font-size: 0.55rem !important;
+            margin-bottom: 0.2rem !important;
+            line-height: 1.1 !important;
+            white-space: nowrap !important;
+          }
+          .at-stats-grid > div > div:nth-child(2) {
+            font-size: 0.78rem !important;
+            line-height: 1.1 !important;
+          }
+          .at-stats-grid > div > div:last-child {
+            font-size: 0.52rem !important;
+            margin-top: 0.15rem !important;
+          }
+
+          /* PANEL BOX DI MOBILE */
+          .at-panels-grid { 
+            grid-template-columns: 1fr !important; 
+            gap: 0.75rem !important;
+          }
+          .at-panels-grid > div {
+            padding: 0.75rem !important;
+            border-radius: 10px !important;
+          }
         }
+
         @media (max-width: 480px) { 
           .at-user-name { display: none; } 
-          .at-stats-grid { grid-template-columns: 1fr !important; }
+          .at-stats-grid { 
+            grid-template-columns: repeat(2, 1fr) !important; 
+          }
         }
       `}} />
 
-     
       {isSuspended && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.75)", backdropFilter: "blur(4px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
           <div style={{ background: "white", borderRadius: "16px", padding: "2rem", width: "420px", maxWidth: "100%", textAlign: "center" }}>
@@ -660,7 +605,6 @@ export default function AdminTokoDashboard() {
 
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
 
-    
       <aside className={`at-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "9px", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
@@ -738,7 +682,6 @@ export default function AdminTokoDashboard() {
         </div>
       </aside>
 
- 
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -759,18 +702,14 @@ export default function AdminTokoDashboard() {
           </div>
         </div>
 
-
         {activeMenu === "dashboard" && (
           <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            
-       
             <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.2)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Platform Rantai Pasok & UMKM #1 Indonesia</span>
                 <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {headerProfil.namaPemilik.split(" ")[0]}!</div>
                 <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,.9)", marginTop: "0.3rem", maxWidth: "480px" }}>Pantau arus kas, analisis prediktif restock komoditas, dan kelola distribusi toko Anda secara real-time.</div>
               </div>
-
 
               <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
                 <button onClick={() => selectMenu("etalase")} style={{ background: "#fff", color: "#D97706", border: "none", padding: "0.6rem 1rem", borderRadius: "8px", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
@@ -781,7 +720,6 @@ export default function AdminTokoDashboard() {
                 </button>
               </div>
             </div>
-
 
             <div className="at-stats-grid" style={{ marginBottom: "1.5rem" }}>
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem" }}>
@@ -808,7 +746,6 @@ export default function AdminTokoDashboard() {
                 <div style={{ fontSize: "0.7rem", color: barangRestockKritis.length > 0 ? "#DC2626" : "#10B981", marginTop: "0.3rem", fontWeight: 600 }}>{barangRestockKritis.length > 0 ? "Stok ≤15 pcs" : "Stok Aman"}</div>
               </div>
 
-             
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("etalase")}>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#94A3B8", letterSpacing: ".03em", marginBottom: "0.4rem" }}>ETALASE PENJUALAN</div>
                 <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#1E293B" }}>{totalEtalaseTayang} Live</div>
@@ -816,10 +753,7 @@ export default function AdminTokoDashboard() {
               </div>
             </div>
 
-       
             <div className="at-panels-grid">
-              
-          
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "14px", padding: "1.25rem", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -850,7 +784,6 @@ export default function AdminTokoDashboard() {
                 )}
               </div>
 
-        
               <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "14px", padding: "1.25rem", display: "flex", flexDirection: "column" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                   <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#1E293B" }}>Aktivitas Pesanan Terakhir</h3>
@@ -880,21 +813,12 @@ export default function AdminTokoDashboard() {
                   </div>
                 )}
               </div>
-
             </div>
           </main>
         )}
 
-      
         {activeMenu === "marketplace" && isDataLengkap && <MarketplaceProdusen belanjaProdusen={belanjaProdusen} pembelianList={pembelianList} />}
-        
-      
-        {activeMenu === "inventaris" && isDataLengkap && (
-          <InventarisGrading 
-            stokList={stokList} 
-          />
-        )}
-
+        {activeMenu === "inventaris" && isDataLengkap && <InventarisGrading stokList={stokList} />}
         {(activeMenu === "pelacakan" || activeMenu === "pelacakan-produsen-toko" || activeMenu === "pelacakan-toko-pembeli") && isDataLengkap && (
           <PelacakanPesanan 
             pembelianList={pembelianList} 
@@ -906,7 +830,6 @@ export default function AdminTokoDashboard() {
             onRefreshData={fetchPembelianLive}
           />
         )}
-
         {activeMenu === "restock" && isDataLengkap && <SmartRestock produsenList={produsenList} stokList={stokList} updateStok={updateStok} onPesan={() => selectMenu("marketplace")} />}
         {activeMenu === "etalase" && isDataLengkap && <EtalasePenjualan stokList={stokList} updateStok={updateStok} />}
         {activeMenu === "laporan" && isDataLengkap && <LaporanBukuKas />}
