@@ -206,7 +206,7 @@ export default function KontakMitraPage() {
           .hero-desc { font-size: 0.85rem !important; }
           .main-content { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; }
 
-          /* DIPASKAN: sebelumnya dua kolom berdampingan (1fr 1.1fr) di layar
+        
              375px, membuat form menyusut sampai fontnya 0.5rem — tidak bisa
              diisi. Formulir wajib satu kolom di HP. */
           .main-grid { grid-template-columns: 1fr !important; gap: 2rem !important; }
@@ -228,8 +228,7 @@ export default function KontakMitraPage() {
           .right-form-panel div:first-child svg { width: 18px !important; height: 18px !important; }
           .right-form-panel div:first-child span { font-size: 0.88rem !important; }
 
-          /* DIPASKAN: input di bawah 1rem memicu auto-zoom Safari iOS setiap
-             kali disentuh. 1rem = 16px adalah batas amannya. */
+         
           .form-label { font-size: 0.78rem !important; margin-bottom: 0.3rem !important; }
           .form-input { padding: 0.7rem 0.85rem !important; font-size: 1rem !important; border-radius: 0.6rem !important; }
           .form-row-mobile { grid-template-columns: 1fr !important; gap: 1rem !important; }

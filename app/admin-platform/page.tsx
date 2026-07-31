@@ -71,7 +71,6 @@ const IconReport = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="n
 const IconFlag = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>;
 const IconMenu = () => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>;
 const IconX = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-const IconBell = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>;
 const IconAlertTriangle = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m10.29 3.86-8.18 14.14A1.5 1.5 0 0 0 3.4 20h17.2a1.5 1.5 0 0 0 1.3-2L13.7 3.86a1.5 1.5 0 0 0-2.6 0Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
 const IconChevronDown = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const IconStore = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3"></path><path d="M3 9h18l-1 4H4L3 9Z"></path><path d="M5 13v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"></path></svg>;
@@ -94,8 +93,6 @@ const menuGroups: MenuGroupDef[] = [
   { title: "LAPORAN", items: [{ key: "laporan", label: "Laporan Dampak", icon: IconReport }] },
 ];
 
-function formatRupiah(n: number) { return "Rp " + n.toLocaleString("id-ID"); }
-
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard", umkm: "Data UMKM", produsen: "Data Produsen", pembeli: "Data Pembeli",
   peta: "Peta Rantai Pasok", pengaduan: "Pengaduan", escrow: "Escrow & Transaksi", laporan: "Laporan Dampak",
@@ -105,13 +102,11 @@ export default function AdminPlatformDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profilPopupOpen, setProfilPopupOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-
 
   const [perluLengkapiData, setPerluLengkapiData] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [submittingData, setSubmittingData] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
@@ -123,7 +118,7 @@ export default function AdminPlatformDashboard() {
   const [entitasList] = useState<Entitas[]>(initialEntitas);
   const [transaksiList, setTransaksiList] = useState<EscrowTx[]>(initialTransaksi);
   const [komoditasList] = useState<Komoditas[]>(initialKomoditas);
-  
+
   const [counts, setCounts] = useState({ toko: 0, produsen: 0, pengaduanAktif: 0 });
 
   const [profilAdmin, setProfilAdmin] = useState<ProfilAdmin>({
@@ -135,7 +130,6 @@ export default function AdminPlatformDashboard() {
     inisial: "AP",
   });
 
- 
   const cekKelengkapanAdmin = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -229,14 +223,12 @@ export default function AdminPlatformDashboard() {
     reader.readAsDataURL(file);
   }
 
-
   const handleSimpanDataAwal = async (e: FormEvent) => {
     e.preventDefault();
     if (!userId || submittingData) return;
 
     setSubmittingData(true);
     try {
-  
       const { data: profileData } = await supabase
         .from("profiles")
         .select("phone")
@@ -275,7 +267,6 @@ export default function AdminPlatformDashboard() {
         console.error("Error profiles update:", errProfile);
       }
 
-      
       setPerluLengkapiData(false);
       await cekKelengkapanAdmin();
     } catch (err: any) {
@@ -304,19 +295,11 @@ export default function AdminPlatformDashboard() {
     await fetchEscrowLive();
   }
 
-  const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
-
   const indeksHargaAdil = useMemo(() => {
     if (komoditasList.length === 0) return 0;
     const rasio = komoditasList.map((k) => k.hargaTengkulak / k.hargaPlatform);
     return Math.round((rasio.reduce((s, r) => s + r, 0) / rasio.length) * 100);
   }, [komoditasList]);
-
-  const daerahProduktif = useMemo(() => {
-    const map: Record<string, number> = {};
-    entitasList.forEach((e) => { map[e.lokasi] = (map[e.lokasi] || 0) + 1; });
-    return Object.entries(map).map(([lokasi, jumlah]) => ({ lokasi, jumlah })).sort((a, b) => b.jumlah - a.jumlah);
-  }, [entitasList]);
 
   function selectMenu(key: string) {
     if (perluLengkapiData && key !== "dashboard") {
@@ -330,39 +313,77 @@ export default function AdminPlatformDashboard() {
   return (
     <div style={{ display: "flex", height: "100vh", background: "#F1F5F9", fontFamily: "sans-serif", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{__html: `
+     
+        
+         
         .ap-sidebar { width: 220px; }
         .ap-hamburger { display: none; }
         .ap-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-        
+
         @media (max-width: 900px) {
-          .ap-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
+          .ap-sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+            transform: translateX(-100%); transition: transform .2s ease;
+            box-shadow: 2px 0 16px rgba(0,0,0,.1);
+          }
           .ap-sidebar.open { transform: translateX(0); }
           .ap-hamburger { display: flex; }
-          .ap-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+          .ap-stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.6rem !important; }
+        }
+
+        @media (max-width: 768px) {
+          .ap-main { padding: 0.85rem 0.7rem !important; }
+          .ap-topbar { padding: 12px 0.75rem !important; }
+          .ap-topbar-title { font-size: 1rem !important; }
+          .ap-user-name { display: none !important; }
+
+       
+          .ap-hero { padding: 1.1rem 1rem !important; border-radius: 12px !important; margin-bottom: 1rem !important; gap: 0.7rem !important; }
+          .ap-hero-badge { font-size: 0.6rem !important; padding: 0.2rem 0.6rem !important; margin-bottom: 0.5rem !important; }
+          .ap-hero h1 { font-size: 1.15rem !important; }
+          .ap-hero p { font-size: 0.72rem !important; line-height: 1.4 !important; }
+          .ap-hero button { width: 100% !important; justify-content: center !important; font-size: 0.8rem !important; padding: 0.6rem 0.9rem !important; }
+
+         
+          .ap-stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.5rem !important; }
+          .ap-stat-card { padding: 0.7rem 0.6rem !important; border-radius: 10px !important; }
+          .ap-stat-cap { font-size: 0.56rem !important; line-height: 1.25 !important; margin-bottom: 0.3rem !important; }
+          .ap-stat-value { font-size: 1.05rem !important; }
+          .ap-stat-note { font-size: 0.62rem !important; }
+
+         
+          .ap-warning-banner { padding: 0.7rem 0.8rem !important; font-size: 0.74rem !important; line-height: 1.45 !important; border-radius: 10px !important; }
+
+         
+          .ap-onboard-modal { padding: 1.15rem 1rem !important; border-radius: 14px !important; max-height: 88vh !important; overflow-y: auto !important; }
+          .ap-onboard-modal h2 { font-size: 1.05rem !important; }
+          .ap-onboard-modal input, .ap-onboard-modal select { font-size: 0.82rem !important; padding: 0.6rem 0.75rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .ap-stats-grid { gap: 0.4rem !important; }
+          .ap-stat-card { padding: 0.6rem 0.5rem !important; }
         }
       `}} />
 
-     
       {perluLengkapiData && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", backdropFilter: "blur(1.5px)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "460px", maxWidth: "100%", boxShadow: "0 25px 50px -12px rgba(15,23,42,0.25)", boxSizing: "border-box" }}>
-            
+          <div className="ap-onboard-modal" style={{ background: "white", borderRadius: "16px", padding: "1.75rem", width: "460px", maxWidth: "100%", boxShadow: "0 25px 50px -12px rgba(15,23,42,0.25)", boxSizing: "border-box" }}>
+
             <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1E293B", margin: "0 0 1rem 0" }}>Lengkapi Profil Admin Anda</h2>
-            
-         
+
             <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: "8px", padding: "0.85rem 1rem", fontSize: "0.82rem", color: "#92400E", fontWeight: 600, marginBottom: "1.25rem", lineHeight: 1.4 }}>
               Isi data pengelola di bawah ini agar seluruh fitur pengawasan platform aktif.
             </div>
 
             <form onSubmit={handleSimpanDataAwal} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              
-           
+
               <div>
                 <label style={{ display: "block", fontSize: "0.68rem", fontWeight: 700, color: "#64748B", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.4rem" }}>
                   UPLOAD FOTO PROFIL / AVATAR
                 </label>
-                <div 
-                  onClick={() => fileInputRef.current?.click()} 
+                <div
+                  onClick={() => fileInputRef.current?.click()}
                   style={{ border: "2px dashed #CBD5E1", background: "#F8FAFC", borderRadius: "10px", padding: "1.25rem", textAlign: "center", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80px" }}
                 >
                   {fotoPreview ? (
@@ -374,24 +395,23 @@ export default function AdminPlatformDashboard() {
                 </div>
               </div>
 
-            
               <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.35rem" }}>Nama Lengkap *</label>
-                <input 
-                  required 
-                  type="text" 
-                  placeholder="Contoh: Nadia Ramadhani" 
-                  value={formLengkapi.namaLengkap} 
-                  onChange={(e) => setFormLengkapi({...formLengkapi, namaLengkap: e.target.value})} 
-                  style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box", color: "#1E293B" }} 
+                <input
+                  required
+                  type="text"
+                  placeholder="Contoh: Nadia Ramadhani"
+                  value={formLengkapi.namaLengkap}
+                  onChange={(e) => setFormLengkapi({...formLengkapi, namaLengkap: e.target.value})}
+                  style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", outline: "none", boxSizing: "border-box", color: "#1E293B" }}
                 />
               </div>
 
               <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.35rem" }}>Jabatan Admin *</label>
-                <select 
-                  value={formLengkapi.jabatan} 
-                  onChange={(e) => setFormLengkapi({...formLengkapi, jabatan: e.target.value as ProfilAdmin["jabatan"]})} 
+                <select
+                  value={formLengkapi.jabatan}
+                  onChange={(e) => setFormLengkapi({...formLengkapi, jabatan: e.target.value as ProfilAdmin["jabatan"]})}
                   style={{ width: "100%", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.88rem", background: "white", color: "#1E293B", boxSizing: "border-box" }}
                 >
                   <option value="Super Admin">Super Admin</option>
@@ -400,10 +420,9 @@ export default function AdminPlatformDashboard() {
                 </select>
               </div>
 
-          
-              <button 
-                type="submit" 
-                disabled={submittingData} 
+              <button
+                type="submit"
+                disabled={submittingData}
                 style={{ marginTop: "0.5rem", width: "100%", padding: "0.75rem", borderRadius: "8px", border: "none", background: "#1E293B", color: "white", fontWeight: 800, fontSize: "0.92rem", cursor: "pointer", opacity: submittingData ? 0.7 : 1, transition: "background 0.2s" }}
               >
                 {submittingData ? "Menyimpan Data..." : "Simpan Data Pengelola"}
@@ -456,21 +475,14 @@ export default function AdminPlatformDashboard() {
         </div>
       </aside>
 
-  
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0 }}>
-        
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="ap-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
             <button onClick={() => setSidebarOpen(true)} className="ap-hamburger" style={{ background: "none", border: "none", cursor: "pointer", color: "#334155" }} aria-label="Buka menu"><IconMenu /></button>
-            <div style={{ fontSize: "20px", fontWeight: 800, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
+            <div className="ap-topbar-title" style={{ fontSize: "20px", fontWeight: 800, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ position: "relative" }}>
-              <div onClick={() => setNotifOpen((v) => !v)} style={{ position: "relative", width: "34px", height: "34px", borderRadius: "50%", background: notifOpen ? "#F1F5F9" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <IconBell />
-              </div>
-            </div>
             <div onClick={() => setProfilPopupOpen(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1E293B", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                 {profilAdmin.fotoUrl ? <img src={profilAdmin.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profilAdmin.inisial}
@@ -493,11 +505,10 @@ export default function AdminPlatformDashboard() {
         )}
 
         {activeMenu === "dashboard" && (
-          <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-            
-            
+          <main className="ap-main" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+
             {perluLengkapiData && (
-              <div style={{ background: "#FEF2F2", border: "1px solid #FECDD3", borderRadius: "10px", padding: "0.9rem 1.25rem", color: "#991B1B", fontSize: "0.83rem", fontWeight: 600, marginBottom: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.6rem", lineHeight: 1.5 }}>
+              <div className="ap-warning-banner" style={{ background: "#FEF2F2", border: "1px solid #FECDD3", borderRadius: "10px", padding: "0.9rem 1.25rem", color: "#991B1B", fontSize: "0.83rem", fontWeight: 600, marginBottom: "1.25rem", display: "flex", alignItems: "flex-start", gap: "0.6rem", lineHeight: 1.5 }}>
                 <span style={{ color: "#EF4444", flexShrink: 0, marginTop: "2px" }}><IconAlertTriangle /></span>
                 <span>
                   <strong>Akun Admin Platform Anda mendeteksi data pengelola belum terdaftar lengkap.</strong> Silakan klik tombol profil di pojok kanan atas atau tombol lengkapi di bawah untuk mengisi data diri agar seluruh fitur pengawasan dapat diaktifkan kembali.
@@ -505,10 +516,10 @@ export default function AdminPlatformDashboard() {
               </div>
             )}
 
-            {/* 2. BANNER HERO DARK SLATE */}
-            <div style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", borderRadius: "14px", padding: "1.75rem 2rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", color: "#fff" }}>
+           
+            <div className="ap-hero" style={{ background: "linear-gradient(135deg, #1E293B, #0F172A)", borderRadius: "14px", padding: "1.75rem 2rem", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", color: "#fff" }}>
               <div style={{ maxWidth: "600px" }}>
-                <span style={{ display: "inline-block", background: "rgba(255,255,255,0.12)", color: "#E2E8F0", fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.75rem", borderRadius: "999px", marginBottom: "0.75rem" }}>
+                <span className="ap-hero-badge" style={{ display: "inline-block", background: "rgba(255,255,255,0.12)", color: "#E2E8F0", fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.75rem", borderRadius: "999px", marginBottom: "0.75rem" }}>
                   Platform UMKM #1 Indonesia
                 </span>
                 <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: "0 0 0.4rem 0", lineHeight: 1.2 }}>
@@ -520,8 +531,8 @@ export default function AdminPlatformDashboard() {
               </div>
 
               {perluLengkapiData && (
-                <button 
-                  onClick={() => setPerluLengkapiData(true)} 
+                <button
+                  onClick={() => setPerluLengkapiData(true)}
                   style={{ background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", padding: "0.75rem 1.25rem", borderRadius: "8px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
                 >
                   Lengkapi Profil Sekarang →
@@ -529,37 +540,35 @@ export default function AdminPlatformDashboard() {
               )}
             </div>
 
-            
             <div className="ap-stats-grid" style={{ marginBottom: "1.5rem" }}>
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
-                <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
-                <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{counts.toko}</div>
-                <div style={{ fontSize: "0.75rem", color: "#2563EB", marginTop: "0.2rem", fontWeight: 600 }}>Lihat data →</div>
+              <div className="ap-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("umkm")}>
+                <div className="ap-stat-cap" style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>TOTAL ADMIN TOKO</div>
+                <div className="ap-stat-value" style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{counts.toko}</div>
+                <div className="ap-stat-note" style={{ fontSize: "0.75rem", color: "#2563EB", marginTop: "0.2rem", fontWeight: 600 }}>Lihat data →</div>
               </div>
 
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("produsen")}>
-                <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>TOTAL PRODUSEN</div>
-                <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{counts.produsen}</div>
-                <div style={{ fontSize: "0.75rem", color: "#10B981", marginTop: "0.2rem", fontWeight: 600 }}>Lihat data →</div>
+              <div className="ap-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("produsen")}>
+                <div className="ap-stat-cap" style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>TOTAL PRODUSEN</div>
+                <div className="ap-stat-value" style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1E293B" }}>{counts.produsen}</div>
+                <div className="ap-stat-note" style={{ fontSize: "0.75rem", color: "#10B981", marginTop: "0.2rem", fontWeight: 600 }}>Lihat data →</div>
               </div>
 
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("pengaduan")}>
-                <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>PENGADUAN AKTIF</div>
-                <div style={{ fontSize: "1.3rem", fontWeight: 800, color: counts.pengaduanAktif > 0 ? "#EF4444" : "#1E293B" }}>{counts.pengaduanAktif}</div>
-                <div style={{ fontSize: "0.75rem", color: counts.pengaduanAktif > 0 ? "#EF4444" : "#64748B", marginTop: "0.2rem", fontWeight: 600 }}>{counts.pengaduanAktif > 0 ? "Perlu ditinjau →" : "Tidak ada aduan"}</div>
+              <div className="ap-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("pengaduan")}>
+                <div className="ap-stat-cap" style={{ fontSize: "0.68rem", fontWeight: 800, color: "#94A3B8", letterSpacing: ".04em", marginBottom: "0.4rem" }}>PENGADUAN AKTIF</div>
+                <div className="ap-stat-value" style={{ fontSize: "1.3rem", fontWeight: 800, color: counts.pengaduanAktif > 0 ? "#EF4444" : "#1E293B" }}>{counts.pengaduanAktif}</div>
+                <div className="ap-stat-note" style={{ fontSize: "0.75rem", color: counts.pengaduanAktif > 0 ? "#EF4444" : "#64748B", marginTop: "0.2rem", fontWeight: 600 }}>{counts.pengaduanAktif > 0 ? "Perlu ditinjau →" : "Tidak ada aduan"}</div>
               </div>
 
-              <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("laporan")}>
-                <div style={{ fontSize: "0.68rem", fontWeight: 800, color: "#065F46", letterSpacing: ".04em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
-                <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.75rem", fontWeight: 400 }}>/100</span></div>
-                <div style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem", fontWeight: 600 }}>Lebih adil dari tengkulak</div>
+              <div className="ap-stat-card" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "12px", padding: "1rem", cursor: "pointer" }} onClick={() => selectMenu("laporan")}>
+                <div className="ap-stat-cap" style={{ fontSize: "0.68rem", fontWeight: 800, color: "#065F46", letterSpacing: ".04em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
+                <div className="ap-stat-value" style={{ fontSize: "1.3rem", fontWeight: 800, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.75rem", fontWeight: 400 }}>/100</span></div>
+                <div className="ap-stat-note" style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem", fontWeight: 600 }}>Lebih adil dari tengkulak</div>
               </div>
             </div>
 
           </main>
         )}
 
-        
         {activeMenu === "umkm" && <DataUMKM />}
         {activeMenu === "produsen" && <DataProdusen />}
         {activeMenu === "pembeli" && <DataPembeli />}

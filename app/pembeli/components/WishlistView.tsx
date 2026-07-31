@@ -141,7 +141,7 @@ const handleCheckoutAll = async () => {
       </h1>
       <p className="page-subtitle">Pantau produk favorit dan dapatkan notifikasi saat harga turun</p>
 
-      {/* Summary */}
+     
       <div className="card wishlist-summary-card">
         <div className="wishlist-summary-stats">
           <div>
@@ -173,7 +173,7 @@ const handleCheckoutAll = async () => {
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-muted)" }}>Memuat wishlist...</div>
       ) : (
-        /* Wishlist Items */
+      
         <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
           {items.map((item) => {
             const p = item.product;

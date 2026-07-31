@@ -101,7 +101,7 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
 
-  // Helper untuk mengecek status terblokir/terpenjara secara aman
+ 
   const isSuspendedStatus = (statusStr?: string | null): boolean => {
     const s = String(statusStr || "").toLowerCase().trim();
     return s === "suspended" || s === "nonaktif" || s === "terblokir";

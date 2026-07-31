@@ -41,7 +41,7 @@ const IconLock = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="non
 function DetailItem({ icon, label, value }: { icon: () => ReactElement; label: string; value: string }) {
   const Icon = icon;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", padding: "0.75rem 0.9rem", background: "#F8FAFC", borderRadius: "10px", border: "1px solid #F1F5F9" }}>
+    <div className="profil-detail-item" style={{ display: "flex", alignItems: "center", gap: "0.85rem", padding: "0.75rem 0.9rem", background: "#F8FAFC", borderRadius: "10px", border: "1px solid #F1F5F9" }}>
       <div style={{ color: "#2563EB", background: "#EFF6FF", width: "36px", height: "36px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Icon />
       </div>
@@ -198,13 +198,36 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
   const j = jabatanStyle[profil.jabatan] || jabatanStyle["Super Admin"];
 
   return (
-    <div style={{ width: "100%", maxWidth: "440px", margin: "0 auto", fontFamily: "sans-serif" }}>
+    <div className="profil-admin-wrap" style={{ width: "100%", maxWidth: "440px", margin: "0 auto", fontFamily: "sans-serif" }}>
+      <style dangerouslySetInnerHTML={{__html: `
+    
+        .profil-admin-wrap * { min-width: 0; }
+
+        @media (max-width: 768px) {
+          .profil-cover { height: 76px !important; }
+          .profil-head { padding: 0 1rem 1rem !important; margin-top: -38px !important; }
+          .profil-avatar { width: 74px !important; height: 74px !important; font-size: 1.4rem !important; }
+          .profil-nama { font-size: 1.02rem !important; }
+          .profil-role-sub { font-size: 0.72rem !important; }
+          .profil-tabs-wrap { padding: 0 1rem !important; }
+          .profil-tabs-wrap button { font-size: 0.72rem !important; padding: 0.45rem 0.3rem !important; }
+          .profil-body { padding: 0 1rem 1rem !important; gap: 0.55rem !important; }
+          .profil-detail-item { padding: 0.6rem 0.7rem !important; gap: 0.65rem !important; }
+          .profil-form { padding: 1rem !important; gap: 0.75rem !important; }
+          .profil-form input, .profil-form select { font-size: 0.82rem !important; padding: 0.55rem 0.7rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .profil-form-2col { grid-template-columns: 1fr !important; }
+        }
+      `}} />
+
       <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E2E8F0", boxShadow: "0 20px 40px -15px rgba(15,23,42,0.12)", overflow: "hidden" }}>
-        
+
         {!editing ? (
           <div>
             {/* COVER HEADER */}
-            <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", height: "90px", position: "relative" }}>
+            <div className="profil-cover" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", height: "90px", position: "relative" }}>
               {onClose && (
                 <button
                   onClick={onClose}
@@ -216,10 +239,9 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               )}
             </div>
 
-         
-            <div style={{ padding: "0 1.5rem 1.25rem", marginTop: "-42px", textAlign: "center", position: "relative" }}>
+            <div className="profil-head" style={{ padding: "0 1.5rem 1.25rem", marginTop: "-42px", textAlign: "center", position: "relative" }}>
               <div style={{ position: "relative", display: "inline-block" }}>
-                <div style={{ width: "84px", height: "84px", borderRadius: "50%", background: "#1E293B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.6rem", fontWeight: 800, border: "4px solid #ffffff", boxShadow: "0 8px 16px -2px rgba(15,23,42,0.15)", overflow: "hidden", margin: "0 auto" }}>
+                <div className="profil-avatar" style={{ width: "84px", height: "84px", borderRadius: "50%", background: "#1E293B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.6rem", fontWeight: 800, border: "4px solid #ffffff", boxShadow: "0 8px 16px -2px rgba(15,23,42,0.15)", overflow: "hidden", margin: "0 auto" }}>
                   {profil.fotoUrl ? <img src={profil.fotoUrl} alt="Foto profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
                 </div>
                 <button onClick={() => fileRef.current?.click()} style={{ position: "absolute", bottom: "2px", right: "2px", width: "26px", height: "26px", borderRadius: "50%", background: "#2563EB", color: "white", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.15)" }} aria-label="Ubah foto profil">
@@ -228,16 +250,15 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleFotoChange} style={{ display: "none" }} />
               </div>
 
-              <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E293B", margin: "0.6rem 0 0 0" }}>{profil.nama}</h2>
-              <p style={{ fontSize: "0.8rem", color: "#64748B", margin: "0.15rem 0 0.6rem 0" }}>Administrator Platform PasarNusa</p>
-              
+              <h2 className="profil-nama" style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1E293B", margin: "0.6rem 0 0 0" }}>{profil.nama}</h2>
+              <p className="profil-role-sub" style={{ fontSize: "0.8rem", color: "#64748B", margin: "0.15rem 0 0.6rem 0" }}>Administrator Platform PasarNusa</p>
+
               <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: j.bg, color: j.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
                 <IconBadge /> {profil.jabatan}
               </span>
             </div>
 
-          
-            <div style={{ padding: "0 1.25rem", marginBottom: "1rem" }}>
+            <div className="profil-tabs-wrap" style={{ padding: "0 1.25rem", marginBottom: "1rem" }}>
               <div style={{ display: "flex", background: "#F1F5F9", padding: "4px", borderRadius: "10px" }}>
                 <button
                   onClick={() => setActiveTab("jabatan")}
@@ -264,7 +285,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-            <div style={{ padding: "0 1.25rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="profil-body" style={{ padding: "0 1.25rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {activeTab === "jabatan" ? (
                 <>
                   <DetailItem icon={IconBadge} label="Role / Jabatan Akses" value={profil.jabatan} />
@@ -286,14 +307,13 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
             </div>
           </div>
         ) : (
-        
-          <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+
+          <form onSubmit={handleSubmit} className="profil-form" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #F1F5F9", paddingBottom: "0.75rem" }}>
               <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "#1E293B" }}>Edit Profil Admin</h3>
               <button type="button" onClick={() => setEditing(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
 
-           
             <div style={{ textAlign: "center", margin: "0.25rem 0" }}>
               <div style={{ position: "relative", display: "inline-block" }}>
                 <div style={{ width: "70px", height: "70px", borderRadius: "50%", background: "#1E293B", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", fontWeight: 800, overflow: "hidden", margin: "0 auto" }}>
@@ -320,7 +340,7 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </select>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div className="profil-form-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               <div>
                 <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#475569", marginBottom: "0.3rem" }}>No. WhatsApp *</label>
                 <input value={form.telepon} onChange={(e) => setForm({ ...form, telepon: e.target.value })} style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.85rem", outline: "none", boxSizing: "border-box", color: "#1E293B" }} />
@@ -331,12 +351,11 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-       
             <div style={{ paddingTop: "0.6rem", borderTop: "1px dashed #E2E8F0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.72rem", fontWeight: 700, color: "#64748B", marginBottom: "0.5rem" }}>
                 <IconLock /> UBAH KATA SANDI (OPSIONAL)
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div className="profil-form-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                 <div>
                   <input type="password" placeholder="Sandi baru" value={passwordBaru} onChange={(e) => setPasswordBaru(e.target.value)} style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.8rem", outline: "none", boxSizing: "border-box" }} />
                 </div>
@@ -346,7 +365,6 @@ export default function ProfilAdminPage({ profil, setProfil, onClose }: Props) {
               </div>
             </div>
 
-          
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
               <button type="button" onClick={() => { setEditing(false); setPasswordBaru(""); setPasswordKonfirmasi(""); }} style={{ flex: 1, padding: "0.65rem", borderRadius: "8px", border: "1px solid #CBD5E1", background: "white", color: "#475569", fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
                 Batal

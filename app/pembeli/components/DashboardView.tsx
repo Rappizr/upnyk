@@ -139,7 +139,7 @@ const loadDashboardRealtime = useCallback(async () => {
           }
         }
 
-        // 💡 FILTER BUANG PRODUK UNTUK TOKO YANG SUSPENDED
+ 
         const activeProducts = etalaseData.filter((e: any) => {
           const tokoObj = tokoMap.get(e.admin_toko_id);
           if (!tokoObj) return false;

@@ -46,7 +46,6 @@ export default function DataProdusen() {
   const [transaksiRelasi, setTransaksiRelasi] = useState<TransaksiRelasi[]>([]);
   const [loadingRelasi, setLoadingRelasi] = useState(false);
 
-  // 💡 STATE UNTUK POP-UP KONFIRMASI SUSPEND / AKTIFKAN
   const [confirmSuspend, setConfirmSuspend] = useState<{
     id: string;
     namaUsaha: string;
@@ -108,7 +107,7 @@ export default function DataProdusen() {
       const mappedFallback: ProdusenBinaan[] = (prodData || []).map((p) => {
         const prof = profileMap.get(p.profile_id);
         const lokasiFormatted = [p.desa, p.kecamatan, p.kabupaten, p.provinsi].filter(Boolean).join(", ") || p.alamat || "Lokasi belum disetel";
-        
+
         let statusNormalized: ProdusenBinaan["status"] = "Aktif";
         if (p.status === "suspended") statusNormalized = "Suspended";
         else if (p.status === "menunggu") statusNormalized = "Menunggu";
@@ -137,7 +136,7 @@ export default function DataProdusen() {
     muatDataProdusen();
   }, [muatDataProdusen]);
 
-async function eksekusiToggleSuspend() {
+  async function eksekusiToggleSuspend() {
     if (!confirmSuspend) return;
 
     const { id, statusSaatIni } = confirmSuspend;
@@ -233,8 +232,11 @@ async function eksekusiToggleSuspend() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="produsen-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+      
+         
+        .produsen-page * { min-width: 0; }
         .info-alert-banner {
           display: flex !important;
           flex-direction: row !important;
@@ -244,40 +246,71 @@ async function eksekusiToggleSuspend() {
           box-sizing: border-box !important;
           word-break: break-word !important;
         }
-        
+
+        @media (max-width: 900px) {
+          .produsen-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
-          .produsen-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .produsen-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
-          .produsen-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
-          .produsen-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
-          .produsen-filter-wrapper { padding: 0.6rem !important; border-radius: 8px !important; gap: 0.5rem !important; margin-bottom: 1rem !important; }
-          .produsen-table-container th, .produsen-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
-          .produsen-table-container table { min-width: auto !important; width: 100% !important; }
+          .produsen-page { padding: 0.85rem 0.7rem !important; }
+          .produsen-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .produsen-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+      
+          .produsen-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .produsen-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .produsen-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .produsen-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .produsen-stat-value { font-size: clamp(0.85rem, 4vw, 1.1rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; }
+          .produsen-stat-label { font-size: 0.58rem !important; line-height: 1.2 !important; }
+
+         
+          .produsen-filter-wrapper { padding: 0.6rem !important; border-radius: 10px !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .produsen-filter-wrapper input, .produsen-filter-wrapper select { font-size: 0.78rem !important; padding: 0.5rem 0.6rem !important; border-radius: 8px !important; }
+          .produsen-filter-wrapper input { padding-left: 2.1rem !important; }
+          .produsen-filter-wrapper select { flex: 1 1 0 !important; }
+
+        
+          .produsen-page .col-mob-hide { display: none !important; }
+          .produsen-table-container table { min-width: 0 !important; width: 100% !important; }
+          .produsen-table-container th { font-size: 0.6rem !important; padding: 0.55rem 0.4rem !important; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          .produsen-table-container td { font-size: 0.72rem !important; padding: 0.6rem 0.4rem !important; overflow-wrap: anywhere !important; vertical-align: middle !important; }
+          .produsen-badge { font-size: 0.6rem !important; padding: 0.15rem 0.4rem !important; white-space: nowrap; display: inline-block; }
+          .produsen-actions { flex-direction: column !important; gap: 0.3rem !important; }
+          .produsen-actions button { width: 100% !important; padding: 0.35rem 0.3rem !important; font-size: 0.65rem !important; }
+
+         
+          .produsen-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .produsen-modal h2, .produsen-modal h3 { font-size: 0.98rem !important; }
+          .produsen-modal p, .produsen-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .produsen-stats-grid { gap: 0.35rem !important; }
+          .produsen-stat-card { padding: 0.5rem 0.4rem !important; }
+          .produsen-table-container td { font-size: 0.68rem !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Data Produsen</h1>
-        <p className="info-alert-banner" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
+        <p className="info-alert-banner produsen-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
           Daftar Produsen Hulu terdaftar — kelola status operasional dan suspend akun.
         </p>
       </div>
 
       <div className="produsen-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="produsen-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconStore /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Produsen Aktif</div></div>
+          <div className="produsen-stat-icon" style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconStore /></div>
+          <div><div className="produsen-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div><div className="produsen-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Produsen Aktif</div></div>
         </div>
         <div className="produsen-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconClock /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalMenunggu}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Belum Lengkap</div></div>
+          <div className="produsen-stat-icon" style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconClock /></div>
+          <div><div className="produsen-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalMenunggu}</div><div className="produsen-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Belum Lengkap</div></div>
         </div>
         <div className="produsen-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBan /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Suspended</div></div>
+          <div className="produsen-stat-icon" style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBan /></div>
+          <div><div className="produsen-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div className="produsen-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Suspended</div></div>
         </div>
       </div>
 
@@ -299,11 +332,11 @@ async function eksekusiToggleSuspend() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                <th style={{ padding: "1rem", color: "#475569" }}>ID Produsen</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>ID Produsen</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Nama Usaha</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Pemilik</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Pemilik</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Kategori Komoditas</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Lokasi</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Lokasi</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
                 <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
               </tr>
@@ -316,19 +349,17 @@ async function eksekusiToggleSuspend() {
                 const s = statusStyle[b.status] || statusStyle["Aktif"];
                 return (
                   <tr key={b.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>#{b.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>#{b.id.slice(0, 8).toUpperCase()}</td>
                     <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{b.namaUsaha}</td>
-                    <td style={{ padding: "1rem", color: "#334155" }}>{b.pemilik}</td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", color: "#334155" }}>{b.pemilik}</td>
                     <td style={{ padding: "1rem", color: "#059669", fontWeight: 600 }}>{b.kategori}</td>
-                    <td style={{ padding: "1rem", color: "#475569" }}>{b.lokasi}</td>
-                    <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span></td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>{b.lokasi}</td>
+                    <td style={{ padding: "1rem" }}><span className="produsen-badge" style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span></td>
                     <td style={{ padding: "1rem", textAlign: "center" }}>
-                      <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                      <div className="produsen-actions" style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
                         <button onClick={() => bukaKelolaDetail(b)} style={{ background: "#EFF6FF", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Kelola</button>
-                        
-                        {/* 💡 BUKA MODAL KONFIRMASI KETIKA MENGELIK SUSPEND / AKTIFKAN */}
-                        <button 
-                          onClick={() => setConfirmSuspend({ id: b.id, namaUsaha: b.namaUsaha, statusSaatIni: b.status })} 
+                        <button
+                          onClick={() => setConfirmSuspend({ id: b.id, namaUsaha: b.namaUsaha, statusSaatIni: b.status })}
                           style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}
                         >
                           {b.status === "Aktif" ? "Suspend" : "Aktifkan"}
@@ -343,10 +374,9 @@ async function eksekusiToggleSuspend() {
         </div>
       </div>
 
-     
       {confirmSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
+          <div className="produsen-modal" style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: confirmSuspend.statusSaatIni === "Aktif" ? "#FEE2E2" : "#ECFDF5", color: confirmSuspend.statusSaatIni === "Aktif" ? "#EF4444" : "#10B981", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem", fontSize: "1.5rem", fontWeight: 800 }}>
               {confirmSuspend.statusSaatIni === "Aktif" ? "⚠️" : "✓"}
             </div>
@@ -378,16 +408,15 @@ async function eksekusiToggleSuspend() {
         </div>
       )}
 
-   
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div className="produsen-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{detail.namaUsaha}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <p style={{ margin: "0 0 1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>#{detail.id.slice(0, 8).toUpperCase()} • {detail.lokasi}</p>
-            
+
             <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "0.85rem", display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.85rem", marginBottom: "1.2rem" }}>
               <div><strong style={{ color: "#64748B" }}>Pemilik Produsen:</strong> <span style={{ color: "#1E293B", fontWeight: 600 }}>{detail.pemilik}</span></div>
               <div><strong style={{ color: "#64748B" }}>Sektor Komoditas:</strong> <span style={{ color: "#059669", fontWeight: 600 }}>{detail.kategori}</span></div>

@@ -32,6 +32,18 @@ function formatRupiah(n: number) {
   return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
+
+function formatRupiahRingkas(n: number) {
+  const neg = n < 0;
+  const a = Math.abs(isNaN(n) ? 0 : n);
+  let s: string;
+  if (a >= 1000000000) s = `Rp ${(a / 1000000000).toFixed(1)}M`;
+  else if (a >= 1000000) s = `Rp ${(a / 1000000).toFixed(1)}jt`;
+  else if (a >= 1000) s = `Rp ${Math.round(a / 1000)}rb`;
+  else s = "Rp " + a.toLocaleString("id-ID");
+  return neg ? "- " + s : s;
+}
+
 function formatInputRupiah(value: string) {
   const angka = value.replace(/\D/g, "");
   return angka ? Number(angka).toLocaleString("id-ID") : "";
@@ -74,7 +86,7 @@ export default function Keuangan() {
         return;
       }
 
-      // 1. Load Pemasukan dari Pesanan Selesai
+    
       const { data: pesananData, error: pesananError } = await supabase
         .from("pesanan")
         .select("id, total_harga, status, created_at, admin_toko_id")
@@ -257,28 +269,63 @@ export default function Keuangan() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="finance-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+     
+        .finance-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .finance-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          .finance-header-row { display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; gap: 0.25rem !important; margin-bottom: 1rem !important; width: 100% !important; flex-wrap: nowrap !important; }
+          .finance-page { padding: 0.85rem 0.7rem !important; }
+
+        
+          .finance-header-row { gap: 0.4rem !important; margin-bottom: 1rem !important; flex-wrap: nowrap !important; align-items: flex-start !important; }
           .finance-title-block { min-width: 0 !important; flex: 1 !important; }
-          .finance-title-block h1 { font-size: 1.15rem !important; margin: 0px !important; }
-          .finance-title-block p { font-size: 0.62rem !important; margin: 0px !important; line-height: 1.2 !important; }
-          .finance-action-buttons { display: flex !important; gap: 0.25rem !important; flex-shrink: 0 !important; }
-          .finance-action-buttons button { padding: 0.35rem 0.5rem !important; font-size: 0.62rem !important; border-radius: 5px !important; white-space: nowrap !important; }
-          .finance-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .finance-stat-card { padding: 0.4rem 0.3rem !important; border-radius: 6px !important; }
-          .history-table-container th, .history-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
+          .finance-title-block h1 { font-size: 1.08rem !important; }
+          .finance-title-block p { font-size: 0.66rem !important; line-height: 1.3 !important; }
+          .finance-action-buttons { gap: 0.3rem !important; flex-shrink: 0 !important; flex-direction: column !important; }
+          .finance-action-buttons button { padding: 0.4rem 0.6rem !important; font-size: 0.66rem !important; border-radius: 7px !important; white-space: nowrap !important; }
+
+         
+          .finance-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .finance-stat-card { padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .finance-stat-head { gap: 0.35rem !important; margin-bottom: 0.35rem !important; flex-direction: column !important; align-items: flex-start !important; }
+          .finance-stat-icon { padding: 0.3rem !important; border-radius: 7px !important; }
+          .finance-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .finance-stat-label { font-size: 0.55rem !important; line-height: 1.2 !important; }
+          .finance-stat-value { font-size: clamp(0.82rem, 3.9vw, 1.1rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; overflow-wrap: anywhere !important; }
+
+       
+          .history-table-container h3 { font-size: 0.85rem !important; padding: 0.85rem 0.75rem 0.6rem !important; }
+          .history-table-container table { min-width: 0 !important; width: 100% !important; }
+          .history-table-container th { font-size: 0.6rem !important; padding: 0.55rem 0.5rem !important; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          .history-table-container td { font-size: 0.7rem !important; padding: 0.6rem 0.5rem !important; overflow-wrap: anywhere !important; vertical-align: middle !important; }
+          .history-table-container td:first-child { white-space: nowrap !important; }
+          .history-table-container td:last-child { white-space: nowrap !important; }
+
+        
+          .finance-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 88vh !important; overflow-y: auto !important; }
+          .finance-modal h2 { font-size: 0.98rem !important; }
+          .finance-modal input, .finance-modal select { font-size: 0.82rem !important; padding: 0.55rem 0.7rem !important; }
+          .finance-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .finance-stats-grid { gap: 0.3rem !important; }
+          .finance-stat-card { padding: 0.5rem 0.4rem !important; }
+          .history-table-container td { font-size: 0.66rem !important; }
         }
       `}} />
 
-      <div className="finance-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", width: "100%" }}>
+      <div className="finance-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", width: "100%", gap: "1rem" }}>
         <div className="finance-title-block">
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Keuangan</h1>
           <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Pantau arus kas — pemasukan otomatis dari penjualan selesai, pengeluaran dicatat manual.</p>
         </div>
-        <div className="finance-action-buttons">
+        <div className="finance-action-buttons" style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={() => setShowTarikModal(true)} style={{ background: "#10B981", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem" }}>Tarik Tunai</button>
           <button onClick={() => setShowAddModal(true)} style={{ background: "#EF4444", color: "white", border: "none", padding: "0.625rem 1.25rem", borderRadius: "8px", fontWeight: 600, cursor: "pointer", fontSize: "0.9rem" }}>+ Catat Pengeluaran</button>
         </div>
@@ -286,25 +333,25 @@ export default function Keuangan() {
 
       <div className="finance-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="finance-stat-card" style={{ background: "#10B981", padding: "1.25rem", borderRadius: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
-            <div style={{ background: "rgba(255,255,255,.2)", color: "#fff", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconWallet /></div>
-            <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,.85)", fontWeight: 600 }}>Saldo Saat Ini</span>
+          <div className="finance-stat-head" style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
+            <div className="finance-stat-icon" style={{ background: "rgba(255,255,255,.2)", color: "#fff", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconWallet /></div>
+            <span className="finance-stat-label" style={{ fontSize: "0.8rem", color: "rgba(255,255,255,.85)", fontWeight: 600 }}>Saldo Saat Ini</span>
           </div>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff" }}>{formatRupiah(saldo)}</div>
+          <div className="finance-stat-value" style={{ fontSize: "1.5rem", fontWeight: 700, color: "#fff" }}>{formatRupiahRingkas(saldo)}</div>
         </div>
         <div className="finance-stat-card" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
-            <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowUp /></div>
-            <span style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pemasukan</span>
+          <div className="finance-stat-head" style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
+            <div className="finance-stat-icon" style={{ background: "#D1FAE5", color: "#10B981", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowUp /></div>
+            <span className="finance-stat-label" style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pemasukan</span>
           </div>
-          <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalMasuk)}</div>
+          <div className="finance-stat-value" style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalMasuk)}</div>
         </div>
         <div className="finance-stat-card" style={{ background: "white", padding: "1.25rem", borderRadius: "12px", border: "1px solid #E2E8F0" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
-            <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowDown /></div>
-            <span style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pengeluaran</span>
+          <div className="finance-stat-head" style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.5rem" }}>
+            <div className="finance-stat-icon" style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.45rem", borderRadius: "8px", display: "flex" }}><IconArrowDown /></div>
+            <span className="finance-stat-label" style={{ fontSize: "0.8rem", color: "#64748B", fontWeight: 600 }}>Total Pengeluaran</span>
           </div>
-          <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalKeluar)}</div>
+          <div className="finance-stat-value" style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalKeluar)}</div>
         </div>
       </div>
 
@@ -335,10 +382,10 @@ export default function Keuangan() {
         </div>
       </div>
 
-      {/* MODAL CATAT PENGELUARAN */}
+    
       {showAddModal && (
         <div onClick={() => !submitting && setShowAddModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+          <div className="finance-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#1E293B" }}>Catat Pengeluaran</h2>
               <button disabled={submitting} onClick={() => setShowAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
@@ -371,10 +418,10 @@ export default function Keuangan() {
         </div>
       )}
 
-      {/* MODAL TARIK TUNAI */}
+   
       {showTarikModal && (
         <div onClick={() => { if (!submitting) { setShowTarikModal(false); setTarikError(""); } }} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+          <div className="finance-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "420px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#1E293B" }}>Tarik Saldo</h2>
               <button disabled={submitting} onClick={() => { setShowTarikModal(false); setTarikError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>

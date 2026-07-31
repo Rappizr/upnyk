@@ -410,7 +410,7 @@ const loadMarketplaceData = useCallback(async () => {
                     <span>{p.kabupaten || "Lokal"}</span>
                   </div>
 
-                  {/* 💡 BAGIAN RATING DINAMIS SAMA DENGAN ETALASE */}
+               
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.4rem", fontSize: "0.7rem", color: "#64748B" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "2px", color: "#F59E0B" }}>
                       <StarIcon size={11} />

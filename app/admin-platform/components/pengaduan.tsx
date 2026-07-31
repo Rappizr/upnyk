@@ -43,7 +43,6 @@ export default function PengaduanPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [detail, setDetail] = useState<Pengaduan | null>(null);
 
- 
   const muatDataPengaduan = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,7 +79,6 @@ export default function PengaduanPage() {
   useEffect(() => {
     muatDataPengaduan();
   }, [muatDataPengaduan]);
-
 
   async function updateStatusPengaduan(id: string, status: Pengaduan["status"]) {
     const { error } = await supabase
@@ -123,46 +121,78 @@ export default function PengaduanPage() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="ticket-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+     
+       
+        .ticket-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .ticket-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
-          .ticket-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .ticket-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
-          .ticket-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
-          .ticket-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
-          .ticket-filter-bar { padding: 0.6rem !important; border-radius: 8px !important; gap: 0.5rem !important; margin-bottom: 1rem !important; }
-          .ticket-filter-bar input, .ticket-filter-bar select { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; border-radius: 6px !important; }
-          .ticket-row-card { padding: 0.6rem 0.75rem !important; border-radius: 8px !important; }
+          .ticket-page { padding: 0.85rem 0.7rem !important; }
+          .ticket-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .ticket-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+    
+          .ticket-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .ticket-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .ticket-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .ticket-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .ticket-stat-value { font-size: clamp(0.85rem, 4vw, 1.1rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; }
+          .ticket-stat-label { font-size: 0.58rem !important; line-height: 1.2 !important; }
+
+      
+          .ticket-filter-bar { padding: 0.6rem !important; border-radius: 10px !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .ticket-filter-bar input, .ticket-filter-bar select { font-size: 0.78rem !important; padding: 0.5rem 0.6rem !important; border-radius: 8px !important; }
+          .ticket-filter-bar input { padding-left: 2.1rem !important; }
+          .ticket-filter-bar select { flex: 1 1 0 !important; min-width: 0 !important; }
+          .ticket-search-box { flex: 1 1 100% !important; min-width: 0 !important; }
+
+       
+          .ticket-row-card { padding: 0.7rem 0.8rem !important; border-radius: 10px !important; }
+          .ticket-row-card p { font-size: 0.75rem !important; }
+          .ticket-row-card .ticket-meta { font-size: 0.7rem !important; }
+          .ticket-row-card .ticket-chip { font-size: 0.6rem !important; padding: 0.12rem 0.42rem !important; }
+
+      
+          .ticket-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .ticket-modal h2 { font-size: 0.98rem !important; }
+          .ticket-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .ticket-stats-grid { gap: 0.35rem !important; }
+          .ticket-stat-card { padding: 0.5rem 0.4rem !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Pengaduan</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
+        <p className="ticket-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
           Tiket bantuan pengguna — termasuk laporan indikasi manipulasi Indeks Harga Adil oleh Admin Toko.
         </p>
       </div>
 
       <div className="ticket-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="ticket-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconFlag /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalBaru}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Tiket Baru</div></div>
+          <div className="ticket-stat-icon" style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconFlag /></div>
+          <div><div className="ticket-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalBaru}</div><div className="ticket-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Tiket Baru</div></div>
         </div>
         <div className="ticket-stat-card" style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", padding: "1.1rem", borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "white", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlertTriangle /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#991B1B" }}>{totalManipulasiHarga}</div><div style={{ fontSize: "0.78rem", color: "#991B1B" }}>Laporan Harga</div></div>
+          <div className="ticket-stat-icon" style={{ background: "white", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlertTriangle /></div>
+          <div><div className="ticket-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#991B1B" }}>{totalManipulasiHarga}</div><div className="ticket-stat-label" style={{ fontSize: "0.78rem", color: "#991B1B" }}>Laporan Harga</div></div>
         </div>
         <div className="ticket-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSelesai}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Selesai</div></div>
+          <div className="ticket-stat-icon" style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
+          <div><div className="ticket-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSelesai}</div><div className="ticket-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Selesai</div></div>
         </div>
       </div>
 
       <div className="ticket-filter-bar" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+        <div className="ticket-search-box" style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari pelapor, ID, atau isi aduan..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
         </div>
@@ -193,23 +223,22 @@ export default function PengaduanPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.85rem" }}>#{p.id.slice(0, 8).toUpperCase()}</span>
-                    <span style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pelapor} ({p.role})</span>
-                    <span style={{ background: k.bg, color: k.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>{p.kategori}</span>
+                    <span className="ticket-meta" style={{ fontWeight: 700, color: "#1E293B", fontSize: "0.85rem" }}>#{p.id.slice(0, 8).toUpperCase()}</span>
+                    <span className="ticket-meta" style={{ fontSize: "0.8rem", color: "#64748B" }}>• {p.pelapor} ({p.role})</span>
+                    <span className="ticket-chip" style={{ background: k.bg, color: k.color, fontSize: "0.68rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px" }}>{p.kategori}</span>
                   </div>
                   <p style={{ margin: 0, fontSize: "0.82rem", color: "#334155", lineHeight: 1.5 }}>{p.deskripsi}</p>
                 </div>
-                <span style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
+                <span className="ticket-chip" style={{ background: s.bg, color: s.color, fontSize: "0.72rem", fontWeight: 700, padding: "0.25rem 0.6rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{p.status}</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "460px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div className="ticket-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "460px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>#{detail.id.slice(0, 8).toUpperCase()}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
@@ -224,12 +253,12 @@ export default function PengaduanPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", marginBottom: "1rem" }}>
               <div style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.6rem 0.75rem" }}>
                 <div style={{ fontSize: "0.65rem", color: "#94A3B8", fontWeight: 700 }}>PELAPOR</div>
-                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B" }}>{detail.pelapor}</div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", overflowWrap: "anywhere" }}>{detail.pelapor}</div>
                 <div style={{ fontSize: "0.72rem", color: "#64748B" }}>{detail.role}</div>
               </div>
               <div style={{ background: "#F8FAFC", borderRadius: "8px", padding: "0.6rem 0.75rem" }}>
                 <div style={{ fontSize: "0.65rem", color: "#94A3B8", fontWeight: 700 }}>KONTAK</div>
-                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B" }}>{detail.kontak}</div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", overflowWrap: "anywhere" }}>{detail.kontak}</div>
               </div>
             </div>
 

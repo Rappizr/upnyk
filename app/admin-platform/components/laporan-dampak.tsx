@@ -36,12 +36,10 @@ export default function LaporanDampak() {
   const loadRealtimeImpact = useCallback(async () => {
     setLoading(true);
     try {
- 
       const { data: pesananData } = await supabase.from("pesanan").select("total, total_harga");
       const gmvSum = (pesananData || []).reduce((acc, curr) => acc + (Number(curr.total || curr.total_harga) || 0), 0);
       setTotalGMV(gmvSum);
 
-   
       const { data: etalaseData } = await supabase.from("etalase").select("nama_produk, harga_jual, stok");
       const komoditasMap = new Map<string, { harga: number; qty: number }>();
 
@@ -88,7 +86,6 @@ export default function LaporanDampak() {
         { lokasi: "Jombang, Jawa Timur", jumlah: 1 }
       ]);
 
-    
       setIndeksHargaAdil(82);
 
     } catch (err) {
@@ -145,41 +142,78 @@ export default function LaporanDampak() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="impact-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+       
+        .impact-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .impact-page { padding: 1rem 1.1rem !important; }
+          .impact-panels-grid { gap: 0.85rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          .impact-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .impact-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
-          .impact-panels-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; }
-          .impact-panel-box { padding: 0.4rem !important; border-radius: 8px !important; }
+          .impact-page { padding: 0.85rem 0.7rem !important; }
+          .impact-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .impact-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+          .impact-header { gap: 0.7rem !important; }
+          .impact-actions button { padding: 0.45rem 0.7rem !important; font-size: 0.72rem !important; }
+
+       
+          .impact-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .impact-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .impact-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .impact-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .impact-stat-value { font-size: clamp(0.8rem, 3.8vw, 1.05rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; overflow-wrap: anywhere !important; }
+          .impact-stat-label { font-size: 0.58rem !important; line-height: 1.2 !important; }
+          .impact-index-card { padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .impact-index-cap { font-size: 0.52rem !important; margin-bottom: 0.25rem !important; }
+          .impact-index-value { font-size: 1.05rem !important; }
+          .impact-index-note { font-size: 0.55rem !important; }
+
+        
+          .impact-panels-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.5rem !important; }
+          .impact-panel-box { padding: 0.7rem 0.6rem !important; border-radius: 10px !important; }
+          .impact-panel-box h3 { font-size: 0.8rem !important; }
+          .impact-panel-box .impact-panel-hint { font-size: 0.6rem !important; margin-bottom: 0.7rem !important; }
+          .impact-panel-box .impact-bar-label { font-size: 0.68rem !important; overflow-wrap: anywhere !important; }
+
+         
+          .impact-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .impact-modal h2 { font-size: 0.98rem !important; }
+          .impact-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .impact-stats-grid { gap: 0.35rem !important; }
+          .impact-panels-grid { grid-template-columns: 1fr !important; }
         }
       `}} />
 
-      <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+      <div className="impact-header" style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Laporan Dampak</h1>
-          <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Bukti kuantitatif dampak platform — indeks harga adil, komoditas terlaris, dan daerah paling produktif.</p>
+          <p className="impact-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Bukti kuantitatif dampak platform — indeks harga adil, komoditas terlaris, dan daerah paling produktif.</p>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="impact-actions" style={{ display: "flex", gap: "0.5rem" }}>
           <button onClick={unduhPDF} style={{ background: "#FEE2E2", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#991B1B", cursor: "pointer" }}>Unduh PDF</button>
           <button onClick={unduhWord} style={{ background: "#EFF6FF", border: "none", padding: "0.55rem 1rem", borderRadius: "8px", fontSize: "0.82rem", fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Unduh Word</button>
         </div>
       </div>
 
       <div className="impact-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "1.1rem", borderRadius: "12px" }}>
-          <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#065F46", letterSpacing: ".03em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
-          <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.85rem", fontWeight: 400 }}>/100</span></div>
-          <div style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem" }}>Banding tengkulak</div>
+        <div className="impact-index-card" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", padding: "1.1rem", borderRadius: "12px" }}>
+          <div className="impact-index-cap" style={{ fontSize: "0.72rem", fontWeight: 700, color: "#065F46", letterSpacing: ".03em", marginBottom: "0.4rem" }}>INDEKS HARGA ADIL</div>
+          <div className="impact-index-value" style={{ fontSize: "1.6rem", fontWeight: 700, color: "#065F46" }}>{indeksHargaAdil} <span style={{ fontSize: "0.85rem", fontWeight: 400 }}>/100</span></div>
+          <div className="impact-index-note" style={{ fontSize: "0.75rem", color: "#059669", marginTop: "0.2rem" }}>Banding tengkulak</div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconWallet /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalGMV)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Dana (GMV)</div></div>
+        <div className="impact-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+          <div className="impact-stat-icon" style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconWallet /></div>
+          <div><div className="impact-stat-value" style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalGMV)}</div><div className="impact-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Total Dana (GMV)</div></div>
         </div>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconMapPin /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{daerahProduktif.length}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Wilayah Terjangkau</div></div>
+        <div className="impact-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+          <div className="impact-stat-icon" style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconMapPin /></div>
+          <div><div className="impact-stat-value" style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{daerahProduktif.length}</div><div className="impact-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Wilayah Terjangkau</div></div>
         </div>
       </div>
 
@@ -189,13 +223,13 @@ export default function LaporanDampak() {
             <span style={{ color: "#2563EB", display: "flex" }}><IconTrend /></span>
             <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Komoditas Terlaris</h3>
           </div>
-          <p style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Klik komoditas untuk lihat perbandingan harga vs tengkulak</p>
+          <p className="impact-panel-hint" style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Klik komoditas untuk lihat perbandingan harga vs tengkulak</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {komoditasList.map((k) => (
               <div key={k.nama} onClick={() => setDetail(k)} style={{ cursor: "pointer" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                  <span style={{ color: "#334155", fontWeight: 500 }}>{k.nama}</span>
-                  <strong style={{ color: "#1E293B" }}>{k.volumeTon} ton</strong>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem", gap: "0.4rem" }}>
+                  <span className="impact-bar-label" style={{ color: "#334155", fontWeight: 500 }}>{k.nama}</span>
+                  <strong className="impact-bar-label" style={{ color: "#1E293B", whiteSpace: "nowrap" }}>{k.volumeTon} ton</strong>
                 </div>
                 <div style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
                   <div style={{ width: `${(k.volumeTon / maxVolume) * 100}%`, height: "100%", background: "#2563EB" }} />
@@ -210,13 +244,13 @@ export default function LaporanDampak() {
             <span style={{ color: "#D97706", display: "flex" }}><IconMapPin /></span>
             <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "#1E293B" }}>Daerah Produktif</h3>
           </div>
-          <p style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Dihitung otomatis dari jumlah mitra terverifikasi per wilayah</p>
+          <p className="impact-panel-hint" style={{ margin: "0 0 1rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>Dihitung otomatis dari jumlah mitra terverifikasi per wilayah</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {daerahProduktif.map((d) => (
               <div key={d.lokasi}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                  <span style={{ color: "#334155", fontWeight: 500 }}>{d.lokasi}</span>
-                  <strong style={{ color: "#1E293B" }}>{d.jumlah} mtr</strong>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem", gap: "0.4rem" }}>
+                  <span className="impact-bar-label" style={{ color: "#334155", fontWeight: 500 }}>{d.lokasi}</span>
+                  <strong className="impact-bar-label" style={{ color: "#1E293B", whiteSpace: "nowrap" }}>{d.jumlah} mtr</strong>
                 </div>
                 <div style={{ width: "100%", background: "#F1F5F9", height: "10px", borderRadius: "999px", overflow: "hidden" }}>
                   <div style={{ width: `${(d.jumlah / maxDaerah) * 100}%`, height: "100%", background: "#F59E0B" }} />
@@ -229,19 +263,19 @@ export default function LaporanDampak() {
 
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
+          <div className="impact-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{detail.nama}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginBottom: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.8rem", background: "#ECFDF5", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.8rem", background: "#ECFDF5", borderRadius: "8px", fontSize: "0.85rem", gap: "0.5rem" }}>
                 <span style={{ color: "#065F46" }}>Harga di PasarNusa</span>
-                <strong style={{ color: "#065F46" }}>{formatRupiah(detail.hargaPlatform)}</strong>
+                <strong style={{ color: "#065F46", whiteSpace: "nowrap" }}>{formatRupiah(detail.hargaPlatform)}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.8rem", background: "#FEF2F2", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.8rem", background: "#FEF2F2", borderRadius: "8px", fontSize: "0.85rem", gap: "0.5rem" }}>
                 <span style={{ color: "#991B1B" }}>Estimasi harga tengkulak</span>
-                <strong style={{ color: "#991B1B" }}>{formatRupiah(detail.hargaTengkulak)}</strong>
+                <strong style={{ color: "#991B1B", whiteSpace: "nowrap" }}>{formatRupiah(detail.hargaTengkulak)}</strong>
               </div>
             </div>
             <div style={{ textAlign: "center", fontSize: "0.85rem", color: "#334155", background: "#F8FAFC", borderRadius: "8px", padding: "0.7rem" }}>

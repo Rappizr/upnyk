@@ -45,7 +45,6 @@ interface LeafletStatic {
 }
 declare const window: Window & { L?: LeafletStatic };
 
-
 const cityCoords: Record<string, [number, number]> = {
   Malang: [-7.9666, 112.6326],
   Jombang: [-7.5460, 112.2384],
@@ -95,12 +94,12 @@ function MiniMap({ entitasList, selectedDetail }: { entitasList: Entitas[]; sele
         const coord = getCoordinates(e);
         const isSelected = selectedDetail?.id === e.id;
 
-        const marker = L.circleMarker(coord, { 
-          radius: isSelected ? 11 : 8, 
-          color: isSelected ? "#DC2626" : tipeColor[e.tipe], 
-          fillColor: tipeColor[e.tipe], 
-          fillOpacity: 0.85, 
-          weight: isSelected ? 3 : 2 
+        const marker = L.circleMarker(coord, {
+          radius: isSelected ? 11 : 8,
+          color: isSelected ? "#DC2626" : tipeColor[e.tipe],
+          fillColor: tipeColor[e.tipe],
+          fillOpacity: 0.85,
+          weight: isSelected ? 3 : 2
         });
 
         marker.addTo(map).bindPopup(`
@@ -168,12 +167,11 @@ export default function PetaRantaiPasok({
   const [tipeFilter, setTipeFilter] = useState<TipeEntitas | "">("");
   const [detail, setDetail] = useState<Entitas | null>(null);
 
-   const isSuspended = (statusStr?: string | null) => {
+  const isSuspended = (statusStr?: string | null) => {
     const s = String(statusStr || "").toLowerCase().trim();
     return s === "suspended" || s === "nonaktif" || s === "terblokir";
   };
 
-  
   const loadEntitasData = useCallback(async () => {
     setLoading(true);
     try {
@@ -183,7 +181,6 @@ export default function PetaRantaiPasok({
         supabase.from("pesanan").select("*").order("created_at", { ascending: false })
       ]);
 
-      // 1. FILTER DAN MAP TOKO YANG AKTIF SAJA
       const activeTokoData = (tokoData || []).filter((t: any) => !isSuspended(t.status));
       const mappedToko: Entitas[] = activeTokoData.map((t: any) => ({
         id: t.id,
@@ -195,7 +192,6 @@ export default function PetaRantaiPasok({
         longitude: t.longitude,
       }));
 
-      // 2. FILTER DAN MAP PRODUSEN YANG AKTIF SAJA
       const activeProdusenData = (produsenData || []).filter((p: any) => !isSuspended(p.status));
       const mappedProdusen: Entitas[] = activeProdusenData.map((p: any) => ({
         id: p.id,
@@ -210,7 +206,6 @@ export default function PetaRantaiPasok({
       const tokoMap = new Map(activeTokoData.map((t: any) => [t.id, t.nama_toko || "Toko Mitra"]));
       const produsenMap = new Map(activeProdusenData.map((p: any) => [p.id, p.nama_usaha || "Produsen Binaan"]));
 
-      
       const mappedTx: EscrowTx[] = (pesananData || []).map((ord: any) => {
         const tokoNama = ord.supplier || tokoMap.get(ord.admin_toko_id) || "Toko Mitra";
         const produsenNama = produsenMap.get(ord.produsen_id) || "Produsen Binaan";
@@ -249,7 +244,6 @@ export default function PetaRantaiPasok({
     return entitasList.filter((e) => !tipeFilter || e.tipe === tipeFilter);
   }, [entitasList, tipeFilter]);
 
-
   const relasiUntuk = useCallback((e: Entitas) => {
     const qNama = e.nama.toLowerCase().trim();
     return (transaksiList || []).filter((t) => {
@@ -260,24 +254,55 @@ export default function PetaRantaiPasok({
   }, [transaksiList]);
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="supply-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+      
+        .supply-page * { min-width: 0; }
+
+     
         .map-wrapper-contain { position: relative !important; z-index: 1 !important; }
         .map-wrapper-contain .leaflet-container,
         .map-wrapper-contain .leaflet-pane,
         .map-wrapper-contain .leaflet-top,
         .map-wrapper-contain .leaflet-bottom { z-index: 1 !important; }
+
+        @media (max-width: 900px) {
+          .supply-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          .map-height-mobile { height: 220px !important; }
-          .supply-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+          .supply-page { padding: 0.85rem 0.7rem !important; }
+          .supply-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .supply-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+          .map-height-mobile { height: 240px !important; }
+          .map-filter-buttons { gap: 0.35rem !important; margin-bottom: 0.8rem !important; }
+          .map-filter-buttons button { padding: 0.35rem 0.7rem !important; font-size: 0.72rem !important; }
+          .map-wrapper-contain { padding: 0.5rem !important; border-radius: 10px !important; margin-bottom: 1rem !important; }
+          .map-legend-row { font-size: 0.68rem !important; gap: 0.75rem !important; }
+
+       
+          .supply-cards-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.5rem !important; }
+          .supply-main-card { padding: 0.65rem !important; border-radius: 10px !important; }
+          .supply-card-name { font-size: 0.78rem !important; overflow-wrap: anywhere !important; }
+          .supply-card-loc { font-size: 0.66rem !important; overflow-wrap: anywhere !important; }
+          .supply-card-rel { font-size: 0.66rem !important; }
+
+      
+          .supply-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .supply-modal h2 { font-size: 0.98rem !important; }
+          .supply-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .map-height-mobile { height: 200px !important; }
+          .supply-cards-grid { gap: 0.4rem !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.25rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>Peta Rantai Pasok</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Visualisasi lokasi &amp; sebaran jaringan Admin Toko dan Produsen di ekosistem.</p>
+        <p className="supply-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.85rem" }}>Visualisasi lokasi &amp; sebaran jaringan Admin Toko dan Produsen di ekosistem.</p>
       </div>
 
       <div className="map-filter-buttons" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
@@ -312,13 +337,13 @@ export default function PetaRantaiPasok({
           const jumlahRelasi = relasiUntuk(e).length;
           return (
             <div key={e.id} onClick={() => setDetail(e)} className="supply-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
-                <div style={{ background: c.bg, color: c.color, width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}><IconBuilding /></div>
-                <span style={{ background: c.bg, color: c.color, fontSize: "0.65rem", fontWeight: 600, padding: "0.15rem 0.45rem", borderRadius: "999px" }}>{e.tipe}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem", gap: "0.35rem" }}>
+                <div style={{ background: c.bg, color: c.color, width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><IconBuilding /></div>
+                <span style={{ background: c.bg, color: c.color, fontSize: "0.65rem", fontWeight: 600, padding: "0.15rem 0.45rem", borderRadius: "999px", whiteSpace: "nowrap" }}>{e.tipe}</span>
               </div>
-              <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1E293B" }}>{e.nama}</div>
-              <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{e.lokasi}</div>
-              <div style={{ fontSize: "0.72rem", color: "#2563EB", fontWeight: 600 }}>{jumlahRelasi} transaksi terhubung</div>
+              <div className="supply-card-name" style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1E293B" }}>{e.nama}</div>
+              <div className="supply-card-loc" style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{e.lokasi}</div>
+              <div className="supply-card-rel" style={{ fontSize: "0.72rem", color: "#2563EB", fontWeight: 600 }}>{jumlahRelasi} transaksi terhubung</div>
             </div>
           );
         })}
@@ -326,33 +351,33 @@ export default function PetaRantaiPasok({
 
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "420px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div className="supply-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.25rem", width: "420px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#1E293B" }}>{detail.nama}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.78rem", color: "#94A3B8" }}>#{detail.id.slice(0, 8).toUpperCase()} • {detail.tipe} • {detail.lokasi}</p>
-            
+
             <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>
               Transaksi Terhubung ({relasiUntuk(detail).length})
             </div>
-            
+
             {relasiUntuk(detail).length === 0 ? (
               <p style={{ fontSize: "0.78rem", color: "#94A3B8" }}>Belum ada transaksi yang melibatkan entitas ini.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
                 {relasiUntuk(detail).map((t) => (
-                  <div key={t.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0.65rem", background: "#F8FAFC", borderRadius: "6px", fontSize: "0.78rem" }}>
-                    <div>
-                      <div style={{ color: "#1E293B", fontWeight: 600 }}>#{t.id}</div>
-                      <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{t.toko} • {t.tanggal}</div>
+                  <div key={t.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0.65rem", background: "#F8FAFC", borderRadius: "6px", fontSize: "0.78rem", gap: "0.5rem" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: "#1E293B", fontWeight: 600, overflowWrap: "anywhere" }}>#{t.id}</div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748B", overflowWrap: "anywhere" }}>{t.toko} • {t.tanggal}</div>
                     </div>
-                    <strong style={{ color: "#059669" }}>{formatRupiah(t.nominal)}</strong>
+                    <strong style={{ color: "#059669", whiteSpace: "nowrap" }}>{formatRupiah(t.nominal)}</strong>
                   </div>
                 ))}
               </div>
             )}
-            
+
             <button onClick={() => setDetail(null)} style={{ marginTop: "1rem", width: "100%", padding: "0.55rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.85rem" }}>
               Tutup
             </button>

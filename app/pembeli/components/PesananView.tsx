@@ -356,7 +356,7 @@ export default function PesananView() {
       </h1>
       <p className="page-subtitle">Lacak dan kelola semua transaksi Anda dengan transparansi penuh dari desa ke kota</p>
 
-      {/* Tabs */}
+ 
       <div className="tabs">
         {tabs.map((t) => (
           <button

@@ -28,7 +28,6 @@ export default function DataPembeli() {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<Pembeli | null>(null);
 
-  
   const [targetSuspend, setTargetSuspend] = useState<Pembeli | null>(null);
   const [submittingSuspend, setSubmittingSuspend] = useState(false);
 
@@ -76,7 +75,6 @@ export default function DataPembeli() {
     const statusLabel: Pembeli["status"] = targetSuspend.status === "Aktif" ? "Nonaktif" : "Aktif";
 
     try {
-    
       const { error } = await supabase
         .from("pembeli")
         .update({ status: statusBaru })
@@ -122,37 +120,70 @@ export default function DataPembeli() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="buyer-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
+       
+        
+        .buyer-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .buyer-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main { padding: 0.5rem 0.25rem !important; }
-          main h1 { font-size: 1.15rem !important; }
-          main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
-          .buyer-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.25rem !important; margin-bottom: 1rem !important; }
-          .buyer-stat-card { padding: 0.4rem !important; border-radius: 6px !important; gap: 0.4rem !important; }
-          .buyer-stat-card > div:first-child { padding: 0.3rem !important; border-radius: 6px !important; }
-          .buyer-stat-card > div:first-child svg { width: 14px !important; height: 14px !important; }
+          .buyer-page { padding: 0.85rem 0.7rem !important; }
+          .buyer-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .buyer-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+       
+          .buyer-stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .buyer-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.55rem !important; border-radius: 10px !important; }
+          .buyer-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .buyer-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .buyer-stat-value { font-size: clamp(0.9rem, 4.2vw, 1.15rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; }
+          .buyer-stat-label { font-size: 0.6rem !important; line-height: 1.2 !important; }
+
+        
           .search-wrapper-mobile { max-width: 100% !important; margin-bottom: 1rem !important; }
-          .buyer-table-container th, .buyer-table-container td { padding: 0.5rem 0.4rem !important; font-size: 0.58rem !important; }
-          .buyer-table-container table { min-width: auto !important; width: 100% !important; }
+          .search-wrapper-mobile input { font-size: 0.78rem !important; padding: 0.5rem 0.6rem 0.5rem 2.1rem !important; border-radius: 8px !important; }
+
+       
+          .buyer-page .col-mob-hide { display: none !important; }
+          .buyer-table-container table { min-width: 0 !important; width: 100% !important; }
+          .buyer-table-container th { font-size: 0.6rem !important; padding: 0.55rem 0.4rem !important; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          .buyer-table-container td { font-size: 0.72rem !important; padding: 0.6rem 0.4rem !important; overflow-wrap: anywhere !important; vertical-align: middle !important; }
+          .buyer-badge { font-size: 0.6rem !important; padding: 0.15rem 0.4rem !important; white-space: nowrap; display: inline-block; }
+          .buyer-actions { flex-direction: column !important; gap: 0.3rem !important; }
+          .buyer-actions button { width: 100% !important; padding: 0.35rem 0.3rem !important; font-size: 0.65rem !important; }
+
+     
+          .buyer-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .buyer-modal h2, .buyer-modal h3 { font-size: 0.98rem !important; }
+          .buyer-modal p, .buyer-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .buyer-stats-grid { gap: 0.35rem !important; }
+          .buyer-stat-card { padding: 0.5rem 0.45rem !important; }
+          .buyer-table-container td { font-size: 0.68rem !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Data Pembeli</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
+        <p className="buyer-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>
           Daftar akun pembeli terdaftar di ekosistem PasarNusa.
         </p>
       </div>
 
       <div className="buyer-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="buyer-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconUsers /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Pembeli Aktif</div></div>
+          <div className="buyer-stat-icon" style={{ background: "#EFF6FF", color: "#2563EB", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconUsers /></div>
+          <div><div className="buyer-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div><div className="buyer-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Pembeli Aktif</div></div>
         </div>
         <div className="buyer-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBan /></div>
-          <div><div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Ditangguhkan</div></div>
+          <div className="buyer-stat-icon" style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconBan /></div>
+          <div><div className="buyer-stat-value" style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1E293B" }}>{totalSuspended}</div><div className="buyer-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Ditangguhkan</div></div>
         </div>
       </div>
 
@@ -166,9 +197,9 @@ export default function DataPembeli() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "650px" }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                <th style={{ padding: "1rem", color: "#475569" }}>ID Pembeli</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>ID Pembeli</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Nama Lengkap</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Email</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Email</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
                 <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
               </tr>
@@ -179,16 +210,16 @@ export default function DataPembeli() {
               )}
               {filtered.map((b) => (
                 <tr key={b.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                  <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>#{b.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="col-mob-hide" style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>#{b.id.slice(0, 8).toUpperCase()}</td>
                   <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>
                     <span onClick={() => setDetail(b)} style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "#BFDBFE" }}>{b.namaLengkap}</span>
                   </td>
-                  <td style={{ padding: "1rem", color: "#334155" }}>{b.email}</td>
+                  <td className="col-mob-hide" style={{ padding: "1rem", color: "#334155" }}>{b.email}</td>
                   <td style={{ padding: "1rem" }}>
-                    <span style={{ background: b.status === "Aktif" ? "#D1FAE5" : "#FEE2E2", color: b.status === "Aktif" ? "#065F46" : "#991B1B", padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span>
+                    <span className="buyer-badge" style={{ background: b.status === "Aktif" ? "#D1FAE5" : "#FEE2E2", color: b.status === "Aktif" ? "#065F46" : "#991B1B", padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{b.status}</span>
                   </td>
                   <td style={{ padding: "1rem", textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
+                    <div className="buyer-actions" style={{ display: "flex", gap: "0.4rem", justifyContent: "center", flexWrap: "wrap" }}>
                       <button onClick={() => setTargetSuspend(b)} style={{ background: b.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: b.status === "Aktif" ? "#991B1B" : "#059669", fontWeight: 600, cursor: "pointer" }}>
                         {b.status === "Aktif" ? "Suspend" : "Aktifkan"}
                       </button>
@@ -202,10 +233,9 @@ export default function DataPembeli() {
         </div>
       </div>
 
-     
       {targetSuspend && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(2px)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
-          <div style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
+          <div className="buyer-modal" style={{ background: "white", borderRadius: "16px", padding: "1.5rem", width: "400px", maxWidth: "100%", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
               <div style={{ background: targetSuspend.status === "Aktif" ? "#FEE2E2" : "#ECFDF5", color: targetSuspend.status === "Aktif" ? "#EF4444" : "#10B981", padding: "0.6rem", borderRadius: "12px" }}>
                 <IconAlertTriangle />
@@ -235,10 +265,9 @@ export default function DataPembeli() {
         </div>
       )}
 
-
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
+          <div className="buyer-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "400px", maxWidth: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{detail.namaLengkap}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>

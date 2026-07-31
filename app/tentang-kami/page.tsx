@@ -40,7 +40,7 @@ export default function TentangKamiPage() {
     <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{__html: `
-        /* ===== TOKEN — disamakan dengan landing page ===== */
+ 
         .pn-root {
           --ink: #101C16;
           --paper: #F6F8F5;
@@ -93,7 +93,7 @@ export default function TentangKamiPage() {
           border-color: rgba(10,77,46,0.22);
         }
 
-        /* garis aksen atas — pola yang sama dengan kartu fitur di landing */
+     
         .values-card, .problem-mini-card { position: relative; overflow: hidden; }
         .values-card::before, .problem-mini-card::before {
           content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
@@ -204,8 +204,7 @@ export default function TentangKamiPage() {
           .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.3rem !important; }
           .footer-wrapper span { font-size: 0.66rem !important; }
 
-          /* ---- visual saja ---- */
-          .values-card::before, .problem-mini-card::before { height: 2px; }
+       .values-card::before, .problem-mini-card::before { height: 2px; }
           .problem-mini-card p, .values-card p { color: #3F4D45 !important; }
         }
 

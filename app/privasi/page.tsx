@@ -45,7 +45,7 @@ export default function PrivasiPage() {
     <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{__html: `
-        /* ===== TOKEN — disamakan dengan landing page ===== */
+     
         .pn-root {
           --ink: #101C16;
           --paper: #F6F8F5;
@@ -96,7 +96,7 @@ export default function PrivasiPage() {
           pointer-events: none; background: linear-gradient(180deg, transparent, var(--paper) 92%);
         }
 
-        /* kartu kebijakan — garis aksen atas, pola sama dengan kartu fitur landing */
+      
         .policy-card {
           position: relative; overflow: hidden;
           background: var(--card); padding: 2.5rem; border-radius: 1.35rem;
@@ -120,7 +120,7 @@ export default function PrivasiPage() {
         .list-item { display: flex; gap: 0.75rem; align-items: flex-start; color: var(--body); font-size: 1rem; line-height: 1.65; margin-bottom: 0.75rem; }
         .list-item strong { color: var(--ink); }
 
-        /* Media Query Responsif Seluler & Tablet */
+    
         @media (max-width: 768px) {
           .header-container { padding: 0.75rem 1rem !important; }
           .nav-logo-text { font-size: 1.15rem !important; }
@@ -159,7 +159,7 @@ export default function PrivasiPage() {
           .footer-wrapper { flex-direction: column !important; text-align: center !important; gap: 0.5rem !important; }
           .footer-wrapper span { font-size: 0.75rem !important; line-height: 1.4 !important; }
 
-          /* ---- visual saja ---- */
+        
           .hero-section::before {
             background: linear-gradient(180deg, var(--paper) 0%, rgba(246,248,245,0.98) 48%, rgba(246,248,245,0.86) 76%, rgba(246,248,245,0.6) 100%) !important;
           }

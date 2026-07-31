@@ -57,7 +57,7 @@ export default function EkosistemPage() {
     <div className="pn-root" style={{ minHeight: "100vh", background: "var(--paper)", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)", overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{__html: `
-        /* ===== TOKEN — disamakan dengan landing page ===== */
+   
         .pn-root {
           --ink: #101C16;
           --paper: #F6F8F5;
@@ -86,7 +86,7 @@ export default function EkosistemPage() {
           transition: background .35s ease, box-shadow .35s ease, border-color .35s ease;
         }
 
-        /* highlight solid, sama seperti .green-highlight di landing */
+      
         .grad-text { color: var(--green); font-weight: 800; }
 
         .btn-primary {
@@ -103,8 +103,7 @@ export default function EkosistemPage() {
           outline: 2px solid var(--emerald); outline-offset: 3px; border-radius: 6px;
         }
 
-        /* hero: foto tetap, kerudung kontras dipindah ke pseudo-element
-           supaya bisa diatur beda antara layar lebar dan HP */
+    
         .hero-section::before {
           content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
           background:
@@ -168,7 +167,7 @@ export default function EkosistemPage() {
         .step-card:hover { transform: translateX(4px); border-color: rgba(10,77,46,0.28); box-shadow: 0 2px 4px rgba(6,40,24,.05), 0 16px 34px rgba(6,40,24,.10); }
         .step-no { font-family: var(--mono); font-size: 0.75rem; font-weight: 700; color: var(--harvest); letter-spacing: 0.14em; }
 
-        /* ROLE CARDS — garis aksen atas, pola sama dengan kartu fitur landing */
+      
         .roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
         .role-card {
           position: relative; background: var(--card); border: 1px solid var(--line);
@@ -208,7 +207,7 @@ export default function EkosistemPage() {
           .step-card { padding: 1.05rem 1.1rem !important; border-radius: 0.85rem !important; }
           .step-dot { left: -2.1rem !important; width: 20px !important; height: 20px !important; }
 
-          /* role cards tetap 3 kolom seperti PC, hanya diskalakan kecil */
+       
           .roles-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.55rem !important; }
           .role-card { padding: 0.9rem 0.65rem !important; border-radius: 0.9rem !important; }
           .role-card > div:first-child { margin-bottom: 0.6rem !important; flex-wrap: wrap !important; gap: 0.3rem !important; }
@@ -224,7 +223,7 @@ export default function EkosistemPage() {
           .footer-wrapper { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; }
           .footer-wrapper span { font-size: 0.7rem !important; }
 
-          /* ---- visual saja ---- */
+        
           .hero-section::before {
             background: linear-gradient(180deg, var(--paper) 0%, rgba(246,248,245,0.98) 48%, rgba(246,248,245,0.86) 76%, rgba(246,248,245,0.6) 100%) !important;
           }

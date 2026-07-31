@@ -97,6 +97,18 @@ function formatRupiah(n: number) {
   return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
+
+function formatRupiahRingkas(n: number) {
+  const neg = n < 0;
+  const a = Math.abs(n);
+  let s: string;
+  if (a >= 1000000000) s = `Rp ${(a / 1000000000).toFixed(1)}M`;
+  else if (a >= 1000000) s = `Rp ${(a / 1000000).toFixed(1)}jt`;
+  else if (a >= 1000) s = `Rp ${Math.round(a / 1000)}rb`;
+  else s = "Rp " + a.toLocaleString("id-ID");
+  return neg ? "- " + s : s;
+}
+
 export default function ProdusenDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -139,7 +151,7 @@ export default function ProdusenDashboard() {
     });
 
     if (produsen) {
-      // 1. Load Stok Produk & Review
+    
       const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
       if (produk) {
         setStokList((produk as ProdukRow[]).map((p) => {
@@ -152,7 +164,7 @@ export default function ProdusenDashboard() {
         }));
       }
 
-      // 2. Load Pesanan B2B & Ulasan dari Pesanan
+   
       const { data: pesananData } = await supabase
         .from("pesanan")
         .select(`
@@ -197,7 +209,7 @@ export default function ProdusenDashboard() {
 
         setPesananList(mappedPesanan);
 
-        // 💡 KALKULASI TAMBAHAN: Ambil ulasan dari kolom rating/ulasan di tabel pesanan
+      
         const ulasanPesananList: Ulasan[] = [];
         filteredPesanan.forEach((p: any) => {
           if (p.rating && Number(p.rating) > 0) {
@@ -213,7 +225,7 @@ export default function ProdusenDashboard() {
         setExtraUlasanPesanan(ulasanPesananList);
       }
 
-      // 3. Load Pengeluaran
+    
       const { data: pengeluaranData } = await supabase
         .from("pengeluaran")
         .select("*")
@@ -247,7 +259,6 @@ export default function ProdusenDashboard() {
     };
   }, [muatDataDashboard, activeMenu]);
 
-  // 💡 KALKULASI METRIK & RATING SELURUH PRODUK
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
   const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");
 
@@ -266,15 +277,13 @@ export default function ProdusenDashboard() {
   const totalPengeluaran = pengeluaranList.reduce((s, p) => s + p.nominal, 0);
   const saldo = totalPendapatan - totalPengeluaran;
 
-  // 💡 GABUNGKAN SEMUA ULASAN PRODUK DAN PESANAN SECARA AKURAT
   const semuaUlasan = useMemo(() => {
     const ulasanDariStok = stokList.flatMap((s) => s.ulasan.map((u) => ({ ...u, produk: s.nama })));
     const totalGabungan = [...ulasanDariStok, ...extraUlasanPesanan];
-    
-    // Hilangkan duplikat ulasan jika ada
+
     const uniqueUlasan = Array.from(new Set(totalGabungan.map(u => `${u.pembeli}-${u.rating}-${u.komentar}`)))
       .map(key => totalGabungan.find(u => `${u.pembeli}-${u.rating}-${u.komentar}` === key)!);
-      
+
     return uniqueUlasan;
   }, [stokList, extraUlasanPesanan]);
 
@@ -287,26 +296,77 @@ export default function ProdusenDashboard() {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
+    <div className="pn-shell" style={{ display: "flex", height: "100vh", background: "#F8FAFC", fontFamily: "sans-serif", overflow: "hidden" }}>
       <style dangerouslySetInnerHTML={{__html: `
+   
+        .pn-shell * { min-width: 0; }
         .pn-sidebar { width: 220px; }
         .pn-hamburger { display: none; }
         .pn-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .pn-panels-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
         .pn-user-name { display: block; }
+
         @media (max-width: 900px) {
           .pn-sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform .2s ease; box-shadow: 2px 0 16px rgba(0,0,0,.1); }
           .pn-sidebar.open { transform: translateX(0); }
           .pn-hamburger { display: flex; }
-          .pn-stats-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 0.25rem !important; }
+          .pn-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.5rem !important; }
+          .pn-panels-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.65rem !important; }
+        }
+
+        @media (max-width: 768px) {
+          .pn-main { padding: 0.85rem 0.7rem !important; }
+          .pn-topbar { padding: 12px 0.75rem !important; }
+          .pn-topbar-title { font-size: 1rem !important; }
+          .pn-user-name { display: none !important; }
+          .pn-user-chip { padding: 3px 5px !important; }
+
+        
+          .pn-hero { padding: 1.05rem 0.95rem !important; border-radius: 12px !important; margin-bottom: 1rem !important; gap: 0.7rem !important; }
+          .pn-hero-badge { font-size: 0.58rem !important; padding: 0.2rem 0.55rem !important; margin-bottom: 0.45rem !important; }
+          .pn-hero h2 { font-size: 1.1rem !important; }
+          .pn-hero p { font-size: 0.7rem !important; line-height: 1.4 !important; }
+          .pn-hero button { width: 100% !important; justify-content: center !important; font-size: 0.78rem !important; padding: 0.55rem 0.8rem !important; }
+
+         
+          .pn-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.4rem !important; margin-bottom: 1rem !important; }
+          .pn-stat-card { padding: 0.55rem 0.45rem !important; border-radius: 10px !important; }
+          .pn-stat-cap { font-size: 0.52rem !important; letter-spacing: 0 !important; margin-bottom: 0.25rem !important; line-height: 1.25 !important; }
+          .pn-stat-value { font-size: clamp(0.75rem, 3.5vw, 1rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; overflow-wrap: anywhere !important; }
+          .pn-stat-value span { font-size: 0.55rem !important; }
+          .pn-stat-note { font-size: 0.55rem !important; line-height: 1.2 !important; }
+
+       
+          .pn-panels-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; gap: 0.45rem !important; }
+          .pn-panel { padding: 0.7rem 0.6rem !important; border-radius: 10px !important; }
+          .pn-panel-head { flex-wrap: wrap !important; gap: 0.3rem !important; }
+          .pn-panel-title { font-size: 0.78rem !important; }
+          .pn-panel-chip { font-size: 0.52rem !important; padding: 0.15rem 0.4rem !important; }
+          .pn-panel-sub { font-size: 0.6rem !important; margin-bottom: 0.55rem !important; }
+          .pn-panel p { font-size: 0.68rem !important; }
+          .pn-alert-row { flex-direction: column !important; align-items: stretch !important; gap: 0.4rem !important; padding: 0.5rem !important; }
+          .pn-alert-name { font-size: 0.7rem !important; }
+          .pn-alert-note { font-size: 0.6rem !important; }
+          .pn-alert-row button { width: 100% !important; font-size: 0.6rem !important; padding: 0.35rem !important; }
+          .pn-review-head { flex-direction: column !important; align-items: flex-start !important; gap: 0.15rem !important; }
+          .pn-review-name { font-size: 0.68rem !important; overflow-wrap: anywhere !important; }
+          .pn-review-star { font-size: 0.65rem !important; }
+          .pn-review-text { font-size: 0.62rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .pn-stats-grid { gap: 0.3rem !important; }
+          .pn-stat-card { padding: 0.45rem 0.35rem !important; }
           .pn-panels-grid { grid-template-columns: 1fr !important; }
         }
       `}} />
 
+      {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.4)", zIndex: 40 }} />}
+
       <aside className={`pn-sidebar${sidebarOpen ? " open" : ""}`} style={{ background: "#fff", borderRight: "1px solid #E2E8F0", flexShrink: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", borderBottom: "1px solid #F1F5F9" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-           <div style={{ width: "32px", height: "32px", borderRadius: "99px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, position: "relative" }}>
+            <div style={{ width: "32px", height: "32px", borderRadius: "99px", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, position: "relative" }}>
               <Image src="/logo.png" alt="Logo PasarNusa" fill style={{ objectFit: "cover" }} />
             </div>
             <div><div style={{ fontWeight: 700, color: "#1E293B", fontSize: "14px" }}>PasarNusa</div><div style={{ fontSize: "10.5px", color: "#94A3B8" }}>Produsen / UMKM</div></div>
@@ -329,15 +389,15 @@ export default function ProdusenDashboard() {
       </aside>
 
       <div style={{ flex: 1, height: "100vh", overflowY: "auto", minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="pn-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px clamp(1rem, 4vw, 1.75rem)", borderBottom: "1px solid #E2E8F0", background: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
             <button onClick={() => setSidebarOpen(true)} className="pn-hamburger" style={{ background: "none", border: "none", color: "#334155" }}><IconMenu /></button>
-            <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
+            <div className="pn-topbar-title" style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+            <div onClick={() => setShowProfilPopup(true)} className="pn-user-chip" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
+              <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", flexShrink: 0 }}>
                 {profil.fotoUrl ? <img src={profil.fotoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : profil.inisial}
               </div>
               <div className="pn-user-name">
@@ -353,10 +413,10 @@ export default function ProdusenDashboard() {
 
         <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFC" }}>
           {activeMenu === "dashboard" && (
-            <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-              <div className="hero-banner-container" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+            <main className="pn-main" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
+              <div className="pn-hero" style={{ background: "linear-gradient(135deg, #10B981, #059669)", borderRadius: "16px", padding: "1.5rem 2rem", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
                 <div>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
+                  <span className="pn-hero-badge" style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,.18)", color: "#fff", fontSize: "0.7rem", fontWeight: 600, padding: "0.3rem 0.7rem", borderRadius: "999px", marginBottom: "0.6rem" }}><IconSparkle /> Mitra Produsen Terpercaya</span>
                   <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>Selamat Datang, {profil.nama.split(" ")[0]}!</h2>
                   <p style={{ margin: "0.3rem 0 0 0", fontSize: "0.85rem", color: "rgba(255,255,255,.85)", maxWidth: "420px" }}>Pantau stok panen, pesanan dari Admin Toko, dan saldo hasil penjualanmu di sini.</p>
                 </div>
@@ -364,65 +424,68 @@ export default function ProdusenDashboard() {
               </div>
 
               <div className="pn-stats-grid" style={{ marginBottom: "1.25rem" }}>
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
-                  <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => setActiveMenu("stok")}>Kelola stok →</div>
+                <div className="pn-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div className="pn-stat-cap" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>STOK TERSEDIA</div>
+                  <div className="pn-stat-value" style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{totalStok} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>unit</span></div>
+                  <div className="pn-stat-note" style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem", cursor: "pointer" }} onClick={() => setActiveMenu("stok")}>Kelola stok →</div>
                 </div>
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("penjualan")}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananAktif} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>order</span></div>
-                  <div style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Perlu ditindaklanjuti</div>
+                <div className="pn-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("penjualan")}>
+                  <div className="pn-stat-cap" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PESANAN MASUK</div>
+                  <div className="pn-stat-value" style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{pesananAktif} <span style={{ fontSize: "0.7rem", fontWeight: 400, color: "#64748B" }}>order</span></div>
+                  <div className="pn-stat-note" style={{ fontSize: "0.68rem", color: "#D97706", marginTop: "0.15rem" }}>Perlu ditindaklanjuti</div>
                 </div>
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PENDAPATAN SELESAI</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalPendapatan)}</div>
-                  <div style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Total transaksi lunas</div>
+                <div className="pn-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div className="pn-stat-cap" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>PENDAPATAN SELESAI</div>
+                  <div className="pn-stat-value" style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalPendapatan)}</div>
+                  <div className="pn-stat-note" style={{ fontSize: "0.68rem", color: "#10B981", marginTop: "0.15rem" }}>Total transaksi lunas</div>
                 </div>
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("keuangan")}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>SALDO WALLET</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(saldo)}</div>
-                  <div style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Siap ditarik</div>
+                <div className="pn-stat-card" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "0.85rem", cursor: "pointer" }} onClick={() => setActiveMenu("keuangan")}>
+                  <div className="pn-stat-cap" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", marginBottom: "0.4rem" }}>SALDO WALLET</div>
+                  <div className="pn-stat-value" style={{ fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(saldo)}</div>
+                  <div className="pn-stat-note" style={{ fontSize: "0.68rem", color: "#64748B", marginTop: "0.15rem" }}>Siap ditarik</div>
                 </div>
-                <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem" }}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", textTransform: "uppercase", marginBottom: "0.4rem" }}>RATING PRODUK</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{ratingRata ? ratingRata.toFixed(1) : "0.0"} <span style={{ fontSize: "0.7rem", fontWeight: 400 }}>/5.0</span></div>
-                  <div style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Dari {semuaUlasan.length} ulasan pembeli</div>
+                <div className="pn-stat-card" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: "10px", padding: "0.85rem" }}>
+                  <div className="pn-stat-cap" style={{ fontSize: "0.65rem", fontWeight: 700, color: "#065F46", textTransform: "uppercase", marginBottom: "0.4rem" }}>RATING PRODUK</div>
+                  <div className="pn-stat-value" style={{ fontSize: "1.15rem", fontWeight: 700, color: "#065F46" }}>{ratingRata ? ratingRata.toFixed(1) : "0.0"} <span style={{ fontSize: "0.7rem", fontWeight: 400 }}>/5.0</span></div>
+                  <div className="pn-stat-note" style={{ fontSize: "0.68rem", color: "#059669", marginTop: "0.15rem" }}>Dari {semuaUlasan.length} ulasan pembeli</div>
                 </div>
               </div>
 
               <div className="pn-panels-grid">
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen &amp; stok</div>
-                    {stokMenipis.length > 0 && <span style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px" }}>Butuh tindakan</span>}
+                <div className="pn-panel" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                  <div className="pn-panel-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                    <div className="pn-panel-title" style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>Pengingat panen &amp; stok</div>
+                    {stokMenipis.length > 0 && <span className="pn-panel-chip" style={{ background: "#FEF3C7", color: "#92400E", fontSize: "0.65rem", fontWeight: 700, padding: "0.2rem 0.55rem", borderRadius: "999px", whiteSpace: "nowrap" }}>Butuh tindakan</span>}
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
+                  <div className="pn-panel-sub" style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Analisis prediktif berbasis sisa stok dan jadwal panen</div>
                   {stokMenipis.length === 0 ? (
                     <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Semua stok dalam kondisi aman.</p>
                   ) : (
                     stokMenipis.map((s) => (
-                      <div key={s.id} style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.6rem 0.7rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div><div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{s.nama}</div><div style={{ fontSize: "0.68rem", color: "#DC2626" }}>{s.status === "Habis" ? "Stok habis" : `Hampir habis (sisa ${s.jumlah} ${s.satuan})`}</div></div>
-                        <button onClick={() => setActiveMenu("stok")} style={{ background: "#10B981", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer" }}>Kelola stok</button>
+                      <div key={s.id} className="pn-alert-row" style={{ background: "#FEF2F2", borderRadius: "8px", padding: "0.6rem 0.7rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="pn-alert-name" style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B", overflowWrap: "anywhere" }}>{s.nama}</div>
+                          <div className="pn-alert-note" style={{ fontSize: "0.68rem", color: "#DC2626" }}>{s.status === "Habis" ? "Stok habis" : `Hampir habis (sisa ${s.jumlah} ${s.satuan})`}</div>
+                        </div>
+                        <button onClick={() => setActiveMenu("stok")} style={{ background: "#10B981", color: "#fff", border: "none", fontSize: "0.68rem", fontWeight: 600, padding: "0.4rem 0.7rem", borderRadius: "6px", cursor: "pointer", whiteSpace: "nowrap" }}>Kelola stok</button>
                       </div>
                     ))
                   )}
                 </div>
 
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Ulasan terbaru dari pembeli</div>
-                  <div style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Otomatis tersinkron dari transaksi pembeli</div>
+                <div className="pn-panel" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "10px", padding: "1rem" }}>
+                  <div className="pn-panel-title" style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.2rem" }}>Ulasan terbaru dari pembeli</div>
+                  <div className="pn-panel-sub" style={{ fontSize: "0.72rem", color: "#94A3B8", marginBottom: "0.7rem" }}>Otomatis tersinkron dari transaksi pembeli</div>
                   {semuaUlasan.length === 0 ? (
                     <p style={{ fontSize: "0.8rem", color: "#64748B" }}>Belum ada ulasan masuk dari Supabase.</p>
                   ) : (
                     semuaUlasan.slice(0, 3).map((u, i) => (
                       <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < semuaUlasan.slice(0, 3).length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli} <span style={{ fontWeight: 400, color: "#94A3B8" }}>({u.produk || "Komoditas"})</span></span>
-                          <span style={{ color: "#D97706", fontSize: "0.72rem" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
+                        <div className="pn-review-head" style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem" }}>
+                          <span className="pn-review-name" style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli} <span style={{ fontWeight: 400, color: "#94A3B8" }}>({u.produk || "Komoditas"})</span></span>
+                          <span className="pn-review-star" style={{ color: "#D97706", fontSize: "0.72rem", whiteSpace: "nowrap" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: "#64748B" }}>{u.komentar}</div>
+                        <div className="pn-review-text" style={{ fontSize: "0.7rem", color: "#64748B" }}>{u.komentar}</div>
                       </div>
                     ))
                   )}

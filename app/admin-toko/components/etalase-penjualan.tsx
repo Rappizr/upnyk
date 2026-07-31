@@ -674,7 +674,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
             gap: 0.5rem !important;
           }
 
-          /* GRID KARTU ETALASE PRODUK 2 KOLOM */
+         
           .showcase-cards-grid {
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 0.5rem !important;
@@ -704,7 +704,7 @@ export default function EtalasePenjualan({ stokList = [], updateStok, onTambahPr
             font-size: 0.62rem !important;
           }
 
-          /* MODAL RESPONSIP MOBILE */
+        
           .modal-box {
             padding: 1rem !important;
             width: 100% !important;

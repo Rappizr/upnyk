@@ -41,6 +41,15 @@ function formatRupiah(n: number) {
   return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
+
+function formatRupiahRingkas(n: number) {
+  const a = isNaN(n) ? 0 : n;
+  if (a >= 1000000000) return `Rp ${(a / 1000000000).toFixed(1)}M`;
+  if (a >= 1000000) return `Rp ${(a / 1000000).toFixed(1)}jt`;
+  if (a >= 1000) return `Rp ${Math.round(a / 1000)}rb`;
+  return "Rp " + a.toLocaleString("id-ID");
+}
+
 export default function PenjualanB2B() {
   const [pesananList, setPesananList] = useState<Pesanan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +187,6 @@ export default function PenjualanB2B() {
         .update({ status: statusTx })
         .eq("pesanan_id", rawId);
 
-      
       if (pesananDetail?.admin_toko_id) {
         const { data: adminData } = await supabase
           .from("admin_toko")
@@ -315,48 +323,98 @@ export default function PenjualanB2B() {
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+    <main className="b2b-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)", fontFamily: "sans-serif" }}>
+      <style dangerouslySetInnerHTML={{__html: `
+     
+        .b2b-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .b2b-page { padding: 1rem 1.1rem !important; }
+        }
+
+        @media (max-width: 768px) {
+          .b2b-page { padding: 0.85rem 0.7rem !important; }
+          .b2b-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .b2b-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+        
+          .b2b-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .b2b-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .b2b-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .b2b-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .b2b-stat-value { font-size: clamp(0.8rem, 3.8vw, 1.05rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; overflow-wrap: anywhere !important; }
+          .b2b-stat-label { font-size: 0.58rem !important; line-height: 1.2 !important; }
+
+        
+          .b2b-filter-bar { padding: 0.6rem !important; border-radius: 10px !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .b2b-filter-bar input, .b2b-filter-bar select { font-size: 0.78rem !important; padding: 0.5rem 0.6rem !important; border-radius: 8px !important; }
+          .b2b-filter-bar input { padding-left: 2.1rem !important; }
+          .b2b-filter-bar select { flex: 1 1 0 !important; }
+
+       
+          .b2b-page .col-mob-hide { display: none !important; }
+          .b2b-table-container table { min-width: 0 !important; width: 100% !important; }
+          .b2b-table-container th { font-size: 0.6rem !important; padding: 0.55rem 0.4rem !important; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          .b2b-table-container td { font-size: 0.72rem !important; padding: 0.6rem 0.4rem !important; overflow-wrap: anywhere !important; vertical-align: middle !important; }
+          .b2b-badge { font-size: 0.6rem !important; padding: 0.15rem 0.4rem !important; white-space: nowrap; display: inline-block; }
+          .b2b-table-container button { padding: 0.35rem 0.5rem !important; font-size: 0.65rem !important; border-radius: 6px !important; }
+
+        
+          .b2b-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .b2b-modal h2 { font-size: 0.98rem !important; }
+          .b2b-modal button { font-size: 0.8rem !important; }
+          .b2b-stepper span { font-size: 0.55rem !important; }
+          .b2b-info-grid { gap: 0.5rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .b2b-stats-grid { gap: 0.3rem !important; }
+          .b2b-stat-card { padding: 0.5rem 0.4rem !important; }
+          .b2b-table-container td { font-size: 0.68rem !important; }
+        }
+      `}} />
+
       <div style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 700, color: "#1E293B" }}>Penjualan B2B</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Kelola pesanan grosir yang masuk secara live dari Admin Toko.</p>
+        <p className="b2b-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.95rem" }}>Kelola pesanan grosir yang masuk secara live dari Admin Toko.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
+      <div className="b2b-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="b2b-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+          <div className="b2b-stat-icon" style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
             <IconStore />
           </div>
           <div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{pesananList.length}</div>
-            <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Total Pesanan</div>
+            <div className="b2b-stat-value" style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{pesananList.length}</div>
+            <div className="b2b-stat-label" style={{ fontSize: "0.8rem", color: "#64748B" }}>Total Pesanan</div>
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
+        <div className="b2b-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+          <div className="b2b-stat-icon" style={{ background: "#D1FAE5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
             <IconWallet />
           </div>
           <div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalPendapatan)}</div>
-            <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Pendapatan Selesai</div>
+            <div className="b2b-stat-value" style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalPendapatan)}</div>
+            <div className="b2b-stat-label" style={{ fontSize: "0.8rem", color: "#64748B" }}>Pendapatan Selesai</div>
           </div>
         </div>
 
-        <div style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
+        <div className="b2b-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
+          <div className="b2b-stat-icon" style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}>
             <IconClock />
           </div>
           <div>
-            <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div>
-            <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Perlu Ditindaklanjuti</div>
+            <div className="b2b-stat-value" style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1E293B" }}>{totalAktif}</div>
+            <div className="b2b-stat-label" style={{ fontSize: "0.8rem", color: "#64748B" }}>Perlu Ditindaklanjuti</div>
           </div>
         </div>
       </div>
 
-      <div style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div className="b2b-filter-bar" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama pembeli, ID pesanan, atau produk..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama pembeli, ID pesanan, atau produk..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", color: "#334155" }}>
           <option value="">Semua Status</option>
@@ -370,9 +428,9 @@ export default function PenjualanB2B() {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.9rem", minWidth: "700px" }}>
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                <th style={{ padding: "1rem", color: "#475569" }}>ID Pesanan</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>ID Pesanan</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Admin Toko (Pembeli)</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Produk Komoditas</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Produk Komoditas</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Total Tagihan</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
                 <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
@@ -387,15 +445,14 @@ export default function PenjualanB2B() {
 
                 return (
                   <tr key={p.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                    <td style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>
+                    <td className="col-mob-hide" style={{ padding: "1rem", fontWeight: 600, color: "#64748B" }}>
                       <span onClick={() => setDetail(p)} style={{ cursor: "pointer", color: "#10B981", textDecoration: "underline" }}>#{p.id}</span>
                     </td>
                     <td style={{ padding: "1rem", fontWeight: 600, color: "#1E293B" }}>{p.pembeli}</td>
-                    <td style={{ padding: "1rem", color: "#334155" }}>{p.item} ({p.jumlah} {p.satuan})</td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", color: "#334155" }}>{p.item} ({p.jumlah} {p.satuan})</td>
                     <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(p.total)}</td>
-                    <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
+                    <td style={{ padding: "1rem" }}><span className="b2b-badge" style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{p.status}</span></td>
                     <td style={{ padding: "1rem", textAlign: "center" }}>
-                      {/* HANYA TOMBOL KELOLA KELUAR UNTUK SEMUA PESANAN */}
                       <button
                         onClick={() => setDetail(p)}
                         style={{
@@ -422,7 +479,7 @@ export default function PenjualanB2B() {
 
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "480px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div className="b2b-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "480px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>Pesanan #{detail.id}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748B" }}><IconX /></button>
@@ -430,7 +487,7 @@ export default function PenjualanB2B() {
             <p style={{ margin: "0 0 1.25rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>Dibuat tanggal: {detail.tanggal}</p>
 
             {detail.status !== "Dibatalkan" ? (
-              <div style={{ display: "flex", alignItems: "center", marginBottom: "1.25rem" }}>
+              <div className="b2b-stepper" style={{ display: "flex", alignItems: "center", marginBottom: "1.25rem" }}>
                 {stepOrder.map((step, i) => {
                   const currentIdx = stepOrder.indexOf(detail.status);
                   const done = i <= currentIdx;
@@ -458,20 +515,20 @@ export default function PenjualanB2B() {
               </button>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+            <div className="b2b-info-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
               <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "0.75rem" }}>
                 <div style={{ fontSize: "0.7rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>Pembeli</div>
-                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{detail.pembeli}</div>
+                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", overflowWrap: "anywhere" }}>{detail.pembeli}</div>
               </div>
               <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "0.75rem" }}>
                 <div style={{ fontSize: "0.7rem", color: "#64748B", textTransform: "uppercase", fontWeight: 700 }}>Produk</div>
-                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B" }}>{detail.item} ({detail.jumlah} {detail.satuan})</div>
+                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E293B", overflowWrap: "anywhere" }}>{detail.item} ({detail.jumlah} {detail.satuan})</div>
               </div>
             </div>
 
-            <div style={{ background: "#ECFDF5", borderRadius: "10px", padding: "0.85rem", marginBottom: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: "#ECFDF5", borderRadius: "10px", padding: "0.85rem", marginBottom: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "0.85rem", color: "#10B981", fontWeight: 600 }}>Total Pesanan</span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(detail.total)}</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{formatRupiah(detail.total)}</span>
             </div>
 
             <div style={{ fontSize: "0.8rem", color: "#334155", background: "#F8FAFC", padding: "0.65rem 0.85rem", borderRadius: "8px", marginBottom: "1.25rem" }}>

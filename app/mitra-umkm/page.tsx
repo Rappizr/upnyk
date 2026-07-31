@@ -153,7 +153,7 @@ export default function MitraUmkmPage() {
     <div className="pn-root" style={{ minHeight: "100vh", background: C.bg, fontFamily: "var(--font-sans), system-ui, sans-serif", color: C.ink, overflowX: "hidden" }}>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        /* ===== TOKEN — disamakan dengan landing page ===== */
+        
         .pn-root {
           --ink: #101C16;
           --paper: #F6F8F5;
@@ -283,7 +283,7 @@ export default function MitraUmkmPage() {
           .filters-row::-webkit-scrollbar { display: none !important; }
           .filter-chip { padding: 0.4rem 0.65rem !important; font-size: 0.66rem !important; }
 
-          /* DIPASKAN: kotak cari sebelumnya dipatok 34px dengan placeholder
+         
              transparan — tidak bisa dipakai mengetik. Sekarang mengisi ruang
              sisa di baris yang sama, jadi susunannya tetap satu baris. */
           .search-wrap { flex: 1 1 auto !important; min-width: 0 !important; width: auto !important; }
@@ -295,9 +295,8 @@ export default function MitraUmkmPage() {
           .mitra-avatar { width: 30px !important; height: 30px !important; border-width: 1px !important; }
           .mitra-avatar svg { width: 14px !important; height: 14px !important; }
 
-          /* DIPASKAN: ukuran di bawah 0.58rem (±9px) tidak terbaca di layar HP.
-             Kolomnya tetap 3 seperti versi PC, hanya tipografinya dinaikkan
-             ke batas layak baca dan kartunya dibiarkan tumbuh lebih tinggi. */
+        
+           
           .mitra-badge { font-size: 0.56rem !important; padding: 0.1rem 0.32rem !important; }
           .mitra-title { font-size: 0.66rem !important; margin-top: 0.2rem !important; line-height: 1.25 !important; word-break: break-word !important; }
           .mitra-location { font-size: 0.58rem !important; gap: 2px !important; margin-bottom: 0.3rem !important; }
@@ -312,7 +311,7 @@ export default function MitraUmkmPage() {
           .footer-wrapper { flex-direction: column !important; text-align: center !important; gap: 0.75rem !important; }
           .footer-wrapper span { font-size: 0.72rem !important; line-height: 1.4 !important; }
 
-          /* ---- visual saja ---- */
+        
           .hero-section::before {
             background: linear-gradient(180deg, var(--paper) 0%, rgba(246,248,245,0.98) 48%, rgba(246,248,245,0.86) 76%, rgba(246,248,245,0.6) 100%) !important;
           }

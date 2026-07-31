@@ -40,6 +40,14 @@ function formatRupiah(n: number) {
   return "Rp " + n.toLocaleString("id-ID");
 }
 
+
+function formatRupiahRingkas(n: number) {
+  if (n >= 1000000000) return `Rp ${(n / 1000000000).toFixed(1)}M`;
+  if (n >= 1000000) return `Rp ${(n / 1000000).toFixed(1)}jt`;
+  if (n >= 1000) return `Rp ${Math.round(n / 1000)}rb`;
+  return "Rp " + n.toLocaleString("id-ID");
+}
+
 export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tandaiSengketa, selesaikanSengketa }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -63,112 +71,79 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
   }
 
   return (
-    <main style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
-      
+    <main className="escrow-page" style={{ padding: "1.25rem clamp(1rem, 4vw, 1.75rem)" }}>
       <style dangerouslySetInnerHTML={{__html: `
+       
+        .escrow-page * { min-width: 0; }
+
+        @media (max-width: 900px) {
+          .escrow-page { padding: 1rem 1.1rem !important; }
+        }
+
         @media (max-width: 768px) {
-          main {
-            padding: 0.5rem 0.25rem !important;
-          }
-          main h1 {
-            font-size: 1.15rem !important;
-          }
-          main p {
-            font-size: 0.62rem !important;
-            line-height: 1.2 !important;
-          }
-          
-          /* FORCE GRID METRIK ATAS 3 KOLOM */
-          .escrow-stats-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.25rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .escrow-stat-card {
-            padding: 0.4rem !important;
-            border-radius: 6px !important;
-            gap: 0.4rem !important;
-          }
-          .escrow-stat-card > div:first-child {
-            padding: 0.3rem !important;
-            border-radius: 6px !important;
-          }
-          .escrow-stat-card > div:first-child svg {
-            width: 14px !important;
-            height: 14px !important;
-          }
-          .escrow-stat-card > div:last-child > div:first-child {
-            font-size: 0.62rem !important;
-            line-height: 1.1 !important;
-            white-space: nowrap !important;
-            letter-spacing: -0.02em !important;
-          }
-          .escrow-stat-card > div:last-child > div:last-child {
-            font-size: 0.48rem !important;
-            line-height: 1.1 !important;
-            margin-top: 0.1rem !important;
-          }
-          
-          .escrow-filter-bar {
-            padding: 0.6rem !important;
-            border-radius: 8px !important;
-            gap: 0.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          .escrow-filter-bar input, .escrow-filter-bar select {
-            padding: 0.35rem 0.5rem !important;
-            font-size: 0.7rem !important;
-            border-radius: 6px !important;
-          }
-          .escrow-filter-bar input {
-            padding-left: 1.75rem !important;
-          }
-          
-          .escrow-table-container th, .escrow-table-container td {
-            padding: 0.5rem 0.4rem !important;
-            font-size: 0.58rem !important;
-          }
-          .escrow-table-container table {
-            min-width: auto !important;
-            width: 100% !important;
-          }
-          .escrow-table-container button {
-            padding: 0.25rem 0.4rem !important;
-            font-size: 0.52rem !important;
-            border-radius: 4px !important;
-          }
-          .escrow-table-container span {
-            padding: 0.1rem 0.3rem !important;
-            font-size: 0.52rem !important;
-            border-radius: 4px !important;
-          }
+          .escrow-page { padding: 0.85rem 0.7rem !important; }
+          .escrow-page h1 { font-size: 1.12rem !important; letter-spacing: -0.01em !important; }
+          .escrow-page-sub { font-size: 0.72rem !important; line-height: 1.35 !important; }
+
+       
+          .escrow-stats-grid { grid-template-columns: repeat(3, minmax(0,1fr)) !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .escrow-stat-card { flex-direction: column !important; align-items: flex-start !important; gap: 0.4rem !important; padding: 0.6rem 0.5rem !important; border-radius: 10px !important; }
+          .escrow-stat-icon { padding: 0.32rem !important; border-radius: 8px !important; }
+          .escrow-stat-icon svg { width: 15px !important; height: 15px !important; }
+          .escrow-stat-value { font-size: clamp(0.8rem, 3.8vw, 1.05rem) !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; overflow-wrap: anywhere !important; }
+          .escrow-stat-label { font-size: 0.58rem !important; line-height: 1.2 !important; }
+
+        
+          .escrow-filter-bar { padding: 0.6rem !important; border-radius: 10px !important; gap: 0.45rem !important; margin-bottom: 1rem !important; }
+          .escrow-filter-bar input, .escrow-filter-bar select { font-size: 0.78rem !important; padding: 0.5rem 0.6rem !important; border-radius: 8px !important; }
+          .escrow-filter-bar input { padding-left: 2.1rem !important; }
+          .escrow-filter-bar select { flex: 1 1 0 !important; }
+
+       
+          .escrow-page .col-mob-hide { display: none !important; }
+          .escrow-table-container table { min-width: 0 !important; width: 100% !important; }
+          .escrow-table-container th { font-size: 0.6rem !important; padding: 0.55rem 0.4rem !important; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+          .escrow-table-container td { font-size: 0.72rem !important; padding: 0.6rem 0.4rem !important; overflow-wrap: anywhere !important; vertical-align: middle !important; }
+          .escrow-badge { font-size: 0.6rem !important; padding: 0.15rem 0.4rem !important; white-space: nowrap; display: inline-block; }
+          .escrow-table-container button { padding: 0.35rem 0.5rem !important; font-size: 0.65rem !important; border-radius: 6px !important; }
+
+       
+          .escrow-modal { padding: 1rem 0.9rem !important; border-radius: 14px !important; max-height: 86vh !important; overflow-y: auto !important; }
+          .escrow-modal h2, .escrow-modal h3 { font-size: 0.98rem !important; }
+          .escrow-modal button { font-size: 0.8rem !important; }
+        }
+
+        @media (max-width: 380px) {
+          .escrow-stats-grid { gap: 0.35rem !important; }
+          .escrow-stat-card { padding: 0.5rem 0.4rem !important; }
+          .escrow-table-container td { font-size: 0.68rem !important; }
         }
       `}} />
 
       <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Escrow & Transaksi</h1>
-        <p style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Dana pembeli ditahan sistem, lalu otomatis dibagi ke Admin Toko dan Produsen setelah barang diterima.</p>
+        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "#1E293B" }}>Escrow &amp; Transaksi</h1>
+        <p className="escrow-page-sub" style={{ margin: "0.25rem 0 0 0", color: "#64748B", fontSize: "0.9rem" }}>Dana pembeli ditahan sistem, lalu otomatis dibagi ke Admin Toko dan Produsen setelah barang diterima.</p>
       </div>
 
       <div className="escrow-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div className="escrow-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconShieldLock /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalDitahan)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Dana Ditahan</div></div>
+          <div className="escrow-stat-icon" style={{ background: "#FEF3C7", color: "#D97706", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconShieldLock /></div>
+          <div><div className="escrow-stat-value" style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalDitahan)}</div><div className="escrow-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Dana Ditahan</div></div>
         </div>
         <div className="escrow-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(totalTersalur)}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Dana Tersalur</div></div>
+          <div className="escrow-stat-icon" style={{ background: "#ECFDF5", color: "#10B981", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconCheck /></div>
+          <div><div className="escrow-stat-value" style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiahRingkas(totalTersalur)}</div><div className="escrow-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Dana Tersalur</div></div>
         </div>
         <div className="escrow-stat-card" style={{ background: "white", padding: "1.1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "0.9rem" }}>
-          <div style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlert /></div>
-          <div><div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{totalSengketa}</div><div style={{ fontSize: "0.78rem", color: "#64748B" }}>Disengketakan</div></div>
+          <div className="escrow-stat-icon" style={{ background: "#FEE2E2", color: "#EF4444", padding: "0.6rem", borderRadius: "10px", display: "flex" }}><IconAlert /></div>
+          <div><div className="escrow-stat-value" style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{totalSengketa}</div><div className="escrow-stat-label" style={{ fontSize: "0.78rem", color: "#64748B" }}>Disengketakan</div></div>
         </div>
       </div>
 
       <div className="escrow-filter-bar" style={{ background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #E2E8F0", display: "flex", gap: "1rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
           <span style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#94A3B8", display: "flex" }}><IconSearch /></span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari ID, toko, produsen, atau pembeli..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none" }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari ID, toko, produsen, atau pembeli..." style={{ width: "100%", padding: "0.5rem 1rem 0.5rem 2.25rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid #CBD5E1", fontSize: "0.9rem", background: "white", color: "#334155" }}>
           <option value="">Semua Status</option>
@@ -184,8 +159,8 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
             <thead>
               <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
                 <th style={{ padding: "1rem", color: "#475569" }}>ID Transaksi</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Toko</th>
-                <th style={{ padding: "1rem", color: "#475569" }}>Produsen</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Toko</th>
+                <th className="col-mob-hide" style={{ padding: "1rem", color: "#475569" }}>Produsen</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Nominal</th>
                 <th style={{ padding: "1rem", color: "#475569" }}>Status</th>
                 <th style={{ padding: "1rem", color: "#475569", textAlign: "center" }}>Aksi</th>
@@ -201,12 +176,12 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
                   <tr key={t.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                     <td style={{ padding: "1rem", fontWeight: 600, color: "#2563EB" }}>
                       <span onClick={() => setDetail(t)} style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "#BFDBFE" }}>{t.id}</span>
-                      {t.buktiPembayaran && <span style={{ marginLeft: "6px", fontSize: "0.72rem", background: "#DBEAFE", color: "#1D4ED8", padding: "1px 5px", borderRadius: "4px" }}>🖼️ Bukti</span>}
+                      {t.buktiPembayaran && <span className="escrow-badge" style={{ marginLeft: "6px", fontSize: "0.72rem", background: "#DBEAFE", color: "#1D4ED8", padding: "1px 5px", borderRadius: "4px" }}>🖼️ Bukti</span>}
                     </td>
-                    <td style={{ padding: "1rem", color: "#1E293B", fontWeight: 600 }}>{t.toko}</td>
-                    <td style={{ padding: "1rem", color: "#334155" }}>{t.produsen}</td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", color: "#1E293B", fontWeight: 600 }}>{t.toko}</td>
+                    <td className="col-mob-hide" style={{ padding: "1rem", color: "#334155" }}>{t.produsen}</td>
                     <td style={{ padding: "1rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(t.nominal)}</td>
-                    <td style={{ padding: "1rem" }}><span style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{t.status}</span></td>
+                    <td style={{ padding: "1rem" }}><span className="escrow-badge" style={{ background: s.bg, color: s.color, padding: "0.25rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem", fontWeight: 600 }}>{t.status}</span></td>
                     <td style={{ padding: "1rem", textAlign: "center" }}>
                       <button onClick={() => setDetail(t)} style={{ background: "#F1F5F9", border: "none", padding: "0.35rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem", color: "#334155", cursor: "pointer" }}>Kelola</button>
                     </td>
@@ -220,21 +195,21 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
 
       {detail && (
         <div onClick={() => setDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "1rem" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+          <div className="escrow-modal" onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "14px", padding: "1.5rem", width: "440px", maxWidth: "100%", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
               <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#1E293B" }}>{detail.id}</h2>
               <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><IconX /></button>
             </div>
             <p style={{ margin: "0 0 1.1rem 0", fontSize: "0.8rem", color: "#94A3B8" }}>{detail.tanggal} • Pembeli: {detail.pembeli}</p>
 
-            <div style={{ background: "#EFF6FF", borderRadius: "10px", padding: "0.9rem", marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ background: "#EFF6FF", borderRadius: "10px", padding: "0.9rem", marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "0.85rem", color: "#2563EB", fontWeight: 600 }}>Nominal Ditahan</span>
               <span style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(detail.nominal)}</span>
             </div>
 
-            {/* BUKTI PEMBAYARAN PEMBELI */}
+         
             <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "0.9rem", marginBottom: "1rem", border: "1px solid #E2E8F0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem", gap: "0.5rem" }}>
                 <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>Metode Pembayaran</span>
                 <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B" }}>{detail.metodePembayaran || "QRIS"}</span>
               </div>
@@ -255,24 +230,24 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
 
             <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.6rem" }}>Rincian pembagian dana</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1.25rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem", gap: "0.5rem" }}>
                 <span style={{ color: "#334155" }}>{detail.toko} <span style={{ color: "#94A3B8" }}>({detail.persenToko}%)</span></span>
-                <strong style={{ color: "#1E293B" }}>{formatRupiah(Math.round(detail.nominal * detail.persenToko / 100))}</strong>
+                <strong style={{ color: "#1E293B", whiteSpace: "nowrap" }}>{formatRupiah(Math.round(detail.nominal * detail.persenToko / 100))}</strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "0.6rem 0.75rem", background: "#F8FAFC", borderRadius: "8px", fontSize: "0.85rem", gap: "0.5rem" }}>
                 <span style={{ color: "#334155" }}>{detail.produsen} <span style={{ color: "#94A3B8" }}>({detail.persenProdusen}%)</span></span>
-                <strong style={{ color: "#1E293B" }}>{formatRupiah(Math.round(detail.nominal * detail.persenProdusen / 100))}</strong>
+                <strong style={{ color: "#1E293B", whiteSpace: "nowrap" }}>{formatRupiah(Math.round(detail.nominal * detail.persenProdusen / 100))}</strong>
               </div>
             </div>
 
             {detail.status === "Ditahan" && (
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Disengketakan"); await tandaiSengketa(targetId); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "white", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tandai Sengketa</button>
-                <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Tersalur"); await salurkanDana(targetId); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Salurkan Dana</button>
+                <button onClick={async () => { updateDetail(detail.id, "Disengketakan"); await tandaiSengketa(detail.id); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "1px solid #FCA5A5", background: "white", color: "#991B1B", fontWeight: 600, cursor: "pointer" }}>Tandai Sengketa</button>
+                <button onClick={async () => { updateDetail(detail.id, "Tersalur"); await salurkanDana(detail.id); }} style={{ flex: 1, padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Salurkan Dana</button>
               </div>
             )}
             {detail.status === "Disengketakan" && (
-              <button onClick={async () => { const targetId = detail.originalId || detail.id; updateDetail(targetId, "Tersalur"); await selesaikanSengketa(targetId); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Selesaikan & Salurkan Dana</button>
+              <button onClick={async () => { updateDetail(detail.id, "Tersalur"); await selesaikanSengketa(detail.id); }} style={{ width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#2563EB", color: "white", fontWeight: 600, cursor: "pointer" }}>Selesaikan &amp; Salurkan Dana</button>
             )}
             {detail.status === "Tersalur" && (
               <div style={{ textAlign: "center", padding: "0.6rem", background: "#ECFDF5", borderRadius: "8px", color: "#059669", fontWeight: 600, fontSize: "0.85rem" }}>Dana sudah tersalur ke kedua pihak</div>

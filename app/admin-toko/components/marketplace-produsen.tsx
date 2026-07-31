@@ -392,7 +392,7 @@ export default function MarketplaceProdusen({
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        /* GRID DESTOP DAN RESPONSIP MOBILE */
+       
         .marketplace-cards-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -404,7 +404,7 @@ export default function MarketplaceProdusen({
           main h1 { font-size: 1.15rem !important; }
           main p { font-size: 0.62rem !important; line-height: 1.2 !important; }
 
-          /* PAKSA 2 KOLOM RAPI DI TAMPILAN MOBILE */
+       
           .marketplace-cards-grid { 
             grid-template-columns: repeat(2, 1fr) !important; 
             gap: 0.5rem !important; 
@@ -440,7 +440,7 @@ export default function MarketplaceProdusen({
             margin-top: 0.5rem !important;
           }
           
-          /* OPTIMASI MODAL PADA MOBILE */
+        
           .modal-content-box {
             width: 100% !important;
             max-height: 92vh !important;
