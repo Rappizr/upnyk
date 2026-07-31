@@ -386,7 +386,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", padding: "2rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", background: "#F8FAFC" }}>
+    <div className="login-page-wrapper" style={{ minHeight: "100vh", padding: "2rem 1rem", boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "center", background: "#F8FAFC" }}>
       <style dangerouslySetInnerHTML={{
         __html: `
         .login-back-link {
@@ -447,26 +447,71 @@ export default function LoginPage() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         @media (max-width: 768px) {
+          .login-page-wrapper {
+            padding: 1rem 0.75rem !important;
+            justify-content: center !important;
+          }
+          .login-back-container {
+            display: flex !important;
+            justify-content: center !important;
+            margin-bottom: 0.75rem !important;
+          }
           .login-card {
             grid-template-columns: 1fr !important;
-            gap: 2rem !important;
+            gap: 1.75rem !important;
             padding: 1.5rem 1.25rem !important;
-            border-radius: 1.1rem !important;
+            border-radius: 1.25rem !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
           }
-          .login-right-panel { border-left: none !important; padding-left: 0 !important; padding-top: 1.75rem !important; border-top: 1px solid #E2E8F0 !important; border-radius: 1rem !important; }
-          .login-left-panel h2 { font-size: 1.4rem !important; }
-          .login-left-panel p { font-size: 0.82rem !important; }
-          .role-card { padding: 0.9rem 1rem !important; gap: 0.85rem !important; }
+          .login-left-panel {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+          }
+          .login-header-logo {
+            justify-content: center !important;
+            margin-bottom: 1.25rem !important;
+            width: 100% !important;
+          }
+          .login-left-panel h2 {
+            font-size: 1.4rem !important;
+            text-align: center !important;
+          }
+          .login-left-panel p {
+            font-size: 0.85rem !important;
+            text-align: center !important;
+            max-width: 320px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            margin-bottom: 1.5rem !important;
+          }
+          .role-card {
+            padding: 0.9rem 1rem !important;
+            gap: 0.85rem !important;
+            width: 100% !important;
+          }
           .role-card .role-icon-box { width: 40px !important; height: 40px !important; }
           .role-card .role-icon-box svg { width: 18px !important; height: 18px !important; }
           .role-card .role-title { font-size: 0.88rem !important; }
           .role-card .role-desc { font-size: 0.74rem !important; }
-          .login-right-panel .role-icon-box { width: 48px !important; height: 48px !important; }
-          .login-right-panel h3 { font-size: 1.1rem !important; }
+          .login-right-panel {
+            border-left: none !important;
+            border-top: 1px solid #E2E8F0 !important;
+            padding: 1.75rem 1.25rem !important;
+            border-radius: 1.1rem !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            text-align: center !important;
+          }
+          .login-right-panel .role-icon-box { width: 50px !important; height: 50px !important; margin: 0 auto 0.75rem auto !important; }
+          .login-right-panel h3 { font-size: 1.15rem !important; text-align: center !important; }
+          .login-right-panel p { text-align: center !important; font-size: 0.82rem !important; }
         }
       `}} />
 
-      <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "1.25rem" }}>
+      <div className="login-back-container" style={{ width: "100%", maxWidth: "1000px", marginBottom: "1.25rem" }}>
         <a href="/" className="login-back-link">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" />
@@ -478,7 +523,7 @@ export default function LoginPage() {
 
       <div className="login-card">
         <div className="login-left-panel">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "2rem" }}>
+          <div className="login-header-logo" style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "2rem" }}>
             <img src="/logo.png" alt="Logo PasarNusa" style={{ height: "34px", width: "auto", objectFit: "contain", borderRadius: "6px" }} />
             <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0C1F17" }}>
               Pasar<span style={{ color: "#12864E" }}>Nusa</span>
