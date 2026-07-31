@@ -46,6 +46,7 @@ export interface Penjualan {
   total: number;
   tanggal: string;
   status: "Belum Dibayar" | "Diproses" | "Dikirim" | "Selesai" | "Dibatalkan";
+  escrowStatus?: "Ditahan" | "Tersalur" | "Disengketakan";
   alamatPembeli?: string;
   metodePembayaran?: string;
   buktiPembayaran?: string | null;
@@ -488,9 +489,18 @@ export default function PelacakanPesanan({
                 return (
                   <div key={pj.id} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.85rem 1.1rem", borderBottom: "1px solid #F1F5F9", background: "#F8FAFC", flexWrap: "wrap", gap: "0.5rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1E293B" }}>#{pj.kodePesanan || pj.id}</span>
                         <span style={{ fontSize: "0.75rem", color: "#94A3B8" }}>• {pj.tanggal}</span>
+                        {pj.escrowStatus === "Tersalur" ? (
+                          <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#065F46", background: "#D1FAE5", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
+                            🛡️ Escrow: Dana Tersalur ke Toko
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "#92400E", background: "#FEF3C7", padding: "0.15rem 0.5rem", borderRadius: "6px" }}>
+                            🛡️ Escrow: Dana Ditahan Admin Platform
+                          </span>
+                        )}
                       </div>
                       <span style={{ fontSize: "0.72rem", fontWeight: 700, color: badgeColor, background: badgeBg, padding: "0.25rem 0.75rem", borderRadius: "999px" }}>
                         {pj.status}

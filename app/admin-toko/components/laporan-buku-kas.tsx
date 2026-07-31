@@ -139,7 +139,32 @@ export default function LaporanBukuKas() {
           }));
       }
 
-      const gabungan = [...listMasuk, ...listKeluarPesanan, ...listKeluarInventaris].sort(
+      const { data: pesananSales } = await supabase
+        .from("pesanan")
+        .select("id, total, total_harga, status, escrow_status, created_at, supplier, kode_pesanan")
+        .order("created_at", { ascending: false });
+
+      const listMasukPesanan: TransaksiKas[] = (pesananSales || [])
+        .filter((p: any) => {
+          const st = String(p.status || "").toLowerCase();
+          const esc = String(p.escrow_status || "").toLowerCase();
+          return st === "sudah dibayar" || st === "diproses" || st === "dikirim" || st === "selesai" || esc === "tersalur";
+        })
+        .map((p: any) => {
+          const isTersalur = p.escrow_status === "Tersalur" || p.status === "Selesai";
+          return {
+            id: `in-pesanan-${p.id}`,
+            keterangan: isTersalur
+              ? `Pemasukan (Escrow Tersalur) — ${p.kode_pesanan || p.id}`
+              : `Penjualan Toko (Escrow Ditahan Platform) — ${p.kode_pesanan || p.id}`,
+            nominal: Number(p.total || p.total_harga) || 0,
+            tanggal: p.created_at || new Date().toISOString(),
+            tipe: "masuk" as const,
+          };
+        })
+        .filter((item) => item.nominal > 0);
+
+      const gabungan = [...listMasuk, ...listMasukPesanan, ...listKeluarPesanan, ...listKeluarInventaris].sort(
         (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
       );
 

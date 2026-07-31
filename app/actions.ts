@@ -20,6 +20,10 @@ import {
   removeFromCart,
   clearCart,
   submitReview,
+  getEscrowTransaksi,
+  salurkanDanaEscrow,
+  tandaiSengketaEscrow,
+  selesaikanSengketaEscrow,
   getCurrentUserId,
   supabase,
   supabaseAdmin
@@ -201,23 +205,25 @@ export async function fetchNotificationsAction() {
 
 
     const filtered = allData.filter((n: any) => {
+      const j = (n.judul || '').toLowerCase();
+      const i = (n.isi || '').toLowerCase();
+      if (j.includes('escrow') || i.includes('escrow') || j.includes('penyaluran dana')) {
+        return false;
+      }
+
       const hasProfileId = n.profile_id !== null && n.profile_id !== undefined;
       const hasPembeliId = n.pembeli_id !== null && n.pembeli_id !== undefined;
 
-
       if (!hasProfileId && !hasPembeliId) return true;
-
 
       if (authUserId && isValidUuid(authUserId)) {
         if (n.profile_id === authUserId) return true;
       }
 
-
       if (currentUserId && isValidUuid(currentUserId)) {
         if (n.profile_id === currentUserId) return true;
         if (n.pembeli_id === currentUserId) return true;
       }
-
 
       if (!authUserId && !currentUserId) return true;
 
@@ -322,3 +328,39 @@ export async function submitReviewAction(orderId: string, rating: number, commen
     return false;
   }
 }
+
+export async function getEscrowTransaksiAction() {
+  try {
+    return await getEscrowTransaksi();
+  } catch (e) {
+    console.error("getEscrowTransaksiAction:", e);
+    return [];
+  }
+}
+
+export async function salurkanDanaAction(orderId: string) {
+  try {
+    return await salurkanDanaEscrow(orderId);
+  } catch (e) {
+    console.error("salurkanDanaAction:", e);
+    return false;
+  }
+}
+
+export async function tandaiSengketaAction(orderId: string) {
+  try {
+    return await tandaiSengketaEscrow(orderId);
+  } catch (e) {
+    console.error("tandaiSengketaAction:", e);
+    return false;
+  }
+}
+
+export async function selesaikanSengketaAction(orderId: string) {
+  try {
+    return await selesaikanSengketaEscrow(orderId);
+  } catch (e) {
+    console.error("selesaikanSengketaAction:", e);
+    return false;
+  }
+}

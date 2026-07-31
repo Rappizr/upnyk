@@ -306,7 +306,7 @@ export default function CartView({ onCartUpdated, onNavigateToOrders, onUpdateCa
           items,
           total: supplierGrandTotal,
           payment_method: selectedPayment.toUpperCase(),
-          status: "Belum Dibayar",
+          status: paymentProof || selectedPayment === "qris" ? "Sudah Dibayar" : "Belum Dibayar",
           proof_uploaded: true,
           proof_filename: paymentProof,
         });

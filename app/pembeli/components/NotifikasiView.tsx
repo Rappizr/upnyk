@@ -213,14 +213,20 @@ export default function NotifikasiView({ onUpdateCount }: NotifikasiViewProps) {
       else setRefreshing(true);
 
       const data = await fetchNotificationsAction();
-      const items: NotificationItem[] = data.map((n: any) => ({
-        id: n.id,
-        tipe: n.tipe || "Transaksi",
-        judul: n.judul || "Notifikasi",
-        isi: n.isi || "",
-        created_at: n.created_at || new Date().toISOString(),
-        dibaca: n.dibaca ?? false,
-      }));
+      const items: NotificationItem[] = data
+        .filter((n: any) => {
+          const j = (n.judul || "").toLowerCase();
+          const i = (n.isi || "").toLowerCase();
+          return !j.includes("escrow") && !i.includes("escrow") && !j.includes("penyaluran dana");
+        })
+        .map((n: any) => ({
+          id: n.id,
+          tipe: n.tipe || "Transaksi",
+          judul: n.judul || "Notifikasi",
+          isi: n.isi || "",
+          created_at: n.created_at || new Date().toISOString(),
+          dibaca: n.dibaca ?? false,
+        }));
 
       setNotifs(items);
     } catch (err) {

@@ -727,7 +727,7 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
     const { data: pesananList, error } = await supabase
       .from('pesanan')
       .select(`
-        id, pembeli_id, status, total, kode_pesanan, alamat_pengiriman,
+        id, pembeli_id, status, escrow_status, total, kode_pesanan, alamat_pengiriman,
         supplier, metode_pembayaran, bukti_pembayaran, created_at,
         detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
       `)
@@ -807,6 +807,7 @@ export async function getPenjualanAdminToko(): Promise<any[]> {
         total: Number(p.total) || 0,
         tanggal: new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         status: p.status || 'Belum Dibayar',
+        escrowStatus: p.escrow_status || (p.status === 'Selesai' ? 'Tersalur' : 'Ditahan'),
         alamatPembeli: p.alamat_pengiriman || pbInfo?.alamat || 'Alamat belum diisi',
         metodePembayaran: p.metode_pembayaran || 'QRIS',
         buktiPembayaran: p.bukti_pembayaran || null,
@@ -1935,3 +1936,154 @@ export async function submitReview(
     return false;
   }
 }
+
+export async function getEscrowTransaksi(): Promise<any[]> {
+  try {
+    let { data: pesananList, error } = await supabase
+      .from('pesanan')
+      .select(`
+        id, pembeli_id, status, total, total_harga, kode_pesanan, alamat_pengiriman,
+        supplier, metode_pembayaran, bukti_pembayaran, created_at, produk_id, jumlah,
+        detail_pesanan ( id, produk_id, jumlah, harga, subtotal )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error || !pesananList) {
+      if (error) console.error('getEscrowTransaksi error:', error.message);
+      const { data: fallbackList } = await supabase
+        .from('pesanan')
+        .select('*')
+        .order('created_at', { ascending: false });
+      pesananList = fallbackList || [];
+    }
+
+    const rawList = pesananList || [];
+
+    const pembeliIds = Array.from(new Set(rawList.map((p: any) => p.pembeli_id).filter(Boolean)));
+    let pembeliMap = new Map();
+    if (pembeliIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, nama').in('id', pembeliIds);
+      if (profiles) profiles.forEach((pr) => pembeliMap.set(pr.id, pr.nama));
+
+      const { data: pembeliTable } = await supabase.from('pembeli').select('id, profile_id, nama').or(`id.in.(${pembeliIds.join(',')}),profile_id.in.(${pembeliIds.join(',')})`);
+      if (pembeliTable) {
+        pembeliTable.forEach((pb) => {
+          if (pb.id) pembeliMap.set(pb.id, pb.nama);
+          if (pb.profile_id) pembeliMap.set(pb.profile_id, pb.nama);
+        });
+      }
+    }
+
+    const prodIds = Array.from(new Set(rawList.map((p: any) => p.produk_id).filter(Boolean)));
+    let produsenMap = new Map();
+    if (prodIds.length > 0) {
+      const { data: produkList } = await supabase.from('produk').select('id, produsen_id').in('id', prodIds);
+      if (produkList && produkList.length > 0) {
+        const produsenIds = Array.from(new Set(produkList.map((pr: any) => pr.produsen_id).filter(Boolean)));
+        if (produsenIds.length > 0) {
+          const { data: prodData } = await supabase.from('produsen').select('id, nama_usaha').in('id', produsenIds);
+          if (prodData) {
+            const prodNameMap = new Map(prodData.map((p: any) => [p.id, p.nama_usaha]));
+            produkList.forEach((pk: any) => {
+              if (pk.produsen_id && prodNameMap.has(pk.produsen_id)) {
+                produsenMap.set(pk.id, prodNameMap.get(pk.produsen_id));
+              }
+            });
+          }
+        }
+      }
+    }
+
+    const mappedFromDb = rawList.map((p: any) => {
+      const pembeliNama = pembeliMap.get(p.pembeli_id) || 'Pembeli PasarNusa';
+      const tokoNama = p.supplier || 'Warung Makmur Jaya';
+      const produsenNama = produsenMap.get(p.produk_id) || 'Keripik Tempe Sanan';
+      const nominal = Number(p.total || p.total_harga || 0);
+
+      let status: 'Ditahan' | 'Tersalur' | 'Disengketakan' = 'Ditahan';
+      const rawEsc = (p.escrow_status || p.status || '').toLowerCase();
+      if (rawEsc === 'tersalur' || rawEsc === 'selesai') {
+        status = 'Tersalur';
+      } else if (rawEsc === 'disengketakan' || rawEsc === 'sengketa') {
+        status = 'Disengketakan';
+      }
+
+      const dateObj = p.created_at ? new Date(p.created_at) : new Date();
+      const tanggal = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      return {
+        id: p.kode_pesanan || `TX-${p.id.slice(0, 6).toUpperCase()}`,
+        originalId: p.id,
+        pembeli: pembeliNama,
+        toko: tokoNama,
+        produsen: produsenNama,
+        nominal: nominal,
+        persenToko: 70,
+        persenProdusen: 30,
+        status: status,
+        tanggal: tanggal,
+        buktiPembayaran: p.bukti_pembayaran || null,
+        metodePembayaran: p.metode_pembayaran || 'QRIS',
+      };
+    });
+
+    return mappedFromDb;
+  } catch (err) {
+    console.error('getEscrowTransaksi catch:', err);
+    return [];
+  }
+}
+
+export async function salurkanDanaEscrow(orderId: string): Promise<boolean> {
+  try {
+    const { data: pesanan } = await supabase
+      .from('pesanan')
+      .select('id, supplier, total, total_harga, kode_pesanan')
+      .or(`kode_pesanan.eq.${orderId},id.eq.${orderId}`)
+      .maybeSingle();
+
+    if (pesanan?.id) {
+      await supabase.from('pesanan').update({ escrow_status: 'Tersalur' }).eq('id', pesanan.id);
+    }
+
+    try {
+      const nominal = pesanan ? (pesanan.total || pesanan.total_harga || 0) : 0;
+      const nominalStr = nominal > 0 ? ` sebesar Rp ${Number(nominal).toLocaleString('id-ID')}` : '';
+      await supabaseAdmin.from('notifikasi').insert({
+        judul: 'Penyaluran Dana Escrow',
+        isi: `Dana${nominalStr} untuk pesanan ${pesanan?.kode_pesanan || orderId} telah resmi disalurkan oleh Admin Platform ke rekening Toko (${pesanan?.supplier || 'Admin Toko'}).`,
+        tipe: 'Transaksi',
+        dibaca: false
+      });
+    } catch (eNotif) {
+      console.warn('salurkanDanaEscrow notifikasi warning:', eNotif);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('salurkanDanaEscrow error:', err);
+    return false;
+  }
+}
+
+export async function tandaiSengketaEscrow(orderId: string): Promise<boolean> {
+  try {
+    const { data: pesanan } = await supabase
+      .from('pesanan')
+      .select('id, kode_pesanan')
+      .or(`kode_pesanan.eq.${orderId},id.eq.${orderId}`)
+      .maybeSingle();
+
+    if (pesanan?.id) {
+      await supabase.from('pesanan').update({ escrow_status: 'Disengketakan' }).eq('id', pesanan.id);
+    }
+    return true;
+  } catch (err) {
+    console.error('tandaiSengketaEscrow error:', err);
+    return false;
+  }
+}
+
+export async function selesaikanSengketaEscrow(orderId: string): Promise<boolean> {
+  return salurkanDanaEscrow(orderId);
+}

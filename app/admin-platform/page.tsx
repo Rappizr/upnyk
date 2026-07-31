@@ -13,6 +13,12 @@ import PengaduanPage from "./components/pengaduan";
 import DataUMKM from "./components/data-umkm";
 import DataProdusen from "./components/data-produsen";
 import DataPembeli from "./components/data-pembeli";
+import {
+  getEscrowTransaksiAction,
+  salurkanDanaAction,
+  tandaiSengketaAction,
+  selesaikanSengketaAction,
+} from "@/app/actions";
 
 export interface Entitas {
   id: string;
@@ -49,11 +55,7 @@ const initialEntitas: Entitas[] = [
   { id: "ENT-04", nama: "Kopi Arabika Gayo", pemilik: "Rina Kartika", tipe: "Produsen", lokasi: "Surabaya, Jawa Timur", status: "Aktif" },
 ];
 
-const initialTransaksi: EscrowTx[] = [
-  { id: "TX-90211", pembeli: "Minimarket Sejahtera", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1575000, persenToko: 70, persenProdusen: 30, status: "Tersalur", tanggal: "05 Jul 2026" },
-  { id: "TX-90212", pembeli: "Koperasi Pasar Besar", toko: "Toko Sembako Berkah", produsen: "Kopi Arabika Gayo", nominal: 900000, persenToko: 65, persenProdusen: 35, status: "Ditahan", tanggal: "08 Jul 2026" },
-  { id: "TX-90213", pembeli: "Warung Bu Ida", toko: "Warung Makmur Jaya", produsen: "Keripik Tempe Sanan", nominal: 1500000, persenToko: 70, persenProdusen: 30, status: "Ditahan", tanggal: "09 Jul 2026" },
-];
+const initialTransaksi: EscrowTx[] = [];
 
 const initialKomoditas: Komoditas[] = [
   { nama: "Keripik Tempe", hargaPlatform: 45000, hargaTengkulak: 32000, volumeTon: 12.4 },
@@ -192,10 +194,31 @@ export default function AdminPlatformDashboard() {
     }
   }, []);
 
+  const fetchEscrowLive = useCallback(async () => {
+    try {
+      const liveList = await getEscrowTransaksiAction();
+      setTransaksiList(liveList || []);
+    } catch (err) {
+      console.error("Gagal memuat escrow live:", err);
+    }
+  }, []);
+
   useEffect(() => {
     cekKelengkapanAdmin();
     fetchCounts();
-  }, [cekKelengkapanAdmin, fetchCounts, activeMenu]);
+    fetchEscrowLive();
+
+    const channel = supabase
+      .channel("realtime-admin-platform-escrow")
+      .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => {
+        fetchEscrowLive();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [cekKelengkapanAdmin, fetchCounts, fetchEscrowLive, activeMenu]);
 
   function handleFotoSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -262,9 +285,23 @@ export default function AdminPlatformDashboard() {
     }
   };
 
-  function salurkanDana(id: string) { setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t))); }
-  function tandaiSengketa(id: string) { setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Disengketakan" } : t))); }
-  function selesaikanSengketa(id: string) { setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t))); }
+  async function salurkanDana(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+    await salurkanDanaAction(id);
+    await fetchEscrowLive();
+  }
+
+  async function tandaiSengketa(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Disengketakan" } : t)));
+    await tandaiSengketaAction(id);
+    await fetchEscrowLive();
+  }
+
+  async function selesaikanSengketa(id: string) {
+    setTransaksiList((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Tersalur" } : t)));
+    await selesaikanSengketaAction(id);
+    await fetchEscrowLive();
+  }
 
   const totalGMV = transaksiList.reduce((s, t) => s + t.nominal, 0);
 
@@ -528,7 +565,7 @@ export default function AdminPlatformDashboard() {
         {activeMenu === "peta" && <PetaRantaiPasok entitasList={entitasList} transaksiList={transaksiList} />}
         {activeMenu === "pengaduan" && <PengaduanPage />}
         {activeMenu === "escrow" && <EscrowTransaksi transaksiList={transaksiList} salurkanDana={salurkanDana} tandaiSengketa={tandaiSengketa} selesaikanSengketa={selesaikanSengketa} />}
-        {activeMenu === "laporan" && <LaporanDampak komoditasList={komoditasList} daerahProduktif={daerahProduktif} indeksHargaAdil={indeksHargaAdil} totalGMV={totalGMV} entitasList={entitasList} />}
+        {activeMenu === "laporan" && <LaporanDampak />}
       </div>
     </div>
   );

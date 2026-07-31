@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 
-interface EscrowTx {
+export interface EscrowTx {
   id: string;
+  originalId?: string;
   pembeli: string;
   toko: string;
   produsen: string;
@@ -12,6 +13,8 @@ interface EscrowTx {
   persenProdusen: number;
   status: "Ditahan" | "Tersalur" | "Disengketakan";
   tanggal: string;
+  buktiPembayaran?: string | null;
+  metodePembayaran?: string | null;
 }
 
 interface Props {
@@ -198,6 +201,7 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
                   <tr key={t.id} style={{ borderBottom: "1px solid #F1F5F9" }}>
                     <td style={{ padding: "1rem", fontWeight: 600, color: "#2563EB" }}>
                       <span onClick={() => setDetail(t)} style={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "#BFDBFE" }}>{t.id}</span>
+                      {t.buktiPembayaran && <span style={{ marginLeft: "6px", fontSize: "0.72rem", background: "#DBEAFE", color: "#1D4ED8", padding: "1px 5px", borderRadius: "4px" }}>🖼️ Bukti</span>}
                     </td>
                     <td style={{ padding: "1rem", color: "#1E293B", fontWeight: 600 }}>{t.toko}</td>
                     <td style={{ padding: "1rem", color: "#334155" }}>{t.produsen}</td>
@@ -226,6 +230,27 @@ export default function EscrowTransaksi({ transaksiList = [], salurkanDana, tand
             <div style={{ background: "#EFF6FF", borderRadius: "10px", padding: "0.9rem", marginBottom: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: "0.85rem", color: "#2563EB", fontWeight: 600 }}>Nominal Ditahan</span>
               <span style={{ fontSize: "1.2rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(detail.nominal)}</span>
+            </div>
+
+            {/* BUKTI PEMBAYARAN PEMBELI */}
+            <div style={{ background: "#F8FAFC", borderRadius: "10px", padding: "0.9rem", marginBottom: "1rem", border: "1px solid #E2E8F0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>Metode Pembayaran</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B" }}>{detail.metodePembayaran || "QRIS"}</span>
+              </div>
+              {detail.buktiPembayaran ? (
+                <div style={{ marginTop: "0.5rem" }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#059669", marginBottom: "0.3rem" }}>🖼️ Bukti Pembayaran Pembeli:</div>
+                  <div style={{ borderRadius: "8px", overflow: "hidden", border: "1px solid #CBD5E1", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", maxHeight: "200px" }}>
+                    <img src={detail.buktiPembayaran} alt="Bukti Pembayaran" style={{ maxWidth: "100%", maxHeight: "200px", objectFit: "contain", cursor: "pointer" }} onClick={() => window.open(detail.buktiPembayaran || "", "_blank")} />
+                  </div>
+                  <div style={{ textAlign: "right", marginTop: "0.2rem" }}>
+                    <a href={detail.buktiPembayaran} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.72rem", color: "#2563EB", textDecoration: "underline", fontWeight: 600 }}>Buka Gambar Ukuran Penuh ↗</a>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: "0.75rem", color: "#94A3B8", fontStyle: "italic", marginTop: "0.2rem" }}>Bukti transfer fisik belum diunggah</div>
+              )}
             </div>
 
             <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.6rem" }}>Rincian pembagian dana</div>
