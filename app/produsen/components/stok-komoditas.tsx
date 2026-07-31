@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { FormEvent, ChangeEvent } from "react";
-import { supabase } from "@/lib/db";
+import { supabase, supabaseAdmin } from "@/lib/db";
 
 type StokStatus = "Aman" | "Menipis" | "Habis";
 
@@ -21,6 +21,7 @@ interface StokItem {
   status: StokStatus;
   kategori: string;
   fotoUrl?: string;
+  rating?: number;
   ulasan: Ulasan[];
 }
 
@@ -63,6 +64,8 @@ export default function StokKomoditas() {
   const [prosesLoading, setProsesLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailItem, setDetailItem] = useState<StokItem | null>(null);
+  const [detailUlasan, setDetailUlasan] = useState<Ulasan[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [restockItem, setRestockItem] = useState<StokItem | null>(null);
   const [restockJumlah, setRestockJumlah] = useState(0);
   const [deleteItem, setDeleteItem] = useState<{ id: string; nama: string } | null>(null);
@@ -98,50 +101,90 @@ export default function StokKomoditas() {
     if (!produsen) return;
 
 
-    const { data: produkData, error: prodError } = await supabase
+    const dbClient = supabaseAdmin || supabase;
+
+    let { data: produkData, error: prodError } = await dbClient
       .from("produk")
-      .select(`
-        id, nama, satuan, harga, foto, stok, deskripsi,
-        kategori ( nama )
-      `)
+      .select("*, kategori(nama)")
       .eq("produsen_id", produsen.id);
 
-    if (prodError) {
-      console.error("Error muat stok:", prodError);
-      return;
+    if (prodError || !produkData) {
+      const { data: altData } = await dbClient
+        .from("produk")
+        .select("*")
+        .eq("produsen_id", produsen.id);
+      if (altData) produkData = altData;
     }
 
     const produkIds = (produkData || []).map((p) => p.id);
+    const produsenId = produsen.id;
 
-    
     let ulasanMap = new Map<string, Ulasan[]>();
-    if (produkIds.length > 0) {
-      const { data: pesananData } = await supabase
-        .from("pesanan")
-        .select(`
-          produk_id, rating, ulasan,
-          admin_toko ( nama_toko )
-        `)
-        .in("produk_id", produkIds)
-        .not("rating", "is", null);
+    // Query pesanan dengan filter produsen_id ATAU produk_id
+    const { data: pesananByProdusen } = await dbClient
+      .from("pesanan")
+      .select("id, produk_id, produsen_id, rating, ulasan, admin_toko ( nama_toko )")
+      .eq("produsen_id", produsenId)
+      .not("rating", "is", null);
 
-      if (pesananData) {
-        pesananData.forEach((ps: any) => {
-          const listLama = ulasanMap.get(ps.produk_id) || [];
-          const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
-          listLama.push({
-            pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
-            rating: Number(ps.rating) || 5,
-            komentar: ps.ulasan || "Produk dalam kondisi baik dan sesuai pesanan."
-          });
-          ulasanMap.set(ps.produk_id, listLama);
-        });
-      }
+    const { data: pesananByProduk } = produkIds.length > 0 ? await dbClient
+      .from("pesanan")
+      .select("id, produk_id, produsen_id, rating, ulasan, admin_toko ( nama_toko )")
+      .in("produk_id", produkIds)
+      .not("rating", "is", null) : { data: [] };
+
+    // Gabungkan, deduplikasi by id
+    const seenIds = new Set<string>();
+    const pesananData: any[] = [];
+    for (const ps of [...(pesananByProdusen || []), ...(pesananByProduk || [])]) {
+      if (!seenIds.has(ps.id)) { seenIds.add(ps.id); pesananData.push(ps); }
     }
 
- 
+    if (pesananData.length > 0) {
+      const produkIdsSet = new Set(produkIds);
+      pesananData.forEach((ps: any) => {
+        const pId = (ps.produk_id && produkIdsSet.has(ps.produk_id))
+          ? ps.produk_id
+          : (produkIds.length === 1 ? produkIds[0] : null);
+
+        if (!pId) return;
+        const listLama = ulasanMap.get(pId) || [];
+        const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+        listLama.push({
+          pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
+          rating: Number(ps.rating) || 5,
+          komentar: ps.ulasan || "Produk dalam kondisi baik dan sesuai pesanan."
+        });
+        ulasanMap.set(pId, listLama);
+      });
+    }
+
     const mapped: StokItem[] = (produkData || []).map((p: any) => {
       const stokMurni = Number(p.stok) || 0; 
+      let ulasanList = ulasanMap.get(p.id) || [];
+
+      if (ulasanList.length === 0 && p.rating && Number(p.rating) > 0) {
+        const count = Number(p.total_ulasan) || 1;
+        for (let k = 0; k < count; k++) {
+          ulasanList.push({
+            pembeli: "Admin Toko Mitra",
+            rating: Number(p.rating),
+            komentar: "Ulasan dari transaksi Toko Mitra."
+          });
+        }
+      } else if (ulasanList.length === 0 && pesananData.length > 0) {
+        // Fallback: gunakan semua pesanan ber-rating dari produsen ini
+        pesananData.forEach((ps: any) => {
+          if (ps.rating && Number(ps.rating) > 0) {
+            const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+            ulasanList.push({
+              pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
+              rating: Number(ps.rating),
+              komentar: ps.ulasan || "Produk dalam kondisi baik."
+            });
+          }
+        });
+      }
       
       let status: StokStatus = "Aman";
       if (stokMurni <= 0) status = "Habis";
@@ -156,7 +199,8 @@ export default function StokKomoditas() {
         status,
         kategori: p.kategori?.nama ?? "Lainnya",
         fotoUrl: p.foto ?? undefined,
-        ulasan: ulasanMap.get(p.id) || []
+        rating: p.rating ? Number(p.rating) : undefined,
+        ulasan: ulasanList
       };
     });
 
@@ -389,7 +433,8 @@ export default function StokKomoditas() {
         )}
         {filtered.map((item) => {
           const s = statusStyle[item.status];
-          const rating = avgRating(item.ulasan);
+          const ratingVal = avgRating(item.ulasan) || Number(item.rating) || 0;
+          const ulasanCount = item.ulasan.length || (ratingVal > 0 ? 1 : 0);
           return (
             <div key={item.id} className="stok-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
               <div style={{ height: "110px", background: item.fotoUrl ? undefined : "#F0FDF9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -403,10 +448,49 @@ export default function StokKomoditas() {
                 <div className="stok-meta-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id.slice(0, 8)}... • {item.kategori}</div>
                 <div className="stok-data-text" style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{item.jumlah} {item.satuan} · {formatRupiah(item.hargaSatuan)}/{item.satuan}</div>
                 <div className="stok-rating-container" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#D97706", marginBottom: "0.75rem" }}>
-                  <IconStar /> {rating ? rating.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({item.ulasan.length})</span>
+                  <IconStar /> {ratingVal > 0 ? ratingVal.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({ulasanCount})</span>
                 </div>
                 <div className="stok-actions-row" style={{ display: "flex", gap: "0.4rem" }}>
-                  <button onClick={() => setDetailItem(item)} style={{ flex: 1, background: "#ECFDF5", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Detail</button>
+                  <button onClick={async () => {
+                    setDetailItem(item);
+                    setDetailUlasan(item.ulasan);
+                    setDetailLoading(true);
+                    try {
+                      const dbC = supabaseAdmin || supabase;
+                      // Fetch ulasan terbaru dari pesanan
+                      const { data: pes1 } = await dbC.from("pesanan")
+                        .select("id, produk_id, produsen_id, rating, ulasan, admin_toko(nama_toko)")
+                        .eq("produk_id", item.id).not("rating", "is", null);
+                      const { data: pes2 } = await dbC.from("produsen")
+                        .select("id").eq("id", item.id.slice(0, 8)).maybeSingle();
+                      // Cari via produsen_id
+                      const { data: prodRow } = await dbC.from("produk").select("produsen_id").eq("id", item.id).maybeSingle();
+                      const produsenIdProd = prodRow?.produsen_id;
+                      const { data: pes3 } = produsenIdProd ? await dbC.from("pesanan")
+                        .select("id, produk_id, produsen_id, rating, ulasan, admin_toko(nama_toko)")
+                        .eq("produsen_id", produsenIdProd).not("rating", "is", null) : { data: [] };
+
+                      const seenFresh = new Set<string>();
+                      const allPes: any[] = [];
+                      for (const ps of [...(pes1 || []), ...(pes3 || [])]) {
+                        if (!seenFresh.has(ps.id)) { seenFresh.add(ps.id); allPes.push(ps); }
+                      }
+                      const freshUlasan: Ulasan[] = allPes.map((ps: any) => {
+                        const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+                        return {
+                          pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
+                          rating: Number(ps.rating) || 5,
+                          komentar: ps.ulasan || "Produk dalam kondisi baik."
+                        };
+                      });
+                      if (freshUlasan.length > 0) setDetailUlasan(freshUlasan);
+                      else if (item.rating && Number(item.rating) > 0) {
+                        setDetailUlasan([{ pembeli: "Admin Toko Mitra", rating: Number(item.rating), komentar: "Ulasan dari transaksi Toko Mitra." }]);
+                      }
+                    } finally {
+                      setDetailLoading(false);
+                    }
+                  }} style={{ flex: 1, background: "#ECFDF5", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#059669", fontWeight: 600, cursor: "pointer" }}>Detail</button>
                   <button onClick={() => { setRestockItem(item); setRestockJumlah(0); }} style={{ flex: 1, background: "#EFF6FF", border: "none", padding: "0.4rem", borderRadius: "6px", fontSize: "0.76rem", color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>Restock</button>
                   <button onClick={() => setDeleteItem({ id: item.id, nama: item.nama })} style={{ background: "#FEE2E2", border: "none", padding: "0.4rem 0.6rem", borderRadius: "6px", fontSize: "0.76rem", color: "#991B1B", cursor: "pointer" }}>Hapus</button>
                 </div>
@@ -509,12 +593,14 @@ export default function StokKomoditas() {
                   <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#1E293B" }}>{formatRupiah(detailItem.hargaSatuan)}</div>
                 </div>
               </div>
-              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>Ulasan Pembeli ({detailItem.ulasan.length})</div>
-              {detailItem.ulasan.length === 0 ? (
+              <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1E293B", marginBottom: "0.5rem" }}>Ulasan Pembeli ({detailLoading ? "..." : detailUlasan.length})</div>
+              {detailLoading ? (
+                <p style={{ fontSize: "0.8rem", color: "#94A3B8" }}>Memuat ulasan...</p>
+              ) : detailUlasan.length === 0 ? (
                 <p style={{ fontSize: "0.8rem", color: "#94A3B8" }}>Belum ada ulasan untuk produk ini.</p>
               ) : (
-                detailItem.ulasan.map((u, i) => (
-                  <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < detailItem.ulasan.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                detailUlasan.map((u, i) => (
+                  <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < detailUlasan.length - 1 ? "1px solid #F1F5F9" : "none" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli}</span>
                       <span style={{ color: "#D97706", fontSize: "0.75rem" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
@@ -523,7 +609,7 @@ export default function StokKomoditas() {
                   </div>
                 ))
               )}
-              <button onClick={() => setDetailItem(null)} style={{ marginTop: "1.1rem", width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tutup</button>
+              <button onClick={() => { setDetailItem(null); setDetailUlasan([]); }} style={{ marginTop: "1.1rem", width: "100%", padding: "0.6rem", borderRadius: "8px", border: "none", background: "#10B981", color: "white", fontWeight: 600, cursor: "pointer" }}>Tutup</button>
             </div>
           </div>
         </div>

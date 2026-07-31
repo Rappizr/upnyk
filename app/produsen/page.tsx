@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { supabase } from "@/lib/db";
+import { supabase, supabaseAdmin } from "@/lib/db";
 
 import StokKomoditas from "./components/stok-komoditas";
 import PenjualanB2B from "./components/penjualan-b2b";
@@ -137,15 +137,58 @@ export default function ProdusenDashboard() {
     });
 
     if (produsen) {
-      // Load Stok Produk
-      const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
+      const dbClient = supabaseAdmin || supabase;
+
+      const { data: produk } = await dbClient.from("produk").select("*").eq("produsen_id", produsen.id);
+      const { data: pesananUlasan } = await dbClient
+        .from("pesanan")
+        .select("id, produk_id, produsen_id, rating, ulasan, admin_toko(nama_toko)")
+        .not("rating", "is", null);
+
+      let ulasanByProduk = new Map<string, { pembeli: string; rating: number; komentar: string }[]>();
+      if (pesananUlasan) {
+        const produkIdsSet = new Set((produk || []).map(p => p.id));
+        pesananUlasan.forEach((ps: any) => {
+          const matchedPId = ps.produk_id && produkIdsSet.has(ps.produk_id) 
+            ? ps.produk_id 
+            : (ps.produsen_id === produsen.id ? Array.from(produkIdsSet)[0] : (produkIdsSet.size === 1 ? Array.from(produkIdsSet)[0] : null));
+
+          if (!matchedPId) return;
+          const listLama = ulasanByProduk.get(matchedPId) || [];
+          const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+          listLama.push({
+            pembeli: tokoObj?.nama_toko || "Toko Mitra",
+            rating: Number(ps.rating) || 5,
+            komentar: ps.ulasan || "Produk sesuai pesanan."
+          });
+          ulasanByProduk.set(matchedPId, listLama);
+        });
+      }
+
       if (produk) {
-        setStokList((produk as ProdukRow[]).map((p) => {
+        setStokList((produk as any[]).map((p) => {
           const stok = Number(p.stok) || 0;
+          let ulasanList = ulasanByProduk.get(p.id) || [];
+          if (ulasanList.length === 0 && p.rating && Number(p.rating) > 0) {
+            const count = Number(p.total_ulasan) || 1;
+            for (let k = 0; k < count; k++) {
+              ulasanList.push({
+                pembeli: "Toko Mitra",
+                rating: Number(p.rating),
+                komentar: "Ulasan dari transaksi Toko Mitra."
+              });
+            }
+          }
           return {
-            id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "pcs", hargaSatuan: Number(p.harga) || 0,
-            status: stok <= 0 ? "Habis" as const : stok <= 10 ? "Menipis" as const : "Aman" as const, kategori: "Komoditas",
-            ulasan: (p.review || []).map((r) => ({ pembeli: "Toko Mitra", rating: Number(r.rating) || 0, komentar: r.komentar || "" }))
+            id: p.id,
+            nama: p.nama,
+            jumlah: stok,
+            satuan: p.satuan || "pcs",
+            hargaSatuan: Number(p.harga) || 0,
+            status: stok <= 0 ? "Habis" as const : stok <= 10 ? "Menipis" as const : "Aman" as const,
+            kategori: "Komoditas",
+            rating: p.rating ? Number(p.rating) : 0,
+            ulasan: ulasanList
           };
         }));
       }

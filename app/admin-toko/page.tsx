@@ -222,7 +222,7 @@ export default function AdminTokoDashboard() {
 
       const { data: pesananData, error: pesananError } = await supabase
         .from("pesanan")
-        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id, bukti_pembayaran, metode_pembayaran")
+        .select("id, jumlah, total_harga, status, created_at, produsen_id, produk_id, admin_toko_id, bukti_pembayaran, metode_pembayaran, rating, ulasan")
         .in("admin_toko_id", possibleAdminIds)
         .order("created_at", { ascending: false });
 
@@ -270,7 +270,7 @@ export default function AdminTokoDashboard() {
         const prodLokasi = [prodObj?.desa, prodObj?.kabupaten].filter(Boolean).join(", ") || "Lokasi Produsen";
 
         return {
-          id: `#PO-${p.id.slice(0, 8).toUpperCase()}`,
+          id: `PO-${p.id.slice(0, 8).toUpperCase()}`,
           rawId: p.id,
           produkId: p.produk_id,
           produsenId: p.produsen_id || "",
@@ -283,12 +283,14 @@ export default function AdminTokoDashboard() {
           total: Number(p.total_harga) || 0,
           status: statusFormat,
           noResi: pengirimanMap.get(p.id) || undefined,
+          rating: p.rating ? Number(p.rating) : undefined,
+          ulasan: p.ulasan || undefined,
           buktiPembayaran: p.bukti_pembayaran || null,
           metodePembayaran: p.metode_pembayaran || "QRIS",
           tanggal: new Date(p.created_at).toLocaleDateString("id-ID", {
-            day: "2-digit",
+            day: "numeric",
             month: "short",
-            year: "numeric",
+            year: "numeric"
           }),
         };
       });
