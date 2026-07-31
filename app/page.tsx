@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/db";
 
-// Fungsi count up animation
 function useCountUp(target: number, durationMs: number, start: boolean) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -39,22 +38,16 @@ export default function LandingPage() {
   const [statsVisible, setStatsVisible] = useState(false);
   const [jsReady, setJsReady] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
-
-  // 🔥 STATE UNTUK DATA REAL-TIME
   const [produsenCount, setProdusenCount] = useState(0);
   const [tokoCount, setTokoCount] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
-
-  // 🔥 ANIMASI COUNT UP (nilai awal 0, akan terisi dari database)
   const animatedProdusen = useCountUp(produsenCount, 1800, statsVisible && produsenCount > 0);
   const animatedToko = useCountUp(tokoCount, 1800, statsVisible && tokoCount > 0);
 
-  // 🔥 AMBIL DATA DARI DATABASE
   const fetchStats = async () => {
     try {
       setLoadingStats(true);
 
-      // Ambil jumlah produsen dengan status aktif
       const { count: produsenTotal, error: produsenError } = await supabase
         .from("produsen")
         .select("*", { count: "exact", head: true })
@@ -67,7 +60,6 @@ export default function LandingPage() {
         setProdusenCount(produsenTotal || 0);
       }
 
-      // Ambil jumlah admin_toko dengan status aktif
       const { count: tokoTotal, error: tokoError } = await supabase
         .from("admin_toko")
         .select("*", { count: "exact", head: true })
@@ -80,7 +72,6 @@ export default function LandingPage() {
         setTokoCount(tokoTotal || 0);
       }
 
-      // 🔥 ALTERNATIF: Jika tidak ada data, gunakan data statis sebagai fallback
       if (!produsenTotal && !tokoTotal) {
         console.log("⚠️ Tidak ada data dari database, menggunakan fallback statis");
         setProdusenCount(3);
@@ -89,7 +80,6 @@ export default function LandingPage() {
 
     } catch (err) {
       console.error("Error fetching stats:", err);
-      // Fallback statis
       setProdusenCount(3);
       setTokoCount(9);
     } finally {
@@ -97,11 +87,9 @@ export default function LandingPage() {
     }
   };
 
-  // 🔥 REALTIME SUBSCRIPTION - Update otomatis saat ada perubahan
   useEffect(() => {
     fetchStats();
 
-    // Subscribe ke perubahan tabel produsen
     const produsenChannel = supabase
       .channel("realtime-produsen-stats")
       .on(
@@ -114,7 +102,6 @@ export default function LandingPage() {
       )
       .subscribe();
 
-    // Subscribe ke perubahan tabel admin_toko
     const tokoChannel = supabase
       .channel("realtime-toko-stats")
       .on(
@@ -135,7 +122,6 @@ export default function LandingPage() {
 
   useEffect(() => setJsReady(true), []);
 
-  // Background slideshow
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let timer: ReturnType<typeof setInterval>;
@@ -188,7 +174,6 @@ export default function LandingPage() {
     return () => io.disconnect();
   }, []);
 
-  // Fitur cards
   const fitur = [
     {
       layer: "Hulu",
@@ -238,7 +223,6 @@ export default function LandingPage() {
         isolation: "isolate"
       }}
     >
-      {/* CSS Styles (sama seperti sebelumnya) */}
       <style>{`
         .pn-root {
           --brand-green: #0A4D2E;
@@ -639,7 +623,6 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* Header (sama seperti sebelumnya) */}
       <header className={`glass-nav header-container${isScrolled ? " is-scrolled" : ""}`} style={{ padding: "0.8rem 4rem", display: "flex", alignItems: "center", justifyContent: "space-between", position: "fixed", top: 0, left: 0, width: "100%", zIndex: 999, boxSizing: "border-box" }}>
         <div className="nav-brand-group" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
           <img className="nav-logo-img" src="/logo.png" alt="Logo PasarNusa" style={{ height: "32px", width: "auto", objectFit: "contain", borderRadius: "4px" }} />
