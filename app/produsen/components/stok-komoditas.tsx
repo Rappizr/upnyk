@@ -21,7 +21,8 @@ interface StokItem {
   status: StokStatus;
   kategori: string;
   fotoUrl?: string;
-  rating?: number;
+  rating: number;
+  totalUlasan: number;
   ulasan: Ulasan[];
 }
 
@@ -50,10 +51,6 @@ function formatRupiah(n: number) {
 function formatNumber(value: string) {
   const number = value.replace(/\D/g, "");
   return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-function avgRating(ulasan: Ulasan[]) {
-  return ulasan.length ? ulasan.reduce((s, u) => s + u.rating, 0) / ulasan.length : 0;
 }
 
 export default function StokKomoditas() {
@@ -100,90 +97,73 @@ export default function StokKomoditas() {
 
     if (!produsen) return;
 
-
     const dbClient = supabaseAdmin || supabase;
 
-    let { data: produkData, error: prodError } = await dbClient
+    // 1. Ambil semua produk produsen
+    const { data: produkData, error: prodError } = await dbClient
       .from("produk")
       .select("*, kategori(nama)")
       .eq("produsen_id", produsen.id);
 
-    if (prodError || !produkData) {
-      const { data: altData } = await dbClient
-        .from("produk")
-        .select("*")
-        .eq("produsen_id", produsen.id);
-      if (altData) produkData = altData;
+    if (prodError || !produkData || produkData.length === 0) {
+      setStokList([]);
+      return;
     }
 
-    const produkIds = (produkData || []).map((p) => p.id);
-    const produsenId = produsen.id;
+    const produkIds = produkData.map((p) => p.id);
 
-    let ulasanMap = new Map<string, Ulasan[]>();
-    // Query pesanan dengan filter produsen_id ATAU produk_id
-    const { data: pesananByProdusen } = await dbClient
+    // 2. 🔥 AMBIL RATING DARI TABEL PESANAN
+    const { data: pesananData } = await dbClient
       .from("pesanan")
-      .select("id, produk_id, produsen_id, rating, ulasan, admin_toko ( nama_toko )")
-      .eq("produsen_id", produsenId)
+      .select("id, produk_id, rating, ulasan, admin_toko ( nama_toko )")
+      .in("produk_id", produkIds)
       .not("rating", "is", null);
 
-    const { data: pesananByProduk } = produkIds.length > 0 ? await dbClient
-      .from("pesanan")
-      .select("id, produk_id, produsen_id, rating, ulasan, admin_toko ( nama_toko )")
-      .in("produk_id", produkIds)
-      .not("rating", "is", null) : { data: [] };
-
-    // Gabungkan, deduplikasi by id
-    const seenIds = new Set<string>();
-    const pesananData: any[] = [];
-    for (const ps of [...(pesananByProdusen || []), ...(pesananByProduk || [])]) {
-      if (!seenIds.has(ps.id)) { seenIds.add(ps.id); pesananData.push(ps); }
+    console.log("📊 Pesanan dengan rating ditemukan:", pesananData?.length || 0);
+    if (pesananData && pesananData.length > 0) {
+      console.log("📊 Sample rating:", pesananData[0]);
     }
 
-    if (pesananData.length > 0) {
-      const produkIdsSet = new Set(produkIds);
-      pesananData.forEach((ps: any) => {
-        const pId = (ps.produk_id && produkIdsSet.has(ps.produk_id))
-          ? ps.produk_id
-          : (produkIds.length === 1 ? produkIds[0] : null);
-
-        if (!pId) return;
-        const listLama = ulasanMap.get(pId) || [];
-        const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
-        listLama.push({
-          pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
-          rating: Number(ps.rating) || 5,
-          komentar: ps.ulasan || "Produk dalam kondisi baik dan sesuai pesanan."
-        });
-        ulasanMap.set(pId, listLama);
+    // 3. Buat map rating per produk
+    const ratingMap = new Map<string, { total: number; count: number; ulasan: Ulasan[] }>();
+    
+    (pesananData || []).forEach((ps: any) => {
+      const pId = ps.produk_id;
+      if (!pId) return;
+      
+      if (!ratingMap.has(pId)) {
+        ratingMap.set(pId, { total: 0, count: 0, ulasan: [] });
+      }
+      
+      const data = ratingMap.get(pId)!;
+      const ratingVal = Number(ps.rating) || 0;
+      data.total += ratingVal;
+      data.count += 1;
+      
+      const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
+      data.ulasan.push({
+        pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
+        rating: ratingVal,
+        komentar: ps.ulasan || "Produk dalam kondisi baik dan sesuai pesanan."
       });
-    }
+    });
 
-    const mapped: StokItem[] = (produkData || []).map((p: any) => {
-      const stokMurni = Number(p.stok) || 0; 
-      let ulasanList = ulasanMap.get(p.id) || [];
-
-      if (ulasanList.length === 0 && p.rating && Number(p.rating) > 0) {
-        const count = Number(p.total_ulasan) || 1;
-        for (let k = 0; k < count; k++) {
-          ulasanList.push({
-            pembeli: "Admin Toko Mitra",
-            rating: Number(p.rating),
-            komentar: "Ulasan dari transaksi Toko Mitra."
-          });
-        }
-      } else if (ulasanList.length === 0 && pesananData.length > 0) {
-        // Fallback: gunakan semua pesanan ber-rating dari produsen ini
-        pesananData.forEach((ps: any) => {
-          if (ps.rating && Number(ps.rating) > 0) {
-            const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
-            ulasanList.push({
-              pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
-              rating: Number(ps.rating),
-              komentar: ps.ulasan || "Produk dalam kondisi baik."
-            });
-          }
-        });
+    // 4. Mapping produk dengan rating dari pesanan
+    const mapped: StokItem[] = produkData.map((p: any) => {
+      const stokMurni = Number(p.stok) || 0;
+      const ratingData = ratingMap.get(p.id);
+      
+      let ratingAvg = 0;
+      let totalUlasan = 0;
+      let ulasanList: Ulasan[] = [];
+      
+      if (ratingData && ratingData.count > 0) {
+        ratingAvg = ratingData.total / ratingData.count;
+        totalUlasan = ratingData.count;
+        ulasanList = ratingData.ulasan;
+        console.log(`⭐ ${p.nama}: rating=${ratingAvg.toFixed(1)}, ulasan=${totalUlasan}`);
+      } else {
+        console.log(`⭐ ${p.nama}: belum ada rating`);
       }
       
       let status: StokStatus = "Aman";
@@ -199,7 +179,8 @@ export default function StokKomoditas() {
         status,
         kategori: p.kategori?.nama ?? "Lainnya",
         fotoUrl: p.foto ?? undefined,
-        rating: p.rating ? Number(p.rating) : undefined,
+        rating: ratingAvg,
+        totalUlasan: totalUlasan,
         ulasan: ulasanList
       };
     });
@@ -210,7 +191,6 @@ export default function StokKomoditas() {
   useEffect(() => {
     muatStok();
 
-   
     const channel = supabase
       .channel("realtime-rating-stok")
       .on("postgres_changes", { event: "*", schema: "public", table: "pesanan" }, () => muatStok())
@@ -287,7 +267,7 @@ export default function StokKomoditas() {
       nama: addForm.nama,
       satuan: addForm.satuan,
       harga: hargaMurni,
-      stok: Number(addForm.jumlah), 
+      stok: Number(addForm.jumlah),
       kategori_id: katData?.id ?? null,
       foto: finalFotoUrl || null,
       deskripsi: addForm.deskripsi || null
@@ -433,8 +413,6 @@ export default function StokKomoditas() {
         )}
         {filtered.map((item) => {
           const s = statusStyle[item.status];
-          const ratingVal = avgRating(item.ulasan) || Number(item.rating) || 0;
-          const ulasanCount = item.ulasan.length || (ratingVal > 0 ? 1 : 0);
           return (
             <div key={item.id} className="stok-main-card" style={{ background: "white", border: "1px solid #E2E8F0", borderRadius: "12px", overflow: "hidden" }}>
               <div style={{ height: "110px", background: item.fotoUrl ? undefined : "#F0FDF9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -447,9 +425,14 @@ export default function StokKomoditas() {
                 </div>
                 <div className="stok-meta-text" style={{ fontSize: "0.75rem", color: "#94A3B8", marginBottom: "0.4rem" }}>{item.id.slice(0, 8)}... • {item.kategori}</div>
                 <div className="stok-data-text" style={{ fontSize: "0.85rem", color: "#334155", marginBottom: "0.3rem" }}>{item.jumlah} {item.satuan} · {formatRupiah(item.hargaSatuan)}/{item.satuan}</div>
+                
+                {/* 🔥 TAMPILKAN RATING DARI TABEL PESANAN */}
                 <div className="stok-rating-container" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#D97706", marginBottom: "0.75rem" }}>
-                  <IconStar /> {ratingVal > 0 ? ratingVal.toFixed(1) : "0.0"} <span style={{ color: "#94A3B8" }}>({ulasanCount})</span>
+                  <IconStar /> 
+                  {item.rating > 0 ? item.rating.toFixed(1) : "0.0"} 
+                  <span style={{ color: "#94A3B8" }}>({item.totalUlasan} ulasan)</span>
                 </div>
+                
                 <div className="stok-actions-row" style={{ display: "flex", gap: "0.4rem" }}>
                   <button onClick={async () => {
                     setDetailItem(item);
@@ -457,25 +440,11 @@ export default function StokKomoditas() {
                     setDetailLoading(true);
                     try {
                       const dbC = supabaseAdmin || supabase;
-                      // Fetch ulasan terbaru dari pesanan
                       const { data: pes1 } = await dbC.from("pesanan")
-                        .select("id, produk_id, produsen_id, rating, ulasan, admin_toko(nama_toko)")
+                        .select("id, produk_id, rating, ulasan, admin_toko(nama_toko)")
                         .eq("produk_id", item.id).not("rating", "is", null);
-                      const { data: pes2 } = await dbC.from("produsen")
-                        .select("id").eq("id", item.id.slice(0, 8)).maybeSingle();
-                      // Cari via produsen_id
-                      const { data: prodRow } = await dbC.from("produk").select("produsen_id").eq("id", item.id).maybeSingle();
-                      const produsenIdProd = prodRow?.produsen_id;
-                      const { data: pes3 } = produsenIdProd ? await dbC.from("pesanan")
-                        .select("id, produk_id, produsen_id, rating, ulasan, admin_toko(nama_toko)")
-                        .eq("produsen_id", produsenIdProd).not("rating", "is", null) : { data: [] };
-
-                      const seenFresh = new Set<string>();
-                      const allPes: any[] = [];
-                      for (const ps of [...(pes1 || []), ...(pes3 || [])]) {
-                        if (!seenFresh.has(ps.id)) { seenFresh.add(ps.id); allPes.push(ps); }
-                      }
-                      const freshUlasan: Ulasan[] = allPes.map((ps: any) => {
+                      
+                      const freshUlasan: Ulasan[] = (pes1 || []).map((ps: any) => {
                         const tokoObj = Array.isArray(ps.admin_toko) ? ps.admin_toko[0] : ps.admin_toko;
                         return {
                           pembeli: tokoObj?.nama_toko || "Admin Toko Mitra",
@@ -484,9 +453,6 @@ export default function StokKomoditas() {
                         };
                       });
                       if (freshUlasan.length > 0) setDetailUlasan(freshUlasan);
-                      else if (item.rating && Number(item.rating) > 0) {
-                        setDetailUlasan([{ pembeli: "Admin Toko Mitra", rating: Number(item.rating), komentar: "Ulasan dari transaksi Toko Mitra." }]);
-                      }
                     } finally {
                       setDetailLoading(false);
                     }
@@ -603,7 +569,7 @@ export default function StokKomoditas() {
                   <div key={i} style={{ padding: "0.5rem 0", borderBottom: i < detailUlasan.length - 1 ? "1px solid #F1F5F9" : "none" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#1E293B" }}>{u.pembeli}</span>
-                      <span style={{ color: "#D97706", fontSize: "0.75rem" }}>{"★".repeat(u.rating)}{"☆".repeat(5 - u.rating)}</span>
+                      <span style={{ color: "#D97706", fontSize: "0.75rem" }}>{"★".repeat(Math.round(u.rating))}{"☆".repeat(5 - Math.round(u.rating))}</span>
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "#64748B" }}>{u.komentar}</div>
                   </div>
