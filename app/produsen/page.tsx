@@ -93,7 +93,7 @@ const pageTitles: Record<string, string> = {
 
 function formatRupiah(n: number) {
   if (n < 0) return "- Rp " + Math.abs(n).toLocaleString("id-ID");
-  return "Rp " + n.toLocaleString("id-ID");
+  return "Rp " + (isNaN(n) ? 0 : n).toLocaleString("id-ID");
 }
 
 export default function ProdusenDashboard() {
@@ -113,10 +113,22 @@ export default function ProdusenDashboard() {
 
   const muatDataDashboard = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.log("❌ User tidak ditemukan");
+      return;
+    }
+
+    console.log("✅ User ID:", user.id);
 
     const { data: mainProfile } = await supabase.from("profiles").select("nama, email, phone, avatar_url").eq("id", user.id).single();
     const { data: produsen } = await supabase.from("produsen").select("*").or(`profile_id.eq.${user.id},id.eq.${user.id}`).maybeSingle();
+
+    console.log("✅ Data Produsen:", produsen);
+
+    if (!produsen) {
+      console.log("❌ Produsen tidak ditemukan");
+      return;
+    }
 
     const namaPengguna = mainProfile?.nama || "User Produsen";
     const inisialPengguna = namaPengguna.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -136,77 +148,136 @@ export default function ProdusenDashboard() {
       fotoUrl: mainProfile?.avatar_url || undefined
     });
 
-    if (produsen) {
-      // Load Stok Produk
-      const { data: produk } = await supabase.from("produk").select("*, review(rating, komentar)").eq("produsen_id", produsen.id);
-      if (produk) {
-        setStokList((produk as ProdukRow[]).map((p) => {
-          const stok = Number(p.stok) || 0;
-          return {
-            id: p.id, nama: p.nama, jumlah: stok, satuan: p.satuan || "pcs", hargaSatuan: Number(p.harga) || 0,
-            status: stok <= 0 ? "Habis" as const : stok <= 10 ? "Menipis" as const : "Aman" as const, kategori: "Komoditas",
-            ulasan: (p.review || []).map((r) => ({ pembeli: "Toko Mitra", rating: Number(r.rating) || 0, komentar: r.komentar || "" }))
-          };
-        }));
-      }
+    // 1. Load Stok Produk
+    const { data: produk } = await supabase
+      .from("produk")
+      .select("*, review(rating, komentar)")
+      .eq("produsen_id", produsen.id);
 
-      // Load Pesanan B2B
-      const { data: pesananData } = await supabase
-        .from("pesanan")
-        .select(`
-          id, jumlah, total_harga, status, created_at, admin_toko_id,
-          produk ( id, nama, satuan ),
-          admin_toko ( nama_toko, alamat, kabupaten )
-        `)
-        .eq("produsen_id", produsen.id)
-        .order("created_at", { ascending: false });
+    console.log("📦 Produk ditemukan:", produk?.length || 0);
 
-      if (pesananData) {
-        const mappedPesanan: Pesanan[] = pesananData.map((p: any) => {
-          const st = String(p.status || "").toLowerCase();
-          let statusFormat: Pesanan["status"] = "Baru";
-          if (st === "diproses") statusFormat = "Diproses";
-          else if (st === "dikirim") statusFormat = "Dikirim";
-          else if (st === "selesai" || st === "diterima") statusFormat = "Selesai";
-          else if (st === "dibatalkan") statusFormat = "Dibatalkan";
+    let produkIds: string[] = [];
+    if (produk) {
+      produkIds = produk.map((p) => p.id);
+      setStokList((produk as ProdukRow[]).map((p) => {
+        const stok = Number(p.stok) || 0;
+        return {
+          id: p.id, 
+          nama: p.nama, 
+          jumlah: stok, 
+          satuan: p.satuan || "pcs", 
+          hargaSatuan: Number(p.harga) || 0,
+          status: stok <= 0 ? "Habis" as const : stok <= 10 ? "Menipis" as const : "Aman" as const, 
+          kategori: "Komoditas",
+          ulasan: (p.review || []).map((r) => ({ 
+            pembeli: "Toko Mitra", 
+            rating: Number(r.rating) || 0, 
+            komentar: r.komentar || "" 
+          }))
+        };
+      }));
+    }
 
-          const adminObj = Array.isArray(p.admin_toko) ? p.admin_toko[0] : p.admin_toko;
-          const lokasi = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Alamat tidak diisi";
+    // ==========================================
+    // 🔥 PERBAIKAN: Query pesanan yang lebih sederhana
+    // ==========================================
+    
+    // STEP 1: Ambil semua pesanan tanpa relasi dulu
+    const { data: pesananData, error: pesananError } = await supabase
+      .from("pesanan")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-          return {
-            id: p.id.slice(0, 8).toUpperCase(),
-            pembeli: adminObj?.nama_toko || "Admin Toko",
-            itemId: p.produk?.id || "",
-            item: p.produk?.nama || "Komoditas Panen",
-            jumlah: Number(p.jumlah) || 1,
-            satuan: p.produk?.satuan || "pcs",
-            total: Number(p.total_harga) || 0,
-            status: statusFormat,
-            tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
-            alamatKirim: lokasi,
-          };
-        });
+    if (pesananError) {
+      console.error("❌ Error loading pesanan:", pesananError);
+      console.error("❌ Error details:", JSON.stringify(pesananError));
+    }
 
-        setPesananList(mappedPesanan);
-      }
+    console.log("📋 Total pesanan di database:", pesananData?.length || 0);
+    
+    if (pesananData && pesananData.length > 0) {
+      console.log("📋 Sample pesanan pertama:", pesananData[0]);
+      
+      // STEP 2: Ambil semua produk untuk mapping
+      const { data: allProduk } = await supabase
+        .from("produk")
+        .select("id, nama, satuan");
+      
+      const produkMap = new Map((allProduk || []).map((p) => [p.id, p]));
+      
+      // STEP 3: Ambil semua admin_toko untuk mapping
+      const { data: allAdmin } = await supabase
+        .from("admin_toko")
+        .select("id, nama_toko, alamat, kabupaten");
+      
+      const adminMap = new Map((allAdmin || []).map((a) => [a.id, a]));
 
-      // Load Pengeluaran
-      const { data: pengeluaranData } = await supabase
-        .from("pengeluaran")
-        .select("*")
-        .eq("produsen_id", produsen.id)
-        .order("created_at", { ascending: false });
+      // STEP 4: Filter dan mapping
+      const filteredPesanan = pesananData.filter((p: any) => {
+        // Cek produsen_id
+        if (p.produsen_id && p.produsen_id === produsen.id) {
+          return true;
+        }
+        // Cek produk_id (ambil dari relasi)
+        const produkItem = produkMap.get(p.produk_id);
+        if (produkItem && produkIds.includes(p.produk_id)) {
+          return true;
+        }
+        return false;
+      });
 
-      if (pengeluaranData) {
-        const mappedPengeluaran: Pengeluaran[] = pengeluaranData.map((p: any) => ({
-          id: p.id,
-          keterangan: p.keterangan || "Pengeluaran Toko",
-          nominal: Number(p.nominal) || 0,
+      console.log("🎯 Pesanan yang cocok:", filteredPesanan.length);
+
+      const mappedPesanan: Pesanan[] = filteredPesanan.map((p: any) => {
+        const st = String(p.status || "").toLowerCase().trim();
+        let statusFormat: Pesanan["status"] = "Baru";
+        if (st === "diproses") statusFormat = "Diproses";
+        else if (st === "dikirim") statusFormat = "Dikirim";
+        else if (st === "selesai" || st === "diterima" || st === "lunas") statusFormat = "Selesai";
+        else if (st === "dibatalkan" || st === "batal") statusFormat = "Dibatalkan";
+
+        const produkItem = produkMap.get(p.produk_id);
+        const adminObj = adminMap.get(p.admin_toko_id);
+        const lokasi = [adminObj?.alamat, adminObj?.kabupaten].filter(Boolean).join(", ") || "Alamat tidak diisi";
+        const totalAmount = Number(p.total_harga) || Number(p.total) || 0;
+
+        return {
+          id: p.id.slice(0, 8).toUpperCase(),
+          pembeli: adminObj?.nama_toko || "Admin Toko",
+          itemId: p.produk_id || "",
+          item: produkItem?.nama || "Komoditas Panen",
+          jumlah: Number(p.jumlah) || 1,
+          satuan: produkItem?.satuan || "pcs",
+          total: totalAmount,
+          status: statusFormat,
           tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
-          kategori: p.kategori || "Operasional"
-        }));
-        setPengeluaranList(mappedPengeluaran);
-      }
+          alamatKirim: lokasi,
+        };
+      });
+
+      setPesananList(mappedPesanan);
+      console.log("✅ PesananList setelah set:", mappedPesanan.length);
+    } else {
+      console.log("⚠️ Tidak ada pesanan di database");
+      setPesananList([]);
+    }
+
+    // 3. Load Pengeluaran
+    const { data: pengeluaranData } = await supabase
+      .from("pengeluaran")
+      .select("*")
+      .eq("produsen_id", produsen.id)
+      .order("created_at", { ascending: false });
+
+    if (pengeluaranData) {
+      const mappedPengeluaran: Pengeluaran[] = pengeluaranData.map((p: any) => ({
+        id: p.id,
+        keterangan: p.keterangan || "Pengeluaran Toko",
+        nominal: Number(p.nominal) || 0,
+        tanggal: new Date(p.created_at).toLocaleDateString("id-ID"),
+        kategori: p.kategori || "Operasional"
+      }));
+      setPengeluaranList(mappedPengeluaran);
     }
   }, []);
 
@@ -225,12 +296,21 @@ export default function ProdusenDashboard() {
     };
   }, [muatDataDashboard, activeMenu]);
 
+  // PERHITUNGAN METRIK DASHBOARD
   const totalStok = stokList.reduce((s, x) => s + x.jumlah, 0);
   const stokMenipis = stokList.filter((s) => s.status === "Menipis" || s.status === "Habis");
-  const totalPendapatan = pesananList.filter((p) => p.status === "Selesai").reduce((s, p) => s + p.total, 0);
+
+  const pesananAktif = pesananList.filter((p) => {
+    return p.status === "Baru" || p.status === "Diproses" || p.status === "Dikirim";
+  }).length;
+
+  const totalPendapatan = pesananList
+    .filter((p) => p.status === "Selesai")
+    .reduce((s, p) => s + p.total, 0);
+
   const totalPengeluaran = pengeluaranList.reduce((s, p) => s + p.nominal, 0);
   const saldo = totalPendapatan - totalPengeluaran;
-  const pesananAktif = pesananList.filter((p) => p.status === "Baru" || p.status === "Diproses" || p.status === "Dikirim").length;
+
   const semuaUlasan = stokList.flatMap((s) => s.ulasan.map((u) => ({ ...u, produk: s.nama })));
   const ratingRata = semuaUlasan.length ? semuaUlasan.reduce((s, u) => s + u.rating, 0) / semuaUlasan.length : 0;
 
@@ -287,7 +367,6 @@ export default function ProdusenDashboard() {
             <div style={{ fontSize: "19px", fontWeight: 700, color: "#1E293B" }}>{pageTitles[activeMenu]}</div>
           </div>
 
-          {/* Profil Button (Icon Notifikasi Bel di Sampingnya Sudah Dihapus Total) */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div onClick={() => setShowProfilPopup(true)} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", border: !isProfileComplete ? "2px dashed #EF4444" : "none", padding: "4px 8px", borderRadius: "8px", background: !isProfileComplete ? "#FEF2F2" : "transparent" }}>
               <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#10B981", color: "#fff", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
